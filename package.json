@@ -1,0 +1,26 @@
+{
+  "name": "kat-app",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "build-full": "tsc --build",
+    "build-server": "tsc -p server",
+    "build-client": "tsc -p client",
+    "run-server": "node build/server/server.js",
+    "debug": "node --inspect=9227 build/server/server.js",
+    "lint": "eslint **/*.ts"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "@types/express": "^4.17.6",
+    "@types/jquery": "^3.3.35",
+    "@typescript-eslint/eslint-plugin": "^2.28.0",
+    "@typescript-eslint/parser": "^2.28.0",
+    "eslint": "^6.8.0",
+    "express": "^4.17.1",
+    "typescript": "^3.8.3"
+  }
+}

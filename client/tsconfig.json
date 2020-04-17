@@ -1,0 +1,10 @@
+{
+    "extends": "./../tsconfig-base.json",
+    "compilerOptions": {
+        "composite": true,
+        "outDir": "./../public/js",
+        // "module": "ES6", // Support ES6 export/import
+        "tsBuildInfoFile": "./../build/cache/client/.tsbuildinfo",
+        "suppressImplicitAnyIndexErrors": true
+    }
+}

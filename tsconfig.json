@@ -1,0 +1,10 @@
+{
+    "extends": "./tsconfig-base.json",
+    "references": [ 
+      { "path": "./server" },
+      { "path": "./client" }
+    ],
+    "files": [
+        /* Empty files array specifies that no files should be compiled directly as part of this master package */
+    ]
+  }

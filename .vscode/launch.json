@@ -1,0 +1,50 @@
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "compounds": [
+        {
+            "name": "Server/Client",
+            "configurations": ["Launch via NPM", "Debug Client"]
+        }
+    ],
+    "configurations": [
+        {
+            // Only can put breakpoints in 'get' request handlers, not the configuration code
+            "type": "node",
+            "request": "launch",
+            "name": "Launch via NPM",
+            "runtimeExecutable": "npm",
+            "runtimeArgs": [
+                "run-script",
+                "debug"
+            ],
+            "port": 9227,
+            "skipFiles": [
+                "<node_internals>/**"
+            ]
+        },
+        {
+            "type": "chrome",
+            "request": "launch",
+            "name": "Debug Client",
+            "url": "http://localhost:1337",
+            "webRoot": "${workspaceRoot}/public/js"
+        },
+        {
+            // Can put breakpoints anywhere in file, but nodemon stays open even after debuggers stopped until you kill terminal. 
+            // Not sure of if should use this or not
+            "type": "node",
+            "request": "launch",
+            "name": "Debug Server",
+            "runtimeExecutable": "nodemon",
+            "program": "${workspaceRoot}/build/server/server.js",
+            "console": "integratedTerminal",
+            "internalConsoleOptions": "neverOpen",
+            "skipFiles": [
+                "<node_internals>/**"
+            ]
+        }        
+    ]
+}

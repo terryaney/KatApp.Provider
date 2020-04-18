@@ -1,15 +1,27 @@
 <html>
-    ﻿<head>
+    <head>
         <title>Express Applications</title>
         <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" rel="stylesheet" crossorigin="anonymous">
     </head>
     <body>
         <div class="container mt-3">
-            <section class="col-md-8 order-md-1 mt-4 mb-5">
+            <section class="col-md-12 mt-4 mb-5">
                 <h3 class="mb-3">Welcome</h3>
-                <div class="katapp startup" rbl-id="1"><p style="font-weight: bold;">Kat App View 1</p></div>
-                <div class="katapp startup" rbl-id="2"><p style="font-weight: bold;">Kat App View 2</p></div>
-                <div class="katapp" rbl-id="3"><p style="font-weight: bold;">Kat App View 3</p></div>
+                <div class="katapp startup" rbl-view-id="1">
+                    <p style="font-weight: bold;">Kat App View 1</p>
+                    <label>Input 1</label>
+                    <input id="input1" name="input1" class="input1" value="default1" />
+                </div>
+                <div class="katapp startup" rbl-view-id="2">
+                    <p style="font-weight: bold;">Kat App View 2</p>
+                    <label>Input 2</label>
+                    <input id="input2" name="input2" class="input2" value="default2" />
+                </div>
+                <div class="katapp" rbl-view-id="3">
+                    <p style="font-weight: bold;">Kat App View 3</p>
+                    <label>Input 3</label>
+                    <input id="input3" name="input3" class="input3" value="default3" />
+                </div>
             </section>
         </div>
         <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.5.0/jquery.min.js" integrity="sha256-xNzN2a4ltkB44Mc/Jz3pT4iU1cmeR0FkXs4pru/JxaQ=" crossorigin="anonymous"></script>
@@ -17,13 +29,37 @@
 
         <script>
             $( function() {
-                // $( "#date_datepicker" ).datepicker( { dateFormat: "yy-mm-dd" } );
-                $( "div.katapp.startup" ).KatApp( { 
-                    onProcessResults: function( results ) {    
-                        $(this).append(`<div>Call back of onProcessResults for ${$(this).attr("rbl-id")}.</div>`);
-                        $(this).append(`<div>Using CalcEngine ${results.ceVersion}.</div>`);
+                KatApp.defaultOptions.calcEngine = "Buck_Template";
+
+                $( "div.katapp.startup" ).katapp( { 
+                    runConfigureUICalculation: false,
+                    onCalculate: function( results, options ) {    
+                        var inputTrigger = options.inputs.iInputTrigger || "[Manual Calculation]";
+                        var applicationId = $(this).attr("rbl-application-id");
+                        var viewId = $(this).attr("rbl-view-id");
+                        $(this).append("<div>" + inputTrigger + " triggered calculation. AppID: " + applicationId + ", ViewID: " + viewId + ", CalcEngine: " + results.ceVersion + ".</div>");
+                        $(this).append("<div>Inputs: " + Object.keys( options.inputs ).map( i => i + "=" + options.inputs[ i ] ).join( ", " ) + "</div>");
                     } 
                 } );
+
+                // manually trigger a calculation
+                $("div.katapp:eq(0)").katapp().calculate();
+
+                $("div.katapp:eq(2)").on( "onConfigureUICalculation.RBLe", function( event, calculationResults, calcOptions, application ) {
+                    var applicationId = $(this).attr("rbl-application-id");
+                    var viewId = $(this).attr("rbl-view-id");
+                    $(this).append("<div><b>Configure UI Handler</b>: Called before calculationComplete. AppID: " + applicationId + ", ViewID: " + viewId + ", CalcEngine: " + calculationResults.ceVersion + ".</div>");
+                })
+                $("div.katapp:eq(2)").on( "onCalculate.RBLe", function( event, calculationResults, calcOptions, application ) {
+                    var inputTrigger = calcOptions.inputs.iInputTrigger || "[Manual Calculation]";
+                    var applicationId = $(this).attr("rbl-application-id");
+                    var viewId = $(this).attr("rbl-view-id");
+                    $(this).append("<div>Custom Handler: " + inputTrigger + " triggered calculation. AppID: " + applicationId + ", ViewID: " + viewId + ", CalcEngine: " + calculationResults.ceVersion + ".</div>");
+                })
+                
+                // Only call my custom event handler to pretend it was inside view markup, probably never do this
+                // but just wanted to keep the debug output a bit cleaner to see that it was happening correctly
+                $("div.katapp:eq(2)").katapp("calculate", { onCalculate: undefined } );
             });
         </script>
     </body>

@@ -9,6 +9,9 @@
         "@typescript-eslint/type-annotation-spacing": ["error", {
             "before": false,
             "after": true
-        }]
+        }],
+        "@typescript-eslint/no-this-alias": [ "error", {
+            "allowedNames": [ "self", "that" ] // Allow `const self = this`; `[]` by default
+        }]        
     }
 }

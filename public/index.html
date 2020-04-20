@@ -7,21 +7,21 @@
         <div class="container mt-3">
             <section class="col-md-12 mt-4 mb-5">
                 <h3 class="mb-3">Welcome</h3>
-                <div class="katapp startup" rbl-view-id="1">
-                    <p style="font-weight: bold;">Kat App View 1</p>
-                    <label>Input 1</label>
-                    <input id="input1" name="input1" class="input1" value="default1" />
-                </div>
-                <div class="katapp startup" rbl-view-id="2">
-                    <p style="font-weight: bold;">Kat App View 2</p>
+                <div class="katapp startup" rbl-debug-id="1" rbl-view="global:app1.html"></div>
+                <div class="katapp startup" rbl-debug-id="2">
+                    <p class="myTitle" style="font-weight: bold;">Kat App View</p>
                     <label>Input 2</label>
                     <input id="input2" name="input2" class="input2" value="default2" />
                 </div>
-                <div class="katapp" rbl-view-id="3">
-                    <p style="font-weight: bold;">Kat App View 3</p>
+                <div class="katapp" rbl-debug-id="3">
+                    <p class="myTitle" style="font-weight: bold;">Kat App View</p>
                     <label>Input 3</label>
                     <input id="input3" name="input3" class="input3" value="default3" />
                 </div>
+            </section>
+            <section class="col-md-12 mt-4 mb-5">
+                <h3 class="mb-3">Logging</h3>
+                <div class="katappLog"></div>
             </section>
         </div>
         <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.5.0/jquery.min.js" integrity="sha256-xNzN2a4ltkB44Mc/Jz3pT4iU1cmeR0FkXs4pru/JxaQ=" crossorigin="anonymous"></script>
@@ -30,36 +30,47 @@
         <script>
             $( function() {
                 KatApp.defaultOptions.calcEngine = "Buck_Template";
+                KatApp.defaultOptions.serviceUrl = "https://secure.conduentapplications.com/Services/RBL/Evolution_Test/Calculation.ashx";
 
-                $( "div.katapp.startup" ).katapp( { 
+                const logElement = $(".katappLog");
+
+                const logEvent = function( application, message ) {
+                    // Normally in any event handler, you'd just use application.element to get an katapp element
+                    // but I wanted to get all my logging in one place for this demo, so cheating and going 'outside'
+                    // kat app element context into main page
+                    var id = application.element.attr("rbl-debug-id");
+                    logElement.append("<div><b>Application " + id + "</b>: " + message + "</div>");
+                }
+                // Just debug logging for any application initialized
+                KatApp.defaultOptions.onInitialized = function( application ) {
+                    logEvent(application, "Application initialized.");
+                    var id = application.element.attr("rbl-debug-id");
+                    $(".myTitle", application.element).html("Kat App " + id + " - " + application.id);
+                };
+                KatApp.defaultOptions.onDestroyed = function( application ) {
+                    logEvent(application, "Application destroyed.");
+                };
+
+                $( "div.katapp.startup" ).KatApp( { 
                     runConfigureUICalculation: false,
-                    onCalculate: function( results, options ) {    
+                    onCalculation: function( results, options, application ) {    
                         var inputTrigger = options.inputs.iInputTrigger || "[Manual Calculation]";
                         var applicationId = $(this).attr("rbl-application-id");
-                        var viewId = $(this).attr("rbl-view-id");
-                        $(this).append("<div>" + inputTrigger + " triggered calculation. AppID: " + applicationId + ", ViewID: " + viewId + ", CalcEngine: " + results.ceVersion + ".</div>");
-                        $(this).append("<div>Inputs: " + Object.keys( options.inputs ).map( i => i + "=" + options.inputs[ i ] ).join( ", " ) + "</div>");
+                        var viewId = $(this).attr("rbl-view");
+                        logEvent(application, "<div>" + inputTrigger + " triggered calculation. View: " + ( viewId || "[NONE]" ) + ", CalcEngine: " + results.ceVersion + ", Inputs Passed: " + Object.keys( options.inputs ).map( i => i + "=" + options.inputs[ i ] ).join( ", " ) + ".</div>");
                     } 
                 } );
 
-                // manually trigger a calculation
-                $("div.katapp:eq(0)").katapp().calculate();
-
                 $("div.katapp:eq(2)").on( "onConfigureUICalculation.RBLe", function( event, calculationResults, calcOptions, application ) {
                     var applicationId = $(this).attr("rbl-application-id");
-                    var viewId = $(this).attr("rbl-view-id");
-                    $(this).append("<div><b>Configure UI Handler</b>: Called before calculationComplete. AppID: " + applicationId + ", ViewID: " + viewId + ", CalcEngine: " + calculationResults.ceVersion + ".</div>");
-                })
-                $("div.katapp:eq(2)").on( "onCalculate.RBLe", function( event, calculationResults, calcOptions, application ) {
+                    var viewId = $(this).attr("rbl-view");
+                    logEvent(application, "<b>onConfigureUICalculation.RBLe Handler</b>: Called before calculationComplete. View: " + ( viewId || "[NONE]" ) + ", CalcEngine: " + calculationResults.ceVersion + ", Inputs Passed: " + Object.keys( calcOptions.inputs ).map( i => i + "=" + calcOptions.inputs[ i ] ).join( ", " ) + ".")
+                }).on( "onCalculation.RBLe", function( event, calculationResults, calcOptions, application ) {
                     var inputTrigger = calcOptions.inputs.iInputTrigger || "[Manual Calculation]";
                     var applicationId = $(this).attr("rbl-application-id");
-                    var viewId = $(this).attr("rbl-view-id");
-                    $(this).append("<div>Custom Handler: " + inputTrigger + " triggered calculation. AppID: " + applicationId + ", ViewID: " + viewId + ", CalcEngine: " + calculationResults.ceVersion + ".</div>");
-                })
-                
-                // Only call my custom event handler to pretend it was inside view markup, probably never do this
-                // but just wanted to keep the debug output a bit cleaner to see that it was happening correctly
-                $("div.katapp:eq(2)").katapp("calculate", { onCalculate: undefined } );
+                    var viewId = $(this).attr("rbl-view");
+                    logEvent(application, "<b>Custom onCalculate.RBLe Handler</b>: View: " + ( viewId || "[NONE]" ) + ", CalcEngine: " + calculationResults.ceVersion + ", Inputs Passed: " + Object.keys( calcOptions.inputs ).map( i => i + "=" + calcOptions.inputs[ i ] ).join( ", " ) + ".")
+                }).KatApp();
             });
         </script>
     </body>

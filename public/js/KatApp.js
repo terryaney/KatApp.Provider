@@ -4,6 +4,54 @@ var pluginName = 'katapp';
 var KatApp = /** @class */ (function () {
     function KatApp() {
     }
+    KatApp.readPageParameters = function () {
+        var params = {};
+        var paramsArray = window.location.search.substr(1).split('&');
+        for (var i = 0; i < paramsArray.length; ++i) {
+            var param = paramsArray[i]
+                .split('=', 2);
+            if (param.length !== 2)
+                continue;
+            params[param[0].toLowerCase()] = decodeURIComponent(param[1].replace(/\+/g, " "));
+        }
+        return params;
+    };
+    // https://blog.logrocket.com/4-different-techniques-for-copying-objects-in-javascript-511e422ceb1e/
+    // Wanted explicitly 'undefined' properties set to undefined and jquery .Extend() didn't do that
+    KatApp.extend = function (target) {
+        var sources = [];
+        for (var _i = 1; _i < arguments.length; _i++) {
+            sources[_i - 1] = arguments[_i];
+        }
+        sources.forEach(function (source) {
+            if (source === undefined)
+                return;
+            Object.keys(source).forEach(function (key) {
+                // Always do deep copy
+                if (typeof source[key] === "object" && target[key] != undefined) {
+                    KatApp.extend(target[key], source[key]);
+                }
+                else {
+                    target[key] = source[key];
+                }
+            });
+        });
+        return target;
+    };
+    ;
+    KatApp.getResource = function (serviceUrl, folder, resource, isScript, callBack) {
+        var _a;
+        var url = (_a = serviceUrl !== null && serviceUrl !== void 0 ? serviceUrl : KatApp.defaultOptions.serviceUrl) !== null && _a !== void 0 ? _a : KatApp.serviceUrl;
+        var version = KatApp.pageParameters["testkatapp"] === "1" ? "Test" : "Live";
+        var params = "?{Command:'KatAppResource',Resource:'" + resource + "',Folder:'" + folder + "',Version:'" + version + "'}";
+        if (isScript) {
+            // $.getScript(url + params, callBack);
+            $.getScript("js/" + resource, callBack); // Debug version without having to upload to MgmtSite
+        }
+        else {
+            $.get(url + params, callBack);
+        }
+    };
     KatApp.getInputName = function (input) {
         // Need to support : and $.  'Legacy' is : which is default mode a convert process has for VS, but Gu says to never use that, but it caused other issues that are documented in
         // 4.1 Validators.cs file so allowing both.
@@ -33,36 +81,20 @@ var KatApp = /** @class */ (function () {
         }
         return (!skipAssignment ? value !== null && value !== void 0 ? value : '' : undefined);
     };
+    KatApp.serviceUrl = "https://btr.lifeatworkportal.com/services/evolution/Calculation.ashx";
     // Default Options
     KatApp.defaultOptions = {
+        serviceUrl: KatApp.serviceUrl,
         inputSelector: "input",
         runConfigureUICalculation: true,
+        onInitialized: function () { },
+        onDestroyed: function () { },
+        onOptionsUpdated: function () { },
         onConfigureUICalculation: function () { },
-        onCalculate: function () { },
+        onCalculation: function () { },
         onCalculationErrors: function () { }
     };
-    // https://blog.logrocket.com/4-different-techniques-for-copying-objects-in-javascript-511e422ceb1e/
-    // Wanted explicitly 'undefined' properties set to undefined and jquery .Extend() didn't do that
-    KatApp.extend = function (target) {
-        var sources = [];
-        for (var _i = 1; _i < arguments.length; _i++) {
-            sources[_i - 1] = arguments[_i];
-        }
-        sources.forEach(function (source) {
-            if (source === undefined)
-                return;
-            Object.keys(source).forEach(function (key) {
-                // Always do deep copy
-                if (typeof source[key] === "object" && target[key] != undefined) {
-                    KatApp.extend(target[key], source[key]);
-                }
-                else {
-                    target[key] = source[key];
-                }
-            });
-        });
-        return target;
-    };
+    KatApp.pageParameters = KatApp.readPageParameters();
     return KatApp;
 }());
 var ApplicationShim = /** @class */ (function () {
@@ -78,12 +110,9 @@ var KatAppProviderShim = /** @class */ (function () {
     }
     KatAppProviderShim.prototype.init = function (application) {
         if (this.applications.length === 0) {
-            console.log("sleep...");
-            setTimeout(function () {
-                $.getScript("js/KatAppProvider.js", function () {
-                    console.log("Get Script worked.");
-                });
-            }, 7000);
+            KatApp.getResource(undefined, "Global", "KatAppProvider.js", true, function () {
+                console.log("KatAppProvider library loaded.");
+            });
         }
         this.applications.push(new ApplicationShim(application));
     };
@@ -119,7 +148,6 @@ var KatAppProviderShim = /** @class */ (function () {
             this.id = id;
             this.options = KatApp.extend(/*true, */ {}, undefined, KatApp.defaultOptions, options);
             this.element = element;
-            this.element.attr("rbl-application-id", id);
             this.element[0][pluginName] = this;
             this.provider = provider;
             this.provider.init(this);
@@ -132,8 +160,9 @@ var KatAppProviderShim = /** @class */ (function () {
             delete this.element[0][pluginName];
         };
         KatAppPlugIn.prototype.updateOptions = function (options) {
+            var originalOptions = KatApp.extend({}, this.options);
             this.options = KatApp.extend(/* true, */ this.options, options);
-            this.provider.updateOptions(this);
+            this.provider.updateOptions(this, originalOptions);
         };
         return KatAppPlugIn;
     }());

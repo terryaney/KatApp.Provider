@@ -1,7 +1,14 @@
+// TODO
+// - How do I check/handle for errors when I try to load view
+// - Do I want to call calculate in updateOptions?  They could bind and call if they need to I guess
+
 $(function() {
     const invalidInputSelector = ":not(.notRBLe, .RBLe-input-table :input, .dropdown-toggle, button)";
     const skipBindingInputSelector = ":not(.notRBLe, .skipRBLe, .skipRBLe :input, .RBLe-input-table :input, .dropdown-toggle, button)";
 
+    // All methods before KatAppProvider class implementation are private methods only
+    // available to KatAppProvider (no one else outside of this closure)
+    
     const getInputs = function(application: KatAppInterface): JSON {
         const json = { inputs: {} };
         const inputs = json.inputs;
@@ -25,6 +32,38 @@ $(function() {
         return json as unknown as JSON;
     }
 
+    const triggerEvent = function(application: KatAppInterface, eventName: string, ...args: object[]): void {
+        // DEBUG var id = application.element.attr("rbl-debug-id");
+        // DEBUG $(".katappLog").append("<div><b style='color: Red;'>DEBUG: Application " + id + "</b>: Before handler:" + eventName + "</div>");
+        application.options[ eventName ]?.apply(application.element[0], args );
+        // DEBUG $(".katappLog").append("<div><b style='color: Red;'>DEBUG: Application " + id + "</b>: Before trigger:" + eventName + ".RBLe</div>");
+        application.element.trigger( eventName + ".RBLe", args);
+        // DEBUG $(".katappLog").append("<div><b style='color: Red;'>DEBUG: Application " + id + "</b>: After trigger:" + eventName + ".RBLe</div>");
+    }
+
+    const bindEvents = function( this: KatAppProvider, application: KatAppInterface ): void {
+        const that = this;
+
+        $(application.options.inputSelector + skipBindingInputSelector, application.element).each(function () {
+
+            $(this).bind("change.RBLe", function () {
+                
+                const wizardInputSelector = $(this).data("input");
+
+                if (wizardInputSelector == undefined) {
+                    that.calculate( application, { inputs: { iInputTrigger: $(this).attr("id") } } );
+                }
+                else {
+                    // if present, this is a 'wizard' input and we need to keep the 'regular' input in sync
+                    $("." + wizardInputSelector)
+                        .val($(this).val() as string)
+                        .trigger("change.RBLe"); // trigger calculation
+                }
+
+            });
+        });
+    }
+
     class KatAppProvider implements KatAppProviderInterface
     {
         constructor(applications: ApplicationShim[] )
@@ -46,47 +85,59 @@ $(function() {
 
             // re-assign the provider to replace shim with actual implementation
             application.provider = this;
+            application.element.attr("rbl-application-id", application.id);
 
-            $(application.options.inputSelector + skipBindingInputSelector, application.element).each(function () {
+            const initApp = function( this: KatAppProvider ): void {
+                
+                bindEvents.call( that, application );
+    
+                triggerEvent( application, "onInitialized", application );
 
-                $(this).bind("change.RBLe", function () {
-                    
-                    const wizardInputSelector = $(this).data("input");
+                if ( application.options.runConfigureUICalculation ) {
+                    const calculationOptions: KatAppOptions = {
+                        inputs: { iConfigureUI: 1 }
+                    };
+                    this.calculate( application, calculationOptions );
+                }
+            };
 
-                    if (wizardInputSelector == undefined) {
-                        that.calculate( application, { inputs: { iInputTrigger: $(this).attr("id") } } );
+            const viewId = application.element.attr("rbl-view");
+
+            if ( viewId != undefined ) {
+                const serviceUrl = application.options.serviceUrl ?? KatApp.serviceUrl;
+                const viewParts = viewId.split(":");
+
+                KatApp.getResource( serviceUrl, viewParts[ 0 ], viewParts[ 1 ], false,
+                    function( data ) {
+                        console.log(viewParts[ 1 ] + " loaded.");
+                        
+                        application.element.append(
+                            data!.replace( "{katapp}", "[rbl-application-id='" + application.id + "']" ) // eslint-disable-line @typescript-eslint/no-non-null-assertion
+                        );
+    
+                        initApp.apply( that );
                     }
-                    else {
-                        // if present, this is a 'wizard' input and we need to keep the 'regular' input in sync
-                        $("." + wizardInputSelector)
-                            .val($(this).val() as string)
-                            .trigger("change.RBLe"); // trigger calculation
-                    }
-
-                });
-            });
-
-            application.element.append(`<div>Application initialized.</div>`);
-
-            if ( application.options.runConfigureUICalculation ) {
-                const calculationOptions: KatAppOptions = {
-                    inputs: { iConfigureUI: 1 }
-                };
-                this.calculate( application, calculationOptions );
+                );
+            }
+            else {
+                initApp.apply( this );
             }
         }
 
         destroy( application: KatAppInterface ): void { 
             // Remove all event handlers
-            application.element.append(`<div>Application destroyed.</div>`);
-            $(application.element).off(".RBLe");
+            application.element.removeAttr("rbl-application-id");
+
+            $(application.element).off(".RBLe");            
             $(application.options.inputSelector!, application.element).off(".RBLe"); // eslint-disable-line @typescript-eslint/no-non-null-assertion
+
+            triggerEvent( application, "onDestroyed", application );
         }
 
-        updateOptions( application: KatAppInterface ): void { 
-            // Remove and re-add handlers?
-            // Call calculate?
-            application.element.append(`<div>Application options updated.</div>`);
+        updateOptions( application: KatAppInterface, originalOptions: KatAppOptions ): void { 
+            $(originalOptions.inputSelector!, application.element).off(".RBLe"); // eslint-disable-line @typescript-eslint/no-non-null-assertion
+            bindEvents.call( this, application );
+            triggerEvent( application, "onOptionsUpdated", application );
         }
 
         calculate( application: KatAppInterface, options?: KatAppOptions ): void {
@@ -102,12 +153,10 @@ $(function() {
             application.calculationResults = calculationResults;
 
             if ( calcOptions.inputs?.iConfigureUI ?? false ) {
-                calcOptions.onConfigureUICalculation?.call(application.element[0], calculationResults, calcOptions, application );
-                application.element.trigger("onConfigureUICalculation.RBLe", [ calculationResults, calcOptions, application ]);
+                triggerEvent( application, "onConfigureUICalculation", calculationResults, calcOptions, application );
             }
 
-            calcOptions.onCalculate?.call(application.element[0], calculationResults, calcOptions, application );
-            application.element.trigger("onCalculate.RBLe", [ calculationResults, calcOptions, application ]);
+            triggerEvent( application, "onCalculation", calculationResults, calcOptions, application );
         }
     }
 

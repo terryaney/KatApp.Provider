@@ -1,6 +1,4 @@
-const pluginName = 'katapp';
-
-// 
+const pluginName = 'KatApp';
 
 interface CalculationInputs
 {
@@ -10,33 +8,83 @@ interface CalculationInputs
 
 interface KatAppOptions
 {
+    serviceUrl?: string;
+
     calcEngine?: string;
     inputSelector?: string;
     runConfigureUICalculation?: boolean;
     inputs?: CalculationInputs;
 
+    onInitialized?: (this: HTMLElement, appilcation: KatAppInterface )=> void;
+    onDestroyed?: (this: HTMLElement, appilcation: KatAppInterface )=> void;
+    onOptionsUpdated?: (this: HTMLElement, appilcation: KatAppInterface )=> void;
+
     onConfigureUICalculation?: (this: HTMLElement, calculationResults: JSON, calcOptions: KatAppOptions, application: KatAppInterface)=> void;
-    onCalculate?: (this: HTMLElement, calculationResults: JSON, calcOptions: KatAppOptions, application: KatAppInterface)=> void;
+    onCalculation?: (this: HTMLElement, calculationResults: JSON, calcOptions: KatAppOptions, application: KatAppInterface)=> void;
     onCalculationErrors?: (this: HTMLElement, key: string, data: JSON, calcOptions: KatAppOptions, application: KatAppInterface)=> void;
+}
+
+interface KatAppProviderInterface
+{
+    init: ( application: KatAppInterface )=> void;
+    calculate: ( application: KatAppInterface, options?: KatAppOptions )=> void;
+    destroy: ( application: KatAppInterface )=> void;
+    updateOptions: ( application: KatAppInterface, originalOptions: KatAppOptions )=> void;
+}
+
+interface KatAppInterface
+{
+    options: KatAppOptions;
+    provider: KatAppProviderInterface;
+    element: JQuery;
+    id: string;
+    calculationResults?: JSON;
 }
 
 // Static options available in js via
 class KatApp
 {
+    static serviceUrl = "https://btr.lifeatworkportal.com/services/evolution/Calculation.ashx";
+
     // Default Options
     static defaultOptions: KatAppOptions =
     {
+        serviceUrl: KatApp.serviceUrl,
+
         inputSelector: "input",
         runConfigureUICalculation: true,
 
+        onInitialized: function(): void { /* default empty callback */ },
+        onDestroyed: function(): void { /* default empty callback */ },
+        onOptionsUpdated: function(): void { /* default empty callback */ },
         onConfigureUICalculation: function(): void { /* default empty callback */ },
-        onCalculate: function(): void { /* default empty callback */ },
+        onCalculation: function(): void { /* default empty callback */ },
         onCalculationErrors: function(): void { /* default empty callback */ }
     };
 
+    static readPageParameters(): JSON {
+        const params = {};
+        const paramsArray = window.location.search.substr(1).split('&');
+
+        for (let i = 0; i < paramsArray.length; ++i)
+        {
+            const param = paramsArray[i]
+                .split('=', 2);
+
+            if (param.length !== 2)
+                continue;
+
+            params[param[0].toLowerCase()] = decodeURIComponent(param[1].replace(/\+/g, " "));
+        }
+
+        return params as JSON;
+    }
+
+    static pageParameters = KatApp.readPageParameters();
+
     // https://blog.logrocket.com/4-different-techniques-for-copying-objects-in-javascript-511e422ceb1e/
     // Wanted explicitly 'undefined' properties set to undefined and jquery .Extend() didn't do that
-    static extend = (target: object, ...sources: object[]): object => {
+    static extend(target: object, ...sources: object[]): object {
         sources.forEach((source) => {
             if ( source === undefined ) return;
 
@@ -54,6 +102,21 @@ class KatApp
         })
         return target
     };
+
+    static getResource( serviceUrl: string | undefined, folder: string, resource: string, isScript: boolean, callBack: ( data: string | undefined )=> void ): void {
+        const url = serviceUrl ?? KatApp.defaultOptions.serviceUrl ?? KatApp.serviceUrl;
+
+        const version = KatApp.pageParameters[ "testkatapp"] === "1" ? "Test" : "Live";
+        const params = "?{Command:'KatAppResource',Resource:'" + resource + "',Folder:'" + folder + "',Version:'" + version + "'}";
+
+        if ( isScript ) {
+            // $.getScript(url + params, callBack);
+            $.getScript("js/" + resource, callBack); // Debug version without having to upload to MgmtSite
+        }
+        else {
+            $.get(url + params, callBack);
+        }
+    }
 
     static getInputName(input: JQuery): string {
         // Need to support : and $.  'Legacy' is : which is default mode a convert process has for VS, but Gu says to never use that, but it caused other issues that are documented in
@@ -96,23 +159,6 @@ class KatApp
     }
 }
 
-interface KatAppProviderInterface
-{
-    init: ( application: KatAppInterface )=> void;
-    calculate: ( application: KatAppInterface, options?: KatAppOptions )=> void;
-    destroy: ( application: KatAppInterface )=> void;
-    updateOptions: ( application: KatAppInterface )=> void;
-}
-
-interface KatAppInterface
-{
-    options: KatAppOptions;
-    provider: KatAppProviderInterface;
-    element: JQuery;
-    id: string;
-    calculationResults?: JSON;
-}
-
 class ApplicationShim
 {
     application: KatAppInterface;
@@ -130,15 +176,13 @@ class KatAppProviderShim implements KatAppProviderInterface
 
     init(application: KatAppInterface): void {
         if ( this.applications.length === 0 ) {
-
-            console.log( "sleep...");
-
-            setTimeout(function(){  
-                $.getScript("js/KatAppProvider.js", function() {
-                    console.log("Get Script worked.");
-                });
-            }, 7000);
+            KatApp.getResource( undefined, "Global", "KatAppProvider.js", true,
+                function() {
+                    console.log("KatAppProvider library loaded.");
+                }
+            );
         }
+
         this.applications.push( new ApplicationShim( application ) );
     }
 
@@ -188,7 +232,6 @@ class KatAppProviderShim implements KatAppProviderInterface
             this.id = id;
             this.options = KatApp.extend(/*true, */{}, undefined as unknown as object, KatApp.defaultOptions, options);
             this.element = element;
-            this.element.attr("rbl-application-id", id);
             this.element[ 0 ][ pluginName ] = this;
             this.provider = provider;
 
@@ -208,8 +251,9 @@ class KatAppProviderShim implements KatAppProviderInterface
     
         updateOptions( options: KatAppOptions ): void
         {
+            const originalOptions = KatApp.extend( {}, this.options );
             this.options = KatApp.extend(/* true, */ this.options, options);
-            this.provider.updateOptions( this );
+            this.provider.updateOptions( this, originalOptions );
         }
     }
     

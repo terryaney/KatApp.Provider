@@ -1,5 +1,5 @@
 "use strict";
-var pluginName = 'katapp';
+var pluginName = 'KatApp';
 // Static options available in js via
 var KatApp = /** @class */ (function () {
     function KatApp() {
@@ -97,6 +97,8 @@ var KatApp = /** @class */ (function () {
     KatApp.pageParameters = KatApp.readPageParameters();
     return KatApp;
 }());
+// In 'memory' application references until the real KatAppProvider.js is loaded and can 
+// register them with the service.
 var ApplicationShim = /** @class */ (function () {
     function ApplicationShim(application) {
         this.needsCalculation = false;
@@ -104,6 +106,8 @@ var ApplicationShim = /** @class */ (function () {
     }
     return ApplicationShim;
 }());
+// 'In memory' KatApp Provider that stores any attempted .KatApp() initializations until the
+// real KatAppProvider.js script can be loaded from the CMS to properly register the applications
 var KatAppProviderShim = /** @class */ (function () {
     function KatAppProviderShim() {
         this.applications = [];
@@ -154,6 +158,10 @@ var KatAppProviderShim = /** @class */ (function () {
         }
         KatAppPlugIn.prototype.calculate = function (options) {
             this.provider.calculate(this, options);
+        };
+        KatAppPlugIn.prototype.configureUI = function (options) {
+            var calcOptions = KatApp.extend({}, options, { inputs: { iConfigureUI: 1 } });
+            this.provider.calculate(this, calcOptions);
         };
         KatAppPlugIn.prototype.destroy = function () {
             this.provider.destroy(this);

@@ -1,46 +1,5 @@
 const pluginName = 'KatApp';
 
-interface CalculationInputs
-{
-    iConfigureUI?: number;
-    iInputTrigger?: string;
-}
-
-interface KatAppOptions
-{
-    serviceUrl?: string;
-
-    calcEngine?: string;
-    inputSelector?: string;
-    runConfigureUICalculation?: boolean;
-    inputs?: CalculationInputs;
-
-    onInitialized?: (this: HTMLElement, appilcation: KatAppInterface )=> void;
-    onDestroyed?: (this: HTMLElement, appilcation: KatAppInterface )=> void;
-    onOptionsUpdated?: (this: HTMLElement, appilcation: KatAppInterface )=> void;
-
-    onConfigureUICalculation?: (this: HTMLElement, calculationResults: JSON, calcOptions: KatAppOptions, application: KatAppInterface)=> void;
-    onCalculation?: (this: HTMLElement, calculationResults: JSON, calcOptions: KatAppOptions, application: KatAppInterface)=> void;
-    onCalculationErrors?: (this: HTMLElement, key: string, data: JSON, calcOptions: KatAppOptions, application: KatAppInterface)=> void;
-}
-
-interface KatAppProviderInterface
-{
-    init: ( application: KatAppInterface )=> void;
-    calculate: ( application: KatAppInterface, options?: KatAppOptions )=> void;
-    destroy: ( application: KatAppInterface )=> void;
-    updateOptions: ( application: KatAppInterface, originalOptions: KatAppOptions )=> void;
-}
-
-interface KatAppInterface
-{
-    options: KatAppOptions;
-    provider: KatAppProviderInterface;
-    element: JQuery;
-    id: string;
-    calculationResults?: JSON;
-}
-
 // Static options available in js via
 class KatApp
 {
@@ -84,7 +43,7 @@ class KatApp
 
     // https://blog.logrocket.com/4-different-techniques-for-copying-objects-in-javascript-511e422ceb1e/
     // Wanted explicitly 'undefined' properties set to undefined and jquery .Extend() didn't do that
-    static extend(target: object, ...sources: object[]): object {
+    static extend(target: object, ...sources: ( object | undefined )[]): object {
         sources.forEach((source) => {
             if ( source === undefined ) return;
 
@@ -159,22 +118,26 @@ class KatApp
     }
 }
 
+// In 'memory' application references until the real KatAppProvider.js is loaded and can 
+// register them with the service.
 class ApplicationShim
 {
-    application: KatAppInterface;
+    application: PlugInInterface;
     calculateOptions?: KatAppOptions;
     needsCalculation = false;
 
-    constructor( application: KatAppInterface ) {
+    constructor( application: PlugInInterface ) {
         this.application = application;
     }
 }
 
+// 'In memory' KatApp Provider that stores any attempted .KatApp() initializations until the
+// real KatAppProvider.js script can be loaded from the CMS to properly register the applications
 class KatAppProviderShim implements KatAppProviderInterface
 {
     applications: ApplicationShim[] = []
 
-    init(application: KatAppInterface): void {
+    init(application: PlugInInterface): void {
         if ( this.applications.length === 0 ) {
             KatApp.getResource( undefined, "Global", "KatAppProvider.js", true,
                 function() {
@@ -186,7 +149,7 @@ class KatAppProviderShim implements KatAppProviderInterface
         this.applications.push( new ApplicationShim( application ) );
     }
 
-    calculate( application: KatAppInterface, options?: KatAppOptions ): void {
+    calculate( application: PlugInInterface, options?: KatAppOptions ): void {
         const shim = this.applications.filter( a => a.application.id === application.id ).shift();
         if ( shim ) {
             shim.calculateOptions = options;
@@ -198,7 +161,7 @@ class KatAppProviderShim implements KatAppProviderInterface
         // Do nothing until real provider loads
     }
 
-    destroy( application: KatAppInterface ): void { 
+    destroy( application: PlugInInterface ): void { 
         // Remove from memory cache in case they call delete before the
         // real provider is loaded
         let shimIndex = -1;
@@ -218,7 +181,7 @@ class KatAppProviderShim implements KatAppProviderInterface
 
 (function($, window, document, undefined?: undefined): void {
 
-    class KatAppPlugIn implements KatAppInterface
+    class KatAppPlugIn implements PlugInInterface
     {
         // Fields
         element: JQuery;
@@ -241,6 +204,12 @@ class KatAppProviderShim implements KatAppProviderInterface
         calculate( options?: KatAppOptions ): void
         {
            this.provider.calculate( this, options );
+        }
+
+        configureUI( options?: KatAppOptions ): void
+        {
+            var calcOptions = KatApp.extend( {}, options, { inputs: { iConfigureUI: 1 } } );
+            this.provider.calculate( this, calcOptions );
         }
 
         destroy(): void

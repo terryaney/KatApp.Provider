@@ -1,25 +1,17 @@
+<rbl-config calc-engine="Conduent_BiscombPOC_SE" templates="standard_templates"></rbl-config>
+
 <p class="myTitle" style="font-weight: bold;">Kat App View: App1.html</p>
 <label>Input 1</label>
 <input id="input1" name="input1" class="input1" value="default1" />
 
 <script>
-    const logElement = $(".katappLog");
-
-    const logEvent = function( application, message ) {
-        // Normally in any event handler, you'd just use application.element to get an katapp element
-        // but I wanted to get all my logging in one place for this demo, so cheating and going 'outside'
-        // kat app element context into main page
-        var id = application.element.attr("rbl-debug-id");
-        logElement.append("<div><b>Application " + id + "</b>: " + message + "</div>");
+    if ( KatApp.pageParameters[ "debugkatapp"] === "1" ) {
+        debugger;
     }
 
-    $("{katapp}").on( "onInitialized.RBLe", function( event, application ) {
+    $("{thisview}").on( "onInitialized.RBLe", function( event, application ) {
         // manually trigger a calculation
-        if ( KatApp.pageParameters[ "debugkatapp"] === "1" ) {
-            debugger;
-        }
-
-        logEvent(application, "View " + application.element.attr("rbl-view") + " loaded, now calling manual calculate." )
+        application.trace("View " + application.element.attr("rbl-view") + " onInitialized, now calling manual calculate." )
         $(this).KatApp().calculate();
 
         var id = application.element.attr("rbl-debug-id");

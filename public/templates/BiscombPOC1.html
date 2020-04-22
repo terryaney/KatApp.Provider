@@ -1,0 +1,128 @@
+<rbl-config calc-engine="Conduent_BiscombPOC_SE" templates="Standard_Templates"></rbl-config>
+
+<div class="row border-0 RBLe">
+  <div class="ajaxloader"></div>
+  <div class="col-sm-7">
+    <div class="row sharkfin border rounded-lg padding-20">
+      <div class="col-sm-12">
+        <p>Switch to <a href="#" onclick="katApp.initView('#rbl-view1', 'Generic', 'Conduent_BiscombPOC_SE'); return false;">basic katapp</a></p>
+        <h4>Estimated Wealth Savings Accumlations and Drawdown</h4>
+        <h4 style="text-transform:none; font-size: smaller; font-style: italic;">Average based on your current asset allocation</h4>
+          <div rbl-tid="highchart" data-chartname="BalanceChart" rbl-source="contents.balance"></div>
+          <div class="row">
+            <div class="col-sm-6">
+              <div rbl-tid="slider-input" data-inputname="iRetAge"></div>
+              <div class="text-center" style="font-size: smaller; color: darkgrey" rbl-value="benefit-savings.pension.note"></div>
+            </div>
+            <div class="col-sm-6 inputs-biscomb_off">
+              <div rbl-tid="slider-input" data-inputname="iReturn"></div>
+            </div>
+          </div>
+      </div>
+    </div>
+    <div class="row" style="padding-top: 15px">
+      <div class="col-sm-6 savings border rounded-lg padding-20">
+        <h4>401(K) SAVINGS PLAN</h4>
+        <div class="row">
+          <div class="col-sm-6 401kChart"></div>
+          <div class="col-sm-6 align-self-center">
+            <h6>BALANCE AS OF</h6>
+            <h5 rbl-value="date-asof-401k"></h5>
+            <h6>gains / losses YTD</h6>
+            <h5><span rbl-value="return-ytd-401k"></span>&nbsp;&nbsp;&nbsp;&nbsp;<span
+                rbl-value="gainloss-ytd-401k"></span></h5>
+          </div>
+        </div>
+        <div class="text-center" style="padding-top: 20px"><a class="btn rounded-pill"
+            style="background-color:#71A069; color: white; font-size: x-small" href="#"
+            role="button">&nbsp;&nbsp;&nbsp;&nbsp;View More&nbsp;&nbsp;&nbsp;&nbsp;</a></div>
+      </div>
+      <div class="col-sm-6 hsa border rounded-lg padding-20">
+        <h4>HSA SAVINGS PLAN</h4>
+        <div class="row">
+          <div class="col-sm-6 HSAChart"></div>
+          <div class="col-sm-6 align-self-center">
+            <h6>BALANCE AS OF</h6>
+            <h5><span class="date-asof-HSA"></h5>
+            <h6>gains / losses YTD</h6>
+            <h5><span rbl-value="return-ytd-HSA"></span>&nbsp;&nbsp;&nbsp;&nbsp;<span
+                rbl-value="gainloss-ytd-HSA"></span></h5>
+          </div>
+        </div>
+        <div class="text-center" style="padding-top: 20px"><a class="btn rounded-pill"
+            style="background-color:#71A069; color: white; font-size: x-small" href="#"
+            role="button">&nbsp;&nbsp;&nbsp;&nbsp;View More&nbsp;&nbsp;&nbsp;&nbsp;</a></div>
+      </div>
+    </div>
+    <div class="border rounded-lg col-sm-12 rbl-testclass_">
+      <ul rbl-tid="li-item" rbl-source="considerations"></ul>
+    </div>
+    <div class="col-sm-12 rbl-logclass">
+    </div>
+    <!--
+    <div class="col-sm-12">
+      <div class="col-sm-12 viSample" rbl-tid="dropdown" data-inputname="iSample"></div>
+    </div>
+    -->
+
+  </div>
+
+
+  <div class="col-sm-5">
+    <div class="col-sm-12 border rounded-lg allocation padding-20" style="margin-bottom: 15px">
+      <h4>MY SAVINGS</h4>
+      <div class="row align-items-end status-pill" style="color: #404040; display_:none">
+        <div class="col-sm-3" style="font-size:smaller; font-weight: bold;">SHORT-TERM</div>
+        <div class="col-sm-3 text-center" style="font-size:xx-small;">PER-PAYCHECK<br />DEDUCTION</div>
+        <div class="col-sm-3 text-center" style="font-size:smaller">BALANCE</div>
+        <div class="col-sm-3 text-center" style="font-size:smaller">AGE <span rbl-value="ret-age"></span><br />BALANCE</div>
+      </div>
+      <div rbl-tid="pill-display" rbl-source="benefit-savings.fsa"></div>
+      <div rbl-tid="pill-display" rbl-source="benefit-savings.dc"></div>
+      <div class="text-center" style="font-size: smaller; color: darkgrey" rbl-value="benefit-savings.dc.note">
+      </div>
+      <hr />
+      <div class="row align-items-end status-pill" style="color: #404040; display_:none">
+        <div class="col-sm-3" style="font-size:smaller; font-weight: bold;">MID-TERM</div>
+        <div class="col-sm-3 text-center" style="font-size:xx-small;">PER-PAYCHECK<br />DEDUCTION</div>
+        <div class="col-sm-3 text-center" style="font-size:smaller">BALANCE</div>
+        <div class="col-sm-3 text-center" style="font-size:smaller">AGE <span rbl-value="ret-age"></span><br />BALANCE</div>
+      </div>
+      <div rbl-tid="pill-display" rbl-source="benefit-savings.hsa"></div>
+      <hr />
+      <div class="row align-items-end status-pill" style="color: #404040; display_:none">
+        <div class="col-sm-3" style="font-size:smaller; font-weight: bold;">LONG-TERM</div>
+        <div class="col-sm-3 text-center" style="font-size:xx-small;">PER-PAYCHECK<br />DEDUCTION</div>
+        <div class="col-sm-3 text-center" style="font-size:smaller">BALANCE</div>
+        <div class="col-sm-3 text-center" style="font-size:smaller">AGE <span rbl-value="ret-age"></span><br />BALANCE</div>
+      </div>
+      <div rbl-tid="pill-display" rbl-source="benefit-savings.savings"></div>
+      <div rbl-tid="pill-display" rbl-source="benefit-savings.pension"></div>
+      <div class="text-center" style="font-size: smaller; color: darkgrey"
+        rbl-value="benefit-savings.pension.note"></div>
+    </div>
+    <div class="col-sm-12 border rounded-lg considerations padding-20" style="margin-bottom: 15px">
+      <h4>CONSIDERATIONS</h4>
+      <h4 style="text-transform:none; font-size: smaller; font-style: italic;">Based your current information:</h4>
+      <div rbl-tid="carousel" data-name="readiness2" data-source="considerations"></div>
+    </div>
+  </div>
+</div>
+
+<!-- override templates -->
+<rbl-template tid="caro-item">
+    <div class="item"><span class="number {level}">{_index1}</span>
+      <p>{text}</p>
+    </div>
+</rbl-template>    
+  
+<script>
+
+  jQuery(document).ready(function () {
+
+    $("{thisview}").on( "onCalculation.RBLe", function( event, calculationResults, calcOptions, application ) {
+      $(".rbl-logclass").append("custom processing");
+    });
+
+});
+</script>

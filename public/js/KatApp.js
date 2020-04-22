@@ -1,6 +1,6 @@
 "use strict";
 var pluginName = 'KatApp';
-// Static options available in js via
+// Static options available in js via KatApp.*
 var KatApp = /** @class */ (function () {
     function KatApp() {
     }
@@ -39,62 +39,106 @@ var KatApp = /** @class */ (function () {
         return target;
     };
     ;
-    KatApp.getResource = function (serviceUrl, folder, resource, isScript, callBack) {
+    KatApp.getResources = function (serviceUrl, resources, useTestVersion, isScript, pipelineDone) {
         var _a;
         var url = (_a = serviceUrl !== null && serviceUrl !== void 0 ? serviceUrl : KatApp.defaultOptions.serviceUrl) !== null && _a !== void 0 ? _a : KatApp.serviceUrl;
-        var version = KatApp.pageParameters["testkatapp"] === "1" ? "Test" : "Live";
-        var params = "?{Command:'KatAppResource',Resource:'" + resource + "',Folder:'" + folder + "',Version:'" + version + "'}";
-        if (isScript) {
-            // $.getScript(url + params, callBack);
-            $.getScript("js/" + resource, callBack); // Debug version without having to upload to MgmtSite
-        }
-        else {
-            $.get(url + params, callBack);
-        }
-    };
-    KatApp.getInputName = function (input) {
-        // Need to support : and $.  'Legacy' is : which is default mode a convert process has for VS, but Gu says to never use that, but it caused other issues that are documented in
-        // 4.1 Validators.cs file so allowing both.
-        // http://bytes.com/topic/asp-net/answers/433532-control-name-change-asp-net-2-0-generated-html
-        // http://weblogs.asp.net/scottgu/gotcha-don-t-use-xhtmlconformance-mode-legacy-with-asp-net-ajax
-        // data-input-name - Checkbox list items, I put the 'name' into a parent span (via attribute on ListItem)
-        var htmlName = (input.parent().attr("data-input-name") || input.attr("name"));
-        if (htmlName === undefined)
-            return "UnknownId";
-        var nameParts = htmlName.split(htmlName.indexOf("$") === -1 ? ":" : "$");
-        var id = nameParts[nameParts.length - 1];
-        if (id.startsWith("__")) {
-            id = id.substring(2);
-        }
-        return id;
-    };
-    KatApp.getInputValue = function (input) {
-        var value = input.val();
-        var skipAssignment = false;
-        if (input.attr("type") === "radio") {
-            if (!input.is(':checked')) {
-                skipAssignment = true;
+        var resourceArray = resources.split(",");
+        // viewParts[ 0 ], viewParts[ 1 ]
+        // folder: string, resource: string
+        var pipeline = [];
+        var pipelineIndex = 0;
+        var next = function () {
+            if (pipelineIndex < pipeline.length) {
+                pipeline[pipelineIndex++]();
             }
-        }
-        else if (input.is(':checkbox')) {
-            value = input.prop("checked") ? "1" : "0";
-        }
-        return (!skipAssignment ? value !== null && value !== void 0 ? value : '' : undefined);
+        };
+        (function () {
+            var pipelineError = undefined;
+            var resourceResults = {};
+            // Build a pipeline of functions for each resource requested.
+            // TODO: Figure out how to make this asynchronous
+            pipeline = resourceArray.map(function (r) {
+                return function () {
+                    if (pipelineError !== undefined) {
+                        next();
+                        return;
+                    }
+                    var resourceParts = r.split(":");
+                    var resource = resourceParts.length > 1 ? resourceParts[1] : resourceParts[0];
+                    var folder = resourceParts.length > 1 ? resourceParts[0] : "Global"; // if no folder provided, default to global
+                    var version = resourceParts.length > 2 ? resourceParts[2] : (useTestVersion ? "Test" : "Live"); // can provide a version as third part of name if you want
+                    // Template names often don't use .html syntax
+                    if (!resource.endsWith(".html") && !isScript) {
+                        resource += ".html";
+                    }
+                    var params = "?{Command:'KatAppResource',Resource:'" + resource + "',Folder:'" + folder + "',Version:'" + version + "'}";
+                    if (isScript) {
+                        // $.getScript(url + params);                    
+                        // Debug version without having to upload to MgmtSite
+                        $.getScript("js/" + resource)
+                            .done(function () { next(); })
+                            .fail(function (_jqXHR, textStatus) {
+                            pipelineError = "getResources failed requesting " + r + ":" + textStatus;
+                            next();
+                        });
+                    }
+                    else {
+                        // $.get(url + params)
+                        // Debug version without having to upload to MgmtSite
+                        $.get("templates/" + resource)
+                            .done(function (data) {
+                            resourceResults[r] = data;
+                            next();
+                        })
+                            .fail(function (_jqXHR, textStatus) {
+                            pipelineError = "getResources failed requesting " + r + ":" + textStatus;
+                            next();
+                        });
+                    }
+                };
+            }).concat([
+                // Last function
+                function () {
+                    if (pipelineError !== undefined) {
+                        pipelineDone(pipelineError);
+                    }
+                    else {
+                        pipelineDone(undefined, resourceResults);
+                    }
+                }
+            ]);
+            // Start the pipeline
+            next();
+        })();
     };
     KatApp.serviceUrl = "https://btr.lifeatworkportal.com/services/evolution/Calculation.ashx";
+    KatApp.corsProxyUrl = "https://secure.conduentapplications.com/services/rbl/rbleproxy/RBLeCORS.ashx";
+    KatApp.pageParameters = KatApp.readPageParameters();
     // Default Options
     KatApp.defaultOptions = {
+        enableTrace: false,
+        shareRegisterToken: true,
         serviceUrl: KatApp.serviceUrl,
+        currentPage: "Unknown",
         inputSelector: "input",
+        inputTab: "RBLInput",
+        resultTabs: ["RBLResult"],
         runConfigureUICalculation: true,
-        onInitialized: function () { },
-        onDestroyed: function () { },
-        onOptionsUpdated: function () { },
-        onConfigureUICalculation: function () { },
-        onCalculation: function () { },
-        onCalculationErrors: function () { }
+        ajaxLoaderSelector: ".ajaxloader",
+        useTestCalcEngine: KatApp.pageParameters["save"] === "1",
+        onCalculateStart: function (application) {
+            if (application.options.ajaxLoaderSelector !== undefined) {
+                $(application.options.ajaxLoaderSelector, application.element).show();
+            }
+            $(".RBLe .slider-control, .RBLe input", application.element).attr("disabled", "true");
+        },
+        onCalculateEnd: function (application) {
+            if (application.options.ajaxLoaderSelector !== undefined) {
+                $(application.options.ajaxLoaderSelector, application.element).fadeOut();
+            }
+            $(".RBLe .slider-control, .RBLe input", application.element).removeAttr("disabled");
+        }
     };
-    KatApp.pageParameters = KatApp.readPageParameters();
     return KatApp;
 }());
 // In 'memory' application references until the real KatAppProvider.js is loaded and can 
@@ -113,9 +157,17 @@ var KatAppProviderShim = /** @class */ (function () {
         this.applications = [];
     }
     KatAppProviderShim.prototype.init = function (application) {
+        var _a, _b;
         if (this.applications.length === 0) {
-            KatApp.getResource(undefined, "Global", "KatAppProvider.js", true, function () {
-                console.log("KatAppProvider library loaded.");
+            // First time anyone has been called with .KatApp()
+            var useTestService = (_b = (_a = application.options.useTestPlugin) !== null && _a !== void 0 ? _a : KatApp.pageParameters["testplugin"] === "1") !== null && _b !== void 0 ? _b : false;
+            KatApp.getResources(undefined, "Global:KatAppProvider.js", useTestService, true, function (errorMessage) {
+                if (errorMessage !== undefined) {
+                    application.trace("KatAppProvider library could not be loaded.");
+                }
+                else {
+                    application.trace("KatAppProvider library loaded.");
+                }
             });
         }
         this.applications.push(new ApplicationShim(application));
@@ -127,9 +179,12 @@ var KatAppProviderShim = /** @class */ (function () {
             shim.needsCalculation = true;
         }
     };
-    KatAppProviderShim.prototype.updateOptions = function () {
-        // Do nothing until real provider loads
-    };
+    KatAppProviderShim.prototype.updateOptions = function () { };
+    KatAppProviderShim.prototype.saveCalcEngine = function () { };
+    KatAppProviderShim.prototype.traceCalcEngine = function () { };
+    KatAppProviderShim.prototype.refreshCalcEngine = function () { };
+    KatAppProviderShim.prototype.getResultValue = function () { return undefined; }; // Do nothing until real provider loads
+    KatAppProviderShim.prototype.getResultRow = function () { return undefined; }; // Do nothing until real provider loads
     KatAppProviderShim.prototype.destroy = function (application) {
         // Remove from memory cache in case they call delete before the
         // real provider is loaded
@@ -149,8 +204,24 @@ var KatAppProviderShim = /** @class */ (function () {
 (function ($, window, document, undefined) {
     var KatAppPlugIn = /** @class */ (function () {
         function KatAppPlugIn(id, element, options, provider) {
+            var _a, _b;
             this.id = id;
-            this.options = KatApp.extend(/*true, */ {}, undefined, KatApp.defaultOptions, options);
+            // Take a copy of the options they pass in so same options aren't used in all plugin targets
+            // due to a 'reference' to the object.
+            // Transfer data attributes over if present...
+            var attrResultTabs = element.attr("rbl-result-tabs");
+            var attributeOptions = {
+                calcEngine: (_a = element.attr("rbl-calc-engine")) !== null && _a !== void 0 ? _a : KatApp.defaultOptions.calcEngine,
+                inputTab: (_b = element.attr("rbl-input-tab")) !== null && _b !== void 0 ? _b : KatApp.defaultOptions.inputTab,
+                resultTabs: attrResultTabs != undefined ? attrResultTabs.split(",") : KatApp.defaultOptions.resultTabs,
+                view: element.attr("rbl-view"),
+                viewTemplates: element.attr("rbl-view-templates")
+            };
+            this.options = KatApp.extend({}, // make a clone (so we don't have all plugin targets using same reference)
+            KatApp.defaultOptions, // start with default options
+            attributeOptions, // data attribute options have next precedence
+            options // finally js options override all
+            );
             this.element = element;
             this.element[0][pluginName] = this;
             this.provider = provider;
@@ -159,18 +230,43 @@ var KatAppProviderShim = /** @class */ (function () {
         KatAppPlugIn.prototype.calculate = function (options) {
             this.provider.calculate(this, options);
         };
-        KatAppPlugIn.prototype.configureUI = function (options) {
-            var calcOptions = KatApp.extend({}, options, { inputs: { iConfigureUI: 1 } });
-            this.provider.calculate(this, calcOptions);
+        KatAppPlugIn.prototype.saveCalcEngine = function (location) {
+            this.provider.saveCalcEngine(this, location);
+        };
+        KatAppPlugIn.prototype.traceCalcEngine = function () {
+            this.provider.traceCalcEngine(this);
+        };
+        KatAppPlugIn.prototype.refreshCalcEngine = function () {
+            this.provider.refreshCalcEngine(this);
+        };
+        KatAppPlugIn.prototype.configureUI = function (customOptions) {
+            var manualInputs = { manualInputs: { iConfigureUI: 1 } };
+            this.provider.calculate(this, KatApp.extend({}, customOptions, manualInputs));
         };
         KatAppPlugIn.prototype.destroy = function () {
             this.provider.destroy(this);
             delete this.element[0][pluginName];
         };
         KatAppPlugIn.prototype.updateOptions = function (options) {
-            var originalOptions = KatApp.extend({}, this.options);
             this.options = KatApp.extend(/* true, */ this.options, options);
-            this.provider.updateOptions(this, originalOptions);
+            this.provider.updateOptions(this);
+        };
+        KatAppPlugIn.prototype.getResultRow = function (table, id, columnToSearch) {
+            return this.provider.getResultRow(this, table, id, columnToSearch);
+        };
+        KatAppPlugIn.prototype.getResultValue = function (table, id, column, defaultValue) {
+            return this.provider.getResultValue(this, table, id, column, defaultValue);
+        };
+        KatAppPlugIn.prototype.trace = function (message) {
+            var _a, _b, _c, _d;
+            if ((_a = this.options.enableTrace) !== null && _a !== void 0 ? _a : false) {
+                var id = (_b = this.element.attr("rbl-trace-id")) !== null && _b !== void 0 ? _b : this.id;
+                var className = (_c = this.element[0].className) !== null && _c !== void 0 ? _c : "No classes";
+                var viewId = (_d = this.element.attr("rbl-view")) !== null && _d !== void 0 ? _d : "None";
+                var item = $("<div>Application " + id + " (class=" + className + ", view=" + viewId + "): " + message + "</div>");
+                console.log(item.text());
+                $(".rbl-logclass").append(item);
+            }
         };
         return KatAppPlugIn;
     }());
@@ -217,7 +313,7 @@ var KatAppProviderShim = /** @class */ (function () {
             args[_i - 1] = arguments[_i];
         }
         if (options === undefined || typeof options === 'object') {
-            if (options == undefined && this.first()[0][pluginName] != null) {
+            if (options == undefined && this.length > 0 && this.first()[0][pluginName] != null) {
                 return this.first()[0][pluginName];
             }
             // Creates a new plugin instance, for each selected element, and

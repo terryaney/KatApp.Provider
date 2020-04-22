@@ -1,25 +1,28 @@
-/// <reference types="jquery" />
 declare const pluginName = "KatApp";
 declare class KatApp {
     static serviceUrl: string;
-    static defaultOptions: KatAppOptions;
+    static corsProxyUrl: string;
     static readPageParameters(): JSON;
     static pageParameters: JSON;
+    static defaultOptions: KatAppOptions;
     static extend(target: object, ...sources: (object | undefined)[]): object;
-    static getResource(serviceUrl: string | undefined, folder: string, resource: string, isScript: boolean, callBack: (data: string | undefined) => void): void;
-    static getInputName(input: JQuery): string;
-    static getInputValue(input: JQuery): string;
+    static getResources(serviceUrl: string | undefined, resources: string, useTestVersion: boolean, isScript: boolean, pipelineDone: PipelineCallback): void;
 }
 declare class ApplicationShim {
-    application: PlugInInterface;
+    application: KatAppInterface;
     calculateOptions?: KatAppOptions;
     needsCalculation: boolean;
-    constructor(application: PlugInInterface);
+    constructor(application: KatAppInterface);
 }
 declare class KatAppProviderShim implements KatAppProviderInterface {
     applications: ApplicationShim[];
-    init(application: PlugInInterface): void;
-    calculate(application: PlugInInterface, options?: KatAppOptions): void;
+    init(application: KatAppInterface): void;
+    calculate(application: KatAppInterface, options?: KatAppOptions): void;
     updateOptions(): void;
-    destroy(application: PlugInInterface): void;
+    saveCalcEngine(): void;
+    traceCalcEngine(): void;
+    refreshCalcEngine(): void;
+    getResultValue(): string | undefined;
+    getResultRow(): JSON | undefined;
+    destroy(application: KatAppInterface): void;
 }

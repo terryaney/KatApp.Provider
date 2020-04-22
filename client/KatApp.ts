@@ -1,25 +1,10 @@
 const pluginName = 'KatApp';
 
-// Static options available in js via
+// Static options available in js via KatApp.*
 class KatApp
 {
     static serviceUrl = "https://btr.lifeatworkportal.com/services/evolution/Calculation.ashx";
-
-    // Default Options
-    static defaultOptions: KatAppOptions =
-    {
-        serviceUrl: KatApp.serviceUrl,
-
-        inputSelector: "input",
-        runConfigureUICalculation: true,
-
-        onInitialized: function(): void { /* default empty callback */ },
-        onDestroyed: function(): void { /* default empty callback */ },
-        onOptionsUpdated: function(): void { /* default empty callback */ },
-        onConfigureUICalculation: function(): void { /* default empty callback */ },
-        onCalculation: function(): void { /* default empty callback */ },
-        onCalculationErrors: function(): void { /* default empty callback */ }
-    };
+    static corsProxyUrl = "https://secure.conduentapplications.com/services/rbl/rbleproxy/RBLeCORS.ashx";
 
     static readPageParameters(): JSON {
         const params = {};
@@ -41,6 +26,34 @@ class KatApp
 
     static pageParameters = KatApp.readPageParameters();
 
+    // Default Options
+    static defaultOptions: KatAppOptions =
+    {
+        enableTrace: false,
+        shareRegisterToken: true,
+        serviceUrl: KatApp.serviceUrl,
+        currentPage: "Unknown",
+        inputSelector: "input",
+        inputTab: "RBLInput",
+        resultTabs: ["RBLResult"],
+        runConfigureUICalculation: true,
+        ajaxLoaderSelector: ".ajaxloader",
+        useTestCalcEngine: KatApp.pageParameters[ "save" ] === "1",
+
+        onCalculateStart: function( application: KatAppInterface ) {
+            if ( application.options.ajaxLoaderSelector !== undefined ) {
+                $( application.options.ajaxLoaderSelector, application.element ).show();
+            }
+            $( ".RBLe .slider-control, .RBLe input", application.element ).attr("disabled", "true");
+        },
+        onCalculateEnd: function( application: KatAppInterface ) {
+            if ( application.options.ajaxLoaderSelector !== undefined ) {
+                $( application.options.ajaxLoaderSelector, application.element ).fadeOut();
+            }
+            $( ".RBLe .slider-control, .RBLe input", application.element ).removeAttr("disabled");
+        }
+    };
+    
     // https://blog.logrocket.com/4-different-techniques-for-copying-objects-in-javascript-511e422ceb1e/
     // Wanted explicitly 'undefined' properties set to undefined and jquery .Extend() didn't do that
     static extend(target: object, ...sources: ( object | undefined )[]): object {
@@ -62,59 +75,89 @@ class KatApp
         return target
     };
 
-    static getResource( serviceUrl: string | undefined, folder: string, resource: string, isScript: boolean, callBack: ( data: string | undefined )=> void ): void {
+    static getResources( serviceUrl: string | undefined, resources: string, useTestVersion: boolean, isScript: boolean, pipelineDone: PipelineCallback ): void {
         const url = serviceUrl ?? KatApp.defaultOptions.serviceUrl ?? KatApp.serviceUrl;
+        const resourceArray = resources.split(",");
 
-        const version = KatApp.pageParameters[ "testkatapp"] === "1" ? "Test" : "Live";
-        const params = "?{Command:'KatAppResource',Resource:'" + resource + "',Folder:'" + folder + "',Version:'" + version + "'}";
+        // viewParts[ 0 ], viewParts[ 1 ]
+        // folder: string, resource: string
 
-        if ( isScript ) {
-            // $.getScript(url + params, callBack);
-            $.getScript("js/" + resource, callBack); // Debug version without having to upload to MgmtSite
-        }
-        else {
-            $.get(url + params, callBack);
-        }
-    }
+        let pipeline: Array<()=> void> = [];
+        let pipelineIndex = 0;
 
-    static getInputName(input: JQuery): string {
-        // Need to support : and $.  'Legacy' is : which is default mode a convert process has for VS, but Gu says to never use that, but it caused other issues that are documented in
-        // 4.1 Validators.cs file so allowing both.
-        // http://bytes.com/topic/asp-net/answers/433532-control-name-change-asp-net-2-0-generated-html
-        // http://weblogs.asp.net/scottgu/gotcha-don-t-use-xhtmlconformance-mode-legacy-with-asp-net-ajax
-
-        // data-input-name - Checkbox list items, I put the 'name' into a parent span (via attribute on ListItem)
-        const htmlName = (input.parent().attr("data-input-name") || input.attr("name")) as string;
-
-        if (htmlName === undefined) return "UnknownId";
-
-        const nameParts = htmlName.split(htmlName.indexOf("$") === -1 ? ":" : "$");
-
-        let id = nameParts[nameParts.length - 1];
-
-        if (id.startsWith("__")) {
-            id = id.substring(2);
-        }
-
-        return id;
-    }
-
-    static getInputValue(input: JQuery): string {
-        let value = input.val();
-        let skipAssignment = false;
-
-        if (input.attr("type") === "radio") {
-
-            if (!input.is(':checked')) {
-                skipAssignment = true;
+        const next = function(): void {
+            if ( pipelineIndex < pipeline.length ) {                    
+                pipeline[ pipelineIndex++ ]();
             }
+        };
 
-        }
-        else if (input.is(':checkbox')) {
-            value = input.prop("checked") ? "1" : "0";
-        }
+        (function(): void {
+            let pipelineError: string | undefined = undefined;
 
-        return ( !skipAssignment ? value ?? '' : undefined ) as string;
+            const resourceResults: ResourceResults = {};
+    
+            // Build a pipeline of functions for each resource requested.
+            // TODO: Figure out how to make this asynchronous
+            pipeline = resourceArray.map( r => {
+                return function(): void {
+                    if ( pipelineError !== undefined ) {
+                        next();
+                        return;
+                    }
+    
+                    const resourceParts = r.split(":");
+                    let resource = resourceParts.length > 1 ? resourceParts[ 1 ] : resourceParts[ 0 ];
+                    const folder = resourceParts.length > 1 ? resourceParts[ 0 ] : "Global"; // if no folder provided, default to global
+                    const version = resourceParts.length > 2 ? resourceParts[ 2 ] : ( useTestVersion ? "Test" : "Live" ); // can provide a version as third part of name if you want
+    
+                    // Template names often don't use .html syntax
+                    if ( !resource.endsWith( ".html" ) && !isScript ) {
+                        resource += ".html";
+                    }
+    
+                    const params = "?{Command:'KatAppResource',Resource:'" + resource + "',Folder:'" + folder + "',Version:'" + version + "'}";
+        
+                    if ( isScript ) {
+                        // $.getScript(url + params);                    
+                        // Debug version without having to upload to MgmtSite
+                        $.getScript("js/" + resource)
+                            .done( () => { next(); } )
+                            .fail( ( _jqXHR: JQuery.jqXHR, textStatus: string) => {
+                                pipelineError = "getResources failed requesting " + r + ":" + textStatus;
+                                next();
+                            } );
+                    }
+                    else {
+                        // $.get(url + params)
+                        // Debug version without having to upload to MgmtSite
+                        $.get("templates/" + resource)
+                            .done( data => {
+                                resourceResults[ r ] = data;
+                                next();
+                            } )
+                            .fail( ( _jqXHR: JQuery.jqXHR, textStatus: string) => {
+                                pipelineError = "getResources failed requesting " + r + ":" + textStatus;
+                                next();
+                            } );
+                    }
+                }
+            }).concat( 
+                [
+                    // Last function
+                    function(): void {
+                        if ( pipelineError !== undefined ) {
+                            pipelineDone( pipelineError );
+                        }
+                        else {
+                            pipelineDone( undefined, resourceResults );
+                        }
+                    }
+                ]
+            );
+    
+            // Start the pipeline
+            next();
+        })();
     }
 }
 
@@ -122,11 +165,11 @@ class KatApp
 // register them with the service.
 class ApplicationShim
 {
-    application: PlugInInterface;
+    application: KatAppInterface;
     calculateOptions?: KatAppOptions;
     needsCalculation = false;
 
-    constructor( application: PlugInInterface ) {
+    constructor( application: KatAppInterface ) {
         this.application = application;
     }
 }
@@ -137,11 +180,18 @@ class KatAppProviderShim implements KatAppProviderInterface
 {
     applications: ApplicationShim[] = []
 
-    init(application: PlugInInterface): void {
+    init(application: KatAppInterface): void {
         if ( this.applications.length === 0 ) {
-            KatApp.getResource( undefined, "Global", "KatAppProvider.js", true,
-                function() {
-                    console.log("KatAppProvider library loaded.");
+            // First time anyone has been called with .KatApp()
+            const useTestService = application.options.useTestPlugin ?? KatApp.pageParameters[ "testplugin"] === "1" ?? false;
+            KatApp.getResources( undefined, "Global:KatAppProvider.js", useTestService, true,
+                function( errorMessage ) {
+                    if ( errorMessage !== undefined ) {
+                        application.trace("KatAppProvider library could not be loaded.");
+                    }
+                    else {
+                        application.trace("KatAppProvider library loaded.");
+                    }
                 }
             );
         }
@@ -149,7 +199,7 @@ class KatAppProviderShim implements KatAppProviderInterface
         this.applications.push( new ApplicationShim( application ) );
     }
 
-    calculate( application: PlugInInterface, options?: KatAppOptions ): void {
+    calculate( application: KatAppInterface, options?: KatAppOptions ): void {
         const shim = this.applications.filter( a => a.application.id === application.id ).shift();
         if ( shim ) {
             shim.calculateOptions = options;
@@ -157,11 +207,15 @@ class KatAppProviderShim implements KatAppProviderInterface
         }
     }
 
-    updateOptions(): void { 
-        // Do nothing until real provider loads
-    }
+    updateOptions(): void { /* Do nothing until real provider loads */ }
+    saveCalcEngine(): void { /* Do nothing until real provider loads */ }
+    traceCalcEngine(): void { /* Do nothing until real provider loads */ }
+    refreshCalcEngine(): void { /* Do nothing until real provider loads */ }
+    
+    getResultValue(): string | undefined { return undefined; } // Do nothing until real provider loads
+    getResultRow(): JSON | undefined { return undefined; } // Do nothing until real provider loads
 
-    destroy( application: PlugInInterface ): void { 
+    destroy( application: KatAppInterface ): void { 
         // Remove from memory cache in case they call delete before the
         // real provider is loaded
         let shimIndex = -1;
@@ -181,7 +235,7 @@ class KatAppProviderShim implements KatAppProviderInterface
 
 (function($, window, document, undefined?: undefined): void {
 
-    class KatAppPlugIn implements PlugInInterface
+    class KatAppPlugIn implements KatAppInterface
     {
         // Fields
         element: JQuery;
@@ -193,36 +247,81 @@ class KatAppProviderShim implements KatAppProviderInterface
         constructor(id: string, element: JQuery, options: KatAppOptions, provider: KatAppProviderInterface)
         {
             this.id = id;
-            this.options = KatApp.extend(/*true, */{}, undefined as unknown as object, KatApp.defaultOptions, options);
+            // Take a copy of the options they pass in so same options aren't used in all plugin targets
+            // due to a 'reference' to the object.
+
+            // Transfer data attributes over if present...
+            const attrResultTabs = element.attr("rbl-result-tabs");
+            const attributeOptions: KatAppOptions = {
+                calcEngine: element.attr("rbl-calc-engine") ?? KatApp.defaultOptions.calcEngine,
+                inputTab: element.attr("rbl-input-tab") ?? KatApp.defaultOptions.inputTab,
+                resultTabs: attrResultTabs != undefined ? attrResultTabs.split(",") : KatApp.defaultOptions.resultTabs,
+                view: element.attr("rbl-view"),
+                viewTemplates: element.attr("rbl-view-templates")
+            };
+
+            this.options = KatApp.extend(
+                {}, // make a clone (so we don't have all plugin targets using same reference)
+                KatApp.defaultOptions, // start with default options
+                attributeOptions, // data attribute options have next precedence
+                options // finally js options override all
+            );
+
             this.element = element;
             this.element[ 0 ][ pluginName ] = this;
             this.provider = provider;
 
             this.provider.init( this );
         }
+        results?: JSON | undefined;
+        resultRowLookups?: RowLookup[] | undefined;
+        inputs?: CalculationInputs | undefined;
     
-        calculate( options?: KatAppOptions ): void
-        {
+        calculate( options?: KatAppOptions ): void {
            this.provider.calculate( this, options );
         }
 
-        configureUI( options?: KatAppOptions ): void
-        {
-            var calcOptions = KatApp.extend( {}, options, { inputs: { iConfigureUI: 1 } } );
-            this.provider.calculate( this, calcOptions );
+        saveCalcEngine( location: string ): void {
+            this.provider.saveCalcEngine( this, location );
+         }
+         traceCalcEngine(): void {
+            this.provider.traceCalcEngine( this );
+         }
+         refreshCalcEngine(): void {
+            this.provider.refreshCalcEngine( this );
+         }
+  
+        configureUI( customOptions?: KatAppOptions ): void {
+            const manualInputs: KatAppOptions = { manualInputs: { iConfigureUI: 1 } };
+            this.provider.calculate( this, KatApp.extend( {}, customOptions, manualInputs ) );
         }
 
-        destroy(): void
-        {
+        destroy(): void {
             this.provider.destroy( this );
             delete this.element[ 0 ][ pluginName ];
         }
     
-        updateOptions( options: KatAppOptions ): void
-        {
-            const originalOptions = KatApp.extend( {}, this.options );
+        updateOptions( options: KatAppOptions ): void {
             this.options = KatApp.extend(/* true, */ this.options, options);
-            this.provider.updateOptions( this, originalOptions );
+            this.provider.updateOptions( this );
+        }
+
+        getResultRow( table: string, id: string, columnToSearch?: string ): JSON | undefined {
+            return this.provider.getResultRow( this, table, id, columnToSearch );
+        }
+        getResultValue( table: string, id: string, column: string, defaultValue?: string ): string | undefined {
+            return this.provider.getResultValue( this, table, id, column, defaultValue );
+        }
+
+        trace( message: string ): void {
+            if ( this.options.enableTrace ?? false ) {
+                const id = this.element.attr("rbl-trace-id") ?? this.id;
+                const className = this.element[ 0 ].className ?? "No classes";
+                const viewId = this.element.attr("rbl-view") ?? "None";
+                const item = $("<div>Application " + id + " (class=" + className +", view=" + viewId + "): " + message + "</div>");
+                console.log( item.text() );
+                $(".rbl-logclass").append( item); 
+            }
         }
     }
     
@@ -272,13 +371,13 @@ class KatAppProviderShim implements KatAppProviderInterface
 
         if (options === undefined || typeof options === 'object') {
             
-            if ( options == undefined && this.first()[0][pluginName] != null ) {
+            if ( options == undefined && this.length > 0 && this.first()[0][pluginName] != null ) {
                 return this.first()[0][pluginName];
             }
 
             // Creates a new plugin instance, for each selected element, and
             // stores a reference within the element's data
-            return this.each(function() {
+            return this.each(function(): void {
 
                 if (!this[pluginName]) {
                     const provider = $.fn[pluginName].provider as KatAppProviderInterface;
@@ -305,7 +404,7 @@ class KatAppProviderShim implements KatAppProviderInterface
             } else {
             
                 // Invoke the speficied method on each selected element
-                return this.each(function() {
+                return this.each(function(): void {
                     let instance = this[pluginName];
 
                     // If plugin isn't created yet and they call a method, just auto init for them

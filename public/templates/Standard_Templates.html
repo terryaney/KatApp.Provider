@@ -1,0 +1,337 @@
+<!-- katapp templates -->
+<rbl-template tid="highchartKAT">
+  <div>Item[{item}].Options[{options}].Type[{type}]</div>
+  <div class="{chartname}"></div>
+</rbl-template>
+
+<rbl-template tid="highchart">
+  <div class="{chartname}"></div>
+</rbl-template>
+
+<rbl-template tid="pill-display">
+  <div class="rounded-pill border" style="background-color: {color}; margin-top: 10px;">
+    <div class="row align-items-center vertical-center status-pill">
+      <div class="col-sm-3">{shortname}</div>
+      <div class="col-sm-3">{perpaycheck}</div>
+      <div class="col-sm-3">{balance}</div>
+      <div class="col-sm-3">{balanceproj}</div>
+    </div>
+  </div>
+</rbl-template>
+
+<rbl-template tid="slider-input">
+  <div class="form-group slider-control-group">
+    <div class="validator-container">
+      <a style="display: none;" class="vh{inputname}" role="button" tabindex="0" data-toggle="popover"
+        data-trigger="click" data-content-selector=".h{inputname}" data-placement="top">
+        <span class="glyphicon glyphicon-info-sign help-icon"></span>
+      </a>
+      <a style="display: none;" class="vs{inputname}" role="button" tabindex="0" data-placement="top">
+        <span class="glyphicon glyphicon glyphicon-volume-up"></span>
+      </a>
+      <div class="slider-control slider-{inputname}" data-slider-type="nouislider"></div>
+      <input name="{inputname}" type="text" id_="{inputname}" class="form-control {inputname}" style="display: none" />
+      <span class="error-msg" data-toggle="tooltip" data-placement="top"></span>
+    </div>
+    <div class="h{inputname}Title" style="display: none;"></div>
+    <div class="h{inputname}" style="display: none;"></div>
+    <h6 class="text-center">
+      <span class="l{inputname}" style="text-transform: uppercase">{inputname} Label</span>
+      <span class="sv{inputname}" style="font-weight: bold"></span>
+    </h6>
+  </div>
+</rbl-template>
+
+<rbl-template tid="list-input">
+  <div class="form-group">
+    <div class="col-sm-8">
+      <label for="{inputname}" class="control-label l{inputname}">Dropdown1</label>
+      <a style="display: none;" class="vh{inputname}" role="button" tabindex="0" data-toggle="popover"
+        data-trigger="click" data-content-selector=".h{inputname}" data-placement="top" data-original-title=""
+        title=""><span class="glyphicons glyphicons-question-sign"></span></a>
+    </div>
+    <div class="col-sm-4">
+      <select class="form-control {inputname}" name="{inputname}"></select>
+    </div>
+    <div class="h{inputname}Title" style="display: none;"></div>
+    <div class="h{inputname}" style="display: none;"></div>
+  </div>
+</rbl-template>
+
+<rbl-template tid="date-input">
+  <div class="form-group">
+    <label for="{inputname}" class="control-label">
+      <span class="l{inputname}">Spouse's Date of Birth</span>
+      <span class="sv{inputname}"></span>
+    </label>
+    <a class="vh{inputname}" role="button" tabindex="0" data-toggle="popover" data-trigger="click" data-content-selector=".h{inputname}" data-placement="top" data-original-title="" title="">
+      <span class="glyphicon glyphicon-info-sign help-icon"></span>
+    </a>
+    <a style="display: none;" class="vs{inputname}" role="button" tabindex="0" data-placement="top" href="voice/Help-SpouseDateBirth.mp3">
+      <span class="glyphicon glyphicon glyphicon-volume-up"></span>
+    </a>
+    <div class="h{inputname}Title hidden">What is your Spouse's Date of Birth?</div>
+    <div class="h{inputname} hidden">Enter your spouse's date of birth if you would like to include your spouse's retirement income in your modeling.</div>
+    <div class="validator-container input-group date">
+      <input name="{inputname}" type="text" value="1/1/2020" class="form-control {inputname}" placeholder="mm/dd/yyyy" aria-invalid="false">
+      <span class="input-group-addon"><i class="glyphicon glyphicon-calendar"></i></span>
+      <span class="error-msg addon-suffix" data-toggle="tooltip" data-placement="top" data-original-title="" title=""></span>
+    </div>
+  </div>
+</rbl-template>
+
+<rbl-template tid="text-input">
+  <div class="validator-container input-group">
+    <span class="input-group-addon">$</span>
+    <input name="{inputname}" type="text" value="0" class="form-control {inputname}" aria-invalid="false">
+    <span class="error-msg" data-toggle="tooltip" data-placement="top" data-original-title="" title=""></span>
+  </div>
+</rbl-template>
+
+<rbl-template tid="text">{value}</rbl-template>
+
+<rbl-template tid="li-item">
+  <li>{text}</li>
+</rbl-template>
+
+<rbl-template tid="p-item">
+  <p>{text}</p>
+</rbl-template>
+
+<rbl-template tid="carousel">
+  <div class="carousel-control-group" rbl-name="{name}">
+    <div id="carousel-{name}" class="carousel-default carousel slide" data-ride="false">
+      <ol class="carousel-indicators align-items-center" rbl-tid="caro-ind" rbl-source="{source}">
+        <!--
+        <a style="display:none" class="list-btn"> Show More</a>
+        -->
+      </ol>
+      <div class="carousel-inner" role="listbox" rbl-tid="caro-item" rbl-source="{source}"></div>
+      <a class="left carousel-control" href="#carousel-{name}" role="button" data-slide="prev">
+        <i class="fa fa-caret-left" aria-hidden="true"></i>
+      </a>
+      <a class="right carousel-control" href="#carousel-{name}" role="button" data-slide="next">
+        <i class="fa fa-caret-right" aria-hidden="true"></i>
+      </a>
+    </div>
+    <div id="all-{name}" class="carousel-all" style="display: none;" rbl-tid="caro-item" rbl-source="{source}">
+      <div class="text-center">
+        <!--
+        <a class="carousel-btn"> Show Less</a>
+        -->
+      </div>
+    </div>  
+  </div>
+</rbl-template>
+
+<rbl-template tid="caro-item">
+  <div class="item"><span class="number">{_index1}</span>
+    <p>{text}</p>
+  </div>
+</rbl-template>
+
+<rbl-template tid="caro-ind">
+  <li data-slide-to="{_index0}" class=""></li>
+</rbl-template>
+
+<script>
+  Highcharts.setOptions({
+    "lang": {
+      "decimalPoint": ".",
+      "thousandsSep": ",",
+      "months": ["January", "February", "March", "April", "May", "June", "July", "August",
+        "September", "October", "November", "December", ""
+      ],
+      "shortMonths": ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov",
+        "Dec", ""
+      ],
+      "weekdays": ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"],
+      "shortWeekdays": ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"]
+    }
+  });
+
+  var formatlabel = function (val, id, format, decimalPlaces) {
+    $("." + id).val(val);
+    var v = format == "p" ? val / 100 : val;
+    $("." + id + "Label, .sv" + id).html(String.localeFormat("{0:" + format + decimalPlaces + "}", v));
+  };
+
+  if (KatApp.pageParameters["debugkatapp"] === "1") {
+    debugger;
+  }
+</script>
+
+<script rbl-script="view">
+  $("{thisview}").on("onCalculation.RBLe", function (event, calculationResults, calcOptions, application) {
+
+    const view = this;
+
+    $("[rbl-tid=slider-input]", view).each(function () {
+
+      const id = this.data("inputname");
+      const config = application.getResultRow("ejs-sliders", id);
+      
+      if (config == undefined) return;
+
+      const minValue = config.min * 1;
+      const maxValue = config.max * 1;
+      
+      const defaultConfigValue = 
+        application.getResultValue("ejs-defaults", id, "value") || // what is in ejs-defaults
+        config.default || // what was in ejs-slider/default
+        $("." + id).val() || // what was put in the text box
+        minValue; //could/should use this
+
+      const stepValue = (config.step || 1) * 1;
+      const format = config.format || "n";
+      const decimals = (config.decimals || "0") * 1;
+
+      const sliderJQuery = $(".slider-" + id, this);
+      $("." + id, this).val(defValue);
+
+      if (sliderJQuery.length === 1) {
+
+        const slider = sliderJQuery[ 0 ];
+
+        sliderJQuery.data("min", minValue);
+        sliderJQuery.data("max", maxValue);
+
+        // Some modelers have 'wizards' with 'same' inputs as regular modeling page.  The 'wizard sliders'
+        // actually just set the input value of the regular input and let all the other flow (main input's
+        // change event) happen as normal.
+        const targetInput = sliderJQuery.data("input");
+
+        const defaultSliderValue = targetInput != undefined
+          ? $("." + targetInput, view).val()
+          : defaultConfigValue;
+
+        const pipsMode = config["pips-mode"] ?? "";
+        const pipValuesString = config["pips-values"] ?? "";
+        const pipsLargeValues = pipValuesString !== "" ? pipValuesString.split(',').map(Number) : [0, 25, 50, 75, 100];
+        const pipsDensity = (config["pips-density"] || "5") * 1;
+
+        const pips = pipsMode !== ""
+          ? {
+            mode: pipsMode,
+            values: pipsLargeValues,
+            density: pipsDensity,
+            stepped: true
+          }
+          : undefined;
+
+        const sliderOptions = {
+          start: defaultSliderValue * 1,
+          step: stepValue * 1,
+          behaviour: 'tap',
+          connect: 'lower',
+          pips: pips,
+          range: {
+            'min': minValue * 1,
+            'max': maxValue * 1
+          },
+          animate: true
+        };
+
+        if (slider.noUiSlider !== undefined) {
+          // No way to update options triggering calc in old noUiSlider library, so setting flag.
+          // Latest library code (10.0+) solves problem, but leaving this code in for clients
+          // who don't get updated and published with new library.
+          $(slider).data("setting-default", 1);
+          slider.noUiSlider.updateOptions(sliderOptions, false);
+          $(slider).removeData("setting-default");
+        }
+        else {
+          noUiSlider.create(
+            slider,
+            sliderOptions
+          );
+
+          // Unfortunately, get an error about noUiSlider unless casted to 'any'.
+          // Hook up this event so that the label associated with the slider updates
+          // *whenever* there is a change.
+          // https://refreshless.com/nouislider/events-callbacks/
+          slider.noUiSlider.on('update.RBLe', function () {
+            const value = this.get();
+            formatlabel(value * 1, id, format, decimals);
+          });
+
+          // Check to see that the input isn't marked as a skip input and if so, run a calc when the value is 'set'.
+          // If targetInput is present, then this is a 'wizard' slider so I need to see if 'main'
+          // input has been marked as a 'skip'.
+          const sliderCalcId = targetInput || id;
+
+          if ($("." + sliderCalcId + ".skipRBLe", view).length === 0 && $("." + sliderCalcId, view).parents(".skipRBLe").length === 0) {
+
+            if (targetInput === undefined /* never trigger run from wizard sliders */) {
+              // Whenever 'regular' slider changes or is updated via set()...
+              slider.noUiSlider.on('set.RBLe', function () {
+
+                const settingDefault = $(this.target).data("setting-default") === 1;
+
+                if (!settingDefault && application.options !== undefined) {
+                  const sliderCalcOptions = $.extend(true, {}, application.options, { Inputs: { iInputTrigger: id } });
+                  application.calculate(sliderCalcOptions);
+                }
+
+              });
+            }
+            else {
+              // When wizard slider changes, set matching 'regular slider' value with same value from wizard
+              slider.noUiSlider.on('change.RBLe', function () {
+                const value = this.get();
+                const targetSlider = $(".slider-" + targetInput, view);
+
+                if ( targetSlider.length === 1 ) {
+                  targetSlider[0].noUiSlider.set(value); // triggers calculation
+                }
+              });
+            }
+          }
+        }
+
+        if (sliderOptions.pips !== undefined) {
+          sliderJQuery.parent().addClass("has-pips");
+        }
+        else {
+          sliderJQuery.parent().removeClass("has-pips");
+        }
+      }
+    });
+
+    $(".carousel-control-group", view).each(function () {
+
+      const carouselName = this.attr("rbl-name");
+
+      if ( carouselName !== undefined && !carouselName.includes("{") ) {
+
+        //add active class to carousel items
+        $(".carousel-inner .item", this).first().addClass("active");
+        $(".carousel-indicators li", this).first().addClass("active");
+        
+        //add 'target needed by indicators, referencing name of carousel
+        $(".carousel-indicators li", this).attr("data-target","#carousel-" + data.name );
+
+        const carousel = $('.carousel', this);
+        const carouselAll = $('.carousel-all', this);
+
+        //add buttons to show/hide
+        $('<a class="list-btn"> Show More</a>').appendTo(".carousel-indicators", this).click(function () {
+          carousel.hide();
+          carouselAll.show();
+        });
+
+        $('<div class="text-center"><a class="carousel-btn"> Show Less</a></div>')
+          .appendTo(carouselAll)
+          .click(function () {
+            carouselAll.hide();
+            carousel.show();
+          });
+    
+        //show initial item, start carousel:
+        carousel.carousel(0);
+      }
+
+    });
+
+  });
+</script>

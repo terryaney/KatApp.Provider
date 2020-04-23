@@ -155,20 +155,25 @@
     var v = format == "p" ? val / 100 : val;
     $("." + id + "Label, .sv" + id).html(String.localeFormat("{0:" + format + decimalPlaces + "}", v));
   };
-
-  if (KatApp.pageParameters["debugkatapp"] === "1") {
-    debugger;
-  }
 </script>
 
 <script rbl-script="view">
+  if (KatApp.pageParameters["debugkatapp"] === "standard") {
+    debugger;
+  }
+
   $("{thisview}").on("onCalculation.RBLe", function (event, calculationResults, calcOptions, application) {
 
     const view = this;
 
     $("[rbl-tid=slider-input]", view).each(function () {
+      const el = $(this);
+      const id = el.data("inputname");
 
-      const id = this.data("inputname");
+      if (KatApp.pageParameters["debugkatapp"] === "standard.slider." + id) {
+        debugger;
+      }
+
       const config = application.getResultRow("ejs-sliders", id);
       
       if (config == undefined) return;
@@ -186,8 +191,8 @@
       const format = config.format || "n";
       const decimals = (config.decimals || "0") * 1;
 
-      const sliderJQuery = $(".slider-" + id, this);
-      $("." + id, this).val(defValue);
+      const sliderJQuery = $(".slider-" + id, el);
+      $("." + id, el).val(defaultConfigValue);
 
       if (sliderJQuery.length === 1) {
 
@@ -299,26 +304,34 @@
     });
 
     $(".carousel-control-group", view).each(function () {
+      const el = $(this);
+      const carouselName = el.attr("rbl-name");
 
-      const carouselName = this.attr("rbl-name");
+      if (KatApp.pageParameters["debugkatapp"] === "standard.carousel." + carouselName) {
+        debugger;
+      }
 
       if ( carouselName !== undefined && !carouselName.includes("{") ) {
-
+        application.trace("Processing carousel: " + carouselName);
+        
         //add active class to carousel items
-        $(".carousel-inner .item", this).first().addClass("active");
-        $(".carousel-indicators li", this).first().addClass("active");
+        $(".carousel-inner .item", el).first().addClass("active");
         
         //add 'target needed by indicators, referencing name of carousel
-        $(".carousel-indicators li", this).attr("data-target","#carousel-" + data.name );
+        $(".carousel-indicators li", el)
+          .attr("data-target","#carousel-" + carouselName )
+          .first().addClass("active");
 
-        const carousel = $('.carousel', this);
-        const carouselAll = $('.carousel-all', this);
+        const carousel = $('.carousel', el);
+        const carouselAll = $('.carousel-all', el);
 
         //add buttons to show/hide
-        $('<a class="list-btn"> Show More</a>').appendTo(".carousel-indicators", this).click(function () {
-          carousel.hide();
-          carouselAll.show();
-        });
+        $('<a class="list-btn"> Show More</a>')
+          .appendTo($(".carousel-indicators", el))
+          .click(function () {
+            carousel.hide();
+            carouselAll.show();
+          });
 
         $('<div class="text-center"><a class="carousel-btn"> Show Less</a></div>')
           .appendTo(carouselAll)

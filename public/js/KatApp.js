@@ -39,20 +39,37 @@ var KatApp = /** @class */ (function () {
         return target;
     };
     ;
-    KatApp.getResources = function (serviceUrl, resources, useTestVersion, isScript, pipelineDone) {
-        var _a;
-        var url = (_a = serviceUrl !== null && serviceUrl !== void 0 ? serviceUrl : KatApp.defaultOptions.serviceUrl) !== null && _a !== void 0 ? _a : KatApp.serviceUrl;
-        var resourceArray = resources.split(",");
-        // viewParts[ 0 ], viewParts[ 1 ]
-        // folder: string, resource: string
-        var pipeline = [];
-        var pipelineIndex = 0;
-        var next = function () {
-            if (pipelineIndex < pipeline.length) {
-                pipeline[pipelineIndex++]();
+    KatApp.trace = function (application, message) {
+        var _a, _b, _c, _d, _e, _f;
+        if ((_c = (_b = (_a = application === null || application === void 0 ? void 0 : application.options) === null || _a === void 0 ? void 0 : _a.enableTrace) !== null && _b !== void 0 ? _b : KatApp.defaultOptions.enableTrace) !== null && _c !== void 0 ? _c : false) {
+            var item = undefined;
+            if (application !== undefined) {
+                var id = (_d = application.element.attr("rbl-trace-id")) !== null && _d !== void 0 ? _d : application.id;
+                var className = (_e = application.element[0].className) !== null && _e !== void 0 ? _e : "No classes";
+                var viewId = (_f = application.element.attr("rbl-view")) !== null && _f !== void 0 ? _f : "None";
+                item = $("<div>" + new Date() + " Application " + id + " (class=" + className + ", view=" + viewId + "): " + message + "</div>");
             }
-        };
+            else {
+                item = $("<div>" + new Date() + ": " + message + "</div>");
+            }
+            console.log(item.text() /* remove any html formatting from message */);
+            $(".rbl-logclass").append(item);
+        }
+    };
+    KatApp.getResources = function (functionUrl, resources, useTestVersion, isScript, pipelineDone) {
         (function () {
+            var _a;
+            var url = (_a = functionUrl !== null && functionUrl !== void 0 ? functionUrl : KatApp.defaultOptions.functionUrl) !== null && _a !== void 0 ? _a : KatApp.functionUrl;
+            var resourceArray = resources.split(",");
+            // viewParts[ 0 ], viewParts[ 1 ]
+            // folder: string, resource: string
+            var pipeline = [];
+            var pipelineIndex = 0;
+            var next = function () {
+                if (pipelineIndex < pipeline.length) {
+                    pipeline[pipelineIndex++]();
+                }
+            };
             var pipelineError = undefined;
             var resourceResults = {};
             // Build a pipeline of functions for each resource requested.
@@ -111,164 +128,56 @@ var KatApp = /** @class */ (function () {
             next();
         })();
     };
-    KatApp.serviceUrl = "https://btr.lifeatworkportal.com/services/evolution/Calculation.ashx";
-    KatApp.corsProxyUrl = "https://secure.conduentapplications.com/services/rbl/rbleproxy/RBLeCORS.ashx";
+    KatApp.functionUrl = "https://btr.lifeatworkportal.com/services/evolution/CalculationFunction.ashx";
+    KatApp.corsUrl = "https://secure.conduentapplications.com/services/rbl/rbleproxy/RBLeCORS.ashx";
     KatApp.pageParameters = KatApp.readPageParameters();
-    // Default Options
+    // Default Options (shim, rest of the options/features added from server plugin)
     KatApp.defaultOptions = {
         enableTrace: false,
-        shareRegisterToken: true,
-        serviceUrl: KatApp.serviceUrl,
-        currentPage: "Unknown",
-        inputSelector: "input",
-        inputTab: "RBLInput",
-        resultTabs: ["RBLResult"],
-        runConfigureUICalculation: true,
-        ajaxLoaderSelector: ".ajaxloader",
-        useTestCalcEngine: KatApp.pageParameters["save"] === "1",
-        onCalculateStart: function (application) {
-            if (application.options.ajaxLoaderSelector !== undefined) {
-                $(application.options.ajaxLoaderSelector, application.element).show();
-            }
-            $(".RBLe .slider-control, .RBLe input", application.element).attr("disabled", "true");
-        },
-        onCalculateEnd: function (application) {
-            if (application.options.ajaxLoaderSelector !== undefined) {
-                $(application.options.ajaxLoaderSelector, application.element).fadeOut();
-            }
-            $(".RBLe .slider-control, .RBLe input", application.element).removeAttr("disabled");
-        }
+        functionUrl: KatApp.functionUrl,
+        useTestPlugin: KatApp.pageParameters["testplugin"] === "1",
+        useTestCalcEngine: KatApp.pageParameters["test"] === "1"
+    };
+    // https://stackoverflow.com/a/2117523
+    KatApp.generateId = function () {
+        return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) {
+            var r = Math.random() * 16 | 0, v = c === 'x' ? r : (r & 0x3 | 0x8);
+            return v.toString(16);
+        });
     };
     return KatApp;
 }());
-// In 'memory' application references until the real KatAppProvider.js is loaded and can 
-// register them with the service.
-var ApplicationShim = /** @class */ (function () {
-    function ApplicationShim(application) {
-        this.needsCalculation = false;
-        this.application = application;
-    }
-    return ApplicationShim;
-}());
-// 'In memory' KatApp Provider that stores any attempted .KatApp() initializations until the
-// real KatAppProvider.js script can be loaded from the CMS to properly register the applications
-var KatAppProviderShim = /** @class */ (function () {
-    function KatAppProviderShim() {
-        this.applications = [];
-    }
-    KatAppProviderShim.prototype.init = function (application) {
-        var _a, _b;
-        if (this.applications.length === 0) {
-            // First time anyone has been called with .KatApp()
-            var useTestService = (_b = (_a = application.options.useTestPlugin) !== null && _a !== void 0 ? _a : KatApp.pageParameters["testplugin"] === "1") !== null && _b !== void 0 ? _b : false;
-            KatApp.getResources(undefined, "Global:KatAppProvider.js", useTestService, true, function (errorMessage) {
-                if (errorMessage !== undefined) {
-                    application.trace("KatAppProvider library could not be loaded.");
-                }
-                else {
-                    application.trace("KatAppProvider library loaded.");
-                }
-            });
-        }
-        this.applications.push(new ApplicationShim(application));
-    };
-    KatAppProviderShim.prototype.calculate = function (application, options) {
-        var shim = this.applications.filter(function (a) { return a.application.id === application.id; }).shift();
-        if (shim) {
-            shim.calculateOptions = options;
-            shim.needsCalculation = true;
-        }
-    };
-    KatAppProviderShim.prototype.updateOptions = function () { };
-    KatAppProviderShim.prototype.saveCalcEngine = function () { };
-    KatAppProviderShim.prototype.traceCalcEngine = function () { };
-    KatAppProviderShim.prototype.refreshCalcEngine = function () { };
-    KatAppProviderShim.prototype.getResultValue = function () { return undefined; }; // Do nothing until real provider loads
-    KatAppProviderShim.prototype.getResultRow = function () { return undefined; }; // Do nothing until real provider loads
-    KatAppProviderShim.prototype.destroy = function (application) {
-        // Remove from memory cache in case they call delete before the
-        // real provider is loaded
-        var shimIndex = -1;
-        // Wanted to use applications.findIndex( f() ) but ie doesn't support
-        this.applications.forEach(function (a, index) {
-            if (shimIndex === -1 && a.application.id == application.id) {
-                shimIndex = index;
-            }
-        });
-        if (shimIndex > -1) {
-            this.applications.splice(shimIndex, 1);
-        }
-    };
-    return KatAppProviderShim;
-}());
 (function ($, window, document, undefined) {
-    var KatAppPlugIn = /** @class */ (function () {
-        function KatAppPlugIn(id, element, options, provider) {
-            var _a, _b;
+    var KatAppPlugInShim = /** @class */ (function () {
+        function KatAppPlugInShim(id, element, options) {
             this.id = id;
             // Take a copy of the options they pass in so same options aren't used in all plugin targets
             // due to a 'reference' to the object.
-            // Transfer data attributes over if present...
-            var attrResultTabs = element.attr("rbl-result-tabs");
-            var attributeOptions = {
-                calcEngine: (_a = element.attr("rbl-calc-engine")) !== null && _a !== void 0 ? _a : KatApp.defaultOptions.calcEngine,
-                inputTab: (_b = element.attr("rbl-input-tab")) !== null && _b !== void 0 ? _b : KatApp.defaultOptions.inputTab,
-                resultTabs: attrResultTabs != undefined ? attrResultTabs.split(",") : KatApp.defaultOptions.resultTabs,
-                view: element.attr("rbl-view"),
-                viewTemplates: element.attr("rbl-view-templates")
-            };
-            this.options = KatApp.extend({}, // make a clone (so we don't have all plugin targets using same reference)
-            KatApp.defaultOptions, // start with default options
-            attributeOptions, // data attribute options have next precedence
-            options // finally js options override all
-            );
+            this.options = KatApp.extend({}, options);
             this.element = element;
             this.element[0][pluginName] = this;
-            this.provider = provider;
-            this.provider.init(this);
         }
-        KatAppPlugIn.prototype.calculate = function (options) {
-            this.provider.calculate(this, options);
-        };
-        KatAppPlugIn.prototype.saveCalcEngine = function (location) {
-            this.provider.saveCalcEngine(this, location);
-        };
-        KatAppPlugIn.prototype.traceCalcEngine = function () {
-            this.provider.traceCalcEngine(this);
-        };
-        KatAppPlugIn.prototype.refreshCalcEngine = function () {
-            this.provider.refreshCalcEngine(this);
-        };
-        KatAppPlugIn.prototype.configureUI = function (customOptions) {
-            var manualInputs = { manualInputs: { iConfigureUI: 1 } };
-            this.provider.calculate(this, KatApp.extend({}, customOptions, manualInputs));
-        };
-        KatAppPlugIn.prototype.destroy = function () {
-            this.provider.destroy(this);
+        KatAppPlugInShim.prototype.destroy = function () {
+            // Remove from memory cache in case they call delete before the
+            // real provider is loaded
+            var shimIndex = -1;
+            var applications = $.fn[pluginName].plugInShims;
+            var id = this.id;
+            // Wanted to use applications.findIndex( f() ) but ie doesn't support
+            applications.forEach(function (a, index) {
+                if (shimIndex === -1 && a.id == id) {
+                    shimIndex = index;
+                }
+            });
+            if (shimIndex > -1) {
+                applications.splice(shimIndex, 1);
+            }
             delete this.element[0][pluginName];
         };
-        KatAppPlugIn.prototype.updateOptions = function (options) {
-            this.options = KatApp.extend(/* true, */ this.options, options);
-            this.provider.updateOptions(this);
+        KatAppPlugInShim.prototype.trace = function (message) {
+            KatApp.trace(this, message);
         };
-        KatAppPlugIn.prototype.getResultRow = function (table, id, columnToSearch) {
-            return this.provider.getResultRow(this, table, id, columnToSearch);
-        };
-        KatAppPlugIn.prototype.getResultValue = function (table, id, column, defaultValue) {
-            return this.provider.getResultValue(this, table, id, column, defaultValue);
-        };
-        KatAppPlugIn.prototype.trace = function (message) {
-            var _a, _b, _c, _d;
-            if ((_a = this.options.enableTrace) !== null && _a !== void 0 ? _a : false) {
-                var id = (_b = this.element.attr("rbl-trace-id")) !== null && _b !== void 0 ? _b : this.id;
-                var className = (_c = this.element[0].className) !== null && _c !== void 0 ? _c : "No classes";
-                var viewId = (_d = this.element.attr("rbl-view")) !== null && _d !== void 0 ? _d : "None";
-                var item = $("<div>Application " + id + " (class=" + className + ", view=" + viewId + "): " + message + "</div>");
-                console.log(item.text());
-                $(".rbl-logclass").append(item);
-            }
-        };
-        return KatAppPlugIn;
+        return KatAppPlugInShim;
     }());
     /*
     const privateMethod = function(this: KatAppPlugIn): void
@@ -277,15 +186,8 @@ var KatAppProviderShim = /** @class */ (function () {
         // need to call via privateMethod.apply(this); so that the PlugIn is the 'this context'
     }
     */
-    var allowedPropertyGetters = ['options'];
-    var autoInitMethods = ['calculate', 'updateOptions'];
-    // https://stackoverflow.com/a/2117523
-    var getId = function () {
-        return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) {
-            var r = Math.random() * 16 | 0, v = c === 'x' ? r : (r & 0x3 | 0x8);
-            return v.toString(16);
-        });
-    };
+    var allowedPropertyGetters = ['options', 'id'];
+    // const autoInitMethods = ['calculate', 'updateOptions'];
     // Not a fan of these 'magic' strings to call methods:
     //
     //      $("selector").KatApp("destroy")
@@ -320,8 +222,7 @@ var KatAppProviderShim = /** @class */ (function () {
             // stores a reference within the element's data
             return this.each(function () {
                 if (!this[pluginName]) {
-                    var provider = $.fn[pluginName].provider;
-                    new KatAppPlugIn(getId(), $(this), options, provider);
+                    $.fn[pluginName].applicationFactory(KatApp.generateId(), $(this), options);
                 }
             });
         }
@@ -341,19 +242,47 @@ var KatAppProviderShim = /** @class */ (function () {
                 // Invoke the speficied method on each selected element
                 return this.each(function () {
                     var instance = this[pluginName];
+                    // No longer supporting this, see comment for needsCalculation in KatAppPlugInInterfaces.ts.  Just don't see the
+                    // need and given pattern of providing full blown 'app' after server loads script, don't want to have to 
+                    // support 'anything' on .KatApp() until onInitialized is completed.
+                    /*
                     // If plugin isn't created yet and they call a method, just auto init for them
-                    if (instance === undefined && typeof options === 'string' && $.inArray(options, autoInitMethods) != -1) {
-                        var provider = $.fn[pluginName].provider;
-                        var appOptions = (args.length >= 1 && typeof args[0] === "object" ? args[0] : undefined);
-                        instance = new KatAppPlugIn(getId(), $(this), appOptions, provider);
+                    if ( instance === undefined && typeof options === 'string' && $.inArray(options, autoInitMethods) != -1 ) {
+                        const appOptions = ( args.length >= 1 && typeof args[ 0 ] === "object" ? args[ 0 ] : undefined ) as KatAppOptions;
+                        instance = $.fn[pluginName].applicationFactory(KatApp.generateId(), $(this), appOptions);
                     }
-                    if (instance instanceof KatAppPlugIn && typeof instance[options] === 'function') {
+                    */
+                    if (instance instanceof KatAppPlugInShim && typeof instance[options] === 'function') {
                         instance[options].apply(instance, args); // eslint-disable-line prefer-spread
                     }
                 });
             }
         }
     };
-    $.fn[pluginName].provider = new KatAppProviderShim();
+    // 'In memory' application list until the real KatAppProvider.js script can be loaded from 
+    // the CMS to properly register the applications
+    $.fn[pluginName].plugInShims = [];
+    $.fn[pluginName].applicationFactory = function (id, element, options) {
+        var _a, _b, _c;
+        var shim = new KatAppPlugInShim(id, element, options);
+        var applications = $.fn[pluginName].plugInShims;
+        applications.push(shim);
+        shim.trace("Starting factory");
+        // First time anyone has been called with .KatApp()
+        if (applications.length === 1) {
+            shim.trace("Loading KatAppProvider library...");
+            var useTestService = (_c = (_b = (_a = shim.options) === null || _a === void 0 ? void 0 : _a.useTestPlugin) !== null && _b !== void 0 ? _b : KatApp.defaultOptions.useTestPlugin) !== null && _c !== void 0 ? _c : false;
+            KatApp.getResources(undefined, "Global:KatAppProvider.js", useTestService, true, function (errorMessage) {
+                if (errorMessage !== undefined) {
+                    shim.trace("KatAppProvider library could not be loaded.");
+                }
+                else {
+                    shim.trace("KatAppProvider library loaded.");
+                }
+            });
+        }
+        shim.trace("Leaving factory");
+        return shim;
+    };
 })(jQuery, window, document);
 //# sourceMappingURL=KatApp.js.map

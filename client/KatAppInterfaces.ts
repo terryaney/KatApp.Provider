@@ -1,28 +1,30 @@
+// RBLe Service Callback handler and input/result classes
 interface CalculationInputs
 {
     iConfigureUI?: number;
     iInputTrigger?: string;
+}
+interface CalculationInputTableRow {
+    index: string;
 }
 interface CalculationInputTable
 {
     Name: string;
     Rows: CalculationInputTableRow[];
 }
-interface CalculationInputTableRow
-{
-    index: string;
-}
-interface ServiceException {
-    Message: string;
-    StackTrace?: string;
-}
-interface ServiceResults {
+interface RBLeServiceResults {
     payload?: string; //if from l@w wrapper, escaped string returned
-    Exception?: ServiceException;
-    Diagnostics?: JSON; // Should define interface
-}
-interface CalculationResults extends ServiceResults
-{
+
+    // Exception is only present if RBLe service threw exception and
+    // it was able to catch it and package up exception details
+    Exception?: {
+        Message: string;
+        StackTrace?: string;
+    };
+
+    Diagnostics?: JSON; // Should define interface for nested items
+    
+    // RBL is only present after successful calculation
     RBL?: {
         Profile: {
             Data: {
@@ -30,45 +32,44 @@ interface CalculationResults extends ServiceResults
             };
         };
     };
+
+    // RegisteredToken is only present after successful registration
+    RegisteredToken?: string;
 }
 interface HtmlContentRow {
     content?: string;
     html?: string;
     value?: string;
     selector?: string;
+    addclass?: string;
+    removeclass?: string;
 }
-interface CalculationResultCallback {
-    ( data: CalculationResults ): void;
+interface RBLeServiceCallback {
+    ( data: RBLeServiceResults ): void;
 }
-interface GetRegistrationDataResult {
+
+
+// REST Service Callback handlers and results
+interface RBLeRESTServiceResult {
+    // AuthID/Client/Profile/History is present after calling GET request
     AuthID?: string;
     Client?: string;
     Profile: JSON;
     History?: JSON;
 }
+interface RBLeRESTServiceResultCallback {
+    ( data: RBLeRESTServiceResult ): void;
+}
+
+
+// Generic callback when I make pipelines to handle several async events
+// but want a pipeline pattern to make them 'look' synchronous in code
 interface PipelineCallback {
-    ( errorMessage?: string, data?: GetRegistrationDataResult | ResourceResults ): void;
+    ( errorMessage?: string, data?: RBLeRESTServiceResult | ResourceResults ): void;
 }
-interface GetRegistrationDataResultCallback {
-    ( data: GetRegistrationDataResult ): void;
-}
-interface RegistrationResult extends ServiceResults {
-    RegisteredToken?: string;
-}
-interface RegistrationResultCallback {
-    ( data: RegistrationResult ): void;
-}
-interface JQueryDoneCallback {
-    ( data: JQuery.PlainObject, textStatus: string, jqXHR: JQuery.jqXHR ): void;
-}
+// JQuery Callback signatures used during pipeline calls to $.get(), $.getScript()
 interface JQueryFailCallback {
     ( jqXHR: JQuery.jqXHR, textStatus: string, errorThrown: string ): void;
-}
-interface JQueryGetScriptSuccessCallback {
-    ( script: string | undefined, textStatus: string, jqXHR: JQuery.jqXHR ): void;
-}
-interface SubmitCalculationDelegate {
-    ( application: KatAppInterface, options: SubmitCalculationOptions, done: CalculationResultCallback, fail: JQueryFailCallback ): void;
 }
 
 // Note: Everything in this class is currently nullable so I can do partial option updates and default options, but
@@ -77,9 +78,13 @@ interface KatAppOptions
 {
     enableTrace?: boolean;
 
-    serviceUrl?: string;
-    registeredToken?: string;
-    shareRegisterToken?: boolean;
+    corsUrl?: string;
+    functionUrl?: string;
+
+    registerDataWithService?: boolean;
+    shareRegistrationData?: boolean;
+    data?: RBLeRESTServiceResult; // Used if registerDataWithService = false
+    registeredToken?: string; // Used if registerDataWithService = true
 
     currentPage?: string;
     calcEngine?: string;
@@ -115,86 +120,85 @@ interface KatAppOptions
     // Methods that might be overriden by angular/L@W hosts
     
     // If custom submit code is needed, can provide implementation here
-    submitCalculation?: ( appilcation: KatAppInterface, options: SubmitCalculationOptions, done: CalculationResultCallback, fail: JQueryFailCallback )=> void;
+    submitCalculation?: ( appilcation: KatAppPlugInInterface, options: SubmitCalculationOptions, done: RBLeServiceCallback, fail: JQueryFailCallback )=> void;
     // If client provides for a way to get registration data, can provide implementation here
-    getRegistrationData?: ( appilcation: KatAppInterface, options: KatAppOptions, done: GetRegistrationDataResultCallback, fail: JQueryFailCallback )=> void;
+    getRegistrationData?: ( appilcation: KatAppPlugInInterface, options: KatAppOptions, done: RBLeRESTServiceResultCallback, fail: JQueryFailCallback )=> void;
     // If custom register data code is needed, can provide implementation here
-    registerData?: ( appilcation: KatAppInterface, options: KatAppOptions, done: RegistrationResultCallback, fail: JQueryFailCallback )=> void;
+    registerData?: ( appilcation: KatAppPlugInInterface, options: KatAppOptions, done: RBLeServiceCallback, fail: JQueryFailCallback )=> void;
     
     // TODO - do we even want to support these?  Maybe just always do events like all bootstrap components do.
     //      $("app").on("initialized.rble", function() { } ).KatApp();
     // Event call backs
     // If you use on() syntax for initialized, need to set it up before calling KatApp();
-    onInitialized?: (this: HTMLElement, appilcation: KatAppInterface )=> void;
-    onDestroyed?: (this: HTMLElement, appilcation: KatAppInterface )=> void;
-    onOptionsUpdated?: (this: HTMLElement, appilcation: KatAppInterface )=> void;
-    onConfigureUICalculation?: (this: HTMLElement, calculationResults: JSON, calcOptions: KatAppOptions, application: KatAppInterface)=> void;
-    onRegistration?: (this: HTMLElement, calcOptions: KatAppOptions, appilcation: KatAppInterface )=> void;
-    onCalculateStart?: (this: HTMLElement, appilcation: KatAppInterface )=> void;
-    onCalculation?: (this: HTMLElement, calculationResults: JSON, calcOptions: KatAppOptions, application: KatAppInterface)=> void;
-    onCalculationErrors?: (this: HTMLElement, key: string, data: JSON, calcOptions: KatAppOptions, application: KatAppInterface)=> void;
-    onCalculateEnd?: (this: HTMLElement, appilcation: KatAppInterface )=> void;
+    onInitialized?: (this: HTMLElement, appilcation: KatAppPlugInInterface )=> void;
+    onDestroyed?: (this: HTMLElement, appilcation: KatAppPlugInInterface )=> void;
+    onOptionsUpdated?: (this: HTMLElement, appilcation: KatAppPlugInInterface )=> void;
+    onConfigureUICalculation?: (this: HTMLElement, calculationResults: JSON, calcOptions: KatAppOptions, application: KatAppPlugInInterface)=> void;
+    onRegistration?: (this: HTMLElement, calcOptions: KatAppOptions, appilcation: KatAppPlugInInterface )=> void;
+    onCalculateStart?: (this: HTMLElement, appilcation: KatAppPlugInInterface )=> void;
+    onCalculation?: (this: HTMLElement, calculationResults: JSON, calcOptions: KatAppOptions, application: KatAppPlugInInterface)=> void;
+    onCalculationErrors?: (this: HTMLElement, key: string, data: JSON, calcOptions: KatAppOptions, application: KatAppPlugInInterface)=> void;
+    onCalculateEnd?: (this: HTMLElement, appilcation: KatAppPlugInInterface )=> void;
 }
 
 interface SubmitCalculationOptions
 {
-    Inputs: CalculationInputs;
+    Data?: RBLeRESTServiceResult; // Passed in during registration or if non-session calcs being used
+    Inputs?: CalculationInputs; // Empty during Registration submissions
     InputTables?: CalculationInputTable[];
     Configuration: {
-        InputTab: string;
-        ResultTabs: string[];
-        RefreshCalcEngine: boolean;
-        CalcEngine?: string;
-        PreCalcs?: string;
-        Comment?: string;
-        TraceEnabled: number;
-        SaveCE?: string;
+        // Used only in submit for session based calcs
         Token?: string;
-    };
-}
-interface SubmitRegistrationOptions {
-    Data: GetRegistrationDataResult;
-    Configuration: {
-        AuthID: string;
-        AdminAuthID?: string;
-        Client: string;
+
+        // Used in both submit and registration
         InputTab: string;
         ResultTabs: string[];
         CalcEngine?: string;
+        Comment?: string;
+        TestCE?: boolean;
         TraceEnabled: number;
-        TestCE: boolean;
         SaveCE?: string;
-        CurrentPage: string;
-        RequestIP: string;
-        CurrentUICulture: string;
-        Environment: string;
-    };
-}
-interface KatAppProviderInterface
-{
-    init: ( application: KatAppInterface )=> void;
-    calculate: ( application: KatAppInterface, customOptions?: KatAppOptions )=> void;
-    destroy: ( application: KatAppInterface )=> void;
-    updateOptions: ( application: KatAppInterface )=> void;
-     
-    // Pass throughs from App to Provider just so code can be maintained in Provider
-    getResultRow: ( application: KatAppInterface, table: string, id: string, columnToSearch?: string )=> JSON | undefined;
-    getResultValue: ( application: KatAppInterface, table: string, id: string, column: string, defaultValue?: string )=> string | undefined;
+        PreCalcs?: string;
 
-    saveCalcEngine: ( application: KatAppInterface, location: string )=> void; // Save the next calculations CalcEngine to secure file location
-    refreshCalcEngine: ( application: KatAppInterface )=> void; // Tell next calculation to check for new CE
-    traceCalcEngine: ( application: KatAppInterface )=> void; // Save the next calculations CalcEngine to secure file location
-}
-
-interface RowLookup {
-    LastRowSearched: number;
-    Mapping: { 
-        [ key: string ]: number; 
+        // Used in registration or non-session calc only
+        AuthID?: string;
+        Client?: string;
+        AdminAuthID?: string;
+        RefreshCalcEngine?: boolean;
+        CurrentPage?: string;
+        RequestIP?: string;
+        CurrentUICulture?: string;
+        Environment?: string;
     };
 }
 
 interface ResourceResults { 
     [ key: string ]: string; 
+}
+
+// These are the only methods available to call on .KatApp() until onInitialized is triggered (meaning
+// that the provider object has been loaded and replaced the Shim and all methods of the KatAppPlugInInterface 
+// are now implemented)
+interface KatAppPlugInShimInterface {
+    options: KatAppOptions;
+    element: JQuery;
+    id: string;
+    // needsCalculation would only be set if $("app").KatApp("calculate"); was called before .KatApp() was
+    // called and initialized.  Only reason that that pattern should be used is if you have turned off
+    // ConfigureUI calc and you want to immediately calculate all applications with a 'normal' calculation.
+    // Even that seems weird though because CalcEngine could just ignore it.
+    // needsCalculation?: boolean;
+    destroy: ()=> void;
+    trace: ( message: string )=> void;
+}
+
+interface ResultRowLookupsInterface { 
+    [ key: string ]: {
+        LastRowSearched: number;
+        Mapping: { 
+            [ key: string ]: number; 
+        };
+    }; 
 }
 
 // This is the actual plug in interface.  Accessible via:
@@ -204,16 +208,10 @@ interface ResourceResults {
 //  $("selector").KatApp( "methodName", ...args)
 //  $("selector").KatApp().methodName(...args) - if "selector" only returns one element
 //  $("selector")[0].KatApp.methodName(...args)
-interface KatAppInterface
-{
-    options: KatAppOptions;
-
-    provider: KatAppProviderInterface;
-    element: JQuery;
-    id: string;
-
+interface KatAppPlugInInterface extends KatAppPlugInShimInterface {
     results?: JSON;
-    resultRowLookups?: RowLookup[]; 
+    resultRowLookups?: ResultRowLookupsInterface;
+    getResultTable<T>( tableName: string): Array<T>;
     getResultRow: ( table: string, id: string, columnToSearch?: string )=> JSON | undefined;
     getResultValue: ( table: string, id: string, column: string, defaultValue?: string )=> string | undefined;
     
@@ -225,12 +223,9 @@ interface KatAppInterface
     // you want to explicitly save a CalcEngine from a ConfigureUI calculation, so you set
     // the save location and call this.
     configureUI: ( customOptions?: KatAppOptions )=> void;
-    destroy: ()=> void;
     updateOptions: ( options: KatAppOptions )=> void;
     
     saveCalcEngine: ( location: string )=> void;
-    refreshCalcEngine: ( application: KatAppInterface )=> void; // Tell next calculation to check for new CE
-    traceCalcEngine: ( application: KatAppInterface )=> void; // Save the next calculations CalcEngine to secure file location
-
-    trace: ( message: string )=> void;
+    refreshCalcEngine: ()=> void; // Tell next calculation to check for new CE
+    traceCalcEngine: ()=> void; // Save the next calculations CalcEngine to secure file location
 }

@@ -57,8 +57,6 @@
     <div class="border rounded-lg col-sm-12 rbl-testclass_">
       <ul rbl-tid="li-item" rbl-source="considerations"></ul>
     </div>
-    <div class="col-sm-12 rbl-logclass">
-    </div>
     <!--
     <div class="col-sm-12">
       <div class="col-sm-12 viSample" rbl-tid="dropdown" data-inputname="iSample"></div>
@@ -121,7 +119,7 @@
   jQuery(document).ready(function () {
 
     $("{thisview}").on( "onCalculation.RBLe", function( event, calculationResults, calcOptions, application ) {
-      $(".rbl-logclass").append("custom processing");
+      application.trace("Custom view processing");
     });
 
 });

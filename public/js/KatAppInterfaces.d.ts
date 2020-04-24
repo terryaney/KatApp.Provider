@@ -1,4 +1,7 @@
 /// <reference types="jquery" />
+interface String {
+    format(json: JQuery.PlainObject): string;
+}
 interface CalculationInputs {
     iConfigureUI?: number;
     iInputTrigger?: string;
@@ -142,4 +145,7 @@ interface KatAppPlugInInterface extends KatAppPlugInShimInterface {
     saveCalcEngine: (location: string) => void;
     refreshCalcEngine: () => void;
     traceCalcEngine: () => void;
+}
+interface TemplateOnDelegate {
+    (event: JQuery.Event, ...args: Array<object>): void;
 }

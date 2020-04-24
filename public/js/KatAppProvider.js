@@ -6,6 +6,71 @@
 // - Ability to have two CE's for one view might be needed for stochastic
 //      Would need to intercept init that binds onchange and instead call a getOptions or smoething
 //      on each input, or maybe a rbl-calc-engine tag on each input?
+// Discussions with Tom
+// - Templates run every calc?  Will that goof up slider config?  Need to read code closer
+//      - For example, arne't you hooking up events every time to carousel?  Since you aren't removing events?  WHere you said there were events hanging around?
+//      - Seems like you need a way to only update the 'markup' of carousel vs rebuilding entire thing?  Otherwise, probably need/should hookup a 'calcstart event' in templates to remove event handlers
+/*
+    - Mine
+        - Pro`
+            - Registering for events is consistent/similiar to other bootstrap/jquery plugin event registration
+            - (In General) Cleaned up code to not require *.RBL().* every single time...events are passed in appropriate params that they'll need
+        - Con
+            - Duplicate snippets injected into final html.  For every <script rbl-script="view"> block, it is injected once for each view that requests it.
+            - Need to do $(selector, view).each() inside template instead of being passed templated element.
+
+    - Yours
+        - Pro
+            - Only one snippet of js injected (regardless of how many views request it)
+            - Passed templated element in function call (don't have to .each() within template code)
+        - Con
+            - Diff/non-standard mechanism of registering functions.
+            - If 4 distinct templates are loaded with one or more register control fucntions for two views on a page, every view calculation you'll loop all (4+) control functions and 'try' to run it
+
+    - Working Function way
+        - Pro
+            - Only small/minimal chunks of code injected for each requested view
+        - Con
+            - Have to worry about namespacing of function names
+
+    - templateOn() way
+        - Pro
+            - 'looks' like jquery/bootstrap on() syntax, so less jarring hopefully
+            - No duplicated code snippets for each view containing template
+            - No namespace issue b/c ran once
+            - Register an 'event' instead of a 'function' then don't have to make two calls like yours
+        - Con
+            - $.fn.KatApp.templateOn() - I'm familiar with using $.fn.* calls but not sure if just because of the libraries I currently use. To me more clear that you are just calling
+                a global function vs $().RBL() ... which $() I haven't seen used before and confused me
+            - Need to use {thisTemplate}, so code will always be $.fn.KatApp.templateOn("{thisTemplate}", "onCalculation.RBLe", function() { });
+            - Still (by choice) making them do selector and foreach themselves, think it keeps code consistent (onCalculation this is 'always' app/view) but could change if required
+*/
+// - Sample, you didn't give me latest :P, missing rbl-inputclass and resultclass, why is dropdown 'ugly' (mine doesn't have values), what are 'bad icons' next to date picker?
+// - Need to review KatApp.ts to make sure it is robust but also 'as slim' as possible so we can put enhancements into our provider code
+//      Need to make sure our 'interface' is ironed out...but do some testing on adding features and see if posible without breaking existing
+//      ** UPDATE ** - Pretty clean but see PlugInShim interface (for what you can call before init is done) along with removing autoCreate feature of .KatApp("calculate");
+// - Talk to Tom about 'angular/L@W hosts methods' and how I architected them (register/getregdata seperated) and allow for callback to be registered
+// - Show how bunch of errors are happening in boscomb
+// - Search for TOM comments
+// - During load view, application.options.calcEngine = (and other properties)...precedence is
+//      rbl-config calcengine in view (given this precedence, does this have to be required?  Remove my logic enforcing if so)
+//      markup attributes on katapp
+//      js options passed in on initialize
+// - Retry - how often do we 'retry' registration?  Once per session?  Once per calc attempt?
+// - Need to figure out if we have name conflicts with id's put in katapps, tom's docs made comment about name vs id, read again
+//      - i.e. what if two views on a page have iRetAge...now that it isn't asp.net (server ids), maybe we get away with it?
+// - $(".viDemoNotice").show(); - what is this in cors_demo.js
+// - Would be consistent about -'s in attributes, meaning between every word or maybe none...I've seen -calcengine -calc-engine, -inputname, etc.
+// - Downfall to our paradigm of CMS managing KatAppProvider code is never caches script and loads it each time?
+// External Usage Changes
+// 1. Look at KatAppOptions (properties and events) and KatAppPlugInInterface (public methods on a katapp (only 4))
+// 2. Kat App element attributes (instead of data): rbl-view, rbl-view-templates, rbl-calc-engine
+// 3. Registering TP needs AuthID and Client like mine does, RBLe Service looks like it expects them (at least AuthID)
+// 4. If they do handlers for submit, register, etc., they *have* to call my done/fail callbacks or app will 'stall'
+// 5. Changed calcengine to calc-engine in <rbl-config calcengine="Conduent_BiscombPOC_SE" templates="nonstandard_templates"></rbl-config> to match others
+// 6. Added rbl-input-tab and rbl-result-tabs to 'kat app data attributes'
+// 7. rbl-script="view" - added this to Standard_Templates - not really external, but fyi and we can discuss
+// Prototypes / polyfills
 String.prototype.format = function (json) {
     //"{greeting} {who}!".format({greeting: "Hello", who: "world"})
     var that = this;
@@ -18,12 +83,52 @@ String.prototype.format = function (json) {
     return that.replace("_", "_");
 };
 $(function () {
+    // Reassign options here (extending with what client/host might have already set) allows
+    // options (specifically events) to be managed by CMS - adding features when needed.
+    KatApp.defaultOptions = KatApp.extend({
+        enableTrace: false,
+        registerDataWithService: true,
+        shareRegistrationData: true,
+        functionUrl: KatApp.functionUrl,
+        corsUrl: KatApp.corsUrl,
+        currentPage: "Unknown",
+        inputSelector: "input",
+        inputTab: "RBLInput",
+        resultTabs: ["RBLResult"],
+        runConfigureUICalculation: true,
+        ajaxLoaderSelector: ".ajaxloader",
+        useTestCalcEngine: KatApp.pageParameters["test"] === "1",
+        onCalculateStart: function (application) {
+            if (application.options.ajaxLoaderSelector !== undefined) {
+                $(application.options.ajaxLoaderSelector, application.element).show();
+            }
+            $(".RBLe .slider-control, .RBLe input", application.element).attr("disabled", "true");
+        },
+        onCalculateEnd: function (application) {
+            if (application.options.ajaxLoaderSelector !== undefined) {
+                $(application.options.ajaxLoaderSelector, application.element).fadeOut();
+            }
+            $(".RBLe .slider-control, .RBLe input", application.element).removeAttr("disabled");
+        }
+    }, KatApp.defaultOptions);
     var tableInputsAndBootstrapButtons = ", .RBLe-input-table :input, .dropdown-toggle, button";
     var validInputSelector = ":not(.notRBLe, .rbl-exclude" + tableInputsAndBootstrapButtons + ")";
     var skipBindingInputSelector = ":not(.notRBLe, .rbl-exclude, .skipRBLe, .skipRBLe :input, .rbl-nocalc, .rbl-nocalc :input" + tableInputsAndBootstrapButtons + ")";
     // Template logic.. if no flag, get template, but then check flag again before inserting into DOM in case another processes loaded the template.
     var _templatesLoaded = {};
-    var _templateClientScripts = {};
+    var _templateDelegates = [];
+    // Get Global: put as prefix if missing
+    function ensureGlobalPrefix(id) {
+        if (id === undefined)
+            return undefined;
+        var idParts = id.split(":");
+        return idParts.length > 1 ? id : "Global:" + id;
+    }
+    ;
+    $.fn[pluginName].templateOn = function (templateName, events, fn) {
+        _templateDelegates.push({ Template: ensureGlobalPrefix(templateName), Delegate: fn, Events: events }); // eslint-disable-line @typescript-eslint/no-non-null-assertion
+        KatApp.trace(undefined, "Template event(s) registered [" + events + "] for [" + templateName + "].");
+    };
     var _sharedRegisteredToken = undefined;
     var _sharedData = undefined;
     // All methods/classes before KatAppProvider class implementation are private methods only
@@ -615,7 +720,7 @@ $(function () {
         KatAppPlugIn.prototype.init = function () {
             this.element.attr("rbl-application-id", this.id);
             (function (that) {
-                var _a, _b;
+                var _a, _b, _c;
                 that.trace("Started init");
                 var pipeline = [];
                 var pipelineIndex = 0;
@@ -626,14 +731,15 @@ $(function () {
                     }
                 };
                 var pipelineError = undefined;
-                var resourcesToFetch = [that.options.viewTemplates, that.options.view].filter(function (r) { return r !== undefined; }).join(",");
-                var useTestView = (_b = (_a = that.options.useTestView) !== null && _a !== void 0 ? _a : KatApp.pageParameters["testview"] === "1") !== null && _b !== void 0 ? _b : false;
+                var optionTemplates = (_a = that.options.viewTemplates) === null || _a === void 0 ? void 0 : _a.split(",").map(function (i) { return ensureGlobalPrefix(i); }).join(",");
+                var resourcesToFetch = [optionTemplates, ensureGlobalPrefix(that.options.view)].filter(function (r) { return r !== undefined; }).join(",");
+                var useTestView = (_c = (_b = that.options.useTestView) !== null && _b !== void 0 ? _b : KatApp.pageParameters["testview"] === "1") !== null && _c !== void 0 ? _c : false;
                 var functionUrl = that.options.functionUrl;
-                var viewId = that.options.view;
-                var viewTemplates = undefined;
+                var viewId = ensureGlobalPrefix(that.options.view);
+                var templatesFromRblConfig = undefined;
                 // Gather up all requested templates, and then inject any 'client specific' script that is needed.
-                var requestedTemplates = that.options.viewTemplates != undefined
-                    ? that.options.viewTemplates.split(",")
+                var requestedTemplates = optionTemplates != undefined
+                    ? optionTemplates.split(",")
                     : [];
                 // Build up the list of resources to get from KatApp Markup
                 var resourceNames = resourcesToFetch.split(",").filter(function (r) { var _a; return !((_a = _templatesLoaded[r]) !== null && _a !== void 0 ? _a : false); });
@@ -666,14 +772,14 @@ $(function () {
                         var data = resourceData[r]; // eslint-disable-line @typescript-eslint/no-non-null-assertion
                         if (r === viewId) {
                             // Process as view
-                            var view = $("<div>" + data.replace("{thisview}", "[rbl-application-id='" + that.id + "']") + "</div>");
+                            var view = $("<div>" + data.replace(/{thisView}/g, "[rbl-application-id='" + that.id + "']") + "</div>");
                             var rblConfig = $("rbl-config", view).first();
                             if (rblConfig.length !== 1) {
                                 that.trace("View " + viewId + " is missing rbl-config element.");
                             }
                             else {
                                 that.options.calcEngine = (_a = that.options.calcEngine) !== null && _a !== void 0 ? _a : rblConfig.attr("calc-engine");
-                                viewTemplates = rblConfig.attr("templates");
+                                templatesFromRblConfig = rblConfig.attr("templates");
                                 that.options.inputTab = (_b = that.options.inputTab) !== null && _b !== void 0 ? _b : rblConfig.attr("input-tab");
                                 var attrResultTabs = rblConfig.attr("result-tabs");
                                 that.options.resultTabs = (_c = that.options.resultTabs) !== null && _c !== void 0 ? _c : (attrResultTabs != undefined ? attrResultTabs.split(",") : undefined);
@@ -688,12 +794,7 @@ $(function () {
                             // Standard.Templates.html.
                             var resourceParts = r.split(":");
                             var tId = (resourceParts.length > 1 ? resourceParts[1] : resourceParts[0]).replace(/\.[^/.]+$/, "");
-                            var t = $("<rbl-templates style='display:none;' rbl-t='" + tId + "'>" + data + "</rbl-templates>");
-                            var viewScript = $("script[rbl-script='view']", t);
-                            if (viewScript.length === 1) {
-                                _templateClientScripts[r] = viewScript[0].outerHTML;
-                                viewScript.remove();
-                            }
+                            var t = $("<rbl-templates style='display:none;' rbl-t='" + tId + "'>" + data.replace(/{thisTemplate}/g, r) + "</rbl-templates>");
                             t.appendTo("body");
                             that.trace("Loaded template [" + r + "] for [" + viewId + "].");
                         }
@@ -703,14 +804,14 @@ $(function () {
                 // Get Templates configured on <rbl-config/>
                 function () {
                     // Now build up a list of templates that were specified inside the view markup
-                    if (viewTemplates != undefined) {
+                    if (templatesFromRblConfig != undefined) {
                         // Gather up all requested templates, and then inject any 'client specific' script that is needed.
-                        requestedTemplates = requestedTemplates.concat(viewTemplates.split(","));
-                        resourceNames = viewTemplates.split(",").filter(function (r) { var _a; return !((_a = _templatesLoaded[r]) !== null && _a !== void 0 ? _a : false); });
+                        requestedTemplates = requestedTemplates.concat(templatesFromRblConfig.split(",").map(function (i) { return ensureGlobalPrefix(i); })); // eslint-disable-line @typescript-eslint/no-non-null-assertion
+                        resourceNames = templatesFromRblConfig.split(",").filter(function (r) { var _a; return !((_a = _templatesLoaded[r]) !== null && _a !== void 0 ? _a : false); }).map(function (i) { return ensureGlobalPrefix(i); }); // eslint-disable-line @typescript-eslint/no-non-null-assertion
                         resourcesToFetch = resourceNames.join(","); // Join up again after removing processed templates
-                        viewTemplates = undefined; // clear out so that we don't process this again
+                        templatesFromRblConfig = undefined; // clear out so that we don't process this again
                         if (resourcesToFetch !== "") {
-                            var currentTemplates = that.options.viewTemplates !== undefined ? that.options.viewTemplates + "," : "";
+                            var currentTemplates = optionTemplates !== undefined ? optionTemplates + "," : "";
                             that.options.viewTemplates = currentTemplates + resourcesToFetch;
                             next(-3); // Go to start now that I've reset resources to fetch
                         }
@@ -722,18 +823,28 @@ $(function () {
                         next(0); // no viewTemplates specified
                     }
                 }, 
-                // Final processing
+                // Final processing (hook up template events and process templates that don't need RBL)
                 function () {
                     if (pipelineError === undefined) {
                         // Now, for every unique template reqeusted by client, if the template had <script rbl-script="view"/> 
                         // associated with it, I can inject that view specific code (i.e. event handlers) for the currently
                         // processing application
                         requestedTemplates
-                            .filter(function (v, i, a) { return v !== undefined && v.length != 0 && a.indexOf(v) === i && _templateClientScripts[v] !== undefined; }) // unique
+                            .filter(function (v, i, a) { return v !== undefined && v.length != 0 && a.indexOf(v) === i; }) // unique
                             .forEach(function (t) {
-                            var data = _templateClientScripts[t];
-                            var script = $(data.replace("{thisview}", "[rbl-application-id='" + that.id + "']"));
-                            script.appendTo("body");
+                            // Loop every template event handler that was called when template loaded
+                            // and register a handler to call the delegate
+                            _templateDelegates
+                                .filter(function (d) { return d.Template.toLowerCase() == t.toLowerCase(); })
+                                .forEach(function (d) {
+                                that.element.on(d.Events, function () {
+                                    var args = [];
+                                    for (var _i = 0; _i < arguments.length; _i++) {
+                                        args[_i] = arguments[_i];
+                                    }
+                                    d.Delegate.apply(this, args);
+                                });
+                            });
                         });
                         // Build up template content that DOES NOT use rbl results, but instead just 
                         // uses data-* to create a dataobject generally used to create controls like sliders.                    
@@ -903,34 +1014,6 @@ $(function () {
         };
         return KatAppPlugIn;
     }());
-    // Reassign options here (extending with what client/host might have already set) allows
-    // options (specifically events) to be managed by CMS - adding features when needed.
-    KatApp.defaultOptions = KatApp.extend({
-        enableTrace: false,
-        registerDataWithService: true,
-        shareRegistrationData: true,
-        functionUrl: KatApp.functionUrl,
-        corsUrl: KatApp.corsUrl,
-        currentPage: "Unknown",
-        inputSelector: "input",
-        inputTab: "RBLInput",
-        resultTabs: ["RBLResult"],
-        runConfigureUICalculation: true,
-        ajaxLoaderSelector: ".ajaxloader",
-        useTestCalcEngine: KatApp.pageParameters["test"] === "1",
-        onCalculateStart: function (application) {
-            if (application.options.ajaxLoaderSelector !== undefined) {
-                $(application.options.ajaxLoaderSelector, application.element).show();
-            }
-            $(".RBLe .slider-control, .RBLe input", application.element).attr("disabled", "true");
-        },
-        onCalculateEnd: function (application) {
-            if (application.options.ajaxLoaderSelector !== undefined) {
-                $(application.options.ajaxLoaderSelector, application.element).fadeOut();
-            }
-            $(".RBLe .slider-control, .RBLe input", application.element).removeAttr("disabled");
-        }
-    }, KatApp.defaultOptions);
     // Timing concerns at all?
     //      $("selector").KatApp() - two returned
     //          first one starts to load, triggering a get script (that takes a while)

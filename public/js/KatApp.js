@@ -40,17 +40,30 @@ var KatApp = /** @class */ (function () {
     };
     ;
     KatApp.trace = function (application, message) {
-        var _a, _b, _c, _d, _e, _f;
+        var _a, _b, _c, _d, _e;
         if ((_c = (_b = (_a = application === null || application === void 0 ? void 0 : application.options) === null || _a === void 0 ? void 0 : _a.enableTrace) !== null && _b !== void 0 ? _b : KatApp.defaultOptions.enableTrace) !== null && _c !== void 0 ? _c : false) {
             var item = undefined;
+            var d = new Date(), month = '' + (d.getMonth() + 1), day = '' + d.getDate(), year = d.getFullYear(), hours = '' + d.getHours(), minutes = '' + d.getMinutes(), seconds = '' + d.getSeconds();
+            if (month.length < 2)
+                month = '0' + month;
+            if (day.length < 2)
+                day = '0' + day;
+            if (hours.length < 2)
+                hours = '0' + hours;
+            if (minutes.length < 2)
+                minutes = '0' + minutes;
+            if (seconds.length < 2)
+                seconds = '0' + seconds;
+            var displayDate = [year, month, day].join('-') + " " + [hours, minutes, seconds].join(':');
             if (application !== undefined) {
-                var id = (_d = application.element.attr("rbl-trace-id")) !== null && _d !== void 0 ? _d : application.id;
-                var className = (_e = application.element[0].className) !== null && _e !== void 0 ? _e : "No classes";
-                var viewId = (_f = application.element.attr("rbl-view")) !== null && _f !== void 0 ? _f : "None";
-                item = $("<div>" + new Date() + " Application " + id + " (class=" + className + ", view=" + viewId + "): " + message + "</div>");
+                var traceId = application.element.attr("rbl-trace-id");
+                var id = traceId !== null && traceId !== void 0 ? traceId : application.id;
+                var className = (_d = application.element[0].className) !== null && _d !== void 0 ? _d : "No classes";
+                var viewId = (_e = application.element.attr("rbl-view")) !== null && _e !== void 0 ? _e : "None";
+                item = $("<div class='applog" + (traceId !== null && traceId !== void 0 ? traceId : "") + "'>" + displayDate + " <b>Application " + id + "</b> (class=" + className + ", view=" + viewId + "): " + message + "</div>");
             }
             else {
-                item = $("<div>" + new Date() + ": " + message + "</div>");
+                item = $("<div>" + displayDate + ": " + message + "</div>");
             }
             console.log(item.text() /* remove any html formatting from message */);
             $(".rbl-logclass").append(item);
@@ -62,7 +75,7 @@ var KatApp = /** @class */ (function () {
             var url = (_a = functionUrl !== null && functionUrl !== void 0 ? functionUrl : KatApp.defaultOptions.functionUrl) !== null && _a !== void 0 ? _a : KatApp.functionUrl;
             var resourceArray = resources.split(",");
             // viewParts[ 0 ], viewParts[ 1 ]
-            // folder: string, resource: string
+            // folder: string, resource: string, optional Version
             var pipeline = [];
             var pipelineIndex = 0;
             var next = function () {
@@ -81,8 +94,8 @@ var KatApp = /** @class */ (function () {
                         return;
                     }
                     var resourceParts = r.split(":");
-                    var resource = resourceParts.length > 1 ? resourceParts[1] : resourceParts[0];
-                    var folder = resourceParts.length > 1 ? resourceParts[0] : "Global"; // if no folder provided, default to global
+                    var resource = resourceParts[1];
+                    var folder = resourceParts[0];
                     var version = resourceParts.length > 2 ? resourceParts[2] : (useTestVersion ? "Test" : "Live"); // can provide a version as third part of name if you want
                     // Template names often don't use .html syntax
                     if (!resource.endsWith(".html") && !isScript) {

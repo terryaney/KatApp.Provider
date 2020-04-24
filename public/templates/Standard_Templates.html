@@ -44,15 +44,13 @@
 
 <rbl-template tid="list-input">
   <div class="form-group">
-    <div class="col-sm-8">
-      <label for="{inputname}" class="control-label l{inputname}">Dropdown1</label>
-      <a style="display: none;" class="vh{inputname}" role="button" tabindex="0" data-toggle="popover"
+    <label for="{inputname}" class="control-label">
+      <span class="l{inputname}"></span>
+      <a style="display: none;" class="vh{inputname} help-icon-anchor" role="button" tabindex="0" data-toggle="popover"
         data-trigger="click" data-content-selector=".h{inputname}" data-placement="top" data-original-title=""
         title=""><span class="glyphicons glyphicons-question-sign"></span></a>
-    </div>
-    <div class="col-sm-4">
-      <select class="form-control {inputname}" name="{inputname}"></select>
-    </div>
+    </label>
+    <select class="form-control {inputname}" name="{inputname}"></select>
     <div class="h{inputname}Title" style="display: none;"></div>
     <div class="h{inputname}" style="display: none;"></div>
   </div>
@@ -70,8 +68,8 @@
     <a style="display: none;" class="vs{inputname}" role="button" tabindex="0" data-placement="top" href="voice/Help-SpouseDateBirth.mp3">
       <span class="glyphicon glyphicon glyphicon-volume-up"></span>
     </a>
-    <div class="h{inputname}Title hidden">What is your Spouse's Date of Birth?</div>
-    <div class="h{inputname} hidden">Enter your spouse's date of birth if you would like to include your spouse's retirement income in your modeling.</div>
+    <div class="h{inputname}Title hidden"></div>
+    <div class="h{inputname} hidden"></div>
     <div class="validator-container input-group date">
       <input name="{inputname}" type="text" value="1/1/2020" class="form-control {inputname}" placeholder="mm/dd/yyyy" aria-invalid="false">
       <span class="input-group-addon"><i class="glyphicon glyphicon-calendar"></i></span>
@@ -150,37 +148,36 @@
     }
   });
 
-  var formatlabel = function (val, id, format, decimalPlaces) {
+  function formatlabel(val, id, format, decimalPlaces) {
     $("." + id).val(val);
     var v = format == "p" ? val / 100 : val;
     $("." + id + "Label, .sv" + id).html(String.localeFormat("{0:" + format + decimalPlaces + "}", v));
   };
-</script>
 
-<script rbl-script="view">
-  if (KatApp.pageParameters["debugkatapp"] === "standard") {
+  if (KatApp.pageParameters["debugkatapp"] === "t.{thisTemplate}") {
     debugger;
   }
 
-  $("{thisview}").on("onCalculation.RBLe", function (event, calculationResults, calcOptions, application) {
-
+  $.fn.KatApp.templateOn("{thisTemplate}", "onCalculation.RBLe", function (event, calculationResults, calcOptions, application) {
     const view = this;
+
+    application.trace("Processing onCalculation.RBLe for Template [{thisTemplate}]..." );
 
     $("[rbl-tid=slider-input]", view).each(function () {
       const el = $(this);
       const id = el.data("inputname");
 
-      if (KatApp.pageParameters["debugkatapp"] === "standard.slider." + id) {
+      if (KatApp.pageParameters["debugkatapp"] === "t.{thisTemplate}.s." + id) {
         debugger;
       }
 
       const config = application.getResultRow("ejs-sliders", id);
-      
+
       if (config == undefined) return;
 
       const minValue = config.min * 1;
       const maxValue = config.max * 1;
-      
+
       const defaultConfigValue = 
         application.getResultValue("ejs-defaults", id, "value") || // what is in ejs-defaults
         config.default || // what was in ejs-slider/default
@@ -302,12 +299,12 @@
         }
       }
     });
-
+    
     $(".carousel-control-group", view).each(function () {
       const el = $(this);
       const carouselName = el.attr("rbl-name");
 
-      if (KatApp.pageParameters["debugkatapp"] === "standard.carousel." + carouselName) {
+      if (KatApp.pageParameters["debugkatapp"] === "t.{thisTemplate}.c." + carouselName) {
         debugger;
       }
 
@@ -339,12 +336,10 @@
             carouselAll.hide();
             carousel.show();
           });
-    
+
         //show initial item, start carousel:
         carousel.carousel(0);
       }
-
     });
-
   });
 </script>

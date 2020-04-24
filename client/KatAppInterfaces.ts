@@ -1,3 +1,9 @@
+// Prototypes / polyfills
+interface String {
+    format(json: JQuery.PlainObject): string;
+}
+
+
 // RBLe Service Callback handler and input/result classes
 interface CalculationInputs
 {
@@ -228,4 +234,8 @@ interface KatAppPlugInInterface extends KatAppPlugInShimInterface {
     saveCalcEngine: ( location: string )=> void;
     refreshCalcEngine: ()=> void; // Tell next calculation to check for new CE
     traceCalcEngine: ()=> void; // Save the next calculations CalcEngine to secure file location
+}
+
+interface TemplateOnDelegate {
+    ( event: JQuery.Event, ...args: Array<object> ): void; 
 }

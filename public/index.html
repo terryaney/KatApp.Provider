@@ -30,6 +30,14 @@
         <script src="https://code.highcharts.com/highcharts.js"></script>
         <script src="js/KatApp.js"></script>
 
+        <style>
+            .applog1 {
+                background-color: rgb(209, 170, 142);
+            }
+            .applog2 {
+                background-color: rgb(171, 192, 135);
+            }
+        </style>
         <script>
             $( function() {
                 KatApp.defaultOptions.enableTrace = true;
@@ -38,17 +46,12 @@
                 KatApp.defaultOptions.functionUrl = "https://secure.conduentapplications.com/Services/RBL/Evolution_Test/CalculationFunction.ashx";
                 // KatApp.defaultOptions.functionUrl = "http://localhost:54300/CalculationFunction.ashx";
 
-                // Override original then call it when you are done.  This is same as simply 
-                // hooking to an event, just using a different syntax.  But needing to 
-                // use call( this, ...) makes it kind of discouraging.  Not sure I even/even
-                // use 'this' in the event handler, so could be moot and just use
-                // originalCalcStart( application );
-                var originalCalcStart = KatApp.defaultOptions.onCalculateStart;
+                // Change default onCalculateStart behavior.  No longer will show spinner
                 KatApp.defaultOptions.onCalculateStart = function( application ) {
                     application.trace( "Custom onCalculateStart");
-                    originalCalcStart.call( this, application );
                 };
-
+                KatApp.defaultOptions.onCalculateStart = undefined;
+                
                 KatApp.defaultOptions.getRegistrationData = function( application, options, done, fail ) {
                     //this is a demo version that gets sample data from a REST API
                     const authId = KatApp.pageParameters["btrrest_testid"] || "911000011";

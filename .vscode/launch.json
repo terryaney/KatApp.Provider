@@ -5,13 +5,12 @@
     "version": "0.2.0",
     "compounds": [
         {
-            "name": "Server/Client",
+            "name": "Debug Server/Client",
             "configurations": ["Launch via NPM", "Debug Client"]
         }
     ],
     "configurations": [
         {
-            // Only can put breakpoints in 'get' request handlers, not the configuration code
             "type": "node",
             "request": "launch",
             "name": "Launch via NPM",
@@ -34,7 +33,7 @@
         },
         {
             // Can put breakpoints anywhere in file, but nodemon stays open even after debuggers stopped until you kill terminal. 
-            // Not sure of if should use this or not
+            // Not sure of if should use this or not.  To install, npm install -g nodemon
             "type": "node",
             "request": "launch",
             "name": "Debug Server",

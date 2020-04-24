@@ -71,14 +71,31 @@ class KatApp
 
             let item: JQuery | undefined = undefined;
 
+            var d = new Date(),
+                month = '' + (d.getMonth() + 1),
+                day = '' + d.getDate(),
+                year = d.getFullYear(),
+                hours = '' + d.getHours(),
+                minutes = '' + d.getMinutes(),
+                seconds = '' + d.getSeconds();
+    
+            if (month.length < 2) month = '0' + month;
+            if (day.length < 2) day = '0' + day;
+            if (hours.length < 2) hours = '0' + hours;
+            if (minutes.length < 2) minutes = '0' + minutes;
+            if (seconds.length < 2) seconds = '0' + seconds;
+    
+            const displayDate = [year, month, day].join('-') + " " + [hours, minutes, seconds].join(':');
+
             if ( application !== undefined ) {
-                const id = application.element.attr("rbl-trace-id") ?? application.id;
+                const traceId = application.element.attr("rbl-trace-id");
+                const id = traceId ?? application.id;
                 const className = application.element[ 0 ].className ?? "No classes";
                 const viewId = application.element.attr("rbl-view") ?? "None";
-                item = $("<div>" + new Date() + " Application " + id + " (class=" + className +", view=" + viewId + "): " + message + "</div>");
+                item = $("<div class='applog" + ( traceId ?? "" ) + "'>" + displayDate + " <b>Application " + id + "</b> (class=" + className +", view=" + viewId + "): " + message + "</div>");
             }
             else {
-                item = $("<div>" + new Date() + ": " + message + "</div>");
+                item = $("<div>" + displayDate + ": " + message + "</div>");
             }
             console.log( item.text() /* remove any html formatting from message */ );
             $(".rbl-logclass").append( item ); 
@@ -91,7 +108,7 @@ class KatApp
             const resourceArray = resources.split(",");
     
             // viewParts[ 0 ], viewParts[ 1 ]
-            // folder: string, resource: string
+            // folder: string, resource: string, optional Version
     
             let pipeline: Array<()=> void> = [];
             let pipelineIndex = 0;
@@ -116,8 +133,8 @@ class KatApp
                     }
     
                     const resourceParts = r.split(":");
-                    let resource = resourceParts.length > 1 ? resourceParts[ 1 ] : resourceParts[ 0 ];
-                    const folder = resourceParts.length > 1 ? resourceParts[ 0 ] : "Global"; // if no folder provided, default to global
+                    let resource = resourceParts[ 1 ];
+                    const folder = resourceParts[ 0 ];
                     const version = resourceParts.length > 2 ? resourceParts[ 2 ] : ( useTestVersion ? "Test" : "Live" ); // can provide a version as third part of name if you want
     
                     // Template names often don't use .html syntax

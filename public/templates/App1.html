@@ -9,7 +9,7 @@
         debugger;
     }
 
-    $("{thisview}").on( "onInitialized.RBLe", function( event, application ) {
+    $("{thisView}").on( "onInitialized.RBLe", function( event, application ) {
         // manually trigger a calculation
         application.trace("View " + application.element.attr("rbl-view") + " onInitialized, now calling manual calculate." )
         $(this).KatApp().calculate();

@@ -43,7 +43,8 @@ var KatApp = /** @class */ (function () {
         var _a, _b, _c, _d, _e;
         if ((_c = (_b = (_a = application === null || application === void 0 ? void 0 : application.options) === null || _a === void 0 ? void 0 : _a.enableTrace) !== null && _b !== void 0 ? _b : KatApp.defaultOptions.enableTrace) !== null && _c !== void 0 ? _c : false) {
             var item = undefined;
-            var d = new Date(), month = '' + (d.getMonth() + 1), day = '' + d.getDate(), year = d.getFullYear(), hours = '' + d.getHours(), minutes = '' + d.getMinutes(), seconds = '' + d.getSeconds();
+            var d = new Date(), year = d.getFullYear();
+            var month = '' + (d.getMonth() + 1), day = '' + d.getDate(), hours = '' + d.getHours(), minutes = '' + d.getMinutes(), seconds = '' + d.getSeconds();
             if (month.length < 2)
                 month = '0' + month;
             if (day.length < 2)

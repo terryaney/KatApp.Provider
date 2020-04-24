@@ -29,6 +29,7 @@
         <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.5.0/jquery.min.js" integrity="sha256-xNzN2a4ltkB44Mc/Jz3pT4iU1cmeR0FkXs4pru/JxaQ=" crossorigin="anonymous"></script>
         <script src="https://code.highcharts.com/highcharts.js"></script>
         <script src="js/KatApp.js"></script>
+        <script src="js/KatApp.Service.js"></script>
 
         <style>
             .applog1 {
@@ -51,20 +52,6 @@
                     application.trace( "Custom onCalculateStart");
                 };
                 KatApp.defaultOptions.onCalculateStart = undefined;
-                
-                KatApp.defaultOptions.getRegistrationData = function( application, options, done, fail ) {
-                    //this is a demo version that gets sample data from a REST API
-                    const authId = KatApp.pageParameters["btrrest_testid"] || "911000011";
-                    $.getJSON('https://qabtr.lifeatworkportal.com/services/rest/api/xds/TBOLoanPmtElection/' + authId )
-                        .done(  xDataDef =>
-                            {
-                                application.trace( xDataDef );
-                                application.trace( "Participant data retreived by BTR REST API" );
-                                done( xDataDef );
-                            }                         
-                        )
-                        .fail( fail );
-                };
 
                 // Just debug logging for any application initialized
                 KatApp.defaultOptions.onInitialized = function( application ) {
@@ -84,12 +71,13 @@
                     } 
                 } );
 
-                $("div.katapp:eq(2)").on( "onConfigureUICalculation.RBLe", function( event, calculationResults, calcOptions, application ) {
-                    application.trace("<b>onConfigureUICalculation.RBLe Handler</b>: Called before calculationComplete. Inputs Passed: " + Object.keys( application.inputs ).map( i => i + "=" + application.inputs[ i ] ).join( ", " ) + ".")
-                }).on( "onCalculation.RBLe", function( event, calculationResults, calcOptions, application ) {
-                    var inputTrigger = calcOptions.inputs.iInputTrigger || "[Manual Calculation]";
-                    application.trace("<b>Custom onCalculate.RBLe Handler</b>: Inputs Passed: " + Object.keys( application.inputs ).map( i => i + "=" + application.inputs[ i ] ).join( ", " ) + ".")
-                }).KatApp();
+                $("div.katapp:eq(2)")
+                    .on( "onConfigureUICalculation.RBLe", function( event, calculationResults, calcOptions, application ) {
+                        application.trace("<b>onConfigureUICalculation.RBLe Handler</b>: Called before calculationComplete. Inputs Passed: " + Object.keys( application.inputs ).map( i => i + "=" + application.inputs[ i ] ).join( ", " ) + ".")
+                    }).on( "onCalculation.RBLe", function( event, calculationResults, calcOptions, application ) {
+                        var inputTrigger = calcOptions.inputs.iInputTrigger || "[Manual Calculation]";
+                        application.trace("<b>Custom onCalculate.RBLe Handler</b>: Inputs Passed: " + Object.keys( application.inputs ).map( i => i + "=" + application.inputs[ i ] ).join( ", " ) + ".")
+                    }).KatApp();
             });
         </script>
     </body>

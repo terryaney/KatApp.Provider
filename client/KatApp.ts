@@ -71,10 +71,11 @@ class KatApp
 
             let item: JQuery | undefined = undefined;
 
-            var d = new Date(),
+            const d = new Date(),
+                year = d.getFullYear();
+            let
                 month = '' + (d.getMonth() + 1),
                 day = '' + d.getDate(),
-                year = d.getFullYear(),
                 hours = '' + d.getHours(),
                 minutes = '' + d.getMinutes(),
                 seconds = '' + d.getSeconds();

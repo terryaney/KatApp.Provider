@@ -1,5 +1,4 @@
 // TODO
-// - Review template script handling...don't like my chunks of code added twice
 // - How do I check/handle for errors when I try to load view
 // - Do I want to call calculate in updateOptions?  They could bind and call if they need to I guess
 // - Ability to have two CE's for one view might be needed for stochastic
@@ -12,27 +11,23 @@
 //      - Seems like you need a way to only update the 'markup' of carousel vs rebuilding entire thing?  Otherwise, probably need/should hookup a 'calcstart event' in templates to remove event handlers
 
 /*
-    - Mine
-        - Pro`
-            - Registering for events is consistent/similiar to other bootstrap/jquery plugin event registration
-            - (In General) Cleaned up code to not require *.RBL().* every single time...events are passed in appropriate params that they'll need
-        - Con
-            - Duplicate snippets injected into final html.  For every <script rbl-script="view"> block, it is injected once for each view that requests it.
-            - Need to do $(selector, view).each() inside template instead of being passed templated element.
-
     - Yours
         - Pro
-            - Only one snippet of js injected (regardless of how many views request it)
             - Passed templated element in function call (don't have to .each() within template code)
         - Con
             - Diff/non-standard mechanism of registering functions.
-            - If 4 distinct templates are loaded with one or more register control fucntions for two views on a page, every view calculation you'll loop all (4+) control functions and 'try' to run it
+            - If 4 distinct templates are loaded with one or more register control fucntions for two views on a page, 
+                every view calculation you'll loop all (4+) control functions and 'try' to run it
 
-    - Working Function way
-        - Pro
-            - Only small/minimal chunks of code injected for each requested view
-        - Con
-            - Have to worry about namespacing of function names
+                Every time view1 triggers calc, will call all four functions below, but template 2 & 4 have namespace/selector
+                conflict b/c both use same thing.
+
+                view1
+                    template1 - reg selector: [unique1]
+                    teamplte2 - reg selector: [carousel]
+                view2
+                    template3 - reg selector: [unique2]
+                    template4 - reg, selector: [carousel]
 
     - templateOn() way
         - Pro
@@ -47,32 +42,21 @@
             - Still (by choice) making them do selector and foreach themselves, think it keeps code consistent (onCalculation this is 'always' app/view) but could change if required
 */
 
-// - Sample, you didn't give me latest :P, missing rbl-inputclass and resultclass, why is dropdown 'ugly' (mine doesn't have values), what are 'bad icons' next to date picker?
-// - Need to review KatApp.ts to make sure it is robust but also 'as slim' as possible so we can put enhancements into our provider code
-//      Need to make sure our 'interface' is ironed out...but do some testing on adding features and see if posible without breaking existing
-//      ** UPDATE ** - Pretty clean but see PlugInShim interface (for what you can call before init is done) along with removing autoCreate feature of .KatApp("calculate");
-// - Talk to Tom about 'angular/L@W hosts methods' and how I architected them (register/getregdata seperated) and allow for callback to be registered
-// - Show how bunch of errors are happening in boscomb
+// - Show how bunch of errors are happening in boscomb (missing source elements)
 // - Search for TOM comments
-// - During load view, application.options.calcEngine = (and other properties)...precedence is
-//      rbl-config calcengine in view (given this precedence, does this have to be required?  Remove my logic enforcing if so)
-//      markup attributes on katapp
-//      js options passed in on initialize
 // - Retry - how often do we 'retry' registration?  Once per session?  Once per calc attempt?
 // - Need to figure out if we have name conflicts with id's put in katapps, tom's docs made comment about name vs id, read again
 //      - i.e. what if two views on a page have iRetAge...now that it isn't asp.net (server ids), maybe we get away with it?
-// - $(".viDemoNotice").show(); - what is this in cors_demo.js
 // - Would be consistent about -'s in attributes, meaning between every word or maybe none...I've seen -calcengine -calc-engine, -inputname, etc.
 // - Downfall to our paradigm of CMS managing KatAppProvider code is never caches script and loads it each time?
 
 // External Usage Changes
 // 1. Look at KatAppOptions (properties and events) and KatAppPlugInInterface (public methods on a katapp (only 4))
 // 2. Kat App element attributes (instead of data): rbl-view, rbl-view-templates, rbl-calc-engine
-// 3. Registering TP needs AuthID and Client like mine does, RBLe Service looks like it expects them (at least AuthID)
+// 3. Registration TP needs AuthID and Client like mine does, RBLe Service looks like it expects them (at least AuthID)
 // 4. If they do handlers for submit, register, etc., they *have* to call my done/fail callbacks or app will 'stall'
 // 5. Changed calcengine to calc-engine in <rbl-config calcengine="Conduent_BiscombPOC_SE" templates="nonstandard_templates"></rbl-config> to match others
 // 6. Added rbl-input-tab and rbl-result-tabs to 'kat app data attributes'
-// 7. rbl-script="view" - added this to Standard_Templates - not really external, but fyi and we can discuss
 
 // Prototypes / polyfills
 String.prototype.format = function (json): string {
@@ -881,7 +865,7 @@ $(function() {
     
                 let pipelineError: string | undefined = undefined;
 
-                var optionTemplates = that.options.viewTemplates?.split(",").map( i => { return ensureGlobalPrefix( i ); } ).join(",");
+                const optionTemplates = that.options.viewTemplates?.split(",").map( i => { return ensureGlobalPrefix( i ); } ).join(",");
                 let resourcesToFetch = [ optionTemplates, ensureGlobalPrefix( that.options.view ) ].filter( r => r !== undefined ).join(",");
     
                 const useTestView = that.options.useTestView ?? KatApp.pageParameters[ "testview"] === "1" ?? false;

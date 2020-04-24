@@ -117,13 +117,6 @@ interface SubmitCalculationOptions {
 interface ResourceResults {
     [key: string]: string;
 }
-interface KatAppPlugInShimInterface {
-    options: KatAppOptions;
-    element: JQuery;
-    id: string;
-    destroy: () => void;
-    trace: (message: string) => void;
-}
 interface ResultRowLookupsInterface {
     [key: string]: {
         LastRowSearched: number;
@@ -131,6 +124,13 @@ interface ResultRowLookupsInterface {
             [key: string]: number;
         };
     };
+}
+interface KatAppPlugInShimInterface {
+    options: KatAppOptions;
+    element: JQuery;
+    id: string;
+    destroy: () => void;
+    trace: (message: string) => void;
 }
 interface KatAppPlugInInterface extends KatAppPlugInShimInterface {
     results?: JSON;

@@ -80,6 +80,12 @@ interface JQueryFailCallback {
 
 // Note: Everything in this class is currently nullable so I can do partial option updates and default options, but
 // I should probably just make some partial interfaces, and correctly set nullability on members
+
+// During initialization of a view, application.options.calcEngine = (and other properties) that are read...precedence is
+//      rbl-config data atrributes in view (given this precedence, do attributes/element have to be required?  Remove my logic enforcing if so)
+//      markup attributes on katapp
+//      js options passed in on initialize
+
 interface KatAppOptions
 {
     enableTrace?: boolean;
@@ -133,7 +139,7 @@ interface KatAppOptions
     registerData?: ( appilcation: KatAppPlugInInterface, options: KatAppOptions, done: RBLeServiceCallback, fail: JQueryFailCallback )=> void;
     
     // TODO - do we even want to support these?  Maybe just always do events like all bootstrap components do.
-    //      $("app").on("initialized.rble", function() { } ).KatApp();
+    //      $("app").on("onInitialized.rble", function() { } ).KatApp();
     // Event call backs
     // If you use on() syntax for initialized, need to set it up before calling KatApp();
     onInitialized?: (this: HTMLElement, appilcation: KatAppPlugInInterface )=> void;
@@ -182,6 +188,15 @@ interface ResourceResults {
     [ key: string ]: string; 
 }
 
+interface ResultRowLookupsInterface { 
+    [ key: string ]: {
+        LastRowSearched: number;
+        Mapping: { 
+            [ key: string ]: number; 
+        };
+    }; 
+}
+
 // These are the only methods available to call on .KatApp() until onInitialized is triggered (meaning
 // that the provider object has been loaded and replaced the Shim and all methods of the KatAppPlugInInterface 
 // are now implemented)
@@ -198,22 +213,19 @@ interface KatAppPlugInShimInterface {
     trace: ( message: string )=> void;
 }
 
-interface ResultRowLookupsInterface { 
-    [ key: string ]: {
-        LastRowSearched: number;
-        Mapping: { 
-            [ key: string ]: number; 
-        };
-    }; 
-}
-
 // This is the actual plug in interface.  Accessible via:
-//  $("selector").KatApp( "memberName")
-//  $("selector").KatApp().memberName - if "selector" only returns one element
-//  $("selector")[0].KatApp.memberName
-//  $("selector").KatApp( "methodName", ...args)
-//  $("selector").KatApp().methodName(...args) - if "selector" only returns one element
-//  $("selector")[0].KatApp.methodName(...args)
+//
+//  $("selector").KatApp( "propertyName") - returns propertyName property for first match
+//      $("selector").KatApp().propertyName - if "selector" only returns one element, can access propertyName this way
+//      $("selector")[0].KatApp.propertyName - can get first result from selector and access KatApp.propertyName
+//
+//  $("selector").KatApp( "methodName", ...args) - call methodName on all matching KatApps passing in ...args
+//      $("selector").KatApp().methodName(...args) - if "selector" only returns one element, can call methodName this way
+//      $("selector")[0].KatApp.methodName(...args) - can get first result from selector and access KatApp.methodName
+
+// KatApp compared to jQuery syntax
+// $("selector").KatApp() similiar to jQuery $("selector").html() - returns property (KatApp or html) from first match
+// $("selector").KatApp("param") similiar to jQuery $("selector").html("param") - sets property ("param") of all items matching selector
 interface KatAppPlugInInterface extends KatAppPlugInShimInterface {
     results?: JSON;
     resultRowLookups?: ResultRowLookupsInterface;
@@ -231,9 +243,12 @@ interface KatAppPlugInInterface extends KatAppPlugInShimInterface {
     configureUI: ( customOptions?: KatAppOptions )=> void;
     updateOptions: ( options: KatAppOptions )=> void;
     
+    // $("selector").KatApp("saveCalcEngine", "terry.aney"); - save *next successful* calc for all selector items to terry.aney
     saveCalcEngine: ( location: string )=> void;
-    refreshCalcEngine: ()=> void; // Tell next calculation to check for new CE
-    traceCalcEngine: ()=> void; // Save the next calculations CalcEngine to secure file location
+    // $("selector").KatApp("refreshCalcEngine"); - refresh calc engine on *next successful* calc for all selector items
+    refreshCalcEngine: ()=> void;
+    // $("selector").KatApp("traceCalcEngine"); - return calc engine tracing from *next successful* calc for all selector items
+    traceCalcEngine: ()=> void;
 }
 
 interface TemplateOnDelegate {

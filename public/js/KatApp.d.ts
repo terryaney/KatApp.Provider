@@ -1,4 +1,3 @@
-declare const pluginName = "KatApp";
 declare class KatApp {
     static functionUrl: string;
     static corsUrl: string;

@@ -2,6 +2,17 @@
 interface String {
     format(json: JQuery.PlainObject): string;
 }
+interface HTMLElement {
+    KatApp?: KatAppPlugInShimInterface;
+}
+interface JQuery {
+    KatApp( options?: KatAppOptions | string, ...args: Array<string | number | KatAppOptions> ): JQuery | KatAppPlugInShimInterface | string | undefined;
+}
+interface Function {
+    plugInShims: KatAppPlugInShimInterface[];
+    applicationFactory( id: string, element: JQuery, options: KatAppOptions): KatAppPlugInShimInterface;
+    templateOn( templateName: string, events: string, fn: TemplateOnDelegate ): void;
+}
 
 
 // RBLe Service Callback handler and input/result classes
@@ -134,7 +145,7 @@ interface KatAppOptions
     // If custom submit code is needed, can provide implementation here
     submitCalculation?: ( appilcation: KatAppPlugInInterface, options: SubmitCalculationOptions, done: RBLeServiceCallback, fail: JQueryFailCallback )=> void;
     // If client provides for a way to get registration data, can provide implementation here
-    getRegistrationData?: ( appilcation: KatAppPlugInInterface, options: KatAppOptions, done: RBLeRESTServiceResultCallback, fail: JQueryFailCallback )=> void;
+    getData?: ( appilcation: KatAppPlugInInterface, options: KatAppOptions, done: RBLeRESTServiceResultCallback, fail: JQueryFailCallback )=> void;
     // If custom register data code is needed, can provide implementation here
     registerData?: ( appilcation: KatAppPlugInInterface, options: KatAppOptions, done: RBLeServiceCallback, fail: JQueryFailCallback )=> void;
     

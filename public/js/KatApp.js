@@ -1,5 +1,5 @@
 "use strict";
-var pluginName = 'KatApp';
+// const pluginName = 'KatApp';
 // Static options available in js via KatApp.*
 var KatApp = /** @class */ (function () {
     function KatApp() {
@@ -169,13 +169,13 @@ var KatApp = /** @class */ (function () {
             // due to a 'reference' to the object.
             this.options = KatApp.extend({}, options);
             this.element = element;
-            this.element[0][pluginName] = this;
+            this.element[0].KatApp = this;
         }
         KatAppPlugInShim.prototype.destroy = function () {
             // Remove from memory cache in case they call delete before the
             // real provider is loaded
             var shimIndex = -1;
-            var applications = $.fn[pluginName].plugInShims;
+            var applications = $.fn.KatApp.plugInShims;
             var id = this.id;
             // Wanted to use applications.findIndex( f() ) but ie doesn't support
             applications.forEach(function (a, index) {
@@ -186,7 +186,7 @@ var KatApp = /** @class */ (function () {
             if (shimIndex > -1) {
                 applications.splice(shimIndex, 1);
             }
-            delete this.element[0][pluginName];
+            delete this.element[0].KatApp;
         };
         KatAppPlugInShim.prototype.trace = function (message) {
             KatApp.trace(this, message);
@@ -223,20 +223,20 @@ var KatApp = /** @class */ (function () {
     //
     //      $.fn.matchHeight._beforeUpdate = function() { };
     //      $.fn.matchHeight._apply(elements, options); // manually apply options
-    $.fn[pluginName] = function (options) {
+    $.fn.KatApp = function (options) {
         var args = [];
         for (var _i = 1; _i < arguments.length; _i++) {
             args[_i - 1] = arguments[_i];
         }
         if (options === undefined || typeof options === 'object') {
-            if (options == undefined && this.length > 0 && this.first()[0][pluginName] != null) {
-                return this.first()[0][pluginName];
+            if (options == undefined && this.length > 0 && this.first()[0].KatApp !== undefined) {
+                return this.first()[0].KatApp;
             }
             // Creates a new plugin instance, for each selected element, and
             // stores a reference within the element's data
             return this.each(function () {
-                if (!this[pluginName]) {
-                    $.fn[pluginName].applicationFactory(KatApp.generateId(), $(this), options);
+                if (!this.KatApp) {
+                    $.fn.KatApp.applicationFactory(KatApp.generateId(), $(this), options);
                 }
             });
         }
@@ -247,7 +247,9 @@ var KatApp = /** @class */ (function () {
                 // If the user does not pass any arguments and the method allows to
                 // work as a getter then break the chainability so we can return a value
                 // instead the element reference.  this[0] should be the only item in selector and grab getter from it.
-                var instance = this[0][pluginName];
+                var instance = this[0].KatApp;
+                if (instance === undefined)
+                    return undefined;
                 return typeof instance[options] === 'function'
                     ? instance[options].apply(instance) // eslint-disable-line prefer-spread
                     : instance[options];
@@ -255,7 +257,7 @@ var KatApp = /** @class */ (function () {
             else {
                 // Invoke the speficied method on each selected element
                 return this.each(function () {
-                    var instance = this[pluginName];
+                    var instance = this.KatApp;
                     // No longer supporting this, see comment for needsCalculation in KatAppPlugInInterfaces.ts.  Just don't see the
                     // need and given pattern of providing full blown 'app' after server loads script, don't want to have to 
                     // support 'anything' on .KatApp() until onInitialized is completed.
@@ -275,11 +277,11 @@ var KatApp = /** @class */ (function () {
     };
     // 'In memory' application list until the real KatAppProvider.js script can be loaded from 
     // the CMS to properly register the applications
-    $.fn[pluginName].plugInShims = [];
-    $.fn[pluginName].applicationFactory = function (id, element, options) {
+    $.fn.KatApp.plugInShims = [];
+    $.fn.KatApp.applicationFactory = function (id, element, options) {
         var _a, _b, _c;
         var shim = new KatAppPlugInShim(id, element, options);
-        var applications = $.fn[pluginName].plugInShims;
+        var applications = $.fn.KatApp.plugInShims;
         applications.push(shim);
         shim.trace("Starting factory");
         // First time anyone has been called with .KatApp()

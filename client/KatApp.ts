@@ -1,4 +1,4 @@
-const pluginName = 'KatApp';
+// const pluginName = 'KatApp';
 
 // Static options available in js via KatApp.*
 class KatApp
@@ -206,7 +206,7 @@ class KatApp
             // due to a 'reference' to the object.
             this.options = KatApp.extend( {}, options );
             this.element = element;
-            this.element[ 0 ][ pluginName ] = this;
+            this.element[ 0 ].KatApp = this;
         }
     
         destroy(): void {
@@ -214,7 +214,7 @@ class KatApp
             // real provider is loaded
             let shimIndex = -1;
 
-            const applications = $.fn[pluginName].plugInShims as KatAppPlugInShimInterface[];
+            const applications = $.fn.KatApp.plugInShims as KatAppPlugInShimInterface[];
             const id = this.id;
             // Wanted to use applications.findIndex( f() ) but ie doesn't support
             applications.forEach( ( a, index ) => {
@@ -226,7 +226,7 @@ class KatApp
             if ( shimIndex > -1 ) {
                 applications.splice( shimIndex, 1 );
             }
-            delete this.element[ 0 ][ pluginName ];
+            delete this.element[ 0 ].KatApp;
         }
 
         trace( message: string ): void {
@@ -266,20 +266,20 @@ class KatApp
     //
     //      $.fn.matchHeight._beforeUpdate = function() { };
     //      $.fn.matchHeight._apply(elements, options); // manually apply options
-    $.fn[pluginName] = function(options?: KatAppOptions | string, ...args: Array<string | number | KatAppOptions>): JQuery | undefined {
+    $.fn.KatApp = function(options?: KatAppOptions | string, ...args: Array<string | number | KatAppOptions>): JQuery | KatAppPlugInShimInterface | undefined {
 
         if (options === undefined || typeof options === 'object') {
             
-            if ( options == undefined && this.length > 0 && this.first()[0][pluginName] != null ) {
-                return this.first()[0][pluginName];
+            if ( options == undefined && this.length > 0 && this.first()[0].KatApp !== undefined ) {
+                return this.first()[0].KatApp;
             }
 
             // Creates a new plugin instance, for each selected element, and
             // stores a reference within the element's data
             return this.each(function(): void {
 
-                if (!this[pluginName]) {
-                    $.fn[pluginName].applicationFactory(KatApp.generateId(), $(this), options as KatAppOptions);
+                if (!this.KatApp) {
+                    $.fn.KatApp.applicationFactory(KatApp.generateId(), $(this), options as KatAppOptions);
                 }
 
             });
@@ -293,8 +293,10 @@ class KatApp
                 // If the user does not pass any arguments and the method allows to
                 // work as a getter then break the chainability so we can return a value
                 // instead the element reference.  this[0] should be the only item in selector and grab getter from it.
-                const instance = this[0][pluginName];
+                const instance = this[0].KatApp;
                 
+                if ( instance === undefined ) return undefined;
+
                 return typeof instance[options] === 'function'
                     ? instance[options].apply(instance) // eslint-disable-line prefer-spread
                     : instance[options];
@@ -303,7 +305,7 @@ class KatApp
             
                 // Invoke the speficied method on each selected element
                 return this.each(function(): void {
-                    const instance = this[pluginName];
+                    const instance = this.KatApp;
 
                     // No longer supporting this, see comment for needsCalculation in KatAppPlugInInterfaces.ts.  Just don't see the
                     // need and given pattern of providing full blown 'app' after server loads script, don't want to have to 
@@ -327,11 +329,11 @@ class KatApp
 
     // 'In memory' application list until the real KatAppProvider.js script can be loaded from 
     // the CMS to properly register the applications
-    $.fn[pluginName].plugInShims = [];
-    $.fn[pluginName].applicationFactory = function( id: string, element: JQuery, options: KatAppOptions): KatAppPlugInShim {
+    $.fn.KatApp.plugInShims = [];
+    $.fn.KatApp.applicationFactory = function( id: string, element: JQuery, options: KatAppOptions): KatAppPlugInShim {
         const shim = new KatAppPlugInShim(id, element, options);
 
-        const applications = $.fn[pluginName].plugInShims as KatAppPlugInShimInterface[];
+        const applications = $.fn.KatApp.plugInShims as KatAppPlugInShimInterface[];
         applications.push( shim );
 
         shim.trace("Starting factory");

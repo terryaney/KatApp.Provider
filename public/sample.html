@@ -29,7 +29,7 @@
                     <a class="btn btn-primary" href="#" onclick="$('#katapp2').KatApp().calculate();">Generate</a>
                     <hr />    
                     <h2>KATApp2</h2>
-                    <div id="katapp2" rbl-trace-id="2" rbl-calc-engine="Conduent_LAWEnroll_POC_SE" rbl-view-templates="Standard_Templates" class="katapp col-sm-12">
+                    <div id="katapp2" rbl-trace-id="2" rbl-calcengine="Conduent_LAWEnroll_POC_SE" rbl-view-templates="Standard_Templates" class="katapp col-sm-12">
                         <div class="rbl-inputclass"></div>
                         <div class="rbl-resultclass"></div>
                     </div>
@@ -76,7 +76,7 @@
       KatApp.defaultOptions.registerDataWithService = false;
       KatApp.defaultOptions.functionUrl = "https://secure.conduentapplications.com/Services/RBL/Evolution_Test/CalculationFunction.ashx";
       
-      KatApp.defaultOptions.getRegistrationData = function( application, options, done, fail ) {
+      KatApp.defaultOptions.getData = function( application, options, done, fail ) {
           //this is a demo version that gets sample data from a REST API
           const authId = KatApp.pageParameters["btrrest_testid"] || "911000011";
           $.getJSON('https://qabtr.lifeatworkportal.com/services/rest/api/xds/TBOLoanPmtElection/' + authId )

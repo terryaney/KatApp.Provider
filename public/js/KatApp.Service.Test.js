@@ -1,5 +1,5 @@
 "use strict";
-KatApp.defaultOptions.getRegistrationData = function (application, _options, done) {
+KatApp.defaultOptions.getData = function (application, _options, done) {
     application.trace("Debug data.");
     done({
         AuthID: "91111111",

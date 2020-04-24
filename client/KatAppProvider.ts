@@ -3,7 +3,7 @@
 // - Do I want to call calculate in updateOptions?  They could bind and call if they need to I guess
 // - Ability to have two CE's for one view might be needed for stochastic
 //      Would need to intercept init that binds onchange and instead call a getOptions or smoething
-//      on each input, or maybe a rbl-calc-engine tag on each input?
+//      on each input, or maybe a rbl-calcengine tag on each input?
 
 // Discussions with Tom
 // - Templates run every calc?  Will that goof up slider config?  Need to read code closer
@@ -47,15 +47,15 @@
 // - Retry - how often do we 'retry' registration?  Once per session?  Once per calc attempt?
 // - Need to figure out if we have name conflicts with id's put in katapps, tom's docs made comment about name vs id, read again
 //      - i.e. what if two views on a page have iRetAge...now that it isn't asp.net (server ids), maybe we get away with it?
-// - Would be consistent about -'s in attributes, meaning between every word or maybe none...I've seen -calcengine -calc-engine, -inputname, etc.
+// - Would be consistent about -'s in attributes, meaning between every word or maybe none...I've seen -calcengine -calcengine, -inputname, etc.
 // - Downfall to our paradigm of CMS managing KatAppProvider code is never caches script and loads it each time?
 
 // External Usage Changes
 // 1. Look at KatAppOptions (properties and events) and KatAppPlugInInterface (public methods on a katapp (only 4))
-// 2. Kat App element attributes (instead of data): rbl-view, rbl-view-templates, rbl-calc-engine
+// 2. Kat App element attributes (instead of data): rbl-view, rbl-view-templates, rbl-calcengine
 // 3. Registration TP needs AuthID and Client like mine does, RBLe Service looks like it expects them (at least AuthID)
 // 4. If they do handlers for submit, register, etc., they *have* to call my done/fail callbacks or app will 'stall'
-// 5. Changed calcengine to calc-engine in <rbl-config calcengine="Conduent_BiscombPOC_SE" templates="nonstandard_templates"></rbl-config> to match others
+// 5. Changed calcengine to calcengine in <rbl-config calcengine="Conduent_BiscombPOC_SE" templates="nonstandard_templates"></rbl-config> to match others
 // 6. Added rbl-input-tab and rbl-result-tabs to 'kat app data attributes'
 
 // Prototypes / polyfills
@@ -126,7 +126,7 @@ $(function() {
     };
 
 
-    $.fn[pluginName].templateOn = function( templateName: string, events: string, fn: TemplateOnDelegate ): void {
+    $.fn.KatApp.templateOn = function( templateName: string, events: string, fn: TemplateOnDelegate ): void {
         _templateDelegates.push( { Template: ensureGlobalPrefix( templateName )!, Delegate: fn, Events: events } ); // eslint-disable-line @typescript-eslint/no-non-null-assertion
         KatApp.trace( undefined, "Template event(s) registered [" + events + "] for [" + templateName + "]." );
     };
@@ -301,15 +301,15 @@ $(function() {
             application.resultRowLookups = undefined;
         }
 
-        getRegistrationData( application: KatAppPlugInInterface, currentOptions: KatAppOptions, next: PipelineCallback ): void {
+        getData( application: KatAppPlugInInterface, currentOptions: KatAppOptions, next: PipelineCallback ): void {
         
-            if ( currentOptions.getRegistrationData === undefined ) 
+            if ( currentOptions.getData === undefined ) 
             {
-                next( "getRegistrationData handler does not exist." );
+                next( "getData handler does not exist." );
                 return;
             }
     
-            currentOptions.getRegistrationData( 
+            currentOptions.getData( 
                 application,
                 currentOptions, 
                 data => { 
@@ -318,8 +318,8 @@ $(function() {
                     next( undefined, data ); 
                 },
                 ( _jqXHR, textStatus ) => {
-                    application.trace("getRegistrationData AJAX Error Status: " + textStatus);
-                    next( "getRegistrationData AJAX Error Status: " + textStatus );
+                    application.trace("getData AJAX Error Status: " + textStatus);
+                    next( "getData AJAX Error Status: " + textStatus );
                 }
             );  
         }
@@ -328,7 +328,7 @@ $(function() {
             const register =
                 currentOptions.registerData ??
                 function( _app, _o, done, fail ): void {
-                    const traceCalcEngine = application.element.data("katapp-trace-calc-engine") === "1";
+                    const traceCalcEngine = application.element.data("katapp-trace-calcengine") === "1";
                     const calculationOptions: SubmitCalculationOptions = {
                         Data: data,
                         Configuration: {
@@ -399,9 +399,9 @@ $(function() {
             }
             
             const that = this;
-            const saveCalcEngineLocation = application.element.data("katapp-save-calc-engine");
-            const traceCalcEngine = application.element.data("katapp-trace-calc-engine") === "1";
-            const refreshCalcEngine = application.element.data("katapp-refresh-calc-engine") === "1";
+            const saveCalcEngineLocation = application.element.data("katapp-save-calcengine");
+            const traceCalcEngine = application.element.data("katapp-trace-calcengine") === "1";
+            const refreshCalcEngine = application.element.data("katapp-refresh-calcengine") === "1";
 
             // Should make a helper that gets options (for both submit and register)
             // TODO: COnfirm all these options are right
@@ -825,7 +825,7 @@ $(function() {
             // Transfer data attributes over if present...
             const attrResultTabs = element.attr("rbl-result-tabs");
             const attributeOptions: KatAppOptions = {
-                calcEngine: element.attr("rbl-calc-engine") ?? KatApp.defaultOptions.calcEngine,
+                calcEngine: element.attr("rbl-calcengine") ?? KatApp.defaultOptions.calcEngine,
                 inputTab: element.attr("rbl-input-tab") ?? KatApp.defaultOptions.inputTab,
                 resultTabs: attrResultTabs != undefined ? attrResultTabs.split(",") : KatApp.defaultOptions.resultTabs,
                 view: element.attr("rbl-view"),
@@ -843,7 +843,7 @@ $(function() {
 
             this.element = element;
             // re-assign the KatAppPlugIn to replace shim with actual implementation
-            this.element[ 0 ][ pluginName ] = this;
+            this.element[ 0 ].KatApp = this;
 
             this.init();
         }
@@ -923,7 +923,7 @@ $(function() {
                                     that.trace("View " + viewId + " is missing rbl-config element.");
                                 }
                                 else {
-                                    that.options.calcEngine = that.options.calcEngine ?? rblConfig.attr("calc-engine");
+                                    that.options.calcEngine = that.options.calcEngine ?? rblConfig.attr("calcengine");
                                     templatesFromRblConfig = rblConfig.attr("templates");
                                     that.options.inputTab = that.options.inputTab ?? rblConfig.attr("input-tab");
                                     const attrResultTabs = rblConfig.attr("result-tabs");
@@ -1068,7 +1068,7 @@ $(function() {
                     function(): void { 
                         rble.submitCalculation( 
                             that, currentOptions, 
-                            // If failed, let it do next job (getRegistrationData), otherwise, jump to finish
+                            // If failed, let it do next job (getData), otherwise, jump to finish
                             errorMessage => { 
                                 pipelineError = errorMessage; next( errorMessage !== undefined ? 0 : 3 );
                             } 
@@ -1076,7 +1076,7 @@ $(function() {
                     },
                     // Get Registration Data
                     function(): void {
-                        rble.getRegistrationData( 
+                        rble.getData( 
                             that, currentOptions, 
                             // If failed, then I am unable to register data, so just jump to finish, otherwise continue to registerData
                             ( errorMessage, data ) => { 
@@ -1121,7 +1121,7 @@ $(function() {
                     function(): void {
                         rble.submitCalculation( 
                             that, currentOptions,
-                            // If failed, let it do next job (getRegistrationData), otherwise, jump to finish
+                            // If failed, let it do next job (getData), otherwise, jump to finish
                             errorMessage => { 
                                 pipelineError = errorMessage; 
                                 next( 0 );
@@ -1138,9 +1138,9 @@ $(function() {
                             }
                             ui.triggerEvent( that, "onCalculation", that.results, currentOptions, that );
             
-                            that.element.removeData("katapp-save-calc-engine");
-                            that.element.removeData("katapp-trace-calc-engine");
-                            that.element.removeData("katapp-refresh-calc-engine");
+                            that.element.removeData("katapp-save-calcengine");
+                            that.element.removeData("katapp-trace-calcengine");
+                            that.element.removeData("katapp-refresh-calcengine");
                         }
                         else {
                             rble.setResults( that, undefined );
@@ -1167,7 +1167,7 @@ $(function() {
             this.element.off(".RBLe");
             ui.unbindEvents( this );
             ui.triggerEvent( this, "onDestroyed", this );
-            delete this.element[ 0 ][ pluginName ];
+            delete this.element[ 0 ].KatApp;
         }
 
         updateOptions(): void { 
@@ -1186,13 +1186,13 @@ $(function() {
             return rble.getResultValue( this, table, id, column, defautlValue ); 
         }
         saveCalcEngine( location: string ): void {
-            this.element.data("katapp-save-calc-engine", location);
+            this.element.data("katapp-save-calcengine", location);
         }
         refreshCalcEngine(): void {
-            this.element.data("katapp-refresh-calc-engine", "1");
+            this.element.data("katapp-refresh-calcengine", "1");
         }
         traceCalcEngine(): void {
-            this.element.data("katapp-trace-calc-engine", "1");
+            this.element.data("katapp-trace-calcengine", "1");
         }
         trace( message: string ): void {
             KatApp.trace( this, message );
@@ -1214,16 +1214,16 @@ $(function() {
     //      of this file if I am going to do that.
     
     // Replace the applicationFactory to create real KatAppPlugIn implementations
-    $.fn[pluginName].applicationFactory = function( id: string, element: JQuery, options: KatAppOptions): KatAppPlugIn {
+    $.fn.KatApp.applicationFactory = function( id: string, element: JQuery, options: KatAppOptions): KatAppPlugIn {
         return new KatAppPlugIn(id, element, options);
     };
 
-    ( $.fn[pluginName].plugInShims as KatAppPlugInShimInterface[] ).forEach( a => { 
-        $.fn[pluginName].applicationFactory( a.id, a.element, a.options );
+    ( $.fn.KatApp.plugInShims as KatAppPlugInShimInterface[] ).forEach( a => { 
+        $.fn.KatApp.applicationFactory( a.id, a.element, a.options );
     });
 
     // Destroy plugInShims
-    delete $.fn[pluginName].plugInShims;
+    delete $.fn.KatApp.plugInShims;
 });
 // Needed this line to make sure that I could debug in VS Code since this was dynamically loaded with $.getScript() - https://stackoverflow.com/questions/9092125/how-to-debug-dynamically-loaded-javascript-with-jquery-in-the-browsers-debugg
 //# sourceURL=KatAppProvider.js

@@ -2,6 +2,17 @@
 interface String {
     format(json: JQuery.PlainObject): string;
 }
+interface HTMLElement {
+    KatApp?: KatAppPlugInShimInterface;
+}
+interface JQuery {
+    KatApp(options?: KatAppOptions | string, ...args: Array<string | number | KatAppOptions>): JQuery | KatAppPlugInShimInterface | string | undefined;
+}
+interface Function {
+    plugInShims: KatAppPlugInShimInterface[];
+    applicationFactory(id: string, element: JQuery, options: KatAppOptions): KatAppPlugInShimInterface;
+    templateOn(templateName: string, events: string, fn: TemplateOnDelegate): void;
+}
 interface CalculationInputs {
     iConfigureUI?: number;
     iInputTrigger?: string;
@@ -78,7 +89,7 @@ interface KatAppOptions {
     useTestView?: boolean;
     useTestPlugin?: boolean;
     submitCalculation?: (appilcation: KatAppPlugInInterface, options: SubmitCalculationOptions, done: RBLeServiceCallback, fail: JQueryFailCallback) => void;
-    getRegistrationData?: (appilcation: KatAppPlugInInterface, options: KatAppOptions, done: RBLeRESTServiceResultCallback, fail: JQueryFailCallback) => void;
+    getData?: (appilcation: KatAppPlugInInterface, options: KatAppOptions, done: RBLeRESTServiceResultCallback, fail: JQueryFailCallback) => void;
     registerData?: (appilcation: KatAppPlugInInterface, options: KatAppOptions, done: RBLeServiceCallback, fail: JQueryFailCallback) => void;
     onInitialized?: (this: HTMLElement, appilcation: KatAppPlugInInterface) => void;
     onDestroyed?: (this: HTMLElement, appilcation: KatAppPlugInInterface) => void;

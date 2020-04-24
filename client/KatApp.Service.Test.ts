@@ -1,4 +1,4 @@
-KatApp.defaultOptions.getRegistrationData = function( application, _options, done ): void {    
+KatApp.defaultOptions.getData = function( application, _options, done ): void {    
     application.trace("Debug data.");
     done(
         {

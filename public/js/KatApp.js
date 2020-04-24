@@ -103,9 +103,9 @@ var KatApp = /** @class */ (function () {
                     }
                     var params = "?{Command:'KatAppResource',Resource:'" + resource + "',Folder:'" + folder + "',Version:'" + version + "'}";
                     if (isScript) {
-                        // $.getScript(url + params);                    
-                        // Debug version without having to upload to MgmtSite
-                        $.getScript("js/" + resource)
+                        // $.getScript(url + params) // Production version
+                        $.getScript("js/" + resource) // Debug version without having to upload to MgmtSite
+                            // $.ajax({ url: "js/" + resource, dataType: "script", cache: true }) // Trying to get browser caching working
                             .done(function () { next(); })
                             .fail(function (_jqXHR, textStatus) {
                             pipelineError = "getResources failed requesting " + r + ":" + textStatus;

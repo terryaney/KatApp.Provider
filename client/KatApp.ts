@@ -145,14 +145,14 @@ class KatApp
                     const params = "?{Command:'KatAppResource',Resource:'" + resource + "',Folder:'" + folder + "',Version:'" + version + "'}";
         
                     if ( isScript ) {
-                        // $.getScript(url + params);                    
-                        // Debug version without having to upload to MgmtSite
-                        $.getScript("js/" + resource)
-                            .done( () => { next(); } )
-                            .fail( ( _jqXHR: JQuery.jqXHR, textStatus: string) => {
-                                pipelineError = "getResources failed requesting " + r + ":" + textStatus;
-                                next();
-                            } );
+                        // $.getScript(url + params) // Production version
+                        $.getScript("js/" + resource) // Debug version without having to upload to MgmtSite
+                        // $.ajax({ url: "js/" + resource, dataType: "script", cache: true }) // Trying to get browser caching working
+                        .done( () => { next(); } )
+                        .fail( ( _jqXHR: JQuery.jqXHR, textStatus: string) => {
+                            pipelineError = "getResources failed requesting " + r + ":" + textStatus;
+                            next();
+                        });
                     }
                     else {
                         // $.get(url + params)

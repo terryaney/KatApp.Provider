@@ -1,7 +1,6 @@
 // TODO
 // - Need to remove slider events (https://refreshless.com/nouislider/events-callbacks/) before destroying and carousel (standard)
 // - How do I check/handle for errors when I try to load view
-// - Do I want to call calculate in updateOptions?  They could bind and call if they need to I guess
 // - Ability to have two CE's for one view might be needed for stochastic
 //      Would need to intercept init that binds onchange and instead call a getOptions or smoething
 //      on each input, or maybe a rbl-calcengine tag on each input?
@@ -17,6 +16,9 @@
 //      - i.e. what if two views on a page have iRetAge...now that it isn't asp.net (server ids), maybe we get away with it?
 // - Would be consistent about -'s in attributes, meaning between every word or maybe none...I've seen -calcengine -calcengine, -inputname, etc.
 // - Downfall to our paradigm of CMS managing KatAppProvider code is never caches script and loads it each time?
+// - Talk to tom about how to check for events
+//      - Wondering if events on charts are still there or if calling destroy on chart removes
+//      - Wondering if we are making multiple events on the carousel events and slider events
 
 // External Usage Changes
 // 1. Look at KatAppOptions (properties and events) and KatAppPlugInInterface (public methods on a katapp (only 4))
@@ -38,6 +40,22 @@ String.prototype.format = function (json): string {
     }
     return that.replace("_", "_");
 };
+if (typeof String.prototype.startsWith !== 'function') {
+	String.prototype.startsWith = function (str: string): boolean {
+		return this.slice(0, str.length) === str;
+	};
+}
+if (typeof String.prototype.endsWith !== 'function') {
+	String.prototype.endsWith = function (searchString: string, position?: number): boolean {
+		const subjectString = this.toString();
+		if (typeof position !== 'number' || !isFinite(position) || Math.floor(position) !== position || position > subjectString.length) {
+			position = subjectString.length;
+		}
+		position -= searchString.length;
+		const lastIndex = subjectString.indexOf(searchString, position);
+		return lastIndex !== -1 && lastIndex === position;
+	};
+}
 
 $(function() {
     // Reassign options here (extending with what client/host might have already set) allows
@@ -984,7 +1002,7 @@ $(function() {
         createHtmlFromResultRow( application: KatAppPlugInInterface, resultRow: HtmlContentRow ): void {
             const view = application.element;
             let content = resultRow.content ?? resultRow.html ?? resultRow.value ?? "";
-            let selector = resultRow.selector ?? resultRow['@id'] + "";
+            let selector = resultRow.selector ?? resultRow["@id"] ?? "";
 
             if (content.length > 0 && selector.length > 0) {
 
@@ -1042,7 +1060,7 @@ $(function() {
                     $(this).html( value );
                 }
                 else {
-                    application.trace("RBL ERROR: no data returned for rbl-value=" + el.attr('rbl-value'));
+                    application.trace("RBL WARNING: no data returned for rbl-value=" + el.attr('rbl-value'));
                 }
             });
         }
@@ -1070,10 +1088,10 @@ $(function() {
                     const rblSourceParts = el.attr('rbl-source')?.split('.');
 
                     if ( templateContent === undefined ) {
-                        application.trace("RBL ERROR: Template content could not be found: [" + tid + "].");
+                        application.trace("RBL WARNING: Template content could not be found: [" + tid + "].");
                     }
                     else if ( rblSourceParts === undefined || rblSourceParts.length === 0) {
-                        application.trace("RBL ERROR: no rbl-source data");
+                        application.trace("RBL WARNING: no rbl-source data");
                     }
                     else if ( rblSourceParts.length === 1 || rblSourceParts.length === 3 ) {
                         
@@ -1096,7 +1114,7 @@ $(function() {
                             })
 
                         } else {
-                            application.trace("RBL ERROR: no data returned for rbl-source=" + el.attr('rbl-source'));
+                            application.trace("RBL WARNING: no data returned for rbl-source=" + el.attr('rbl-source'));
                         }
 
                     } else if ( rblSourceParts.length === 2 ) {
@@ -1107,7 +1125,7 @@ $(function() {
                             el.html( templateContent.format( row ) );
                         }
                         else {
-                            application.trace("RBL ERROR: no data returned for rbl-source=" + el.attr('rbl-source'));
+                            application.trace("RBL WARNING: no data returned for rbl-source=" + el.attr('rbl-source'));
                         }
 
                     }
@@ -1119,7 +1137,7 @@ $(function() {
                             el.html( templateContent.format( { "value": value } ) );                                    
                         }
                         else {
-                            application.trace("RBL ERROR: no data returned for rbl-source=" + el.attr('rbl-source'));
+                            application.trace("RBL WARNING: no data returned for rbl-source=" + el.attr('rbl-source'));
                         }
 
                     }
@@ -1162,7 +1180,7 @@ $(function() {
                     }
                 }
                 else {
-                    application.trace("RBL ERROR: no data returned for rbl-display=" + el.attr('rbl-display'));
+                    application.trace("RBL WARNING: no data returned for rbl-display=" + el.attr('rbl-display'));
                 }
             });
         }
@@ -1224,6 +1242,12 @@ $(function() {
     {
         application: KatAppPlugInInterface;
 
+        highchartsOptions?: HighChartsOptionRow[];
+        highchartsOverrides?: HighChartsOverrideRow[];
+        highchartsData?: HighChartsDataRow[];
+        highChartsDataName?: string;
+        highChartsOptionsName?: string;
+
         constructor( application: KatAppPlugInInterface ) {
             this.application = application;    
         }
@@ -1240,8 +1264,8 @@ $(function() {
 
             if (config == undefined) return;
 
-            const minValue = +config.min;
-            const maxValue = +config.max;
+            const minValue = Number( config.min );
+            const maxValue = Number( config.max );
 
             const defaultConfigValue =
                 this.application.getResultValue("ejs-defaults", id, "value") || // what is in ejs-defaults
@@ -1249,9 +1273,9 @@ $(function() {
                 $("." + id).val() || // what was put in the text box
                 config.min; //could/should use this
 
-            const stepValue = +( config.step || "1" );
+            const stepValue = Number( config.step || "1" );
             const format = config.format || "n";
-            const decimals = +( config.decimals || "0");
+            const decimals = Number( config.decimals || "0");
 
             const sliderJQuery = $(".slider-" + id, el);
             $("." + id, el).val(defaultConfigValue);
@@ -1275,7 +1299,7 @@ $(function() {
                 const pipsMode = config["pips-mode"] ?? "";
                 const pipValuesString = config["pips-values"] ?? "";
                 const pipsLargeValues = pipValuesString !== "" ? pipValuesString.split(',').map(Number) : [0, 25, 50, 75, 100];
-                const pipsDensity = +(config["pips-density"] || "5");
+                const pipsDensity = Number(config["pips-density"] || "5");
 
                 const pips = pipsMode !== ""
                     ? {
@@ -1287,7 +1311,7 @@ $(function() {
                     : undefined;
 
                 const sliderOptions: noUiSlider.Options = {
-                    start: +defaultSliderValue,
+                    start: Number( defaultSliderValue ),
                     step: stepValue * 1,
                     behaviour: 'tap',
                     connect: 'lower',
@@ -1318,7 +1342,7 @@ $(function() {
                     // Hook up this event so that the label associated with the slider updates *whenever* there is a change.
                     // https://refreshless.com/nouislider/events-callbacks/
                     instance.on('update.RBLe', function ( this: noUiSlider.noUiSlider ) {
-                        const value = +( this.get() as string );
+                        const value = Number( this.get() as string );
 
                         $("." + id).val(value);
                         const v = format == "p" ? value / 100 : value;
@@ -1349,7 +1373,7 @@ $(function() {
                         else {
                             // When wizard slider changes, set matching 'regular slider' value with same value from wizard
                             instance.on('change.RBLe', function ( this: noUiSlider.noUiSlider ) {
-                                const value = +( this.get() as string );
+                                const value = Number( this.get() as string );
                                 const targetSlider = $(".slider-" + targetInput, that.application.element);
                                 const targetSliderInstance = targetSlider.length === 1 ? targetSlider[0] as noUiSlider.Instance : undefined;
 
@@ -1411,13 +1435,365 @@ $(function() {
             }
         }
 
+        stringCompare(strA: string | undefined, strB: string | undefined, ignoreCase: boolean): number {
+            if (strA === undefined && strB === undefined) {
+                return 0;
+            }
+            else if (strA === undefined) {
+                return -1;
+            }
+            else if (strB === undefined) {
+                return 1;
+            }
+            else if (ignoreCase) {
+                return strA.toUpperCase().localeCompare(strB.toUpperCase());
+            }
+            else {
+                return strA.localeCompare(strB);
+            }
+        };
+
+        getHighchartsConfigValue( configurationName: string ): string | undefined {            
+            // Look in override table first, then fall back to 'regular' options table
+            return this.highchartsOverrides?.filter(r => this.stringCompare(r.key, configurationName, true) === 0).shift()?.value ??
+                   this.highchartsOptions?.filter(r => this.stringCompare(r.key, configurationName, true) === 0).shift()?.value;
+        }
+
+        // Associated code with this variable might belong in template html/js, but putting here for now.
+        firstHighcharts = true;
+        ensureHighchartsCulture(): void {
+            // Set some default highcharts culture options globally if this is the first chart I'm processing
+            if ( this.firstHighcharts ){
+                this.firstHighcharts = false;
+
+                const culture = this.application.getResultValue("variable","culture","value") ?? "en-";
+                if ( !culture.startsWith( "en-" ) ) {
+                    Highcharts.setOptions(
+                        {
+                            yAxis: {
+                                labels: {
+                                    formatter: function ( this: HighchartsDataPoint ): string {
+                                        return String.localeFormat("{0:c0}", this.value);
+                                    }
+                                },
+                                stackLabels: {
+                                    formatter: function ( this: HighchartsDataPoint ): string {
+                                        return String.localeFormat("{0:c0}", this.value);
+                                    }
+                                }
+                            }
+                        } as HighchartsGlobalOptions );    
+                }
+            }
+        }
+
+		removeRBLEncoding(value: string | undefined): string | undefined {
+			if (value === undefined) return value;
+
+			// http://stackoverflow.com/a/1144788/166231
+			/*
+			function escapeRegExp(string) {
+				return string.replace(/([.*+?^=!:${}()|\[\]\/\\])/g, "\\$1");
+			}
+			*/
+			return value.replace(/<</g, "<")
+				.replace(/&lt;&lt;/g, "<")
+				.replace(/>>/g, ">")
+				.replace(/&gt;&gt;/g, ">")
+				.replace(/&quot;/g, "\"")
+				.replace(/&amp;nbsp;/g, "&nbsp;");
+		}
+
+
+		getHighChartsOptionValue(value: string): string | boolean | number | (()=> void) | undefined {
+			const d = Number(value);
+
+			if (value === undefined || this.stringCompare(value, "null", true) === 0) return undefined;
+			else if (!isNaN(d) && value !== "") return d;
+			else if (this.stringCompare(value, "true", true) === 0) return true;
+			else if (this.stringCompare(value, "false", true) === 0) return false;
+			else if (value.startsWith("json:")) return JSON.parse(value.substring(5));
+			else if (value.startsWith("var ")) {
+				const v = value.substring(4);
+				return function (): any { return eval(v); } // eslint-disable-line @typescript-eslint/no-explicit-any
+			}
+			else if (value.startsWith("function ")) {
+				const f = this.removeRBLEncoding("function f() {value} f.call(this);".format( { value: value.substring(value.indexOf("{")) } ));
+				return function (): any { return eval(f!); } // eslint-disable-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-non-null-assertion
+			}
+			else return this.removeRBLEncoding(value);
+		}
+
+        setHighChartsOption(optionsContainer: HighchartsOptions | HighchartsSeriesOptions, name: string, value: string): void {
+			let optionJson = optionsContainer;
+			const optionNames = name.split(".");
+			const optionValue = this.getHighChartsOptionValue(value);
+
+			// Build up a json object...
+			// chart.title.text, Hello = { chart: { title: { text: "Hello } } }
+			// annotations[0].labels[0], { point: 'series1.69', text: 'Life Exp' } = { annotations: [ { labels: [ { point: 'series1.69', text: 'Life Exp' } ] } ] }
+			for (let k = 0; k < optionNames.length; k++) {
+				let optionName = optionNames[k];
+				let optionIndex = -1;
+
+				if (optionName.endsWith("]")) {
+					const nameParts = optionName.split("[");
+					optionName = nameParts[0];
+					optionIndex = parseInt(nameParts[1].substring(0, nameParts[1].length - 1));
+				}
+
+				const onPropertyValue = k === optionNames.length - 1;
+
+				// When you are on the last name part, instead of setting it
+				// to new {} object, set it appropriately to the value passed in CE
+				const newValue = onPropertyValue
+					? optionValue
+					: {};
+
+				// If doesn't exist, set it to new object or array
+				if (optionJson[optionName] === undefined || onPropertyValue) {
+					optionJson[optionName] = optionIndex > -1 ? [] : newValue;
+				}
+				// If property is an array and index isn't there yet, push a new element
+				if (optionIndex > -1 && (optionJson[optionName] as Array<any>).length - 1 < optionIndex) { // eslint-disable-line @typescript-eslint/no-explicit-any
+					(optionJson[optionName] as Array<any>).push(newValue); // eslint-disable-line @typescript-eslint/no-explicit-any
+				}
+
+				// Reset my local variable to the most recently added/created object
+				optionJson = optionIndex > -1
+					? optionJson[optionName][optionIndex]
+					: optionJson[optionName];
+			}
+		}
+
+        getHighChartsXAxisOptions( existingOptions: HighchartsAxisOptions | undefined, chartData: HighChartsDataRow[] ): HighchartsAxisOptions {
+            const xAxis = existingOptions as HighchartsAxisOptions ?? {};
+            xAxis.categories = chartData.map(d => this.removeRBLEncoding(d.category) ?? "");
+
+            const plotInformation =
+                chartData
+                    .map((d, index) => ({ Index: index, PlotLine: d.plotLine ?? "", PlotBand: d.plotBand ?? "" }) as HighChartsPlotConfigurationRow)
+                    .filter(r => r.PlotLine !== "" || r.PlotBand !== "");
+
+            const plotLines: HighchartsPlotLines[] = [];
+            const plotBands: HighchartsPlotBands[] = [];
+
+            // Offset should be zero unless you want to adjust the line/band to draw between categories.  If you want to draw before the category, use -0.5.  If you want to draw after category, use 0.5
+            // i.e. if you had a column at age 65 and wanted to plot band from there to end of chart, the band would start half way in column starting band 'between' 64 and 65 (i.e. 64.5) will make it so
+            // whole bar is in span.
+            plotInformation.forEach(row => {
+                if (row.PlotLine !== "") {
+                    const info = row.PlotLine.split("|");
+                    const color = info[0];
+                    const width = Number(info[1]);
+                    const offset = info.length > 2 ? Number(info[2]) : 0;
+
+                    const plotLine: HighchartsPlotLines = {
+                        color: color,
+                        value: row.Index + offset,
+                        width: width,
+                        zIndex: 1
+                    };
+
+                    plotLines.push(plotLine);
+                }
+
+                if (row.PlotBand !== "") {
+                    const info = row.PlotBand.split("|");
+                    const color = info[0];
+                    const span = info[1];
+                    const offset = info.length > 2 ? Number(info[2]) : 0;
+
+                    const from = this.stringCompare(span, "lower", true) === 0 ? -1 : row.Index + offset;
+                    const to =
+                        this.stringCompare(span, "lower", true) === 0 ? row.Index + offset :
+                        this.stringCompare(span, "higher", true) === 0 ? chartData.length :
+                            row.Index + Number(span) + offset;
+
+                    const plotBand: HighchartsPlotBands = {
+                        color: color,
+                        from: from,
+                        to: to
+                    };
+
+                    plotBands.push(plotBand);
+                }
+            });
+
+            if (plotLines.length > 0) {
+                xAxis.plotLines = plotLines;
+            }
+            if (plotBands.length > 0) {
+                xAxis.plotBands = plotBands;
+            }
+            return xAxis;
+        }
+
+        getHighchartsTooltipOptions( seriesColumns: string[], chartConfigurationRows: HighChartsDataRow[] ): HighchartsTooltipOptions | undefined {
+            const tooltipFormat = this.removeRBLEncoding(this.getHighchartsConfigValue("config-tooltipFormat"));
+            
+            if ( tooltipFormat === undefined ) {
+                return undefined;
+            }
+
+            // Get the 'format' configuration row to look for specified format, otherwise return c0 as default
+            const configFormat = chartConfigurationRows.filter(c => c.category === "config-format").shift();
+
+            const seriesFormats = seriesColumns
+                        // Ensure the series/column is visible
+                        .filter( seriesName => chartConfigurationRows.filter(c => c.category === "config-visible" && c[seriesName] === "0").length === 0 )
+                        .map( seriesName => configFormat?.[seriesName] as string || "c0" );
+
+            return {
+                formatter: function ( this: HighchartsTooltipFormatterContextObject ) {
+                    let s = "";
+                    let t = 0;
+                    const template = Sys.CultureInfo.CurrentCulture.name.startsWith("fr")
+                        ? "<br/>{name} : {value}"
+                        : "<br/>{name}: {value}";
+
+                    this.points.forEach(point => {
+                        if (point.y > 0) {
+
+                            s += template.format( { name: point.series.name, value: String.localeFormat("{0:" + seriesFormats[0] + "}", point.y) });
+                            t += point.y;
+                        }
+                    });
+                    return tooltipFormat
+                        .replace(new RegExp("\\{x\\}", "g"), String(this.x))
+                        .replace(new RegExp("\\{stackTotal\\}", "g"), String.localeFormat("{0:" + seriesFormats[0] + "}", t))
+                        .replace(new RegExp("\\{seriesDetail\\}", "g"), s);
+
+                },
+                shared: true
+            } as HighchartsTooltipOptions;
+        }
+
+        getHighchartsOptions( firstDataRow: HighChartsDataRow ): HighchartsOptions {            
+            const chartOptions: HighchartsOptions = {};
+
+            // If chart has at least 1 data row and options/overrides arrays have been initialized
+            if ( this.highchartsData !== undefined && this.highchartsOptions !== undefined && this.highchartsOverrides !== undefined ) {
+
+                // First set all properties from the options/overrides rows
+                const overrideProperties = this.highchartsOverrides.filter( r => !r.key.startsWith("config-"));
+                this.highchartsOptions.concat(overrideProperties).forEach(optionRow => {
+                    this.setHighChartsOption(chartOptions, optionRow.key, optionRow.value);
+                });
+
+                // Get series data
+                const allChartColumns = Object.keys(firstDataRow);
+                const seriesColumns = allChartColumns.filter( k => k.startsWith( "series" ) );
+                const chartConfigurationRows = this.highchartsData.filter(e => e.category.startsWith("config-"));
+                const chartData = this.highchartsData.filter(e => !e.category.startsWith("config-"));
+
+                const chartType = this.getHighchartsConfigValue("chart.type");
+                const isXAxisChart = chartType !== "pie" && chartType !== "solidgauge" && chartType !== "scatter3d" && chartType !== "scatter3d";
+
+                chartOptions.series = this.getHighChartsSeries(allChartColumns, seriesColumns, chartConfigurationRows, chartData, isXAxisChart);
+
+                if (isXAxisChart) {
+                    chartOptions.xAxis = this.getHighChartsXAxisOptions( chartOptions.xAxis as HighchartsAxisOptions | undefined, chartData );
+                }
+
+                chartOptions.tooltip = this.getHighchartsTooltipOptions( seriesColumns, chartConfigurationRows ) ?? chartOptions.tooltip;
+            }
+
+            return chartOptions;
+        }
+
+        getHighChartsSeriesDataRow(row: HighChartsDataRow, allColumnNames: string[], seriesName: string, isXAxisChart: boolean): HighchartsDataPoint {
+			// id: is for annotations so that points can reference a 'point name/id'
+			// name: is for pie chart's built in highcharts label formatter and it looks for '.name' on the point
+
+			const dataRow = { y: +row[seriesName], id: seriesName + "." + row.category } as HighchartsDataPoint;
+
+			if (!isXAxisChart) {
+				dataRow.name = row.category;
+			}
+
+            // Get all the 'data point' configuration values for the current chart data row
+            // TODO: Get documentation here of some samples of when this is needed
+			const pointColumnHeader = "point." + seriesName + ".";
+            allColumnNames.filter( k => k.startsWith(pointColumnHeader) ).forEach( k => {
+                dataRow[k.substring(pointColumnHeader.length)] = this.getHighChartsOptionValue(row[k]);
+			});
+
+			return dataRow;
+		}
+
+		getHighChartsSeries(allColumns: string[], seriesColumns: string[], chartConfigurationRows: HighChartsDataRow[], chartData: HighChartsDataRow[], isXAxisChart: boolean): HighchartsSeriesOptions[] {
+			const seriesInfo: HighchartsSeriesOptions[] = [];
+
+			seriesColumns.forEach(seriesName => {
+				const isVisible = chartConfigurationRows.filter(c => c.category === "config-visible" && c[seriesName] === "0").length === 0;
+				// Don't want series on chart or legend but want it in tooltip/chart data
+				const isHidden = chartConfigurationRows.filter(c => c.category === "config-hidden" && c[seriesName] === "1").length > 0;
+
+				if (isVisible) {
+					const series: HighchartsSeriesOptions = {};
+					const properties = chartConfigurationRows
+						.filter(c => ["config-visible", "config-hidden", "config-format"].indexOf(c.category) === -1 && c[seriesName] !== undefined)
+						.map(c => ({ key: c.category.substring(7), value: c[seriesName] } as HighChartsOptionRow));
+
+					series.data = chartData.map(d => this.getHighChartsSeriesDataRow(d, allColumns, seriesName, isXAxisChart));
+
+					properties.forEach(c => {
+						this.setHighChartsOption(series, c.key, c.value);
+					});
+
+					if (isHidden) {
+						series.visible = false;
+						series.showInLegend = series.showInLegend ?? false;
+					}
+
+					seriesInfo.push(series);
+				}
+			});
+
+			return seriesInfo;
+		}
+
         buildHighcharts(el: JQuery<HTMLElement>): void {
-            const dataName = el.attr("rbl-chartdata");
-            const optionsName = el.attr("rbl-chartoptions") ?? dataName;
+            this.highChartsDataName = el.attr("rbl-chartdata");
+            this.highChartsOptionsName = el.attr("rbl-chartoptions") ?? this.highChartsDataName;
 
-            if ( dataName !== undefined ) {
-                const chart = $(".chart", el);
+            if ( this.highChartsDataName !== undefined && this.highChartsOptionsName !== undefined ) {
+                this.ensureHighchartsCulture();
 
+                this.highchartsOverrides = this.application.getResultTable<HighChartsOverrideRow>("HighCharts-Overrides").filter( r => this.stringCompare(r["@id"], this.highChartsDataName, true) === 0);
+                this.highchartsOptions = this.application.getResultTable<HighChartsOptionRow>("HighCharts-" + this.highChartsOptionsName + "-Options");
+                this.highchartsData = this.application.getResultTable<HighChartsDataRow>("HighCharts-" + this.highChartsDataName + "-Data");
+
+                const container = $(".chart", el);
+
+                let renderStyle = container.attr("style") ?? "";
+                const configStyle = this.getHighchartsConfigValue("config-style");
+    
+                if (configStyle !== undefined) {
+                    if (renderStyle !== "" && !renderStyle.endsWith(";")) {
+                        renderStyle += ";";
+                    }
+                    container.attr("style", renderStyle + configStyle);
+                }
+                
+                const firstDataRow = this.highchartsData.filter(r => !(r.category || "").startsWith("config-")).shift();
+
+                if ( firstDataRow !== undefined ) {
+                    const chartOptions = this.getHighchartsOptions( firstDataRow );
+
+                    const highchart = Highcharts.charts[ container.data('highchartsChart') ] as unknown as HighchartsChartObject;
+
+                    if ( highchart !== undefined ) {
+                        highchart.destroy();                    
+                    }
+
+                    try {
+                        container.highcharts(chartOptions);
+                    } catch (error) {
+                        throw error;                        
+                    }
+                }
             }
         }
     }

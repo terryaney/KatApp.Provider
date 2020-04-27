@@ -1,6 +1,8 @@
 // Prototypes / polyfills
 interface String {
     format(json: JQuery.PlainObject): string;
+	startsWith(str: string): boolean;
+    endsWith(searchString: string, position?: number): boolean;
 }
 interface HTMLElement {
     KatApp?: KatAppPlugInShimInterface;
@@ -17,6 +19,15 @@ interface Function {
     rble: RBLeUtilitiesInterface;
     templateOn( templateName: string, events: string, fn: TemplateOnDelegate ): void;
 }
+interface HighchartsTooltipFormatterContextObject {
+    y: number;
+    x: number;
+    series: {
+        name: string;
+    };
+    points: Array<HighchartsTooltipFormatterContextObject>;
+}
+
 // RBLe Service Callback handler and input/result classes
 interface CalculationInputs
 {
@@ -56,6 +67,7 @@ interface RBLeServiceResults {
     RegisteredToken?: string;
 }
 interface HtmlContentRow {
+    "@id"?: string;
     content?: string;
     html?: string;
     value?: string;
@@ -310,6 +322,24 @@ interface TemplateOnDelegate {
             - Still (by choice) making them do selector and foreach themselves, think it keeps code consistent (onCalculation this is 'always' app/view) but could change if required
 */
     ( event: JQuery.Event, ...args: Array<object> ): void; 
+}
+
+interface HighChartsPlotConfigurationRow {
+    Index: number;
+    PlotLine: string;
+    PlotBand: string;
+}
+interface HighChartsDataRow {
+    category: string;
+    plotLine?: string;
+    plotBand?: string;
+}
+interface HighChartsOverrideRow extends HighChartsOptionRow {
+    "@id": string;
+}
+interface HighChartsOptionRow {
+    key: string;
+    value: string;
 }
 
 // Made the following an interface/factory just so that I could put the

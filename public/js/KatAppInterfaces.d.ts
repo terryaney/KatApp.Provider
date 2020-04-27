@@ -1,6 +1,8 @@
 /// <reference types="jquery" />
 interface String {
     format(json: JQuery.PlainObject): string;
+    startsWith(str: string): boolean;
+    endsWith(searchString: string, position?: number): boolean;
 }
 interface HTMLElement {
     KatApp?: KatAppPlugInShimInterface;
@@ -16,6 +18,14 @@ interface Function {
     ui: UIUtilitiesInterface;
     rble: RBLeUtilitiesInterface;
     templateOn(templateName: string, events: string, fn: TemplateOnDelegate): void;
+}
+interface HighchartsTooltipFormatterContextObject {
+    y: number;
+    x: number;
+    series: {
+        name: string;
+    };
+    points: Array<HighchartsTooltipFormatterContextObject>;
 }
 interface CalculationInputs {
     iConfigureUI?: number;
@@ -45,6 +55,7 @@ interface RBLeServiceResults {
     RegisteredToken?: string;
 }
 interface HtmlContentRow {
+    "@id"?: string;
     content?: string;
     html?: string;
     value?: string;
@@ -175,6 +186,23 @@ interface KatAppPlugInInterface extends KatAppPlugInShimInterface {
 }
 interface TemplateOnDelegate {
     (event: JQuery.Event, ...args: Array<object>): void;
+}
+interface HighChartsPlotConfigurationRow {
+    Index: number;
+    PlotLine: string;
+    PlotBand: string;
+}
+interface HighChartsDataRow {
+    category: string;
+    plotLine?: string;
+    plotBand?: string;
+}
+interface HighChartsOverrideRow extends HighChartsOptionRow {
+    "@id": string;
+}
+interface HighChartsOptionRow {
+    key: string;
+    value: string;
 }
 interface StandardTemplateBuilderInterface {
     buildSlider(element: JQuery): void;

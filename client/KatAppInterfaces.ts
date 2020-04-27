@@ -7,14 +7,16 @@ interface HTMLElement {
 }
 interface JQuery {
     KatApp( options?: KatAppOptions | string, ...args: Array<string | number | KatAppOptions> ): JQuery | KatAppPlugInShimInterface | string | undefined;
+    carousel(frame: number): JQuery;
 }
 interface Function {
     plugInShims: KatAppPlugInShimInterface[];
     applicationFactory( id: string, element: JQuery, options: KatAppOptions): KatAppPlugInShimInterface;
+    standardTemplateBuilderFactory( application: KatAppPlugInInterface ): StandardTemplateBuilderInterface;
+    ui: UIUtilitiesInterface;
+    rble: RBLeUtilitiesInterface;
     templateOn( templateName: string, events: string, fn: TemplateOnDelegate ): void;
 }
-
-
 // RBLe Service Callback handler and input/result classes
 interface CalculationInputs
 {
@@ -60,6 +62,17 @@ interface HtmlContentRow {
     selector?: string;
     addclass?: string;
     removeclass?: string;
+}
+interface SliderConfigurationRow {
+    min: string;
+    max: string;
+    default?: string;
+    step?: string;
+    format?: string;
+    decimals?: string;
+    "pips-mode"?: string;
+    "pips-values"?: string;
+    "pips-density"?: string;
 }
 interface RBLeServiceCallback {
     ( data: RBLeServiceResults ): void;
@@ -156,11 +169,11 @@ interface KatAppOptions
     onInitialized?: (this: HTMLElement, appilcation: KatAppPlugInInterface )=> void;
     onDestroyed?: (this: HTMLElement, appilcation: KatAppPlugInInterface )=> void;
     onOptionsUpdated?: (this: HTMLElement, appilcation: KatAppPlugInInterface )=> void;
-    onConfigureUICalculation?: (this: HTMLElement, calculationResults: JSON, calcOptions: KatAppOptions, application: KatAppPlugInInterface)=> void;
     onRegistration?: (this: HTMLElement, calcOptions: KatAppOptions, appilcation: KatAppPlugInInterface )=> void;
     onCalculateStart?: (this: HTMLElement, appilcation: KatAppPlugInInterface )=> void;
-    onCalculation?: (this: HTMLElement, calculationResults: JSON, calcOptions: KatAppOptions, application: KatAppPlugInInterface)=> void;
-    onCalculationErrors?: (this: HTMLElement, key: string, data: JSON, calcOptions: KatAppOptions, application: KatAppPlugInInterface)=> void;
+    onConfigureUICalculation?: (this: HTMLElement, calculationResults: JSON, calcOptions: KatAppOptions, application: KatAppPlugInInterface )=> void;
+    onCalculation?: (this: HTMLElement, calculationResults: JSON, calcOptions: KatAppOptions, application: KatAppPlugInInterface )=> void;
+    onCalculationErrors?: (this: HTMLElement, key: string, message: string, exception: RBLeServiceResults | undefined, calcOptions: KatAppOptions, application: KatAppPlugInInterface)=> void;
     onCalculateEnd?: (this: HTMLElement, appilcation: KatAppPlugInInterface )=> void;
 }
 
@@ -239,10 +252,11 @@ interface KatAppPlugInShimInterface {
 // $("selector").KatApp("param") similiar to jQuery $("selector").html("param") - sets property ("param") of all items matching selector
 interface KatAppPlugInInterface extends KatAppPlugInShimInterface {
     results?: JSON;
+    exception?: RBLeServiceResults;
     resultRowLookups?: ResultRowLookupsInterface;
     getResultTable<T>( tableName: string): Array<T>;
-    getResultRow: ( table: string, id: string, columnToSearch?: string )=> JSON | undefined;
-    getResultValue: ( table: string, id: string, column: string, defaultValue?: string )=> string | undefined;
+    getResultRow<T>( table: string, id: string, columnToSearch?: string ): T | undefined;
+    getResultValue( table: string, id: string, column: string, defaultValue?: string ): string | undefined;
     
     inputs?: CalculationInputs;
 
@@ -262,6 +276,77 @@ interface KatAppPlugInInterface extends KatAppPlugInShimInterface {
     traceCalcEngine: ()=> void;
 }
 
+
 interface TemplateOnDelegate {
+/*
+    - Original $().RBL().registerControlFunction( ... )
+        - Pro
+            - Passed templated element into delegate (don't have to .each() within template code)
+        - Con
+            - Diff/non-standard mechanism of registering functions.
+            - If 4 distinct templates are loaded with one or more register control fucntions for two views on a page, 
+                every view calculation you'll loop all (4+) control functions and 'try' to run it
+
+                Every time view1 triggers calc, will call all four functions below, but template 2 & 4 have namespace/selector
+                conflict b/c both use same thing.
+
+                view1
+                    template1 - reg selector: [unique1]
+                    teamplte2 - reg selector: [carousel]
+                view2
+                    template3 - reg selector: [unique2]
+                    template4 - reg, selector: [carousel]
+
+    - templateOn() way
+        - Pro
+            - 'looks' like jquery/bootstrap on() syntax, so less jarring hopefully
+            - No duplicated code snippets for each view containing template
+            - No namespace issue b/c ran once
+            - Register an 'event' instead of a 'function' then don't have to make two calls like yours
+        - Con
+            - $.fn.KatApp.templateOn() - I'm familiar with using $.fn.* calls but not sure if just because of the libraries I currently use. To me more clear that you are just calling 
+                a global function vs $().RBL() ... which $() I haven't seen used before and confused me
+            - Need to use {thisTemplate}, so code will always be $.fn.KatApp.templateOn("{thisTemplate}", "onCalculation.RBLe", function() { });
+            - Still (by choice) making them do selector and foreach themselves, think it keeps code consistent (onCalculation this is 'always' app/view) but could change if required
+*/
     ( event: JQuery.Event, ...args: Array<object> ): void; 
+}
+
+// Made the following an interface/factory just so that I could put the
+// implementation of this code below the implementation of the KatAppPlugIn
+// so it was easier to read/maintain the code inside the Provider file (i.e.
+// expecting to find the 'plugin' implementation first). Downside is that for 
+// any public methods I want to expose, I need to add to this interface as well.
+// 
+// Original code simply had each of these classes before KatAppPlugIn and made
+// a constant (scoped to closure) like - const ui = new UIUtilities()
+interface StandardTemplateBuilderInterface {
+    buildSlider( element: JQuery ): void;
+    buildCarousel( element: JQuery ): void;
+    buildHighcharts( element: JQuery ): void;
+}
+interface UIUtilitiesInterface {
+    getInputName(input: JQuery): string;
+    getInputValue(input: JQuery): string;
+    getInputs(application: KatAppPlugInInterface, customOptions: KatAppOptions ): JSON;
+    getInputTables(application: KatAppPlugInInterface): CalculationInputTable[] | undefined;
+    triggerEvent(application: KatAppPlugInInterface, eventName: string, ...args: ( object | string | undefined )[]): void;
+    bindEvents( application: KatAppPlugInInterface ): void;
+    unbindEvents( application: KatAppPlugInInterface ): void;
+}
+interface RBLeUtilitiesInterface {
+    setResults( application: KatAppPlugInInterface, results: JSON | undefined ): void;
+    getData( application: KatAppPlugInInterface, currentOptions: KatAppOptions, next: PipelineCallback ): void;
+    registerData( application: KatAppPlugInInterface, currentOptions: KatAppOptions, data: RBLeRESTServiceResult, next: PipelineCallback ): void;
+    submitCalculation( application: KatAppPlugInInterface, currentOptions: KatAppOptions, next: PipelineCallback ): void;
+    getResultRow<T>( application: KatAppPlugInInterface, table: string, key: string, columnToSearch?: string ): T | undefined;
+    getResultValue( application: KatAppPlugInInterface, table: string, key: string, column: string, defaultValue?: string ): string | undefined;
+    getResultValueByColumn( application: KatAppPlugInInterface, table: string, keyColumn: string, key: string, column: string, defaultValue?: string ): string | undefined;
+    getResultTable<T>( application: KatAppPlugInInterface, tableName: string): Array<T>;
+    processTemplate( application: KatAppPlugInInterface, templateId: string, data: JQuery.PlainObject ): string;
+    createHtmlFromResultRow( application: KatAppPlugInInterface, resultRow: HtmlContentRow ): void;
+    processRblValues( application: KatAppPlugInInterface ): void;
+    processRblSources( application: KatAppPlugInInterface ): void;
+    processVisibilities(application: KatAppPlugInInterface): void;
+    processResults( application: KatAppPlugInInterface ): boolean;
 }

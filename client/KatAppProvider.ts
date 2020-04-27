@@ -1,4 +1,5 @@
 // TODO
+// - Need to remove slider events (https://refreshless.com/nouislider/events-callbacks/) before destroying and carousel (standard)
 // - How do I check/handle for errors when I try to load view
 // - Do I want to call calculate in updateOptions?  They could bind and call if they need to I guess
 // - Ability to have two CE's for one view might be needed for stochastic
@@ -9,39 +10,6 @@
 // - Templates run every calc?  Will that goof up slider config?  Need to read code closer
 //      - For example, arne't you hooking up events every time to carousel?  Since you aren't removing events?  WHere you said there were events hanging around?
 //      - Seems like you need a way to only update the 'markup' of carousel vs rebuilding entire thing?  Otherwise, probably need/should hookup a 'calcstart event' in templates to remove event handlers
-
-/*
-    - Yours
-        - Pro
-            - Passed templated element in function call (don't have to .each() within template code)
-        - Con
-            - Diff/non-standard mechanism of registering functions.
-            - If 4 distinct templates are loaded with one or more register control fucntions for two views on a page, 
-                every view calculation you'll loop all (4+) control functions and 'try' to run it
-
-                Every time view1 triggers calc, will call all four functions below, but template 2 & 4 have namespace/selector
-                conflict b/c both use same thing.
-
-                view1
-                    template1 - reg selector: [unique1]
-                    teamplte2 - reg selector: [carousel]
-                view2
-                    template3 - reg selector: [unique2]
-                    template4 - reg, selector: [carousel]
-
-    - templateOn() way
-        - Pro
-            - 'looks' like jquery/bootstrap on() syntax, so less jarring hopefully
-            - No duplicated code snippets for each view containing template
-            - No namespace issue b/c ran once
-            - Register an 'event' instead of a 'function' then don't have to make two calls like yours
-        - Con
-            - $.fn.KatApp.templateOn() - I'm familiar with using $.fn.* calls but not sure if just because of the libraries I currently use. To me more clear that you are just calling 
-                a global function vs $().RBL() ... which $() I haven't seen used before and confused me
-            - Need to use {thisTemplate}, so code will always be $.fn.KatApp.templateOn("{thisTemplate}", "onCalculation.RBLe", function() { });
-            - Still (by choice) making them do selector and foreach themselves, think it keeps code consistent (onCalculation this is 'always' app/view) but could change if required
-*/
-
 // - Show how bunch of errors are happening in boscomb (missing source elements)
 // - Search for TOM comments
 // - Retry - how often do we 'retry' registration?  Once per session?  Once per calc attempt?
@@ -55,8 +23,8 @@
 // 2. Kat App element attributes (instead of data): rbl-view, rbl-view-templates, rbl-calcengine
 // 3. Registration TP needs AuthID and Client like mine does, RBLe Service looks like it expects them (at least AuthID)
 // 4. If they do handlers for submit, register, etc., they *have* to call my done/fail callbacks or app will 'stall'
-// 5. Changed calcengine to calcengine in <rbl-config calcengine="Conduent_BiscombPOC_SE" templates="nonstandard_templates"></rbl-config> to match others
-// 6. Added rbl-input-tab and rbl-result-tabs to 'kat app data attributes'
+// 5. Added rbl-input-tab and rbl-result-tabs to 'kat app data attributes'
+// 6. <div rbl-tid="chart-highcharts" data-name="BalanceChart" rbl-data="BalanceChart" rbl-options="BalanceChart"></div>
 
 // Prototypes / polyfills
 String.prototype.format = function (json): string {
@@ -77,7 +45,7 @@ $(function() {
     KatApp.defaultOptions = KatApp.extend(
         {
             enableTrace: false,
-            registerDataWithService: true,
+            registerDataWithService: false,
             shareRegistrationData: true,
             functionUrl: KatApp.functionUrl,
             corsUrl: KatApp.corsUrl,
@@ -134,12 +102,450 @@ $(function() {
     let _sharedRegisteredToken: string | undefined = undefined;
     let _sharedData: RBLeRESTServiceResult | undefined = undefined;
 
+    class KatAppPlugIn implements KatAppPlugInInterface {
+        // Helper classes, see comment in interfaces class
+        private rble: RBLeUtilitiesInterface = $.fn.KatApp.rble;
+        private ui: UIUtilitiesInterface = $.fn.KatApp.ui;
+
+        // Fields
+        element: JQuery;
+        options: KatAppOptions;
+        id: string;
+        calculationResults?: JSON;
+        exception?: RBLeServiceResults | undefined;
+        results?: JSON | undefined;
+        resultRowLookups?: ResultRowLookupsInterface;
+        inputs?: CalculationInputs | undefined;
+
+        constructor(id: string, element: JQuery, options: KatAppOptions)
+        {
+            this.id = id;
+
+            // Transfer data attributes over if present...
+            const attrResultTabs = element.attr("rbl-result-tabs");
+
+            const attributeOptions: KatAppOptions = {
+                calcEngine: element.attr("rbl-calcengine") ?? KatApp.defaultOptions.calcEngine,
+                inputTab: element.attr("rbl-input-tab") ?? KatApp.defaultOptions.inputTab,
+                resultTabs: attrResultTabs != undefined ? attrResultTabs.split(",") : KatApp.defaultOptions.resultTabs,
+                view: element.attr("rbl-view"),
+                viewTemplates: element.attr("rbl-view-templates")
+            };
+
+            // Take a copy of the options they pass in so same options aren't used in all plugin targets
+            // due to a 'reference' to the object.
+            this.options = KatApp.extend(
+                {}, // make a clone (so we don't have all plugin targets using same reference)
+                KatApp.defaultOptions, // start with default options
+                attributeOptions, // data attribute options have next precedence
+
+                // If at time of constructor call the default options or options passed in has a registerData 
+                // delegate assigned, then change the default value of this property
+                { registerDataWithService: KatApp.defaultOptions.registerData !== undefined || options?.registerData !== undefined } as KatAppOptions,
+                
+                options // finally js options override all
+            );
+
+            this.element = element;
+            // re-assign the KatAppPlugIn to replace shim with actual implementation
+            this.element[ 0 ].KatApp = this;
+            this.init();
+        }
+    
+        init(): void {
+            this.element.attr("rbl-application-id", this.id);
+
+            (function( that: KatAppPlugIn ): void {
+                that.trace( "Started init" );
+                const pipeline: Array<()=> void> = [];
+                let pipelineIndex = 0;
+    
+                const next = function(offest: number ): void {
+                    pipelineIndex += offest;
+                    if ( pipelineIndex < pipeline.length ) {                    
+                        pipeline[ pipelineIndex++ ]();
+                    }
+                };
+    
+                let pipelineError: string | undefined = undefined;
+
+                const optionTemplates = that.options.viewTemplates?.split(",").map( i => { return ensureGlobalPrefix( i ); } ).join(",");
+                let resourcesToFetch = [ optionTemplates, ensureGlobalPrefix( that.options.view ) ].filter( r => r !== undefined ).join(",");
+    
+                const useTestView = that.options.useTestView ?? KatApp.pageParameters[ "testview"] === "1" ?? false;
+                const functionUrl = that.options.functionUrl;
+                const viewId = ensureGlobalPrefix( that.options.view ); 
+                    
+                let templatesFromRblConfig: string | undefined = undefined;
+
+                // Gather up all requested templates, and then inject any 'client specific' script that is needed.
+                let requestedTemplates: string[] = optionTemplates != undefined
+                    ? optionTemplates.split( "," )
+                    : [];
+
+                // Build up the list of resources to get from KatApp Markup
+                let resourceNames = resourcesToFetch.split( "," ).filter( r => !( _templatesLoaded[ r ] ?? false ) );
+                resourcesToFetch = resourceNames.join(","); // Join up again after removing processed templates
+                
+                let resourceData: ResourceResults | undefined = undefined;
+
+                pipeline.push( 
+                    // Get View and Templates resources on KatApp
+                    function(): void { 
+                        if ( resourcesToFetch !== "" ) {
+                            KatApp.getResources( functionUrl, resourcesToFetch, useTestView, false,
+                                ( errorMessage, data ) => {                                
+    
+                                    if ( errorMessage === undefined && data !== undefined ) {
+                                        resourceData = data as ResourceResults;
+                                        that.trace(resourcesToFetch + " returned from CMS (" + functionUrl + ").");
+                                        next( 0 );
+                                    }
+                                    else {
+                                        pipelineError = errorMessage;
+                                        next( 2 ); // jump to finish
+                                    }
+                                }
+                            );
+                        }
+                        else {
+                            next( 2 ); // jump to finish
+                        }
+                    },
+                    // Inject the view and templates from resources
+                    function(): void {
+                        
+                        resourceNames.forEach( r => {
+                            const data = resourceData![ r ]; // eslint-disable-line @typescript-eslint/no-non-null-assertion
+
+                            if ( r === viewId ) {
+                                // Process as view
+                                const view = $("<div>" + data.replace( /{thisView}/g, "[rbl-application-id='" + that.id + "']" ) + "</div>");
+                                const rblConfig = $("rbl-config", view).first();
+    
+                                if ( rblConfig.length !== 1 ) {
+                                    that.trace("View " + viewId + " is missing rbl-config element.");
+                                }
+                                else {
+                                    that.options.calcEngine = that.options.calcEngine ?? rblConfig.attr("calcengine");
+                                    templatesFromRblConfig = rblConfig.attr("templates");
+                                    that.options.inputTab = that.options.inputTab ?? rblConfig.attr("input-tab");
+                                    const attrResultTabs = rblConfig.attr("result-tabs");
+                                    that.options.resultTabs = that.options.resultTabs ?? ( attrResultTabs != undefined ? attrResultTabs.split( "," ) : undefined );
+                                    that.element.html( view.html() );
+                                }
+                            }
+                            else if ( !( _templatesLoaded[ r ] ?? false ) ) {
+                                _templatesLoaded[ r ] = true;
+
+                                // TOM: create container element 'rbl-templates' with an attribute 'rbl-t' for template content 
+                                // and this attribute used for checking(?)
+                                
+                                // Remove extension if there is one, could be a problem if you do Standard.Templates, trying to get
+                                // Standard.Templates.html.
+                                const resourceParts = r.split(":");
+                                const tId = ( resourceParts.length > 1 ? resourceParts[ 1 ]: resourceParts[ 0 ] ).replace(/\.[^/.]+$/, "");
+                                const t = $("<rbl-templates style='display:none;' rbl-t='" + tId + "'>" + data.replace( /{thisTemplate}/g, r ) + "</rbl-templates>");
+
+                                t.appendTo("body");
+
+                                that.trace( "Loaded template [" + r + "] for [" + viewId + "]." );
+                            }
+                        });
+
+                        next( 0 );
+                    },
+                    // Get Templates configured on <rbl-config/>
+                    function(): void {
+                        // Now build up a list of templates that were specified inside the view markup
+                        if ( templatesFromRblConfig != undefined ) {
+                            // Gather up all requested templates, and then inject any 'client specific' script that is needed.
+                            requestedTemplates = requestedTemplates.concat( templatesFromRblConfig.split( "," ).map( i => ensureGlobalPrefix( i )! ) ); // eslint-disable-line @typescript-eslint/no-non-null-assertion
+
+                            resourceNames = templatesFromRblConfig.split( "," ).filter( r => !( _templatesLoaded[ r ] ?? false ) ).map( i => ensureGlobalPrefix( i )! ); // eslint-disable-line @typescript-eslint/no-non-null-assertion
+                            resourcesToFetch = resourceNames.join(","); // Join up again after removing processed templates
+                            templatesFromRblConfig = undefined; // clear out so that we don't process this again
+
+                            if ( resourcesToFetch !== "" ) {
+                                const currentTemplates = optionTemplates !== undefined ? optionTemplates + "," : "";
+                                that.options.viewTemplates = currentTemplates + resourcesToFetch;
+                                next( -3 ); // Go to start now that I've reset resources to fetch
+                            }
+                            else {
+                                next( 0 ); // no *new* resources to load
+                            }
+                        }
+                        else {
+                            next( 0 ); // no viewTemplates specified
+                        }
+                    },
+                    // Final processing (hook up template events and process templates that don't need RBL)
+                    function(): void {
+                        if ( pipelineError === undefined ) {
+                            
+                            // Now, for every unique template reqeusted by client, if the template had <script rbl-script="view"/> 
+                            // associated with it, I can inject that view specific code (i.e. event handlers) for the currently
+                            // processing application
+                            requestedTemplates
+                                .filter((v, i, a) => v !== undefined && v.length != 0 && a.indexOf(v) === i ) // unique
+                                .forEach( t => {
+
+                                    // Loop every template event handler that was called when template loaded
+                                    // and register a handler to call the delegate
+                                    _templateDelegates
+                                        .filter( d => d.Template.toLowerCase() == t.toLowerCase() )
+                                        .forEach( d => {
+                                            that.element.on( d.Events, function( ...args ): void {
+                                                d.Delegate.apply( this, args );
+                                            } );
+                                        });
+                                });
+
+                            // Build up template content that DOES NOT use rbl results, but instead just 
+                            // uses data-* to create a dataobject generally used to create controls like sliders.                    
+                            $("[rbl-tid]:not([rbl-source])", that.element).each(function () {
+                                const templateId = $(this).attr('rbl-tid');
+                                if (templateId !== undefined && templateId !== "inline") {
+                                    //Replace content with template processing, using data-* items in this pass
+                                    $(this).html(that.rble.processTemplate( that, templateId, $(this).data()));
+                                }
+                            });
+
+                            that.ui.bindEvents( that );
+                
+                            that.ui.triggerEvent( that, "onInitialized", that );
+
+                            if ( that.options.runConfigureUICalculation ) {
+                                const customOptions: KatAppOptions = {
+                                    manualInputs: { iConfigureUI: 1 }
+                                };
+                                that.calculate( customOptions );
+                            }
+                        }
+                        else {
+                            that.trace( "Error during Provider.init: " + pipelineError );
+                        }
+
+                        that.trace( "Finished init" );
+                    }
+                );
+    
+                // Start the pipeline
+                next( 0 );
+            })( this );
+        }
+
+        calculate( customOptions?: KatAppOptions ): void {
+
+            const shareRegistrationData = this.options.shareRegistrationData ?? false;
+            if ( shareRegistrationData ) {
+                this.options.registeredToken = _sharedRegisteredToken;
+                this.options.data = _sharedData;
+            }
+
+            this.exception = undefined; // Should I set results to undefined too?
+
+            this.ui.triggerEvent( this, "onCalculateStart", this );
+
+            (function( that: KatAppPlugIn ): void {
+                // Build up complete set of options to use for this calculation call
+                const currentOptions = KatApp.extend(
+                    {}, // make a clone of the options
+                    that.options, // original options
+                    customOptions, // override options
+                ) as KatAppOptions;
+
+                const pipeline: Array<()=> void> = [];
+                let pipelineIndex = 0;
+    
+                const next = function( offset: number ): void {
+                    pipelineIndex += offset;
+    
+                    if ( pipelineIndex < pipeline.length ) {                    
+                        pipeline[ pipelineIndex++ ]();
+                    }
+                };
+    
+                let pipelineError: string | undefined = undefined;
+                let registrationData: RBLeRESTServiceResult | undefined = undefined;
+    
+                pipeline.push( 
+                    // Attempt First Submit
+                    function(): void { 
+                        try {
+                            that.rble.submitCalculation( 
+                                that, currentOptions, 
+                                // If failed, let it do next job (getData), otherwise, jump to finish
+                                errorMessage => { 
+                                    pipelineError = errorMessage; 
+                                    next( errorMessage !== undefined ? 0 : 3 );
+                                } 
+                            );
+                        } catch (error) {
+                            pipelineError = "Submit.Pipeline exception: " + error;
+                            next( 3 );
+                        }
+                    },
+                    // Get Registration Data
+                    function(): void {
+                        try {
+                            that.rble.getData( 
+                                that, currentOptions, 
+                                // If failed, then I am unable to register data, so just jump to finish, otherwise continue to registerData
+                                ( errorMessage, data ) => { 
+                                    pipelineError = errorMessage; 
+                                    registrationData = data as RBLeRESTServiceResult;  
+                                    
+                                    if ( errorMessage !== undefined ) {
+                                        pipelineError = errorMessage;
+                                        next( 2 ); // If error, jump to finish
+                                    }
+                                    else if ( !that.options.registerDataWithService ) {
+                                        if ( shareRegistrationData ) {
+                                            _sharedRegisteredToken = undefined;
+                                            _sharedData = registrationData;
+                                        }
+                                        next( 1 ); // If not registering data, jump to submit
+                                    }
+                                    else {
+                                        next( 0 ); // Continue to register data
+                                    }                                        
+                                } 
+                            );
+                        } catch (error) {
+                            pipelineError = "GetData.Pipeline exception: " + error;
+                            next( 2 ); // If error, jump to finish
+                        }
+                    },
+                    // Register Data
+                    function(): void {
+
+                        try {
+                            that.rble.registerData( 
+                                that, currentOptions, registrationData as RBLeRESTServiceResult,
+                                // If failed, then I am unable to register data, so just jump to finish, otherwise continue to submit again
+                                errorMessage => { 
+                                    pipelineError = errorMessage; 
+        
+                                    if ( errorMessage === undefined && shareRegistrationData ) {
+                                        _sharedRegisteredToken = that.options.registeredToken;
+                                        _sharedData = undefined;
+                                    }
+                    
+                                    // If error, jump to finish
+                                    next( errorMessage !== undefined ? 1 : 0 );
+                                } 
+                            );
+                        } catch (error) {
+                            pipelineError = "Register.Pipeline exception: " + error;
+                            next( 1 );                            
+                        }
+                    },
+                    // Submit Again (if needed)
+                    function(): void {
+                        try {
+                            that.rble.submitCalculation( 
+                                that, currentOptions,
+                                // If failed, let it do next job (getData), otherwise, jump to finish
+                                errorMessage => { 
+                                    pipelineError = errorMessage; 
+                                    next( 0 );
+                                } 
+                            );
+                        } catch (error) {
+                            pipelineError = "ReSubmit.Pipeline exception: " + error;
+                            next( 0 );
+                        }
+                    },
+                    // Finish
+                    function(): void {
+
+                        try {
+                            if ( pipelineError === undefined ) {
+                                that.element.removeData("katapp-save-calcengine");
+                                that.element.removeData("katapp-trace-calcengine");
+                                that.element.removeData("katapp-refresh-calcengine");
+    
+                                that.rble.processResults( that );
+        
+                                if ( that.inputs?.iConfigureUI === 1 ) {
+                                    that.ui.triggerEvent( that, "onConfigureUICalculation", that.results, currentOptions, that );
+                                }
+    
+                                that.ui.triggerEvent( that, "onCalculation", that.results, currentOptions, that );
+                
+                            }
+                            else {
+                                that.rble.setResults( that, undefined );
+                                // TODO: Need error status key?  Might want to swap between calc and registration, but not sure
+                                that.ui.triggerEvent( that, "onCalculationErrors", "RunCalculation", pipelineError, that.exception, currentOptions, that );
+                            }
+                        } catch (error) {
+                            that.trace( "Error duing result processing: " + error );
+                            that.ui.triggerEvent( that, "onCalculationErrors", "RunCalculation", error, that.exception, currentOptions, that );
+                        }
+                        finally {
+                            that.ui.triggerEvent( that, "onCalculateEnd", that );
+                        }
+                    }
+                )
+    
+                // Start the pipeline
+                next( 0 );
+            })( this );
+        }
+
+        configureUI( customOptions?: KatAppOptions ): void {
+            const manualInputs: KatAppOptions = { manualInputs: { iConfigureUI: 1 } };
+            this.calculate( KatApp.extend( {}, customOptions, manualInputs ) );
+        }
+
+        destroy(): void {
+            this.element.removeAttr("rbl-application-id");
+            this.element.off(".RBLe");
+            this.ui.unbindEvents( this );
+            this.ui.triggerEvent( this, "onDestroyed", this );
+            delete this.element[ 0 ].KatApp;
+        }
+
+        updateOptions(): void { 
+            this.ui.unbindEvents( this );
+            this.ui.bindEvents( this );
+            this.ui.triggerEvent( this, "onOptionsUpdated", this );
+        }
+
+        // Result helper
+        getResultTable<T>( tableName: string): Array<T> {
+            return this.rble.getResultTable<T>( this, tableName );
+        }
+        getResultRow<T>(table: string, id: string, columnToSearch?: string ): T | undefined { 
+            return this.rble.getResultRow<T>( this, table, id, columnToSearch ); 
+        }
+        getResultValue( table: string, id: string, column: string, defautlValue?: string ): string | undefined { 
+            return this.rble.getResultValue( this, table, id, column, defautlValue ); 
+        }
+        saveCalcEngine( location: string ): void {
+            this.element.data("katapp-save-calcengine", location);
+        }
+
+        // Debug helpers
+        refreshCalcEngine(): void {
+            this.element.data("katapp-refresh-calcengine", "1");
+        }
+        traceCalcEngine(): void {
+            this.element.data("katapp-trace-calcengine", "1");
+        }
+        trace( message: string ): void {
+            KatApp.trace( this, message );
+        }
+    }
+
     // All methods/classes before KatAppProvider class implementation are private methods only
     // available to KatAppProvider (no one else outside of this closure).  Could make another utility
     // class like I did in original service or KATApp beta, but wanted methods unreachable from javascript
     // outside my framework.  See if there is a way to pull that off and move these methods somewhere that
     // doesn't clutter up code flow here
-    class UIUtilities {
+    class UIUtilities implements UIUtilitiesInterface {
         getInputName(input: JQuery): string {
             // Need to support : and $.  'Legacy' is : which is default mode a convert process has for VS, but Gu says to never use that, but it caused other issues that are documented in
             // 4.1 Validators.cs file so allowing both.
@@ -280,9 +686,11 @@ $(function() {
             }
         }
     }
-    const ui = new UIUtilities();
+    $.fn.KatApp.ui = new UIUtilities();
 
-    class RBLeUtilities {
+    class RBLeUtilities implements RBLeUtilitiesInterface {
+        ui: UIUtilitiesInterface = $.fn.KatApp.ui;
+
         setResults( application: KatAppPlugInInterface, results: JSON | undefined ): void {
             if ( results !== undefined ) {
                 const propertyNames = results["@resultKeys"] = Object.keys(results).filter( k => !k.startsWith( "@" ) );
@@ -325,6 +733,8 @@ $(function() {
         }
     
         registerData( application: KatAppPlugInInterface, currentOptions: KatAppOptions, data: RBLeRESTServiceResult, next: PipelineCallback ): void {
+            const that = this;
+
             const register =
                 currentOptions.registerData ??
                 function( _app, _o, done, fail ): void {
@@ -348,7 +758,7 @@ $(function() {
                     };
                 
                     const json = {
-                        Registration: "[guid]",
+                        Registration: KatApp.generateId(),
                         TransactionPackage: JSON.stringify(calculationOptions)
                     };
     
@@ -379,10 +789,11 @@ $(function() {
                     application.options.registeredToken = currentOptions.registeredToken = payload.RegisteredToken;
                     application.options.data = currentOptions.data = undefined;
 
-                    ui.triggerEvent( application, "onRegistration", currentOptions, application );
+                    that.ui.triggerEvent( application, "onRegistration", currentOptions, application );
                     next();
                 }
                 else {
+                    application.exception = payload;
                     application.trace("registerData Error Status: " + payload.Exception.Message);
                     next( "RBLe Register Data Error: " + payload.Exception.Message );
                 }
@@ -392,7 +803,7 @@ $(function() {
         }
     
         submitCalculation( application: KatAppPlugInInterface, currentOptions: KatAppOptions, next: PipelineCallback ): void {
-            
+
             if ( currentOptions.registeredToken === undefined && currentOptions.data === undefined ) {
                 next( "submitCalculation no registered token." );
                 return;
@@ -407,8 +818,8 @@ $(function() {
             // TODO: COnfirm all these options are right
             const calculationOptions: SubmitCalculationOptions = {
                 Data: !( currentOptions.registerDataWithService ?? true ) ? currentOptions.data : undefined,
-                Inputs: application.inputs = KatApp.extend( ui.getInputs( application, currentOptions ), currentOptions?.manualInputs ),
-                InputTables: ui.getInputTables( application ), 
+                Inputs: application.inputs = KatApp.extend( this.ui.getInputs( application, currentOptions ), currentOptions?.manualInputs ),
+                InputTables: this.ui.getInputTables( application ), 
                 Configuration: {
                     CalcEngine: currentOptions.calcEngine,
                     Token: ( currentOptions.registerDataWithService ?? true ) ? currentOptions.registeredToken : undefined,
@@ -441,6 +852,7 @@ $(function() {
                     next();
                 }
                 else {
+                    application.exception = payload;
                     application.trace( "RBLe Service Result Exception: " + payload.Exception.Message )
                     next( "RBLe Service Result Exception: " + payload.Exception.Message );
                 }
@@ -470,7 +882,7 @@ $(function() {
             submit( application, calculationOptions, submitDone, submitFailed );
         }
 
-        getResultRow( application: KatAppPlugInInterface, table: string, key: string, columnToSearch?: string ): JSON | undefined { 
+        getResultRow<T>( application: KatAppPlugInInterface, table: string, key: string, columnToSearch?: string ): T | undefined { 
             const rows = application.results?.[table];
 
             if (rows === undefined) return undefined;
@@ -512,11 +924,11 @@ $(function() {
         }
 
         getResultValue( application: KatAppPlugInInterface, table: string, key: string, column: string, defaultValue?: string ): string | undefined { 
-            return this.getResultRow( application, table, key )?.[ column ] ?? defaultValue;
+            return this.getResultRow<JSON>( application, table, key )?.[ column ] ?? defaultValue;
         }
 
         getResultValueByColumn( application: KatAppPlugInInterface, table: string, keyColumn: string, key: string, column: string, defaultValue?: string ): string | undefined {
-            return this.getResultRow( application, table, key, keyColumn)?.[ column ] ?? defaultValue;
+            return this.getResultRow<JSON>( application, table, key, keyColumn)?.[ column ] ?? defaultValue;
         };
 
 		getResultTable<T>( application: KatAppPlugInInterface, tableName: string): Array<T> {
@@ -806,415 +1218,230 @@ $(function() {
             }
         }
     }
-    const rble = new RBLeUtilities();
+    $.fn.KatApp.rble = new RBLeUtilities();
 
-    class KatAppPlugIn implements KatAppPlugInInterface {
-        // Fields
-        element: JQuery;
-        options: KatAppOptions;
-        id: string;
-        calculationResults?: JSON;
-        results?: JSON | undefined;
-        resultRowLookups?: ResultRowLookupsInterface;
-        inputs?: CalculationInputs | undefined;
+    class StandardTemplateBuilder implements StandardTemplateBuilderInterface
+    {
+        application: KatAppPlugInInterface;
 
-        constructor(id: string, element: JQuery, options: KatAppOptions)
-        {
-            this.id = id;
-
-            // Transfer data attributes over if present...
-            const attrResultTabs = element.attr("rbl-result-tabs");
-            const attributeOptions: KatAppOptions = {
-                calcEngine: element.attr("rbl-calcengine") ?? KatApp.defaultOptions.calcEngine,
-                inputTab: element.attr("rbl-input-tab") ?? KatApp.defaultOptions.inputTab,
-                resultTabs: attrResultTabs != undefined ? attrResultTabs.split(",") : KatApp.defaultOptions.resultTabs,
-                view: element.attr("rbl-view"),
-                viewTemplates: element.attr("rbl-view-templates")
-            };
-
-            // Take a copy of the options they pass in so same options aren't used in all plugin targets
-            // due to a 'reference' to the object.
-            this.options = KatApp.extend(
-                {}, // make a clone (so we don't have all plugin targets using same reference)
-                KatApp.defaultOptions, // start with default options
-                attributeOptions, // data attribute options have next precedence
-                options // finally js options override all
-            );
-
-            this.element = element;
-            // re-assign the KatAppPlugIn to replace shim with actual implementation
-            this.element[ 0 ].KatApp = this;
-
-            this.init();
+        constructor( application: KatAppPlugInInterface ) {
+            this.application = application;    
         }
-    
-        init(): void {
-            this.element.attr("rbl-application-id", this.id);
+        
+        buildSlider(el: JQuery): void {
+            const id = el.data("inputname");
+            const that = this;
 
-            (function( that: KatAppPlugIn ): void {
-                that.trace( "Started init" );
-                const pipeline: Array<()=> void> = [];
-                let pipelineIndex = 0;
-    
-                const next = function(offest: number ): void {
-                    pipelineIndex += offest;
-                    if ( pipelineIndex < pipeline.length ) {                    
-                        pipeline[ pipelineIndex++ ]();
-                    }
-                };
-    
-                let pipelineError: string | undefined = undefined;
-
-                const optionTemplates = that.options.viewTemplates?.split(",").map( i => { return ensureGlobalPrefix( i ); } ).join(",");
-                let resourcesToFetch = [ optionTemplates, ensureGlobalPrefix( that.options.view ) ].filter( r => r !== undefined ).join(",");
-    
-                const useTestView = that.options.useTestView ?? KatApp.pageParameters[ "testview"] === "1" ?? false;
-                const functionUrl = that.options.functionUrl;
-                const viewId = ensureGlobalPrefix( that.options.view ); 
-                    
-                let templatesFromRblConfig: string | undefined = undefined;
-
-                // Gather up all requested templates, and then inject any 'client specific' script that is needed.
-                let requestedTemplates: string[] = optionTemplates != undefined
-                    ? optionTemplates.split( "," )
-                    : [];
-
-                // Build up the list of resources to get from KatApp Markup
-                let resourceNames = resourcesToFetch.split( "," ).filter( r => !( _templatesLoaded[ r ] ?? false ) );
-                resourcesToFetch = resourceNames.join(","); // Join up again after removing processed templates
-                
-                let resourceData: ResourceResults | undefined = undefined;
-
-                pipeline.push( 
-                    // Get View and Templates resources on KatApp
-                    function(): void { 
-                        if ( resourcesToFetch !== "" ) {
-                            KatApp.getResources( functionUrl, resourcesToFetch, useTestView, false,
-                                ( errorMessage, data ) => {                                
-    
-                                    if ( errorMessage === undefined && data !== undefined ) {
-                                        resourceData = data as ResourceResults;
-                                        that.trace(resourcesToFetch + " returned from CMS (" + functionUrl + ").");
-                                        next( 0 );
-                                    }
-                                    else {
-                                        pipelineError = errorMessage;
-                                        next( 2 ); // jump to finish
-                                    }
-                                }
-                            );
-                        }
-                        else {
-                            next( 2 ); // jump to finish
-                        }
-                    },
-                    // Inject the view and templates from resources
-                    function(): void {
-                        
-                        resourceNames.forEach( r => {
-                            const data = resourceData![ r ]; // eslint-disable-line @typescript-eslint/no-non-null-assertion
-
-                            if ( r === viewId ) {
-                                // Process as view
-                                const view = $("<div>" + data.replace( /{thisView}/g, "[rbl-application-id='" + that.id + "']" ) + "</div>");
-                                const rblConfig = $("rbl-config", view).first();
-    
-                                if ( rblConfig.length !== 1 ) {
-                                    that.trace("View " + viewId + " is missing rbl-config element.");
-                                }
-                                else {
-                                    that.options.calcEngine = that.options.calcEngine ?? rblConfig.attr("calcengine");
-                                    templatesFromRblConfig = rblConfig.attr("templates");
-                                    that.options.inputTab = that.options.inputTab ?? rblConfig.attr("input-tab");
-                                    const attrResultTabs = rblConfig.attr("result-tabs");
-                                    that.options.resultTabs = that.options.resultTabs ?? ( attrResultTabs != undefined ? attrResultTabs.split( "," ) : undefined );
-                                    that.element.html( view.html() );
-                                }
-                            }
-                            else if ( !( _templatesLoaded[ r ] ?? false ) ) {
-                                _templatesLoaded[ r ] = true;
-
-                                // TOM: create container element 'rbl-templates' with an attribute 'rbl-t' for template content 
-                                // and this attribute used for checking(?)
-                                
-                                // Remove extension if there is one, could be a problem if you do Standard.Templates, trying to get
-                                // Standard.Templates.html.
-                                const resourceParts = r.split(":");
-                                const tId = ( resourceParts.length > 1 ? resourceParts[ 1 ]: resourceParts[ 0 ] ).replace(/\.[^/.]+$/, "");
-                                const t = $("<rbl-templates style='display:none;' rbl-t='" + tId + "'>" + data.replace( /{thisTemplate}/g, r ) + "</rbl-templates>");
-
-                                t.appendTo("body");
-
-                                that.trace( "Loaded template [" + r + "] for [" + viewId + "]." );
-                            }
-                        });
-
-                        next( 0 );
-                    },
-                    // Get Templates configured on <rbl-config/>
-                    function(): void {
-                        // Now build up a list of templates that were specified inside the view markup
-                        if ( templatesFromRblConfig != undefined ) {
-                            // Gather up all requested templates, and then inject any 'client specific' script that is needed.
-                            requestedTemplates = requestedTemplates.concat( templatesFromRblConfig.split( "," ).map( i => ensureGlobalPrefix( i )! ) ); // eslint-disable-line @typescript-eslint/no-non-null-assertion
-
-                            resourceNames = templatesFromRblConfig.split( "," ).filter( r => !( _templatesLoaded[ r ] ?? false ) ).map( i => ensureGlobalPrefix( i )! ); // eslint-disable-line @typescript-eslint/no-non-null-assertion
-                            resourcesToFetch = resourceNames.join(","); // Join up again after removing processed templates
-                            templatesFromRblConfig = undefined; // clear out so that we don't process this again
-
-                            if ( resourcesToFetch !== "" ) {
-                                const currentTemplates = optionTemplates !== undefined ? optionTemplates + "," : "";
-                                that.options.viewTemplates = currentTemplates + resourcesToFetch;
-                                next( -3 ); // Go to start now that I've reset resources to fetch
-                            }
-                            else {
-                                next( 0 ); // no *new* resources to load
-                            }
-                        }
-                        else {
-                            next( 0 ); // no viewTemplates specified
-                        }
-                    },
-                    // Final processing (hook up template events and process templates that don't need RBL)
-                    function(): void {
-                        if ( pipelineError === undefined ) {
-                            
-                            // Now, for every unique template reqeusted by client, if the template had <script rbl-script="view"/> 
-                            // associated with it, I can inject that view specific code (i.e. event handlers) for the currently
-                            // processing application
-                            requestedTemplates
-                                .filter((v, i, a) => v !== undefined && v.length != 0 && a.indexOf(v) === i ) // unique
-                                .forEach( t => {
-
-                                    // Loop every template event handler that was called when template loaded
-                                    // and register a handler to call the delegate
-                                    _templateDelegates
-                                        .filter( d => d.Template.toLowerCase() == t.toLowerCase() )
-                                        .forEach( d => {
-                                            that.element.on( d.Events, function( ...args ): void {
-                                                d.Delegate.apply( this, args );
-                                            } );
-                                        });
-                                });
-
-                            // Build up template content that DOES NOT use rbl results, but instead just 
-                            // uses data-* to create a dataobject generally used to create controls like sliders.                    
-                            $("[rbl-tid]:not([rbl-source])", that.element).each(function () {
-                                const templateId = $(this).attr('rbl-tid');
-                                if (templateId !== undefined && templateId !== "inline") {
-                                    //Replace content with template processing, using data-* items in this pass
-                                    $(this).html(rble.processTemplate(that, templateId, $(this).data()));
-                                }
-                            });
-
-                            ui.bindEvents( that );
-                
-                            ui.triggerEvent( that, "onInitialized", that );
-
-                            if ( that.options.runConfigureUICalculation ) {
-                                const customOptions: KatAppOptions = {
-                                    manualInputs: { iConfigureUI: 1 }
-                                };
-                                that.calculate( customOptions );
-                            }
-                        }
-                        else {
-                            that.trace( "Error during Provider.init: " + pipelineError );
-                        }
-
-                        that.trace( "Finished init" );
-                    }
-                );
-    
-                // Start the pipeline
-                next( 0 );
-            })( this );
-        }
-
-        calculate( customOptions?: KatAppOptions ): void {
-
-            const shareRegistrationData = this.options.shareRegistrationData ?? false;
-            if ( shareRegistrationData ) {
-                this.options.registeredToken = _sharedRegisteredToken;
-                this.options.data = _sharedData;
+            if (KatApp.pageParameters["debugkatapp"] === "t.{thisTemplate}.s." + id) {
+                debugger;
             }
 
-            ui.triggerEvent( this, "onCalculateStart", this );
+            const config = this.application.getResultRow<SliderConfigurationRow>("ejs-sliders", id);
 
-            (function( that: KatAppPlugIn ): void {
-                // Build up complete set of options to use for this calculation call
-                const currentOptions = KatApp.extend(
-                    {}, // make a clone of the options
-                    that.options, // original options
-                    customOptions, // override options
-                ) as KatAppOptions;
+            if (config == undefined) return;
 
-                const pipeline: Array<()=> void> = [];
-                let pipelineIndex = 0;
-    
-                const next = function( offset: number ): void {
-                    pipelineIndex += offset;
-    
-                    if ( pipelineIndex < pipeline.length ) {                    
-                        pipeline[ pipelineIndex++ ]();
-                    }
+            const minValue = +config.min;
+            const maxValue = +config.max;
+
+            const defaultConfigValue =
+                this.application.getResultValue("ejs-defaults", id, "value") || // what is in ejs-defaults
+                config.default || // what was in ejs-slider/default
+                $("." + id).val() || // what was put in the text box
+                config.min; //could/should use this
+
+            const stepValue = +( config.step || "1" );
+            const format = config.format || "n";
+            const decimals = +( config.decimals || "0");
+
+            const sliderJQuery = $(".slider-" + id, el);
+            $("." + id, el).val(defaultConfigValue);
+
+            if (sliderJQuery.length === 1) {
+
+                const slider = sliderJQuery[0] as noUiSlider.Instance;
+
+                sliderJQuery.data("min", minValue);
+                sliderJQuery.data("max", maxValue);
+
+                // Some modelers have 'wizards' with 'same' inputs as regular modeling page.  The 'wizard sliders'
+                // actually just set the input value of the regular input and let all the other flow (main input's
+                // change event) happen as normal.
+                const targetInput = sliderJQuery.data("input");
+
+                const defaultSliderValue = targetInput != undefined
+                    ? $("." + targetInput, this.application.element).val() as string
+                    : defaultConfigValue;
+
+                const pipsMode = config["pips-mode"] ?? "";
+                const pipValuesString = config["pips-values"] ?? "";
+                const pipsLargeValues = pipValuesString !== "" ? pipValuesString.split(',').map(Number) : [0, 25, 50, 75, 100];
+                const pipsDensity = +(config["pips-density"] || "5");
+
+                const pips = pipsMode !== ""
+                    ? {
+                        mode: pipsMode,
+                        values: pipsLargeValues,
+                        density: pipsDensity,
+                        stepped: true
+                    } as noUiSlider.PipsOptions
+                    : undefined;
+
+                const sliderOptions: noUiSlider.Options = {
+                    start: +defaultSliderValue,
+                    step: stepValue * 1,
+                    behaviour: 'tap',
+                    connect: 'lower',
+                    pips: pips,
+                    range: {
+                        min: minValue,
+                        max: maxValue
+                    },
+                    animate: true
                 };
-    
-                let pipelineError: string | undefined = undefined;
-                let registrationData: RBLeRESTServiceResult | undefined = undefined;
-    
-                pipeline.push( 
-                    // Attempt First Submit
-                    function(): void { 
-                        rble.submitCalculation( 
-                            that, currentOptions, 
-                            // If failed, let it do next job (getData), otherwise, jump to finish
-                            errorMessage => { 
-                                pipelineError = errorMessage; next( errorMessage !== undefined ? 0 : 3 );
-                            } 
-                        );
-                    },
-                    // Get Registration Data
-                    function(): void {
-                        rble.getData( 
-                            that, currentOptions, 
-                            // If failed, then I am unable to register data, so just jump to finish, otherwise continue to registerData
-                            ( errorMessage, data ) => { 
-                                pipelineError = errorMessage; 
-                                registrationData = data as RBLeRESTServiceResult;  
-                                
-                                if ( errorMessage !== undefined ) {
-                                    next( 2 ); // If error, jump to finish
-                                }
-                                else if ( !that.options.registerDataWithService ) {
-                                    if ( shareRegistrationData ) {
-                                        _sharedRegisteredToken = undefined;
-                                        _sharedData = registrationData;
-                                    }
-                                    next( 1 ); // If not registering data, jump to submit
-                                }
-                                else {
-                                    next( 0 ); // Continue to register data
-                                }                                        
-                            } 
-                        );
-                    },
-                    // Register Data
-                    function(): void {
-                        rble.registerData( 
-                            that, currentOptions, registrationData as RBLeRESTServiceResult,
-                            // If failed, then I am unable to register data, so just jump to finish, otherwise continue to submit again
-                            errorMessage => { 
-                                pipelineError = errorMessage; 
-    
-                                if ( errorMessage === undefined && shareRegistrationData ) {
-                                    _sharedRegisteredToken = that.options.registeredToken;
-                                    _sharedData = undefined;
-                                }
+
+                let instance = slider.noUiSlider;
                 
-                                // If error, jump to finish
-                                next( errorMessage !== undefined ? 1 : 0 );
-                            } 
-                        );
-                    },
-                    // Submit Again (if needed)
-                    function(): void {
-                        rble.submitCalculation( 
-                            that, currentOptions,
-                            // If failed, let it do next job (getData), otherwise, jump to finish
-                            errorMessage => { 
-                                pipelineError = errorMessage; 
-                                next( 0 );
-                            } 
-                        );
-                    },
-                    // Finish
-                    function(): void {
-                        if ( pipelineError === undefined ) {
-                            rble.processResults( that );
-    
-                            if ( that.inputs?.iConfigureUI === 1 ) {
-                                ui.triggerEvent( that, "onConfigureUICalculation", that.results, currentOptions, that );
-                            }
-                            ui.triggerEvent( that, "onCalculation", that.results, currentOptions, that );
-            
-                            that.element.removeData("katapp-save-calcengine");
-                            that.element.removeData("katapp-trace-calcengine");
-                            that.element.removeData("katapp-refresh-calcengine");
+                if (instance !== undefined) {
+                    // No way to update options triggering calc in old noUiSlider library, so setting flag.
+                    // Latest library code (10.0+) solves problem, but leaving this code in for clients
+                    // who don't get updated and published with new library.
+                    $(slider).data("setting-default", 1);
+                    instance.updateOptions(sliderOptions, false);
+                    $(slider).removeData("setting-default");
+                }
+                else {
+                    instance = noUiSlider.create(
+                        slider,
+                        sliderOptions
+                    );
+
+                    // Hook up this event so that the label associated with the slider updates *whenever* there is a change.
+                    // https://refreshless.com/nouislider/events-callbacks/
+                    instance.on('update.RBLe', function ( this: noUiSlider.noUiSlider ) {
+                        const value = +( this.get() as string );
+
+                        $("." + id).val(value);
+                        const v = format == "p" ? value / 100 : value;
+                        $("." + id + "Label, .sv" + id).html( String.localeFormat("{0:" + format + decimals + "}", v) );
+                    });
+
+                    // Check to see that the input isn't marked as a skip input and if so, run a calc when the value is 'set'.
+                    // If targetInput is present, then this is a 'wizard' slider so I need to see if 'main'
+                    // input has been marked as a 'skip'.
+                    const sliderCalcId = targetInput || id;
+
+                    if ($("." + sliderCalcId + ".skipRBLe", this.application.element).length === 0 && $("." + sliderCalcId, this.application.element).parents(".skipRBLe").length === 0) {
+
+                        if (targetInput === undefined /* never trigger run from wizard sliders */) {
+
+                            // Whenever 'regular' slider changes or is updated via set()...
+                            instance.on('set.RBLe', function ( this: noUiSlider.noUiSlider ) {
+
+                                const settingDefault = $(this.target).data("setting-default") === 1;
+
+                                if (!settingDefault && that.application.options !== undefined) {
+                                    const sliderCalcOptions = $.extend(true, {}, that.application.options, { Inputs: { iInputTrigger: id } });
+                                    that.application.calculate(sliderCalcOptions);
+                                }
+
+                            });
                         }
                         else {
-                            rble.setResults( that, undefined );
-                            // TODO: Need error status key?  Might want to swap between calc and registration, but not sure
-                            ui.triggerEvent( that, "onCalculationError", "RunCalculation", currentOptions, that );
+                            // When wizard slider changes, set matching 'regular slider' value with same value from wizard
+                            instance.on('change.RBLe', function ( this: noUiSlider.noUiSlider ) {
+                                const value = +( this.get() as string );
+                                const targetSlider = $(".slider-" + targetInput, that.application.element);
+                                const targetSliderInstance = targetSlider.length === 1 ? targetSlider[0] as noUiSlider.Instance : undefined;
+
+                                if (targetSliderInstance?.noUiSlider !== undefined ) {
+                                    targetSliderInstance.noUiSlider.set(value); // triggers calculation
+                                }
+                            });
                         }
-        
-                        ui.triggerEvent( that, "onCalculateEnd", that );
                     }
-                )
-    
-                // Start the pipeline
-                next( 0 );
-            })( this );
+                }
+
+                if (sliderOptions.pips !== undefined) {
+                    sliderJQuery.parent().addClass("has-pips");
+                }
+                else {
+                    sliderJQuery.parent().removeClass("has-pips");
+                }
+            }
         }
 
-        configureUI( customOptions?: KatAppOptions ): void {
-            const manualInputs: KatAppOptions = { manualInputs: { iConfigureUI: 1 } };
-            this.calculate( KatApp.extend( {}, customOptions, manualInputs ) );
+        buildCarousel(el: JQuery): void {
+            const carouselName = el.attr("rbl-name");
+
+            if (KatApp.pageParameters["debugkatapp"] === "t.{thisTemplate}.c." + carouselName) {
+                debugger;
+            }
+
+            if (carouselName !== undefined && !carouselName.includes("{")) {
+                this.application.trace("Processing carousel: " + carouselName);
+
+                //add active class to carousel items
+                $(".carousel-inner .item", el).first().addClass("active");
+
+                //add 'target needed by indicators, referencing name of carousel
+                $(".carousel-indicators li", el)
+                    .attr("data-target", "#carousel-" + carouselName)
+                    .first().addClass("active");
+
+                const carousel = $('.carousel', el);
+                const carouselAll = $('.carousel-all', el);
+
+                //add buttons to show/hide
+                $('<a class="list-btn"> Show More</a>')
+                    .appendTo($(".carousel-indicators", el))
+                    .click(function () {
+                        carousel.hide();
+                        carouselAll.show();
+                    });
+
+                $('<div class="text-center"><a class="carousel-btn"> Show Less</a></div>')
+                    .appendTo(carouselAll)
+                    .click(function () {
+                        carouselAll.hide();
+                        carousel.show();
+                    });
+
+                //show initial item, start carousel:
+                carousel.carousel(0);
+            }
         }
 
-        destroy(): void {
-            this.element.removeAttr("rbl-application-id");
-            this.element.off(".RBLe");
-            ui.unbindEvents( this );
-            ui.triggerEvent( this, "onDestroyed", this );
-            delete this.element[ 0 ].KatApp;
-        }
+        buildHighcharts(el: JQuery<HTMLElement>): void {
+            const dataName = el.attr("rbl-chartdata");
+            const optionsName = el.attr("rbl-chartoptions") ?? dataName;
 
-        updateOptions(): void { 
-            ui.unbindEvents( this );
-            ui.bindEvents( this );
-            ui.triggerEvent( this, "onOptionsUpdated", this );
-        }
+            if ( dataName !== undefined ) {
+                const chart = $(".chart", el);
 
-        getResultTable<T>( tableName: string): Array<T> {
-            return rble.getResultTable<T>( this, tableName );
-        }
-        getResultRow(table: string, id: string, columnToSearch?: string ): JSON | undefined { 
-            return rble.getResultRow( this, table, id, columnToSearch ); 
-        }
-        getResultValue( table: string, id: string, column: string, defautlValue?: string ): string | undefined { 
-            return rble.getResultValue( this, table, id, column, defautlValue ); 
-        }
-        saveCalcEngine( location: string ): void {
-            this.element.data("katapp-save-calcengine", location);
-        }
-        refreshCalcEngine(): void {
-            this.element.data("katapp-refresh-calcengine", "1");
-        }
-        traceCalcEngine(): void {
-            this.element.data("katapp-trace-calcengine", "1");
-        }
-        trace( message: string ): void {
-            KatApp.trace( this, message );
+            }
         }
     }
 
-    // Timing concerns at all?
-    //      $("selector").KatApp() - two returned
-    //          first one starts to load, triggering a get script (that takes a while)
-    //          second one is waiting to init (get put into shim memory list)
-    //          script loads
-    //              - grabs all from shim memory list (only first one)
-    //              - script, replaces factory and destroys memory list
-    //          second one processes - still in original shim code, adds to memory list and errors or is never processed by real impl code
-    //      Can this happen?
-    //
-    //      Not sure if this could happen or not, but could maybe make new factory always check cache and process any that
-    //      might have been added after initial processing (do to thread races) ... of course can't destroy the cache at bottom
-    //      of this file if I am going to do that.
-    
+    $.fn.KatApp.standardTemplateBuilderFactory = function( application: KatAppPlugInInterface ): StandardTemplateBuilderInterface {
+        return new StandardTemplateBuilder( application );
+    };
+
     // Replace the applicationFactory to create real KatAppPlugIn implementations
-    $.fn.KatApp.applicationFactory = function( id: string, element: JQuery, options: KatAppOptions): KatAppPlugIn {
+    $.fn.KatApp.applicationFactory = function( id: string, element: JQuery, options: KatAppOptions): KatAppPlugInShimInterface {
+        // Timing concerns at all?
+        //      $("selector").KatApp() - two returned
+        //          first one starts to load, triggering a get script (that takes a while)
+        //          second one is waiting to init (get put into shim memory list)
+        //          script loads
+        //              - grabs all from shim memory list (only first one)
+        //              - script, replaces factory and destroys memory list
+        //          second one processes - still in original shim code, adds to memory list and errors or is never processed by real impl code
+        //      Can this happen?
+        //
+        //      Not sure if this could happen or not, but could maybe make new factory always check cache and process any that
+        //      might have been added after initial processing (do to thread races) ... of course can't destroy the cache at bottom
+        //      of this file if I am going to do that.
+        
         return new KatAppPlugIn(id, element, options);
     };
 

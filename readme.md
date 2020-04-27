@@ -9,4 +9,7 @@
 1. `npm i --save-dev eslint @typescript-eslint/eslint-plugin @typescript-eslint/parser`
 1. `npm i --save-dev express`
 1. `npm i --save-dev @types/express`
+1. `npm i --save-dev @types/microsoft-ajax`
+1. `npm i --save-dev @types/nouislider`
+    1. Add `target: HTMLElement; // Don't know how to 'extend' this, so adding manually for now` to `interface noUiSlider` in index.d.ts file.
 1. Should be able to `tsc --build` now and hit site.

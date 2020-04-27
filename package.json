@@ -17,10 +17,13 @@
   "devDependencies": {
     "@types/express": "^4.17.6",
     "@types/jquery": "^3.3.35",
+    "@types/microsoft-ajax": "0.0.35",
+    "@types/nouislider": "^9.0.6",
     "@typescript-eslint/eslint-plugin": "^2.29.0",
     "@typescript-eslint/parser": "^2.29.0",
     "eslint": "^6.8.0",
     "express": "^4.17.1",
+    "highcharts": "^8.0.4",
     "typescript": "^3.8.3"
   }
 }

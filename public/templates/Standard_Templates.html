@@ -1,13 +1,3 @@
-<!-- katapp templates -->
-<rbl-template tid="highchartKAT">
-  <div>Item[{item}].Options[{options}].Type[{type}]</div>
-  <div class="{chartname}"></div>
-</rbl-template>
-
-<rbl-template tid="highchart">
-  <div class="{chartname}"></div>
-</rbl-template>
-
 <rbl-template tid="pill-display">
   <div class="rounded-pill border" style="background-color: {color}; margin-top: 10px;">
     <div class="row align-items-center vertical-center status-pill">
@@ -132,6 +122,10 @@
   <li data-slide-to="{_index0}" class=""></li>
 </rbl-template>
 
+<rbl-template tid="chart-highcharts">
+  <div class="chart chart-responsive"></div>
+</rbl-template>
+
 <script>
   Highcharts.setOptions({
     "lang": {
@@ -148,198 +142,26 @@
     }
   });
 
-  function formatlabel(val, id, format, decimalPlaces) {
-    $("." + id).val(val);
-    var v = format == "p" ? val / 100 : val;
-    $("." + id + "Label, .sv" + id).html(String.localeFormat("{0:" + format + decimalPlaces + "}", v));
-  };
-
   if (KatApp.pageParameters["debugkatapp"] === "t.{thisTemplate}") {
     debugger;
   }
 
   $.fn.KatApp.templateOn("{thisTemplate}", "onCalculation.RBLe", function (event, calculationResults, calcOptions, application) {
     const view = this;
+    const templateBuilder = $.fn.KatApp.standardTemplateBuilderFactory( application );
 
     application.trace("Processing onCalculation.RBLe for Template [{thisTemplate}]..." );
 
-    $("[rbl-tid=slider-input]", view).each(function () {
-      const el = $(this);
-      const id = el.data("inputname");
-
-      if (KatApp.pageParameters["debugkatapp"] === "t.{thisTemplate}.s." + id) {
-        debugger;
-      }
-
-      const config = application.getResultRow("ejs-sliders", id);
-
-      if (config == undefined) return;
-
-      const minValue = config.min * 1;
-      const maxValue = config.max * 1;
-
-      const defaultConfigValue = 
-        application.getResultValue("ejs-defaults", id, "value") || // what is in ejs-defaults
-        config.default || // what was in ejs-slider/default
-        $("." + id).val() || // what was put in the text box
-        minValue; //could/should use this
-
-      const stepValue = (config.step || 1) * 1;
-      const format = config.format || "n";
-      const decimals = (config.decimals || "0") * 1;
-
-      const sliderJQuery = $(".slider-" + id, el);
-      $("." + id, el).val(defaultConfigValue);
-
-      if (sliderJQuery.length === 1) {
-
-        const slider = sliderJQuery[ 0 ];
-
-        sliderJQuery.data("min", minValue);
-        sliderJQuery.data("max", maxValue);
-
-        // Some modelers have 'wizards' with 'same' inputs as regular modeling page.  The 'wizard sliders'
-        // actually just set the input value of the regular input and let all the other flow (main input's
-        // change event) happen as normal.
-        const targetInput = sliderJQuery.data("input");
-
-        const defaultSliderValue = targetInput != undefined
-          ? $("." + targetInput, view).val()
-          : defaultConfigValue;
-
-        const pipsMode = config["pips-mode"] ?? "";
-        const pipValuesString = config["pips-values"] ?? "";
-        const pipsLargeValues = pipValuesString !== "" ? pipValuesString.split(',').map(Number) : [0, 25, 50, 75, 100];
-        const pipsDensity = (config["pips-density"] || "5") * 1;
-
-        const pips = pipsMode !== ""
-          ? {
-            mode: pipsMode,
-            values: pipsLargeValues,
-            density: pipsDensity,
-            stepped: true
-          }
-          : undefined;
-
-        const sliderOptions = {
-          start: defaultSliderValue * 1,
-          step: stepValue * 1,
-          behaviour: 'tap',
-          connect: 'lower',
-          pips: pips,
-          range: {
-            'min': minValue * 1,
-            'max': maxValue * 1
-          },
-          animate: true
-        };
-
-        if (slider.noUiSlider !== undefined) {
-          // No way to update options triggering calc in old noUiSlider library, so setting flag.
-          // Latest library code (10.0+) solves problem, but leaving this code in for clients
-          // who don't get updated and published with new library.
-          $(slider).data("setting-default", 1);
-          slider.noUiSlider.updateOptions(sliderOptions, false);
-          $(slider).removeData("setting-default");
-        }
-        else {
-          noUiSlider.create(
-            slider,
-            sliderOptions
-          );
-
-          // Unfortunately, get an error about noUiSlider unless casted to 'any'.
-          // Hook up this event so that the label associated with the slider updates
-          // *whenever* there is a change.
-          // https://refreshless.com/nouislider/events-callbacks/
-          slider.noUiSlider.on('update.RBLe', function () {
-            const value = this.get();
-            formatlabel(value * 1, id, format, decimals);
-          });
-
-          // Check to see that the input isn't marked as a skip input and if so, run a calc when the value is 'set'.
-          // If targetInput is present, then this is a 'wizard' slider so I need to see if 'main'
-          // input has been marked as a 'skip'.
-          const sliderCalcId = targetInput || id;
-
-          if ($("." + sliderCalcId + ".skipRBLe", view).length === 0 && $("." + sliderCalcId, view).parents(".skipRBLe").length === 0) {
-
-            if (targetInput === undefined /* never trigger run from wizard sliders */) {
-              // Whenever 'regular' slider changes or is updated via set()...
-              slider.noUiSlider.on('set.RBLe', function () {
-
-                const settingDefault = $(this.target).data("setting-default") === 1;
-
-                if (!settingDefault && application.options !== undefined) {
-                  const sliderCalcOptions = $.extend(true, {}, application.options, { Inputs: { iInputTrigger: id } });
-                  application.calculate(sliderCalcOptions);
-                }
-
-              });
-            }
-            else {
-              // When wizard slider changes, set matching 'regular slider' value with same value from wizard
-              slider.noUiSlider.on('change.RBLe', function () {
-                const value = this.get();
-                const targetSlider = $(".slider-" + targetInput, view);
-
-                if ( targetSlider.length === 1 ) {
-                  targetSlider[0].noUiSlider.set(value); // triggers calculation
-                }
-              });
-            }
-          }
-        }
-
-        if (sliderOptions.pips !== undefined) {
-          sliderJQuery.parent().addClass("has-pips");
-        }
-        else {
-          sliderJQuery.parent().removeClass("has-pips");
-        }
-      }
+    $("[rbl-tid='slider-input']", view).each(function () {
+      templateBuilder.buildSlider( $(this) );
     });
     
+    $("[rbl-tid='chart-highcharts']", view).each(function () {
+      templateBuilder.buildHighCharts( $(this) );
+    });
+
     $(".carousel-control-group", view).each(function () {
-      const el = $(this);
-      const carouselName = el.attr("rbl-name");
-
-      if (KatApp.pageParameters["debugkatapp"] === "t.{thisTemplate}.c." + carouselName) {
-        debugger;
-      }
-
-      if ( carouselName !== undefined && !carouselName.includes("{") ) {
-        application.trace("Processing carousel: " + carouselName);
-        
-        //add active class to carousel items
-        $(".carousel-inner .item", el).first().addClass("active");
-        
-        //add 'target needed by indicators, referencing name of carousel
-        $(".carousel-indicators li", el)
-          .attr("data-target","#carousel-" + carouselName )
-          .first().addClass("active");
-
-        const carousel = $('.carousel', el);
-        const carouselAll = $('.carousel-all', el);
-
-        //add buttons to show/hide
-        $('<a class="list-btn"> Show More</a>')
-          .appendTo($(".carousel-indicators", el))
-          .click(function () {
-            carousel.hide();
-            carouselAll.show();
-          });
-
-        $('<div class="text-center"><a class="carousel-btn"> Show Less</a></div>')
-          .appendTo(carouselAll)
-          .click(function () {
-            carouselAll.hide();
-            carousel.show();
-          });
-
-        //show initial item, start carousel:
-        carousel.carousel(0);
-      }
+      templateBuilder.buildCarousel( $(this) );
     });
   });
 </script>

@@ -8,7 +8,7 @@
         <p>Switch to <a href="#" onclick="katApp.initView('#rbl-view1', 'Generic', 'Conduent_BiscombPOC_SE'); return false;">basic katapp</a></p>
         <h4>Estimated Wealth Savings Accumlations and Drawdown</h4>
         <h4 style="text-transform:none; font-size: smaller; font-style: italic;">Average based on your current asset allocation</h4>
-          <div rbl-tid="highchart" data-chartname="BalanceChart" rbl-source="contents.balance"></div>
+          <div rbl-tid="chart-highcharts" rbl-chartdata="BalanceChart" rbl-chartoptions="BalanceChart"></div>
           <div class="row">
             <div class="col-sm-6">
               <div rbl-tid="slider-input" data-inputname="iRetAge"></div>
@@ -24,7 +24,7 @@
       <div class="col-sm-6 savings border rounded-lg padding-20">
         <h4>401(K) SAVINGS PLAN</h4>
         <div class="row">
-          <div class="col-sm-6 401kChart"></div>
+          <div class="col-sm-6" rbl-tid="chart-highcharts" rbl-chartdata="401kChart"></div>
           <div class="col-sm-6 align-self-center">
             <h6>BALANCE AS OF</h6>
             <h5 rbl-value="date-asof-401k"></h5>
@@ -40,7 +40,7 @@
       <div class="col-sm-6 hsa border rounded-lg padding-20">
         <h4>HSA SAVINGS PLAN</h4>
         <div class="row">
-          <div class="col-sm-6 HSAChart"></div>
+          <div class="col-sm-6" rbl-tid="chart-highcharts" rbl-chartdata="HSAChart"></div>
           <div class="col-sm-6 align-self-center">
             <h6>BALANCE AS OF</h6>
             <h5><span class="date-asof-HSA"></h5>

@@ -62,7 +62,7 @@
                     application.trace("Application destroyed.");
                 };
 
-                $( "div.katapp.startup" ).KatApp( { 
+                $( "div.katapp.startup" ).KatApp( "rebuild", { 
                     runConfigureUICalculation: false,
                     onCalculation: function( results, options, application ) {    
                         var inputTrigger = application.inputs.iInputTrigger || "[Manual Calculation]";
@@ -76,7 +76,7 @@
                     }).on( "onCalculation.RBLe", function( event, calculationResults, calcOptions, application ) {
                         var inputTrigger = calcOptions.inputs.iInputTrigger || "[Manual Calculation]";
                         application.trace("<b>Custom onCalculate.RBLe Handler</b>: Inputs Passed: " + Object.keys( application.inputs ).map( i => i + "=" + application.inputs[ i ] ).join( ", " ) + ".")
-                    }).KatApp();
+                    }).KatApp("rebuild", {} );
             });
         </script>
     </body>

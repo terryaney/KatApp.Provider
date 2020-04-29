@@ -171,6 +171,9 @@ var KatApp = /** @class */ (function () {
             this.element = element;
             this.element[0].KatApp = this;
         }
+        KatAppPlugInShim.prototype.rebuild = function (options) {
+            this.options = KatApp.extend({}, options);
+        };
         KatAppPlugInShim.prototype.destroy = function () {
             // Remove from memory cache in case they call delete before the
             // real provider is loaded
@@ -257,19 +260,26 @@ var KatApp = /** @class */ (function () {
             else {
                 // Invoke the speficied method on each selected element
                 return this.each(function () {
+                    var _a;
                     var instance = this.KatApp;
-                    // No longer supporting this, see comment for needsCalculation in KatAppPlugInInterfaces.ts.  Just don't see the
-                    // need and given pattern of providing full blown 'app' after server loads script, don't want to have to 
-                    // support 'anything' on .KatApp() until onInitialized is completed.
-                    /*
-                    // If plugin isn't created yet and they call a method, just auto init for them
-                    if ( instance === undefined && typeof options === 'string' && $.inArray(options, autoInitMethods) != -1 ) {
-                        const appOptions = ( args.length >= 1 && typeof args[ 0 ] === "object" ? args[ 0 ] : undefined ) as KatAppOptions;
-                        instance = $.fn[pluginName].applicationFactory(KatApp.generateId(), $(this), appOptions);
+                    if (options == "rebuild" && instance === undefined) {
+                        $.fn.KatApp.applicationFactory(KatApp.generateId(), $(this), args[0]);
                     }
-                    */
-                    if (instance instanceof KatAppPlugInShim && typeof instance[options] === 'function') {
-                        instance[options].apply(instance, args); // eslint-disable-line prefer-spread
+                    else {
+                        // No longer supporting this, see comment for needsCalculation in KatAppPlugInInterfaces.ts.  Just don't see the
+                        // need and given pattern of providing full blown 'app' after server loads script, don't want to have to 
+                        // support 'anything' on .KatApp() until onInitialized is completed.
+                        /*
+                        // If plugin isn't created yet and they call a method, just auto init for them
+                        if ( instance === undefined && typeof options === 'string' && $.inArray(options, autoInitMethods) != -1 ) {
+                            const appOptions = ( args.length >= 1 && typeof args[ 0 ] === "object" ? args[ 0 ] : undefined ) as KatAppOptions;
+                            instance = $.fn[pluginName].applicationFactory(KatApp.generateId(), $(this), appOptions);
+                        }
+                        */
+                        var objectType = (_a = instance === null || instance === void 0 ? void 0 : instance.constructor) === null || _a === void 0 ? void 0 : _a.name;
+                        if (instance !== undefined && (objectType === "KatAppPlugInShim" || objectType === "KatAppPlugIn") && typeof instance[options] === 'function') {
+                            instance[options].apply(instance, args); // eslint-disable-line prefer-spread
+                        }
                     }
                 });
             }

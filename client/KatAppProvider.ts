@@ -127,7 +127,7 @@ $(function() {
 
         // Fields
         element: JQuery;
-        options: KatAppOptions;
+        options: KatAppOptions = { };
         id: string;
         calculationResults?: JSON;
         exception?: RBLeServiceResults | undefined;
@@ -138,16 +138,22 @@ $(function() {
         constructor(id: string, element: JQuery, options: KatAppOptions)
         {
             this.id = id;
-
+            this.element = element;
+            // re-assign the KatAppPlugIn to replace shim with actual implementation
+            this.element[ 0 ].KatApp = this;
+            this.init( options );
+        }
+    
+        init( options: KatAppOptions ): void {
             // Transfer data attributes over if present...
-            const attrResultTabs = element.attr("rbl-result-tabs");
+            const attrResultTabs = this.element.attr("rbl-result-tabs");
 
             const attributeOptions: KatAppOptions = {
-                calcEngine: element.attr("rbl-calcengine") ?? KatApp.defaultOptions.calcEngine,
-                inputTab: element.attr("rbl-input-tab") ?? KatApp.defaultOptions.inputTab,
+                calcEngine: this.element.attr("rbl-calcengine") ?? KatApp.defaultOptions.calcEngine,
+                inputTab: this.element.attr("rbl-input-tab") ?? KatApp.defaultOptions.inputTab,
                 resultTabs: attrResultTabs != undefined ? attrResultTabs.split(",") : KatApp.defaultOptions.resultTabs,
-                view: element.attr("rbl-view"),
-                viewTemplates: element.attr("rbl-view-templates")
+                view: this.element.attr("rbl-view"),
+                viewTemplates: this.element.attr("rbl-view-templates")
             };
 
             // Take a copy of the options they pass in so same options aren't used in all plugin targets
@@ -164,13 +170,6 @@ $(function() {
                 options // finally js options override all
             );
 
-            this.element = element;
-            // re-assign the KatAppPlugIn to replace shim with actual implementation
-            this.element[ 0 ].KatApp = this;
-            this.init();
-        }
-    
-        init(): void {
             this.element.attr("rbl-application-id", this.id);
 
             (function( that: KatAppPlugIn ): void {
@@ -351,6 +350,12 @@ $(function() {
                 // Start the pipeline
                 next( 0 );
             })( this );
+        }
+
+        rebuild( options: KatAppOptions ): void {
+            this.ui.unbindEvents( this );
+            this.ui.triggerEvent( this, "onDestroyed", this );
+            this.init( options );
         }
 
         calculate( customOptions?: KatAppOptions ): void {

@@ -167,6 +167,7 @@ interface KatAppPlugInShimInterface {
     element: JQuery;
     id: string;
     destroy: () => void;
+    rebuild: (options: KatAppOptions) => void;
     trace: (message: string) => void;
 }
 interface KatAppPlugInInterface extends KatAppPlugInShimInterface {

@@ -2,7 +2,6 @@
 // TODO
 // - Need to remove slider events (https://refreshless.com/nouislider/events-callbacks/) before destroying and carousel (standard)
 // - How do I check/handle for errors when I try to load view
-// - Do I want to call calculate in updateOptions?  They could bind and call if they need to I guess
 // - Ability to have two CE's for one view might be needed for stochastic
 //      Would need to intercept init that binds onchange and instead call a getOptions or smoething
 //      on each input, or maybe a rbl-calcengine tag on each input?
@@ -17,6 +16,9 @@
 //      - i.e. what if two views on a page have iRetAge...now that it isn't asp.net (server ids), maybe we get away with it?
 // - Would be consistent about -'s in attributes, meaning between every word or maybe none...I've seen -calcengine -calcengine, -inputname, etc.
 // - Downfall to our paradigm of CMS managing KatAppProvider code is never caches script and loads it each time?
+// - Talk to tom about how to check for events
+//      - Wondering if events on charts are still there or if calling destroy on chart removes
+//      - Wondering if we are making multiple events on the carousel events and slider events
 // External Usage Changes
 // 1. Look at KatAppOptions (properties and events) and KatAppPlugInInterface (public methods on a katapp (only 4))
 // 2. Kat App element attributes (instead of data): rbl-view, rbl-view-templates, rbl-calcengine
@@ -103,19 +105,26 @@ $(function () {
     var _sharedData = undefined;
     var KatAppPlugIn = /** @class */ (function () {
         function KatAppPlugIn(id, element, options) {
-            var _a, _b;
             // Helper classes, see comment in interfaces class
             this.rble = $.fn.KatApp.rble;
             this.ui = $.fn.KatApp.ui;
+            this.options = {};
             this.id = id;
+            this.element = element;
+            // re-assign the KatAppPlugIn to replace shim with actual implementation
+            this.element[0].KatApp = this;
+            this.init(options);
+        }
+        KatAppPlugIn.prototype.init = function (options) {
+            var _a, _b;
             // Transfer data attributes over if present...
-            var attrResultTabs = element.attr("rbl-result-tabs");
+            var attrResultTabs = this.element.attr("rbl-result-tabs");
             var attributeOptions = {
-                calcEngine: (_a = element.attr("rbl-calcengine")) !== null && _a !== void 0 ? _a : KatApp.defaultOptions.calcEngine,
-                inputTab: (_b = element.attr("rbl-input-tab")) !== null && _b !== void 0 ? _b : KatApp.defaultOptions.inputTab,
+                calcEngine: (_a = this.element.attr("rbl-calcengine")) !== null && _a !== void 0 ? _a : KatApp.defaultOptions.calcEngine,
+                inputTab: (_b = this.element.attr("rbl-input-tab")) !== null && _b !== void 0 ? _b : KatApp.defaultOptions.inputTab,
                 resultTabs: attrResultTabs != undefined ? attrResultTabs.split(",") : KatApp.defaultOptions.resultTabs,
-                view: element.attr("rbl-view"),
-                viewTemplates: element.attr("rbl-view-templates")
+                view: this.element.attr("rbl-view"),
+                viewTemplates: this.element.attr("rbl-view-templates")
             };
             // Take a copy of the options they pass in so same options aren't used in all plugin targets
             // due to a 'reference' to the object.
@@ -126,12 +135,6 @@ $(function () {
             // delegate assigned, then change the default value of this property
             { registerDataWithService: KatApp.defaultOptions.registerData !== undefined || (options === null || options === void 0 ? void 0 : options.registerData) !== undefined }, options // finally js options override all
             );
-            this.element = element;
-            // re-assign the KatAppPlugIn to replace shim with actual implementation
-            this.element[0].KatApp = this;
-            this.init();
-        }
-        KatAppPlugIn.prototype.init = function () {
             this.element.attr("rbl-application-id", this.id);
             (function (that) {
                 var _a, _b, _c;
@@ -195,8 +198,8 @@ $(function () {
                                 that.options.calcEngine = (_a = that.options.calcEngine) !== null && _a !== void 0 ? _a : rblConfig.attr("calcengine");
                                 templatesFromRblConfig = rblConfig.attr("templates");
                                 that.options.inputTab = (_b = that.options.inputTab) !== null && _b !== void 0 ? _b : rblConfig.attr("input-tab");
-                                var attrResultTabs = rblConfig.attr("result-tabs");
-                                that.options.resultTabs = (_c = that.options.resultTabs) !== null && _c !== void 0 ? _c : (attrResultTabs != undefined ? attrResultTabs.split(",") : undefined);
+                                var attrResultTabs_1 = rblConfig.attr("result-tabs");
+                                that.options.resultTabs = (_c = that.options.resultTabs) !== null && _c !== void 0 ? _c : (attrResultTabs_1 != undefined ? attrResultTabs_1.split(",") : undefined);
                                 that.element.html(view.html());
                             }
                         }
@@ -286,6 +289,11 @@ $(function () {
                 // Start the pipeline
                 next(0);
             })(this);
+        };
+        KatAppPlugIn.prototype.rebuild = function (options) {
+            this.ui.unbindEvents(this);
+            this.ui.triggerEvent(this, "onDestroyed", this);
+            this.init(options);
         };
         KatAppPlugIn.prototype.calculate = function (customOptions) {
             var _a;
@@ -883,7 +891,7 @@ $(function () {
                     $(this).html(value);
                 }
                 else {
-                    application.trace("RBL ERROR: no data returned for rbl-value=" + el.attr('rbl-value'));
+                    application.trace("RBL WARNING: no data returned for rbl-value=" + el.attr('rbl-value'));
                 }
             });
         };
@@ -906,10 +914,10 @@ $(function () {
                         : that.processTemplate(application, tid, elementData);
                     var rblSourceParts_1 = (_b = el.attr('rbl-source')) === null || _b === void 0 ? void 0 : _b.split('.');
                     if (templateContent_1 === undefined) {
-                        application.trace("RBL ERROR: Template content could not be found: [" + tid + "].");
+                        application.trace("RBL WARNING: Template content could not be found: [" + tid + "].");
                     }
                     else if (rblSourceParts_1 === undefined || rblSourceParts_1.length === 0) {
-                        application.trace("RBL ERROR: no rbl-source data");
+                        application.trace("RBL WARNING: no rbl-source data");
                     }
                     else if (rblSourceParts_1.length === 1 || rblSourceParts_1.length === 3) {
                         //table in array format.  Clear element, apply template to all table rows and .append
@@ -925,7 +933,7 @@ $(function () {
                             });
                         }
                         else {
-                            application.trace("RBL ERROR: no data returned for rbl-source=" + el.attr('rbl-source'));
+                            application.trace("RBL WARNING: no data returned for rbl-source=" + el.attr('rbl-source'));
                         }
                     }
                     else if (rblSourceParts_1.length === 2) {
@@ -934,7 +942,7 @@ $(function () {
                             el.html(templateContent_1.format(row));
                         }
                         else {
-                            application.trace("RBL ERROR: no data returned for rbl-source=" + el.attr('rbl-source'));
+                            application.trace("RBL WARNING: no data returned for rbl-source=" + el.attr('rbl-source'));
                         }
                     }
                     else if (rblSourceParts_1.length === 3) {
@@ -943,7 +951,7 @@ $(function () {
                             el.html(templateContent_1.format({ "value": value }));
                         }
                         else {
-                            application.trace("RBL ERROR: no data returned for rbl-source=" + el.attr('rbl-source'));
+                            application.trace("RBL WARNING: no data returned for rbl-source=" + el.attr('rbl-source'));
                         }
                     }
                 }
@@ -981,7 +989,7 @@ $(function () {
                     }
                 }
                 else {
-                    application.trace("RBL ERROR: no data returned for rbl-display=" + el.attr('rbl-display'));
+                    application.trace("RBL WARNING: no data returned for rbl-display=" + el.attr('rbl-display'));
                 }
             });
         };

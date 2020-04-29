@@ -246,6 +246,7 @@ interface KatAppPlugInShimInterface {
     // Even that seems weird though because CalcEngine could just ignore it.
     // needsCalculation?: boolean;
     destroy: ()=> void;
+    rebuild: ( options: KatAppOptions )=> void;
     trace: ( message: string )=> void;
 }
 

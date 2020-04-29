@@ -209,6 +209,10 @@ class KatApp
             this.element[ 0 ].KatApp = this;
         }
     
+        rebuild( options: KatAppOptions ): void {
+            this.options = KatApp.extend( {}, options );
+        }
+
         destroy(): void {
             // Remove from memory cache in case they call delete before the
             // real provider is loaded
@@ -305,22 +309,30 @@ class KatApp
             
                 // Invoke the speficied method on each selected element
                 return this.each(function(): void {
+
                     const instance = this.KatApp;
 
-                    // No longer supporting this, see comment for needsCalculation in KatAppPlugInInterfaces.ts.  Just don't see the
-                    // need and given pattern of providing full blown 'app' after server loads script, don't want to have to 
-                    // support 'anything' on .KatApp() until onInitialized is completed.
-
-                    /*
-                    // If plugin isn't created yet and they call a method, just auto init for them
-                    if ( instance === undefined && typeof options === 'string' && $.inArray(options, autoInitMethods) != -1 ) {
-                        const appOptions = ( args.length >= 1 && typeof args[ 0 ] === "object" ? args[ 0 ] : undefined ) as KatAppOptions;
-                        instance = $.fn[pluginName].applicationFactory(KatApp.generateId(), $(this), appOptions);
+                    if ( options == "rebuild" && instance === undefined ) {
+                        $.fn.KatApp.applicationFactory(KatApp.generateId(), $(this), args[ 0 ] as KatAppOptions );
                     }
-                    */
+                    else {
+                        // No longer supporting this, see comment for needsCalculation in KatAppPlugInInterfaces.ts.  Just don't see the
+                        // need and given pattern of providing full blown 'app' after server loads script, don't want to have to 
+                        // support 'anything' on .KatApp() until onInitialized is completed.
 
-                    if (instance instanceof KatAppPlugInShim && typeof instance[options] === 'function') {
-                        instance[options].apply(instance, args); // eslint-disable-line prefer-spread
+                        /*
+                        // If plugin isn't created yet and they call a method, just auto init for them
+                        if ( instance === undefined && typeof options === 'string' && $.inArray(options, autoInitMethods) != -1 ) {
+                            const appOptions = ( args.length >= 1 && typeof args[ 0 ] === "object" ? args[ 0 ] : undefined ) as KatAppOptions;
+                            instance = $.fn[pluginName].applicationFactory(KatApp.generateId(), $(this), appOptions);
+                        }
+                        */
+
+                        const objectType = instance?.constructor?.name;
+
+                        if (instance !== undefined && ( objectType === "KatAppPlugInShim" || objectType === "KatAppPlugIn") && typeof instance[options] === 'function') {
+                            instance[options].apply(instance, args); // eslint-disable-line prefer-spread
+                        }
                     }
                 });
             }
@@ -330,7 +342,7 @@ class KatApp
     // 'In memory' application list until the real KatAppProvider.js script can be loaded from 
     // the CMS to properly register the applications
     $.fn.KatApp.plugInShims = [];
-    $.fn.KatApp.applicationFactory = function( id: string, element: JQuery, options: KatAppOptions): KatAppPlugInShim {
+    $.fn.KatApp.applicationFactory = function( id: string, element: JQuery, options: KatAppOptions ): KatAppPlugInShim {
         const shim = new KatAppPlugInShim(id, element, options);
 
         const applications = $.fn.KatApp.plugInShims as KatAppPlugInShimInterface[];

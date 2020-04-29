@@ -32,9 +32,7 @@
                     <a class="btn btn-primary" href="#" onclick="$('#katapp2').KatApp().calculate();">Generate</a>
                     <hr />    
                     <h2>KATApp2</h2>
-                    <div id="katapp2" rbl-trace-id="2" rbl-calcengine="Conduent_LAWEnroll_POC_SE" rbl-view-templates="Standard_Templates" class="katapp col-sm-12">
-                        <div class="rbl-inputclass"></div>
-                        <div class="rbl-resultclass"></div>
+                    <div id="katapp2" rbl-trace-id="2" rbl-calcengine="Conduent_LAWEnroll_POC_SE" rbl-view="Generic" class="katapp col-sm-12">
                     </div>
                 </div>
                 <div class="col-sm-12 border rounded-lg padding-20">
@@ -94,80 +92,6 @@
               )
               .fail( fail );
       };
-
-      $(".katapp:eq(1)").on( "onCalculation.RBLe", function( event, calculationResults, calcOptions, application ) {
-        application.trace("Hi");
-      // This is usually done by base.js in asp.net sites
-      $('.selectpicker').selectpicker();
-      $(".selectpicker").next(".error-msg").addClass("selectpicker"); /* aid in css styling */
-
-      $('.input-group.date').datepicker({
-        componentSelector: "i.fa-calendar-day, i.glyphicon-th, i.glyphicon-calendar",
-        clearBtn: true,
-        showOnFocus: false,
-        autoclose: true,
-        enableOnReadonly: false,
-        forceParse: false,
-        language: $(".bootstrapLocale").html(),
-        format: $(".bootstrapLocaleFormat").html(),
-        zIndexOffset: 2000 /* admin site sticky bar */
-      }).on("show", function (e) {
-        // To prevent the datepicker from being 'stuck' open if they are trying
-        // to click icon *AGAIN* in an attempt to toggle/close the picker.  I
-        // first check to see if my own custom data is added and if not I inject
-        // some custom data.  If it is present (meaning it was already shown, I hide
-        // the datepicker.  Then in the hide event I always remove this custom data.
-        var dp = $(this);
-        if (dp.data("datepicker-show") != undefined) {
-          dp.datepicker('hide');
-        }
-        else {
-          dp.data("datepicker-show", true);
-
-          var dateInput = $("input", $(this));
-
-          // Originally, I had an .on("clearDate", ... ) event handler that simply
-          // called dateInput.change() to trigger a calc.  But clearing input with keyboard
-          // also triggered this, so if I cleared with keyboard, it triggered change, then when
-          // I lost focus on input, it triggered 'normal' change event resulting in two calcs.
-          // So now I attach click on clear button as well and call change still
-          // so that works, but problem is that input isn't cleared before change event happens
-          // so I also clear the input myself.
-          $(".datepicker-days .clear").bind("click", function () {
-            dateInput.val("");
-            dateInput.change();
-          });
-        }
-      }).on("hide", function (e) {
-        var dp = $(this);
-        dp.removeData("datepicker-show");
-
-        $(".datepicker-days .clear").unbind("click");
-      }).on('show.bs.modal', function (event) {
-        // https://stackoverflow.com/questions/30113228/why-does-bootstrap-datepicker-trigger-show-bs-modal-when-it-is-displayed/31199817
-        // prevent datepicker from firing bootstrap modal "show.bs.modal"
-        event.stopPropagation();
-      });
-
-      // Hack for https://github.com/uxsolutions/bootstrap-datepicker/issues/2402
-      // Still have an issue if they open date picker, then paste (date picker updates) then try to
-      // click a date...since the input then blurs, it fires a calc and the 'click' into the date picker (a specific day)
-      // seems to be ignored, but rare case I guess.
-      $('.input-group.date input').on("blur", function () {
-        var dateInput = $(this);
-        if (dateInput.data("datepicker-paste") != undefined) {
-          dateInput.trigger("change");
-        }
-        dateInput.removeData("datepicker-paste");
-      }).on("paste", function (e) {
-        var dateInput = $(this);
-        dateInput.data("datepicker-paste", true);
-      }).on("keypress change", function () {
-        // If they paste, then type keyboard before blurring, it would calc twice
-        var dateInput = $(this);
-        dateInput.removeData("datepicker-paste");
-      });
-    });
 
       $(".katapp").KatApp();
   });

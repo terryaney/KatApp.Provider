@@ -1,6 +1,13 @@
-// const pluginName = 'KatApp';
+enum TraceVerbosity
+{
+    None,
+    Quiet,
+    Minimal,
+    Normal,
+    Detailed,
+    Diagnostic
+}
 
-// Static options available in js via KatApp.*
 class KatApp
 {
     static functionUrl = "https://btr.lifeatworkportal.com/services/evolution/CalculationFunction.ashx";
@@ -29,7 +36,7 @@ class KatApp
     // Default Options (shim, rest of the options/features added from server plugin)
     static defaultOptions: KatAppOptions =
     {
-        enableTrace: false,
+        traceVerbosity: TraceVerbosity.None,
         functionUrl: KatApp.functionUrl,
         useTestPlugin: KatApp.pageParameters[ "testplugin"] === "1",
         useTestCalcEngine: KatApp.pageParameters[ "test" ] === "1"
@@ -66,8 +73,9 @@ class KatApp
         );
     };
 
-    static trace( application: KatAppPlugInShimInterface | undefined, message: string ): void {
-        if ( application?.options?.enableTrace ?? KatApp.defaultOptions.enableTrace ?? false ) {
+    static trace( application: KatAppPlugInShimInterface | undefined, message: string, verbosity: TraceVerbosity = TraceVerbosity.Normal ): void {
+        const verbosityOption = application?.options?.traceVerbosity ?? KatApp.defaultOptions.traceVerbosity ?? TraceVerbosity.None;
+        if ( verbosityOption >= verbosity ) {
 
             let item: JQuery | undefined = undefined;
 
@@ -93,7 +101,8 @@ class KatApp
                 const id = traceId ?? application.id;
                 const className = application.element[ 0 ].className ?? "No classes";
                 const viewId = application.element.attr("rbl-view") ?? "None";
-                item = $("<div class='applog" + ( traceId ?? "" ) + "'>" + displayDate + " <b>Application " + id + "</b> (class=" + className +", view=" + viewId + "): " + message + "</div>");
+                const markupDetails = verbosityOption === TraceVerbosity.Diagnostic ? " (class=" + className +", view=" + viewId + ")" : "";
+                item = $("<div class='applog" + ( traceId ?? "" ) + "'>" + displayDate + " <b>Application " + id + "</b>" + markupDetails + ": " + message + "</div>");
             }
             else {
                 item = $("<div>" + displayDate + ": " + message + "</div>");
@@ -133,40 +142,45 @@ class KatApp
                         return;
                     }
     
-                    const resourceParts = r.split(":");
-                    let resource = resourceParts[ 1 ];
-                    const folder = resourceParts[ 0 ];
-                    const version = resourceParts.length > 2 ? resourceParts[ 2 ] : ( useTestVersion ? "Test" : "Live" ); // can provide a version as third part of name if you want
-    
-                    // Template names often don't use .html syntax
-                    if ( !resource.endsWith( ".html" ) && !isScript ) {
-                        resource += ".html";
-                    }
-    
-                    const params = "?{Command:'KatAppResource',Resource:'" + resource + "',Folder:'" + folder + "',Version:'" + version + "'}";
+                    try {
+                        const resourceParts = r.split(":");
+                        let resource = resourceParts[ 1 ];
+                        const folder = resourceParts[ 0 ];
+                        const version = resourceParts.length > 2 ? resourceParts[ 2 ] : ( useTestVersion ? "Test" : "Live" ); // can provide a version as third part of name if you want
         
-                    if ( isScript ) {
-                        // $.getScript(url + params) // Production version
-                        $.getScript("js/" + resource) // Debug version without having to upload to MgmtSite
-                        // $.ajax({ url: "js/" + resource, dataType: "script", cache: true }) // Trying to get browser caching working
-                        .done( () => { next(); } )
-                        .fail( ( _jqXHR: JQuery.jqXHR, textStatus: string) => {
-                            pipelineError = "getResources failed requesting " + r + ":" + textStatus;
-                            next();
-                        });
-                    }
-                    else {
-                        // $.get(url + params)
-                        // Debug version without having to upload to MgmtSite
-                        $.get("templates/" + resource)
-                            .done( data => {
-                                resourceResults[ r ] = data;
-                                next();
-                            } )
+                        // Template names often don't use .html syntax
+                        if ( !resource.endsWith( ".html" ) && !isScript ) {
+                            resource += ".html";
+                        }
+        
+                        const params = "?{Command:'KatAppResource',Resource:'" + resource + "',Folder:'" + folder + "',Version:'" + version + "'}";
+            
+                        if ( isScript ) {
+                            // $.getScript(url + params) // Production version
+                            $.getScript("js/" + resource) // Debug version without having to upload to MgmtSite
+                            // $.ajax({ url: "js/" + resource, dataType: "script", cache: true }) // Trying to get browser caching working
+                            .done( () => { next(); } )
                             .fail( ( _jqXHR: JQuery.jqXHR, textStatus: string) => {
                                 pipelineError = "getResources failed requesting " + r + ":" + textStatus;
                                 next();
-                            } );
+                            });
+                        }
+                        else {
+                            // $.get(url + params)
+                            // Debug version without having to upload to MgmtSite
+                            $.get("templates/" + resource)
+                                .done( data => {
+                                    resourceResults[ r ] = data;
+                                    next();
+                                } )
+                                .fail( ( _jqXHR: JQuery.jqXHR, textStatus: string) => {
+                                    pipelineError = "getResources failed requesting " + r + ":" + textStatus;
+                                    next();
+                                } );
+                        }
+                    } catch (error) {
+                        pipelineError = "getResources failed trying to request " + r + ":" + error;
+                        next();
                     }
                 }
             }).concat( 
@@ -233,8 +247,8 @@ class KatApp
             delete this.element[ 0 ].KatApp;
         }
 
-        trace( message: string ): void {
-            KatApp.trace( this, message );
+        trace( message: string, verbosity: TraceVerbosity = TraceVerbosity.Normal ): void {
+            KatApp.trace( this, message, verbosity );
         }
     }
     
@@ -345,30 +359,30 @@ class KatApp
     $.fn.KatApp.applicationFactory = function( id: string, element: JQuery, options: KatAppOptions ): KatAppPlugInShim {
         const shim = new KatAppPlugInShim(id, element, options);
 
+        shim.trace("Starting factory", TraceVerbosity.Diagnostic);
+
         const applications = $.fn.KatApp.plugInShims as KatAppPlugInShimInterface[];
         applications.push( shim );
 
-        shim.trace("Starting factory");
-
         // First time anyone has been called with .KatApp()
         if ( applications.length === 1 ) {
-            shim.trace("Loading KatAppProvider library...");
+            shim.trace("Loading KatAppProvider library...", TraceVerbosity.Detailed);
 
             const useTestService = shim.options?.useTestPlugin ?? KatApp.defaultOptions.useTestPlugin ?? false;
 
             KatApp.getResources( undefined, "Global:KatAppProvider.js", useTestService, true,
                 function( errorMessage ) {
                     if ( errorMessage !== undefined ) {
-                        shim.trace("KatAppProvider library could not be loaded.");
+                        shim.trace("KatAppProvider library could not be loaded.", TraceVerbosity.Quiet);
                     }
                     else {
-                        shim.trace("KatAppProvider library loaded.");
+                        shim.trace("KatAppProvider library loaded.", TraceVerbosity.Detailed);
                     }
                 }
             );
         }
     
-        shim.trace("Leaving factory");
+        shim.trace("Leaving factory", TraceVerbosity.Diagnostic);
     
         return shim;
     };

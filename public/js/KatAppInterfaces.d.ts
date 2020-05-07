@@ -14,10 +14,10 @@ interface JQuery {
 interface Function {
     plugInShims: KatAppPlugInShimInterface[];
     applicationFactory(id: string, element: JQuery, options: KatAppOptions): KatAppPlugInShimInterface;
-    standardTemplateBuilderFactory(application: KatAppPlugInInterface): StandardTemplateBuilderInterface;
-    ui: UIUtilitiesInterface;
-    rble: RBLeUtilitiesInterface;
     templateOn(templateName: string, events: string, fn: TemplateOnDelegate): void;
+    standardTemplateBuilderFactory(application: KatAppPlugInInterface): any;
+    ui: any;
+    rble: any;
 }
 interface HighchartsTooltipFormatterContextObject {
     y: number;
@@ -93,11 +93,12 @@ interface JQueryFailCallback {
     (jqXHR: JQuery.jqXHR, textStatus: string, errorThrown: string): void;
 }
 interface KatAppOptions {
-    enableTrace?: boolean;
+    traceVerbosity?: TraceVerbosity;
     corsUrl?: string;
     functionUrl?: string;
     registerDataWithService?: boolean;
-    shareRegistrationData?: boolean;
+    shareDataWithOtherApplications?: boolean;
+    sharedDataLastRequested?: number;
     data?: RBLeRESTServiceResult;
     registeredToken?: string;
     currentPage?: string;
@@ -168,7 +169,7 @@ interface KatAppPlugInShimInterface {
     id: string;
     destroy: () => void;
     rebuild: (options: KatAppOptions) => void;
-    trace: (message: string) => void;
+    trace: (message: string, verbosity?: TraceVerbosity) => void;
 }
 interface KatAppPlugInInterface extends KatAppPlugInShimInterface {
     results?: JSON;
@@ -204,34 +205,4 @@ interface HighChartsOverrideRow extends HighChartsOptionRow {
 interface HighChartsOptionRow {
     key: string;
     value: string;
-}
-interface StandardTemplateBuilderInterface {
-    buildSlider(element: JQuery): void;
-    buildCarousel(element: JQuery): void;
-    buildHighcharts(element: JQuery): void;
-}
-interface UIUtilitiesInterface {
-    getInputName(input: JQuery): string;
-    getInputValue(input: JQuery): string;
-    getInputs(application: KatAppPlugInInterface, customOptions: KatAppOptions): JSON;
-    getInputTables(application: KatAppPlugInInterface): CalculationInputTable[] | undefined;
-    triggerEvent(application: KatAppPlugInInterface, eventName: string, ...args: (object | string | undefined)[]): void;
-    bindEvents(application: KatAppPlugInInterface): void;
-    unbindEvents(application: KatAppPlugInInterface): void;
-}
-interface RBLeUtilitiesInterface {
-    setResults(application: KatAppPlugInInterface, results: JSON | undefined): void;
-    getData(application: KatAppPlugInInterface, currentOptions: KatAppOptions, next: PipelineCallback): void;
-    registerData(application: KatAppPlugInInterface, currentOptions: KatAppOptions, data: RBLeRESTServiceResult, next: PipelineCallback): void;
-    submitCalculation(application: KatAppPlugInInterface, currentOptions: KatAppOptions, next: PipelineCallback): void;
-    getResultRow<T>(application: KatAppPlugInInterface, table: string, key: string, columnToSearch?: string): T | undefined;
-    getResultValue(application: KatAppPlugInInterface, table: string, key: string, column: string, defaultValue?: string): string | undefined;
-    getResultValueByColumn(application: KatAppPlugInInterface, table: string, keyColumn: string, key: string, column: string, defaultValue?: string): string | undefined;
-    getResultTable<T>(application: KatAppPlugInInterface, tableName: string): Array<T>;
-    processTemplate(application: KatAppPlugInInterface, templateId: string, data: JQuery.PlainObject): string;
-    createHtmlFromResultRow(application: KatAppPlugInInterface, resultRow: HtmlContentRow): void;
-    processRblValues(application: KatAppPlugInInterface): void;
-    processRblSources(application: KatAppPlugInInterface): void;
-    processVisibilities(application: KatAppPlugInInterface): void;
-    processResults(application: KatAppPlugInInterface): boolean;
 }

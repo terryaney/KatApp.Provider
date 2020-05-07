@@ -25,7 +25,7 @@
                     <a class="btn btn-primary" href="#" onclick="$('#katapp1').KatApp().calculate();">Generate</a>    
                     <hr />    
                     <h2>KATApp1</h2>
-                    <div id="katapp1" rbl-trace-id="1" class="katapp col-sm-12" rbl-view="biscombPOC1">[katapp1]</div>
+                    <div id="katapp1" rbl-trace-id="1" class="katapp col-sm-12" rbl-view="biscombPOC1"></div>
                 </div>
                 <div class="col-sm-12 border rounded-lg padding-20">
                     <p>Conduent_LAWEnroll_POC_SE / Generic RBLView</p>
@@ -73,19 +73,19 @@
 </style>
 <script>
   $( function(){
-      KatApp.defaultOptions.enableTrace = true;
+      KatApp.defaultOptions.traceVerbosity = TraceVerbosity.Normal;
       KatApp.defaultOptions.useTestView = true;
       KatApp.defaultOptions.useTestCalcEngine = true;
       KatApp.defaultOptions.functionUrl = "https://secure.conduentapplications.com/Services/RBL/Evolution_Test/CalculationFunction.ashx";
       
       KatApp.defaultOptions.getData = function( application, options, done, fail ) {
           //this is a demo version that gets sample data from a REST API
-          const authId = KatApp.pageParameters["btrrest_testid"] || "911000011";
+          const authId = KatApp.pageParameters["btrrest_testid"] || "157-911000011";
           $.getJSON('https://qabtr.lifeatworkportal.com/services/rest/api/xds/TBOLoanPmtElection/' + authId )
               .done(  xDataDef =>
                   {
-                      application.trace( xDataDef );
-                      application.trace( "Participant data retreived by BTR REST API" );
+                      application.trace( "<b>Client Handler</b>: getDeta Results - " + JSON.stringify( xDataDef ), TraceVerbosity.Detailed );
+                      application.trace( "<b>Client Handler</b>: Participant data retreived by BTR REST API", TraceVerbosity.Normal );
                       done( xDataDef );
                   }                         
               )

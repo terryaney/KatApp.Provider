@@ -11,8 +11,11 @@
 
     $("{thisView}").on( "onInitialized.RBLe", function( event, application ) {
         // manually trigger a calculation
-        application.trace("View " + application.element.attr("rbl-view") + " onInitialized, now calling manual calculate." )
-        $(this).KatApp().calculate();
+        application.trace("<b>Client Handler</b>: View " + application.element.attr("rbl-view") + " onInitialized." )
+        if ( !( application.options.runConfigureUICalculation ?? true ) ) {
+            application.trace("<b>Client Handler</b>: View " + application.element.attr("rbl-view") + " onInitialized, now calling manual calculate." )
+            $(this).KatApp().calculate();
+        }
 
         var id = application.element.attr("rbl-debug-id");
         $(".myTitle", $(this).KatApp().element).html("Kat App " + id + " - View: App1.html - " + application.id);

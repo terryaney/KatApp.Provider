@@ -14,11 +14,15 @@ interface JQuery {
 interface Function {
     plugInShims: KatAppPlugInShimInterface[];
     applicationFactory( id: string, element: JQuery, options: KatAppOptions): KatAppPlugInShimInterface;
-    standardTemplateBuilderFactory( application: KatAppPlugInInterface ): StandardTemplateBuilderInterface;
-    ui: UIUtilitiesInterface;
-    rble: RBLeUtilitiesInterface;
     templateOn( templateName: string, events: string, fn: TemplateOnDelegate ): void;
+
+    // Didn't want to use interface (see comments at bottom of file for the negative parts) and couldn't use
+    // the 'class' implementation because that code only existed in closure.  So just use any.
+    standardTemplateBuilderFactory( application: KatAppPlugInInterface ): any /*StandardTemplateBuilderInterface*/; // eslint-disable-line @typescript-eslint/no-explicit-any
+    ui: any /*UIUtilitiesInterface*/; // eslint-disable-line @typescript-eslint/no-explicit-any
+    rble: any /*RBLeUtilitiesInterface*/; // eslint-disable-line @typescript-eslint/no-explicit-any
 }
+
 interface HighchartsTooltipFormatterContextObject {
     y: number;
     x: number;
@@ -124,13 +128,14 @@ interface JQueryFailCallback {
 
 interface KatAppOptions
 {
-    enableTrace?: boolean;
+    traceVerbosity?: TraceVerbosity;
 
     corsUrl?: string;
     functionUrl?: string;
 
     registerDataWithService?: boolean;
-    shareRegistrationData?: boolean;
+    shareDataWithOtherApplications?: boolean;
+    sharedDataLastRequested?: number;
     data?: RBLeRESTServiceResult; // Used if registerDataWithService = false
     registeredToken?: string; // Used if registerDataWithService = true
 
@@ -247,7 +252,7 @@ interface KatAppPlugInShimInterface {
     // needsCalculation?: boolean;
     destroy: ()=> void;
     rebuild: ( options: KatAppOptions )=> void;
-    trace: ( message: string )=> void;
+    trace: ( message: string, verbosity?: TraceVerbosity )=> void;
 }
 
 // This is the actual plug in interface.  Accessible via:
@@ -263,6 +268,9 @@ interface KatAppPlugInShimInterface {
 // KatApp compared to jQuery syntax
 // $("selector").KatApp() similiar to jQuery $("selector").html() - returns property (KatApp or html) from first match
 // $("selector").KatApp("param") similiar to jQuery $("selector").html("param") - sets property ("param") of all items matching selector
+
+// *NOTE* - I don't use this interface in KatAppProvider implementation.  It would only be exposed in a *.d.ts file
+// for clients to be able to reference.
 interface KatAppPlugInInterface extends KatAppPlugInShimInterface {
     results?: JSON;
     exception?: RBLeServiceResults;
@@ -274,6 +282,7 @@ interface KatAppPlugInInterface extends KatAppPlugInShimInterface {
     inputs?: CalculationInputs;
 
     calculate: ( customOptions?: KatAppOptions )=> void;
+
     // Re-run configureUI calculation, it will have already ran during first calculate() 
     // method if runConfigureUICalculation was true. This call is usually only needed if
     // you want to explicitly save a CalcEngine from a ConfigureUI calculation, so you set
@@ -346,11 +355,17 @@ interface HighChartsOptionRow {
 // Made the following an interface/factory just so that I could put the
 // implementation of this code below the implementation of the KatAppPlugIn
 // so it was easier to read/maintain the code inside the Provider file (i.e.
-// expecting to find the 'plugin' implementation first). Downside is that for 
-// any public methods I want to expose, I need to add to this interface as well.
+// expecting to find the 'plugin' implementation first). If I didn't have an
+// interface and I put plugin code above helper implementations, then eslint
+// complained that I used a class before it was declared.  Downside is that for 
+// any public methods I want to expose, I need to add to this interface as well
+// and if I try to navigate (f12) to a method in the code it jumps to the interface
+// instead of implementation.  I might remove this and tell eslint to ignore. 
+// Not sure yet.
 // 
 // Original code simply had each of these classes before KatAppPlugIn and made
 // a constant (scoped to closure) like - const ui = new UIUtilities()
+/*
 interface StandardTemplateBuilderInterface {
     buildSlider( element: JQuery ): void;
     buildCarousel( element: JQuery ): void;
@@ -381,3 +396,4 @@ interface RBLeUtilitiesInterface {
     processVisibilities(application: KatAppPlugInInterface): void;
     processResults( application: KatAppPlugInInterface ): boolean;
 }
+*/

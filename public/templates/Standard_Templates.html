@@ -150,7 +150,7 @@
     const view = this;
     const templateBuilder = $.fn.KatApp.standardTemplateBuilderFactory( application );
 
-    application.trace("Processing onCalculation.RBLe for Template [{thisTemplate}]..." );
+    application.trace("Processing onCalculation.RBLe for Template [{thisTemplate}]...", TraceVerbosity.Normal );
 
     $("[rbl-tid='slider-input']", view).each(function () {
       templateBuilder.buildSlider( $(this) );

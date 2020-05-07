@@ -1,6 +1,13 @@
 "use strict";
-// const pluginName = 'KatApp';
-// Static options available in js via KatApp.*
+var TraceVerbosity;
+(function (TraceVerbosity) {
+    TraceVerbosity[TraceVerbosity["None"] = 0] = "None";
+    TraceVerbosity[TraceVerbosity["Quiet"] = 1] = "Quiet";
+    TraceVerbosity[TraceVerbosity["Minimal"] = 2] = "Minimal";
+    TraceVerbosity[TraceVerbosity["Normal"] = 3] = "Normal";
+    TraceVerbosity[TraceVerbosity["Detailed"] = 4] = "Detailed";
+    TraceVerbosity[TraceVerbosity["Diagnostic"] = 5] = "Diagnostic";
+})(TraceVerbosity || (TraceVerbosity = {}));
 var KatApp = /** @class */ (function () {
     function KatApp() {
     }
@@ -39,9 +46,11 @@ var KatApp = /** @class */ (function () {
         return target;
     };
     ;
-    KatApp.trace = function (application, message) {
+    KatApp.trace = function (application, message, verbosity) {
+        if (verbosity === void 0) { verbosity = TraceVerbosity.Normal; }
         var _a, _b, _c, _d, _e;
-        if ((_c = (_b = (_a = application === null || application === void 0 ? void 0 : application.options) === null || _a === void 0 ? void 0 : _a.enableTrace) !== null && _b !== void 0 ? _b : KatApp.defaultOptions.enableTrace) !== null && _c !== void 0 ? _c : false) {
+        var verbosityOption = (_c = (_b = (_a = application === null || application === void 0 ? void 0 : application.options) === null || _a === void 0 ? void 0 : _a.traceVerbosity) !== null && _b !== void 0 ? _b : KatApp.defaultOptions.traceVerbosity) !== null && _c !== void 0 ? _c : TraceVerbosity.None;
+        if (verbosityOption >= verbosity) {
             var item = undefined;
             var d = new Date(), year = d.getFullYear();
             var month = '' + (d.getMonth() + 1), day = '' + d.getDate(), hours = '' + d.getHours(), minutes = '' + d.getMinutes(), seconds = '' + d.getSeconds();
@@ -61,7 +70,8 @@ var KatApp = /** @class */ (function () {
                 var id = traceId !== null && traceId !== void 0 ? traceId : application.id;
                 var className = (_d = application.element[0].className) !== null && _d !== void 0 ? _d : "No classes";
                 var viewId = (_e = application.element.attr("rbl-view")) !== null && _e !== void 0 ? _e : "None";
-                item = $("<div class='applog" + (traceId !== null && traceId !== void 0 ? traceId : "") + "'>" + displayDate + " <b>Application " + id + "</b> (class=" + className + ", view=" + viewId + "): " + message + "</div>");
+                var markupDetails = verbosityOption === TraceVerbosity.Diagnostic ? " (class=" + className + ", view=" + viewId + ")" : "";
+                item = $("<div class='applog" + (traceId !== null && traceId !== void 0 ? traceId : "") + "'>" + displayDate + " <b>Application " + id + "</b>" + markupDetails + ": " + message + "</div>");
             }
             else {
                 item = $("<div>" + displayDate + ": " + message + "</div>");
@@ -94,37 +104,43 @@ var KatApp = /** @class */ (function () {
                         next();
                         return;
                     }
-                    var resourceParts = r.split(":");
-                    var resource = resourceParts[1];
-                    var folder = resourceParts[0];
-                    var version = resourceParts.length > 2 ? resourceParts[2] : (useTestVersion ? "Test" : "Live"); // can provide a version as third part of name if you want
-                    // Template names often don't use .html syntax
-                    if (!resource.endsWith(".html") && !isScript) {
-                        resource += ".html";
+                    try {
+                        var resourceParts = r.split(":");
+                        var resource = resourceParts[1];
+                        var folder = resourceParts[0];
+                        var version = resourceParts.length > 2 ? resourceParts[2] : (useTestVersion ? "Test" : "Live"); // can provide a version as third part of name if you want
+                        // Template names often don't use .html syntax
+                        if (!resource.endsWith(".html") && !isScript) {
+                            resource += ".html";
+                        }
+                        var params = "?{Command:'KatAppResource',Resource:'" + resource + "',Folder:'" + folder + "',Version:'" + version + "'}";
+                        if (isScript) {
+                            // $.getScript(url + params) // Production version
+                            $.getScript("js/" + resource) // Debug version without having to upload to MgmtSite
+                                // $.ajax({ url: "js/" + resource, dataType: "script", cache: true }) // Trying to get browser caching working
+                                .done(function () { next(); })
+                                .fail(function (_jqXHR, textStatus) {
+                                pipelineError = "getResources failed requesting " + r + ":" + textStatus;
+                                next();
+                            });
+                        }
+                        else {
+                            // $.get(url + params)
+                            // Debug version without having to upload to MgmtSite
+                            $.get("templates/" + resource)
+                                .done(function (data) {
+                                resourceResults[r] = data;
+                                next();
+                            })
+                                .fail(function (_jqXHR, textStatus) {
+                                pipelineError = "getResources failed requesting " + r + ":" + textStatus;
+                                next();
+                            });
+                        }
                     }
-                    var params = "?{Command:'KatAppResource',Resource:'" + resource + "',Folder:'" + folder + "',Version:'" + version + "'}";
-                    if (isScript) {
-                        // $.getScript(url + params) // Production version
-                        $.getScript("js/" + resource) // Debug version without having to upload to MgmtSite
-                            // $.ajax({ url: "js/" + resource, dataType: "script", cache: true }) // Trying to get browser caching working
-                            .done(function () { next(); })
-                            .fail(function (_jqXHR, textStatus) {
-                            pipelineError = "getResources failed requesting " + r + ":" + textStatus;
-                            next();
-                        });
-                    }
-                    else {
-                        // $.get(url + params)
-                        // Debug version without having to upload to MgmtSite
-                        $.get("templates/" + resource)
-                            .done(function (data) {
-                            resourceResults[r] = data;
-                            next();
-                        })
-                            .fail(function (_jqXHR, textStatus) {
-                            pipelineError = "getResources failed requesting " + r + ":" + textStatus;
-                            next();
-                        });
+                    catch (error) {
+                        pipelineError = "getResources failed trying to request " + r + ":" + error;
+                        next();
                     }
                 };
             }).concat([
@@ -147,7 +163,7 @@ var KatApp = /** @class */ (function () {
     KatApp.pageParameters = KatApp.readPageParameters();
     // Default Options (shim, rest of the options/features added from server plugin)
     KatApp.defaultOptions = {
-        enableTrace: false,
+        traceVerbosity: TraceVerbosity.None,
         functionUrl: KatApp.functionUrl,
         useTestPlugin: KatApp.pageParameters["testplugin"] === "1",
         useTestCalcEngine: KatApp.pageParameters["test"] === "1"
@@ -191,8 +207,9 @@ var KatApp = /** @class */ (function () {
             }
             delete this.element[0].KatApp;
         };
-        KatAppPlugInShim.prototype.trace = function (message) {
-            KatApp.trace(this, message);
+        KatAppPlugInShim.prototype.trace = function (message, verbosity) {
+            if (verbosity === void 0) { verbosity = TraceVerbosity.Normal; }
+            KatApp.trace(this, message, verbosity);
         };
         return KatAppPlugInShim;
     }());
@@ -291,23 +308,23 @@ var KatApp = /** @class */ (function () {
     $.fn.KatApp.applicationFactory = function (id, element, options) {
         var _a, _b, _c;
         var shim = new KatAppPlugInShim(id, element, options);
+        shim.trace("Starting factory", TraceVerbosity.Diagnostic);
         var applications = $.fn.KatApp.plugInShims;
         applications.push(shim);
-        shim.trace("Starting factory");
         // First time anyone has been called with .KatApp()
         if (applications.length === 1) {
-            shim.trace("Loading KatAppProvider library...");
+            shim.trace("Loading KatAppProvider library...", TraceVerbosity.Detailed);
             var useTestService = (_c = (_b = (_a = shim.options) === null || _a === void 0 ? void 0 : _a.useTestPlugin) !== null && _b !== void 0 ? _b : KatApp.defaultOptions.useTestPlugin) !== null && _c !== void 0 ? _c : false;
             KatApp.getResources(undefined, "Global:KatAppProvider.js", useTestService, true, function (errorMessage) {
                 if (errorMessage !== undefined) {
-                    shim.trace("KatAppProvider library could not be loaded.");
+                    shim.trace("KatAppProvider library could not be loaded.", TraceVerbosity.Quiet);
                 }
                 else {
-                    shim.trace("KatAppProvider library loaded.");
+                    shim.trace("KatAppProvider library loaded.", TraceVerbosity.Detailed);
                 }
             });
         }
-        shim.trace("Leaving factory");
+        shim.trace("Leaving factory", TraceVerbosity.Diagnostic);
         return shim;
     };
 })(jQuery, window, document);

@@ -1,0 +1,62 @@
+<rbl-template tid="biscomb-input-slider">
+  <div class="form-group slider-control-group">
+    <div class="validator-container">
+      <a style="display: none;" class="vh{inputname} help-icon-anchor" role="button" tabindex="0" data-toggle="popover" data-trigger="click" data-content-selector=".h{inputname}" data-placement="top">
+        <span class="glyphicon glyphicon-info-sign help-icon"></span>
+      </a>
+      <a style="display: none;" class="vs{inputname} help-icon-anchor" role="button" tabindex="0" data-placement="top">
+        <span class="glyphicon glyphicon glyphicon-volume-up"></span>
+      </a>
+      <div class="slider-control slider-{inputname}" data-slider-type="nouislider"></div>
+      <input name="{inputname}" type="text" id_="{inputname}" class="form-control {inputname}" style="display: none" />
+      <span class="error-msg" data-toggle="tooltip" data-placement="top auto"></span>
+    </div>
+    <div class="h{inputname}Title" style="display: none;"></div>
+    <div class="h{inputname}" style="display: none;"></div>
+    <h6 class="text-center">
+      <span class="l{inputname}" style="text-transform: uppercase">{inputname} Label</span>
+      <span class="sv{inputname}" style="font-weight: bold"></span>
+    </h6>
+  </div>
+</rbl-template>
+
+<script>
+  if (KatApp.pageParameters["debugkatapp"] === "t.{thisTemplate}") {
+    debugger;
+  }
+
+  $.fn.KatApp.templateOn("{thisTemplate}", "onTemplatesProcessed.RBLe", function (event, application) {
+    application.trace("Processing onTemplatesProcessed.RBLe for Template [{thisTemplate}]...", TraceVerbosity.Normal);
+
+    if (KatApp.pageParameters["debugkatapp"] === "t.{thisTemplate}.onTemplatesProcessed") {
+        debugger;
+    }
+
+    const templateBuilder = $.fn.KatApp.standardTemplateBuilderFactory( application );
+    templateBuilder.processInputs(application);
+    templateBuilder.processCarousels(application);
+    $('[rbl-tid="biscomb-input-slider"]', application.element).each(function () {
+      templateBuilder.buildSlider( $(this) );
+    });
+  });
+
+  $.fn.KatApp.templateOn("{thisTemplate}", "onCalculation.RBLe", function (event, calculationResults, calcOptions, application) {
+    application.trace("Processing onCalculation.RBLe for Template [{thisTemplate}]...", TraceVerbosity.Normal );
+
+    if (KatApp.pageParameters["debugkatapp"] === "t.{thisTemplate}.onCalculation") {
+        debugger;
+    }
+
+    const templateBuilder = $.fn.KatApp.standardTemplateBuilderFactory( application );
+
+    // First processInputs/processCarousels in case any were injected by ejs-markup
+    templateBuilder.processInputs(application);
+    templateBuilder.processCarousels(application);
+    $('[rbl-tid="biscomb-input-slider"]', application.element).each(function () {
+      templateBuilder.buildSlider( $(this) );
+    });
+
+    templateBuilder.processHighcharts(application);
+  });
+
+</script>

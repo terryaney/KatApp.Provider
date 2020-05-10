@@ -1591,6 +1591,9 @@ $(function () {
             var _a, _b;
             var id = el.data("inputname");
             var that = this;
+            if (typeof noUiSlider !== "object") {
+                this.application.trace("noUiSlider javascript is not present.", TraceVerbosity.None);
+            }
             if (el.attr("data-kat-initialized") !== "true") {
                 // Do all data-* attributes that we support
                 var label = el.data("label");
@@ -1878,20 +1881,30 @@ $(function () {
             });
         };
         StandardTemplateBuilder.prototype.processDropdowns = function (view) {
-            // TOM: This is usually done by base.js in asp.net sites (simply in onReady)
-            $('[rbl-tid="input-dropdown"]:not([data-kat-initialized="true"]) .selectpicker', view)
-                .selectpicker()
-                .attr("data-kat-initialized", "true")
-                .next(".error-msg")
-                .addClass("selectpicker"); /* aid in css styling */
             $('[rbl-tid="input-dropdown"]:not([data-kat-initialized="true"])', view).each(function () {
+                var _a;
                 var el = $(this);
                 // Do all data-* attributes that we support
                 var id = el.data("inputname");
                 var label = el.data("label");
+                var multiSelect = el.data("multiselect");
+                var liveSearch = el.data("livesearch");
+                var size = (_a = el.data("size")) !== null && _a !== void 0 ? _a : "15";
                 if (label !== undefined) {
                     $("span.l" + id, el).html(label);
                 }
+                var input = $(".form-control", el);
+                input.attr("data-size", size);
+                if (multiSelect === "true") {
+                    input.addClass("select-all");
+                    input.attr("data-selected-text-format", "count > 2");
+                }
+                if (liveSearch === "true") {
+                    input.attr("data-live-search", "true");
+                }
+                $(".selectpicker", el).selectpicker()
+                    .next(".error-msg")
+                    .addClass("selectpicker"); /* aid in css styling */
                 el.attr("data-kat-initialized", "true");
             });
         };

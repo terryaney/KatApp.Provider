@@ -1917,6 +1917,10 @@ $(function() {
             const id = el.data("inputname");
             const that = this;
 
+            if ( typeof noUiSlider !== "object" ) {
+                this.application.trace("noUiSlider javascript is not present.", TraceVerbosity.None);
+            }
+
             if ( el.attr("data-kat-initialized") !== "true" ) {
                 // Do all data-* attributes that we support
                 const label = el.data("label");
@@ -2270,23 +2274,36 @@ $(function() {
         }
 
         processDropdowns( view: JQuery<HTMLElement> ): void {
-            // TOM: This is usually done by base.js in asp.net sites (simply in onReady)
-            $('[rbl-tid="input-dropdown"]:not([data-kat-initialized="true"]) .selectpicker', view)
-                .selectpicker()
-                .attr("data-kat-initialized", "true")
-                .next(".error-msg")
-                .addClass("selectpicker"); /* aid in css styling */
-
             $('[rbl-tid="input-dropdown"]:not([data-kat-initialized="true"])', view).each( function() {
                 const el = $(this);
 
                 // Do all data-* attributes that we support
                 const id = el.data("inputname");
                 const label = el.data("label");
+                const multiSelect = el.data("multiselect");
+                const liveSearch = el.data("livesearch");
+                const size = el.data("size") ?? "15";
 
                 if ( label !== undefined ) {
                     $("span.l" + id, el).html(label);
                 }
+                
+                const input = $(".form-control", el);
+
+                input.attr("data-size", size);
+
+                if ( multiSelect === "true" ) {
+                    input.addClass("select-all");
+                    input.attr("data-selected-text-format", "count > 2");
+                }
+                
+                if ( liveSearch === "true" ) {
+                    input.attr("data-live-search", "true");
+                }
+
+                $(".selectpicker", el).selectpicker()
+                    .next(".error-msg")
+                    .addClass("selectpicker"); /* aid in css styling */
                 
                 el.attr("data-kat-initialized", "true");
             });

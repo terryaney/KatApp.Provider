@@ -10,12 +10,15 @@ interface HTMLElement {
 interface JQuery {
     KatApp(options?: KatAppOptions | string, ...args: Array<string | number | KatAppOptions>): JQuery | KatAppPlugInShimInterface | string | undefined;
     carousel(frame: number): JQuery;
+    selectpicker(): JQuery;
+    datepicker(options: any): JQuery;
 }
 interface Function {
     plugInShims: KatAppPlugInShimInterface[];
     applicationFactory(id: string, element: JQuery, options: KatAppOptions): KatAppPlugInShimInterface;
     templateOn(templateName: string, events: string, fn: TemplateOnDelegate): void;
     standardTemplateBuilderFactory(application: KatAppPlugInInterface): any;
+    highchartsBuilderFactory(application: KatAppPlugInInterface): any;
     ui: any;
     rble: any;
 }
@@ -29,6 +32,7 @@ interface HighchartsTooltipFormatterContextObject {
 }
 interface CalculationInputs {
     iConfigureUI?: number;
+    iDataBind?: number;
     iInputTrigger?: string;
 }
 interface CalculationInputTableRow {
@@ -118,6 +122,7 @@ interface KatAppOptions {
     submitCalculation?: (appilcation: KatAppPlugInInterface, options: SubmitCalculationOptions, done: RBLeServiceCallback, fail: JQueryFailCallback) => void;
     getData?: (appilcation: KatAppPlugInInterface, options: KatAppOptions, done: RBLeRESTServiceResultCallback, fail: JQueryFailCallback) => void;
     registerData?: (appilcation: KatAppPlugInInterface, options: KatAppOptions, done: RBLeServiceCallback, fail: JQueryFailCallback) => void;
+    onTemplatesProcessed?: (this: HTMLElement, appilcation: KatAppPlugInInterface, templates: string[]) => void;
     onInitialized?: (this: HTMLElement, appilcation: KatAppPlugInInterface) => void;
     onDestroyed?: (this: HTMLElement, appilcation: KatAppPlugInInterface) => void;
     onOptionsUpdated?: (this: HTMLElement, appilcation: KatAppPlugInInterface) => void;

@@ -7,9 +7,12 @@
 //      on each input, or maybe a rbl-calcengine tag on each input?
 // Discussions with Tom
 // - Templates run every calc?  Will that goof up slider config?  Need to read code closer
+//      - NOTE: for issues below solved with data-kat-initialized attribute
 //      - For example, arne't you hooking up events every time to carousel?  Since you aren't removing events?  WHere you said there were events hanging around?
 //      - Seems like you need a way to only update the 'markup' of carousel vs rebuilding entire thing?  Otherwise, probably need/should hookup a 'calcstart event' in templates to remove event handlers
-// - Show how bunch of errors are happening in boscomb (missing source elements)
+//      - Wondering if we are making multiple events on the carousel events and slider events
+// - Adding/Removing classes...was ejs-markup and ejs-output rows, no longer processing ejs-output rows
+// - Show how bunch of errors are happening in biscomb (missing source elements)
 // - Search for TOM comments
 // - Retry - how often do we 'retry' registration?  Once per session?  Once per calc attempt?
 // - Need to figure out if we have name conflicts with id's put in katapps, tom's docs made comment about name vs id, read again
@@ -18,7 +21,6 @@
 // - Downfall to our paradigm of CMS managing KatAppProvider code is never caches script and loads it each time?
 // - Talk to tom about how to check for events
 //      - Wondering if events on charts are still there or if calling destroy on chart removes
-//      - Wondering if we are making multiple events on the carousel events and slider events
 // External Usage Changes
 // 1. Look at KatAppOptions (properties and events) and KatAppPlugInInterface (public methods on a katapp (only 4))
 // 2. Kat App element attributes (instead of data): rbl-view, rbl-view-templates, rbl-calcengine
@@ -70,6 +72,7 @@ $(function () {
         runConfigureUICalculation: true,
         ajaxLoaderSelector: ".ajaxloader",
         useTestCalcEngine: KatApp.pageParameters["test"] === "1",
+        refreshCalcEngine: KatApp.pageParameters["expirece"] === "1",
         onCalculateStart: function (application) {
             if (application.options.ajaxLoaderSelector !== undefined) {
                 $(application.options.ajaxLoaderSelector, application.element).show();
@@ -348,7 +351,7 @@ $(function () {
                         // For the templates *this app* downloaded, inject them into markup                        
                         Object.keys(resourceResults).forEach(function (r) {
                             var data = resourceResults[r]; // eslint-disable-line @typescript-eslint/no-non-null-assertion
-                            // TOM: create container element 'rbl-templates' with an attribute 'rbl-t' for template content 
+                            // TOM (your comment, but do we need that container?): create container element 'rbl-templates' with an attribute 'rbl-t' for template content 
                             // and this attribute used for checking(?)
                             // Remove extension if there is one, could be a problem if you do Standard.Templates, trying to get Standard.Templates.html.
                             var resourceParts = r.split(":");
@@ -383,7 +386,7 @@ $(function () {
                             _templateDelegates
                                 .filter(function (d) { return d.Template.toLowerCase() == t.toLowerCase(); })
                                 .forEach(function (d) {
-                                that.trace("[" + d.Events + "] events registered for template [" + d.Template + "].", TraceVerbosity.Normal);
+                                that.trace("[" + d.Events + "] events from template [" + d.Template + "] hooked up.", TraceVerbosity.Normal);
                                 that.element.on(d.Events, function () {
                                     var args = [];
                                     for (var _i = 0; _i < arguments.length; _i++) {
@@ -396,7 +399,7 @@ $(function () {
                         // Update options.viewTemplates just in case someone is looking at them
                         that.options.viewTemplates = requiredTemplates.join(",");
                         // Build up template content that DOES NOT use rbl results, but instead just 
-                        // uses data-* to create a dataobject generally used to create controls like sliders.                    
+                        // uses data-* to create a dataobject.  Normally just making controls with templates here
                         $("[rbl-tid]:not([rbl-source])", that.element).each(function () {
                             var templateId = $(this).attr('rbl-tid');
                             if (templateId !== undefined && templateId !== "inline") {
@@ -404,11 +407,14 @@ $(function () {
                                 $(this).html(that.rble.processTemplate(that, templateId, $(this).data()));
                             }
                         });
+                        if (requiredTemplates.length > 0) {
+                            that.ui.triggerEvent(that, "onTemplatesProcessed", that, requiredTemplates);
+                        }
                         that.ui.bindEvents(that);
                         that.ui.triggerEvent(that, "onInitialized", that);
                         if (that.options.runConfigureUICalculation) {
                             var customOptions = {
-                                manualInputs: { iConfigureUI: 1 }
+                                manualInputs: { iConfigureUI: 1, iDataBind: 1 }
                             };
                             that.calculate(customOptions);
                         }
@@ -1090,19 +1096,25 @@ $(function () {
                 }
             }
         };
+        RBLeUtilities.prototype.getRblSelectorValue = function (application, tableName, selectorParts) {
+            if (selectorParts.length === 1)
+                return this.getResultValue(application, tableName, selectorParts[0], "value");
+            else if (selectorParts.length === 3)
+                return this.getResultValue(application, selectorParts[0], selectorParts[1], selectorParts[2]);
+            else if (selectorParts.length === 4)
+                return this.getResultValueByColumn(application, selectorParts[0], selectorParts[1], selectorParts[2], selectorParts[3]);
+            else {
+                application.trace("Invalid selector length for [" + selectorParts.join(".") + "].", TraceVerbosity.Quiet);
+                return undefined;
+            }
+        };
         RBLeUtilities.prototype.processRblValues = function (application) {
             var that = this;
             //[rbl-value] inserts text value of referenced tabdef result into .html()
             $("[rbl-value]", application.element).each(function () {
                 var el = $(this);
                 var rblValueParts = el.attr('rbl-value').split('.'); // eslint-disable-line @typescript-eslint/no-non-null-assertion
-                var value = undefined;
-                if (rblValueParts.length === 1)
-                    value = that.getResultValue(application, "ejs-output", rblValueParts[0], "value");
-                else if (rblValueParts.length === 3)
-                    value = that.getResultValue(application, rblValueParts[0], rblValueParts[1], rblValueParts[2]);
-                else if (rblValueParts.length === 4)
-                    value = that.getResultValueByColumn(application, rblValueParts[0], rblValueParts[1], rblValueParts[2], rblValueParts[3]);
+                var value = that.getRblSelectorValue(application, "ejs-output", rblValueParts);
                 if (value != undefined) {
                     $(this).html(value);
                 }
@@ -1121,7 +1133,7 @@ $(function () {
                 if (el.attr("rbl-configui") === undefined || ((_a = application.inputs) === null || _a === void 0 ? void 0 : _a.iConfigureUI) === 1) {
                     var elementData = el.data();
                     var tid = el.attr('rbl-tid');
-                    // TOM - inline needed for first case?  What does it mean if rbl-tid is blank?  Need a variable name
+                    // TOM (don't follow this code) - inline needed for first case?  What does it mean if rbl-tid is blank?  Need a variable name
                     var inlineTemplate = tid === undefined ? $("[rbl-tid]", el) : undefined;
                     var templateContent_1 = tid === undefined
                         ? inlineTemplate === undefined || inlineTemplate.length === 0
@@ -1130,21 +1142,27 @@ $(function () {
                         : that.processTemplate(application, tid, elementData);
                     var rblSourceParts_1 = (_b = el.attr('rbl-source')) === null || _b === void 0 ? void 0 : _b.split('.');
                     if (templateContent_1 === undefined) {
-                        application.trace("RBL WARNING: Template content could not be found: [" + tid + "].", TraceVerbosity.Normal);
+                        application.trace("RBL WARNING: Template content could not be found: [" + tid + "].", TraceVerbosity.Minimal);
                     }
                     else if (rblSourceParts_1 === undefined || rblSourceParts_1.length === 0) {
-                        application.trace("RBL WARNING: no rbl-source data", TraceVerbosity.Normal);
+                        application.trace("RBL WARNING: no rbl-source data", TraceVerbosity.Quiet);
                     }
                     else if (rblSourceParts_1.length === 1 || rblSourceParts_1.length === 3) {
                         //table in array format.  Clear element, apply template to all table rows and .append
                         var table = that.getResultTable(application, rblSourceParts_1[0]);
                         if (table !== undefined && table.length > 0) {
                             el.children(":not(.rbl-preserve, [rbl-tid='inline'])").remove();
+                            var prepend_1 = el.attr('rbl-prepend') === "true";
                             var i_1 = 1;
                             table.forEach(function (row) {
                                 if (rblSourceParts_1.length === 1 || row[rblSourceParts_1[1]] === rblSourceParts_1[2]) {
                                     var templateData = KatApp.extend({}, row, { _index0: i_1 - 1, _index1: i_1++ });
-                                    el.append(templateContent_1.format(templateData));
+                                    if (prepend_1) {
+                                        el.prepend(templateContent_1.format(templateData));
+                                    }
+                                    else {
+                                        el.append(templateContent_1.format(templateData));
+                                    }
                                 }
                             });
                         }
@@ -1186,15 +1204,9 @@ $(function () {
                 //check to see if there's an "=" for a simple equality expression
                 var expressionParts = rblDisplayParts[rblDisplayParts.length - 1].split('=');
                 rblDisplayParts[rblDisplayParts.length - 1] = expressionParts[0];
-                var visibilityValue = undefined;
-                if (rblDisplayParts.length == 1)
-                    visibilityValue = that.getResultValue(application, "ejs-output", rblDisplayParts[0], "value");
-                else if (rblDisplayParts.length == 3)
-                    visibilityValue = that.getResultValue(application, rblDisplayParts[0], rblDisplayParts[1], rblDisplayParts[2]);
-                else if (rblDisplayParts.length == 4)
-                    visibilityValue = that.getResultValueByColumn(application, rblDisplayParts[0], rblDisplayParts[1], rblDisplayParts[2], rblDisplayParts[3]);
+                var visibilityValue = that.getRblSelectorValue(application, "ejs-output", rblDisplayParts);
                 if (visibilityValue != undefined) {
-                    if (visibilityValue.length > 1) {
+                    if (expressionParts.length > 1) {
                         visibilityValue = (visibilityValue == expressionParts[1]); //allows table.row.value=10
                     }
                     if (visibilityValue === "0" || visibilityValue === false || ((_a = visibilityValue) === null || _a === void 0 ? void 0 : _a.toLowerCase()) === "false" || visibilityValue === "") {
@@ -1212,26 +1224,23 @@ $(function () {
         RBLeUtilities.prototype.processResults = function (application) {
             var _this = this;
             var results = application.results;
-            //processes the view with rbl results (render engine)
-            //elements using templates have rbl-tid or rbl-source
-            //templates: run once page build | run once after rbl call (not subsequent times)
-            //element content can be preserved with a class flag
-            //generated content append or prepend (only applicably when preserved content)
+            // TOM (what does this comment mean): element content can be preserved with a class flag
+            // TOM (what does this comment mean): generated content append or prepend (only applicably when preserved content)
             if (results !== undefined) {
                 // TODO Process results...implement appProcessResults
                 var calcEngineName = results["@calcEngine"];
                 var version = results["@version"];
                 application.trace("Processing results for " + calcEngineName + "(" + version + ").", TraceVerbosity.Normal);
-                //need two passes to support "ejs-markup"
-                // TOM - Why 2 passes needed?
+                // Need two passes to support "ejs-markup" because the markup might render something that is then
+                // processed by subsequent flow controls (ouput, sources, or values)
                 var markUpRows = this.getResultTable(application, "ejs-markup");
                 markUpRows.forEach(function (r) { _this.createHtmlFromResultRow(application, r); });
                 var outputRows = this.getResultTable(application, "ejs-output");
                 outputRows.forEach(function (r) { _this.createHtmlFromResultRow(application, r); });
                 this.processRblSources(application);
                 this.processRblValues(application);
-                // apply dynamic classes after all html updates (could this be done with 'non-template' build above)
-                markUpRows.concat(outputRows).forEach(function (r) {
+                // apply dynamic classes after all html updates (TOM: (this was your comment...) could this be done with 'non-template' build above)
+                markUpRows.forEach(function (r) {
                     if (r.selector !== undefined) {
                         if (r.addclass !== undefined && r.addclass.length > 0) {
                             $(r.selector, application.element).addClass(r.addclass);
@@ -1253,22 +1262,345 @@ $(function () {
         return RBLeUtilities;
     }());
     $.fn.KatApp.rble = new RBLeUtilities();
-    var StandardTemplateBuilder /* implements StandardTemplateBuilderInterface*/ = /** @class */ (function () {
-        function StandardTemplateBuilder(application) {
+    var HighchartsBuilder = /** @class */ (function () {
+        function HighchartsBuilder(application) {
             // Associated code with this variable might belong in template html/js, but putting here for now.
             this.firstHighcharts = true;
+            this.application = application;
+        }
+        HighchartsBuilder.prototype.stringCompare = function (strA, strB, ignoreCase) {
+            if (strA === undefined && strB === undefined) {
+                return 0;
+            }
+            else if (strA === undefined) {
+                return -1;
+            }
+            else if (strB === undefined) {
+                return 1;
+            }
+            else if (ignoreCase) {
+                return strA.toUpperCase().localeCompare(strB.toUpperCase());
+            }
+            else {
+                return strA.localeCompare(strB);
+            }
+        };
+        ;
+        HighchartsBuilder.prototype.getHighchartsConfigValue = function (configurationName) {
+            var _this = this;
+            var _a, _b, _c, _d, _e;
+            // Look in override table first, then fall back to 'regular' options table
+            return (_c = (_b = (_a = this.highchartsOverrides) === null || _a === void 0 ? void 0 : _a.filter(function (r) { return _this.stringCompare(r.key, configurationName, true) === 0; }).shift()) === null || _b === void 0 ? void 0 : _b.value) !== null && _c !== void 0 ? _c : (_e = (_d = this.highchartsOptions) === null || _d === void 0 ? void 0 : _d.filter(function (r) { return _this.stringCompare(r.key, configurationName, true) === 0; }).shift()) === null || _e === void 0 ? void 0 : _e.value;
+        };
+        HighchartsBuilder.prototype.ensureHighchartsCulture = function () {
+            var _a;
+            // Set some default highcharts culture options globally if this is the first chart I'm processing
+            if (this.firstHighcharts) {
+                this.firstHighcharts = false;
+                var culture = (_a = this.application.getResultValue("variable", "culture", "value")) !== null && _a !== void 0 ? _a : "en-";
+                if (!culture.startsWith("en-")) {
+                    Highcharts.setOptions({
+                        yAxis: {
+                            labels: {
+                                formatter: function () {
+                                    return String.localeFormat("{0:c0}", this.value);
+                                }
+                            },
+                            stackLabels: {
+                                formatter: function () {
+                                    return String.localeFormat("{0:c0}", this.value);
+                                }
+                            }
+                        }
+                    });
+                }
+            }
+        };
+        HighchartsBuilder.prototype.removeRBLEncoding = function (value) {
+            if (value === undefined)
+                return value;
+            // http://stackoverflow.com/a/1144788/166231
+            /*
+            function escapeRegExp(string) {
+                return string.replace(/([.*+?^=!:${}()|\[\]\/\\])/g, "\\$1");
+            }
+            */
+            return value.replace(/<</g, "<")
+                .replace(/&lt;&lt;/g, "<")
+                .replace(/>>/g, ">")
+                .replace(/&gt;&gt;/g, ">")
+                .replace(/&quot;/g, "\"")
+                .replace(/&amp;nbsp;/g, "&nbsp;");
+        };
+        HighchartsBuilder.prototype.getHighChartsOptionValue = function (value) {
+            var d = Number(value);
+            if (value === undefined || this.stringCompare(value, "null", true) === 0)
+                return undefined;
+            else if (!isNaN(d) && value !== "")
+                return d;
+            else if (this.stringCompare(value, "true", true) === 0)
+                return true;
+            else if (this.stringCompare(value, "false", true) === 0)
+                return false;
+            else if (value.startsWith("json:"))
+                return JSON.parse(value.substring(5));
+            else if (value.startsWith("var ")) {
+                var v_1 = value.substring(4);
+                return function () { return eval(v_1); }; // eslint-disable-line @typescript-eslint/no-explicit-any
+            }
+            else if (value.startsWith("function ")) {
+                var f_1 = this.removeRBLEncoding("function f() {value} f.call(this);".format({ value: value.substring(value.indexOf("{")) }));
+                return function () { return eval(f_1); }; // eslint-disable-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-non-null-assertion
+            }
+            else
+                return this.removeRBLEncoding(value);
+        };
+        HighchartsBuilder.prototype.setHighChartsOption = function (optionsContainer, name, value) {
+            var optionJson = optionsContainer;
+            var optionNames = name.split(".");
+            var optionValue = this.getHighChartsOptionValue(value);
+            // Build up a json object...
+            // chart.title.text, Hello = { chart: { title: { text: "Hello } } }
+            // annotations[0].labels[0], { point: 'series1.69', text: 'Life Exp' } = { annotations: [ { labels: [ { point: 'series1.69', text: 'Life Exp' } ] } ] }
+            for (var k = 0; k < optionNames.length; k++) {
+                var optionName = optionNames[k];
+                var optionIndex = -1;
+                if (optionName.endsWith("]")) {
+                    var nameParts = optionName.split("[");
+                    optionName = nameParts[0];
+                    optionIndex = parseInt(nameParts[1].substring(0, nameParts[1].length - 1));
+                }
+                var onPropertyValue = k === optionNames.length - 1;
+                // When you are on the last name part, instead of setting it
+                // to new {} object, set it appropriately to the value passed in CE
+                var newValue = onPropertyValue
+                    ? optionValue
+                    : {};
+                // If doesn't exist, set it to new object or array
+                if (optionJson[optionName] === undefined || onPropertyValue) {
+                    optionJson[optionName] = optionIndex > -1 ? [] : newValue;
+                }
+                // If property is an array and index isn't there yet, push a new element
+                if (optionIndex > -1 && optionJson[optionName].length - 1 < optionIndex) { // eslint-disable-line @typescript-eslint/no-explicit-any
+                    optionJson[optionName].push(newValue); // eslint-disable-line @typescript-eslint/no-explicit-any
+                }
+                // Reset my local variable to the most recently added/created object
+                optionJson = optionIndex > -1
+                    ? optionJson[optionName][optionIndex]
+                    : optionJson[optionName];
+            }
+        };
+        HighchartsBuilder.prototype.getHighChartsXAxisOptions = function (existingOptions, chartData) {
+            var _this = this;
+            var _a;
+            var xAxis = (_a = existingOptions) !== null && _a !== void 0 ? _a : {};
+            xAxis.categories = chartData.map(function (d) { var _a; return (_a = _this.removeRBLEncoding(d.category)) !== null && _a !== void 0 ? _a : ""; });
+            var plotInformation = chartData
+                .map(function (d, index) { var _a, _b; return ({ Index: index, PlotLine: (_a = d.plotLine) !== null && _a !== void 0 ? _a : "", PlotBand: (_b = d.plotBand) !== null && _b !== void 0 ? _b : "" }); })
+                .filter(function (r) { return r.PlotLine !== "" || r.PlotBand !== ""; });
+            var plotLines = [];
+            var plotBands = [];
+            // Offset should be zero unless you want to adjust the line/band to draw between categories.  If you want to draw before the category, use -0.5.  If you want to draw after category, use 0.5
+            // i.e. if you had a column at age 65 and wanted to plot band from there to end of chart, the band would start half way in column starting band 'between' 64 and 65 (i.e. 64.5) will make it so
+            // whole bar is in span.
+            plotInformation.forEach(function (row) {
+                if (row.PlotLine !== "") {
+                    var info = row.PlotLine.split("|");
+                    var color = info[0];
+                    var width = Number(info[1]);
+                    var offset = info.length > 2 ? Number(info[2]) : 0;
+                    var plotLine = {
+                        color: color,
+                        value: row.Index + offset,
+                        width: width,
+                        zIndex: 1
+                    };
+                    plotLines.push(plotLine);
+                }
+                if (row.PlotBand !== "") {
+                    var info = row.PlotBand.split("|");
+                    var color = info[0];
+                    var span = info[1];
+                    var offset = info.length > 2 ? Number(info[2]) : 0;
+                    var from = _this.stringCompare(span, "lower", true) === 0 ? -1 : row.Index + offset;
+                    var to = _this.stringCompare(span, "lower", true) === 0 ? row.Index + offset :
+                        _this.stringCompare(span, "higher", true) === 0 ? chartData.length :
+                            row.Index + Number(span) + offset;
+                    var plotBand = {
+                        color: color,
+                        from: from,
+                        to: to
+                    };
+                    plotBands.push(plotBand);
+                }
+            });
+            if (plotLines.length > 0) {
+                xAxis.plotLines = plotLines;
+            }
+            if (plotBands.length > 0) {
+                xAxis.plotBands = plotBands;
+            }
+            return xAxis;
+        };
+        HighchartsBuilder.prototype.getHighchartsTooltipOptions = function (seriesColumns, chartConfigurationRows) {
+            var tooltipFormat = this.removeRBLEncoding(this.getHighchartsConfigValue("config-tooltipFormat"));
+            if (tooltipFormat === undefined) {
+                return undefined;
+            }
+            // Get the 'format' configuration row to look for specified format, otherwise return c0 as default
+            var configFormat = chartConfigurationRows.filter(function (c) { return c.category === "config-format"; }).shift();
+            var seriesFormats = seriesColumns
+                // Ensure the series/column is visible
+                .filter(function (seriesName) { return chartConfigurationRows.filter(function (c) { return c.category === "config-visible" && c[seriesName] === "0"; }).length === 0; })
+                .map(function (seriesName) { return (configFormat === null || configFormat === void 0 ? void 0 : configFormat[seriesName]) || "c0"; });
+            return {
+                formatter: function () {
+                    var s = "";
+                    var t = 0;
+                    var template = Sys.CultureInfo.CurrentCulture.name.startsWith("fr")
+                        ? "<br/>{name} : {value}"
+                        : "<br/>{name}: {value}";
+                    this.points.forEach(function (point) {
+                        if (point.y > 0) {
+                            s += template.format({ name: point.series.name, value: String.localeFormat("{0:" + seriesFormats[0] + "}", point.y) });
+                            t += point.y;
+                        }
+                    });
+                    return tooltipFormat
+                        .replace(new RegExp("\\{x\\}", "g"), String(this.x))
+                        .replace(new RegExp("\\{stackTotal\\}", "g"), String.localeFormat("{0:" + seriesFormats[0] + "}", t))
+                        .replace(new RegExp("\\{seriesDetail\\}", "g"), s);
+                },
+                shared: true
+            };
+        };
+        HighchartsBuilder.prototype.getHighchartsOptions = function (firstDataRow) {
+            var _this = this;
+            var _a;
+            var chartOptions = {};
+            // If chart has at least 1 data row and options/overrides arrays have been initialized
+            if (this.highchartsData !== undefined && this.highchartsOptions !== undefined && this.highchartsOverrides !== undefined) {
+                // First set all properties from the options/overrides rows
+                var overrideProperties = this.highchartsOverrides.filter(function (r) { return !r.key.startsWith("config-"); });
+                this.highchartsOptions.concat(overrideProperties).forEach(function (optionRow) {
+                    _this.setHighChartsOption(chartOptions, optionRow.key, optionRow.value);
+                });
+                // Get series data
+                var allChartColumns = Object.keys(firstDataRow);
+                var seriesColumns = allChartColumns.filter(function (k) { return k.startsWith("series"); });
+                var chartConfigurationRows = this.highchartsData.filter(function (e) { return e.category.startsWith("config-"); });
+                var chartData = this.highchartsData.filter(function (e) { return !e.category.startsWith("config-"); });
+                var chartType = this.getHighchartsConfigValue("chart.type");
+                var isXAxisChart = chartType !== "pie" && chartType !== "solidgauge" && chartType !== "scatter3d" && chartType !== "scatter3d";
+                chartOptions.series = this.getHighChartsSeries(allChartColumns, seriesColumns, chartConfigurationRows, chartData, isXAxisChart);
+                if (isXAxisChart) {
+                    chartOptions.xAxis = this.getHighChartsXAxisOptions(chartOptions.xAxis, chartData);
+                }
+                chartOptions.tooltip = (_a = this.getHighchartsTooltipOptions(seriesColumns, chartConfigurationRows)) !== null && _a !== void 0 ? _a : chartOptions.tooltip;
+            }
+            return chartOptions;
+        };
+        HighchartsBuilder.prototype.getHighChartsSeriesDataRow = function (row, allColumnNames, seriesName, isXAxisChart) {
+            // id: is for annotations so that points can reference a 'point name/id'
+            // name: is for pie chart's built in highcharts label formatter and it looks for '.name' on the point
+            var _this = this;
+            var dataRow = { y: +row[seriesName], id: seriesName + "." + row.category };
+            if (!isXAxisChart) {
+                dataRow.name = row.category;
+            }
+            // Get all the 'data point' configuration values for the current chart data row
+            // TODO: Get documentation here of some samples of when this is needed
+            var pointColumnHeader = "point." + seriesName + ".";
+            allColumnNames.filter(function (k) { return k.startsWith(pointColumnHeader); }).forEach(function (k) {
+                dataRow[k.substring(pointColumnHeader.length)] = _this.getHighChartsOptionValue(row[k]);
+            });
+            return dataRow;
+        };
+        HighchartsBuilder.prototype.getHighChartsSeries = function (allColumns, seriesColumns, chartConfigurationRows, chartData, isXAxisChart) {
+            var _this = this;
+            var seriesInfo = [];
+            seriesColumns.forEach(function (seriesName) {
+                var _a;
+                var isVisible = chartConfigurationRows.filter(function (c) { return c.category === "config-visible" && c[seriesName] === "0"; }).length === 0;
+                // Don't want series on chart or legend but want it in tooltip/chart data
+                var isHidden = chartConfigurationRows.filter(function (c) { return c.category === "config-hidden" && c[seriesName] === "1"; }).length > 0;
+                if (isVisible) {
+                    var series_1 = {};
+                    var properties = chartConfigurationRows
+                        .filter(function (c) { return ["config-visible", "config-hidden", "config-format"].indexOf(c.category) === -1 && c[seriesName] !== undefined; })
+                        .map(function (c) { return ({ key: c.category.substring(7), value: c[seriesName] }); });
+                    series_1.data = chartData.map(function (d) { return _this.getHighChartsSeriesDataRow(d, allColumns, seriesName, isXAxisChart); });
+                    properties.forEach(function (c) {
+                        _this.setHighChartsOption(series_1, c.key, c.value);
+                    });
+                    if (isHidden) {
+                        series_1.visible = false;
+                        series_1.showInLegend = (_a = series_1.showInLegend) !== null && _a !== void 0 ? _a : false;
+                    }
+                    seriesInfo.push(series_1);
+                }
+            });
+            return seriesInfo;
+        };
+        HighchartsBuilder.prototype.buildChart = function (el) {
+            var _this = this;
+            var _a, _b;
+            this.highChartsDataName = el.attr("rbl-chartdata");
+            this.highChartsOptionsName = (_a = el.attr("rbl-chartoptions")) !== null && _a !== void 0 ? _a : this.highChartsDataName;
+            if (this.highChartsDataName !== undefined && this.highChartsOptionsName !== undefined) {
+                this.ensureHighchartsCulture();
+                this.highchartsOverrides = this.application.getResultTable("HighCharts-Overrides").filter(function (r) { return _this.stringCompare(r["@id"], _this.highChartsDataName, true) === 0; });
+                this.highchartsOptions = this.application.getResultTable("HighCharts-" + this.highChartsOptionsName + "-Options");
+                this.highchartsData = this.application.getResultTable("HighCharts-" + this.highChartsDataName + "-Data");
+                var container = $(".chart", el);
+                var renderStyle = (_b = container.attr("style")) !== null && _b !== void 0 ? _b : "";
+                var configStyle = this.getHighchartsConfigValue("config-style");
+                if (configStyle !== undefined) {
+                    if (renderStyle !== "" && !renderStyle.endsWith(";")) {
+                        renderStyle += ";";
+                    }
+                    container.attr("style", renderStyle + configStyle);
+                }
+                var firstDataRow = this.highchartsData.filter(function (r) { return !(r.category || "").startsWith("config-"); }).shift();
+                if (firstDataRow !== undefined) {
+                    var chartOptions = this.getHighchartsOptions(firstDataRow);
+                    var highchart = Highcharts.charts[container.data('highchartsChart')];
+                    if (highchart !== undefined) {
+                        highchart.destroy();
+                    }
+                    try {
+                        container.highcharts(chartOptions);
+                    }
+                    catch (error) {
+                        throw error;
+                    }
+                }
+            }
+            return el;
+        };
+        return HighchartsBuilder;
+    }());
+    $.fn.KatApp.highchartsBuilderFactory = function (application) {
+        return new HighchartsBuilder(application);
+    };
+    var StandardTemplateBuilder /* implements StandardTemplateBuilderInterface*/ = /** @class */ (function () {
+        function StandardTemplateBuilder(application) {
             this.application = application;
         }
         StandardTemplateBuilder.prototype.buildSlider = function (el) {
             var _a, _b;
             var id = el.data("inputname");
             var that = this;
-            if (KatApp.pageParameters["debugkatapp"] === "t.{thisTemplate}.s." + id) {
-                debugger;
+            if (el.attr("data-kat-initialized") !== "true") {
+                // Do all data-* attributes that we support
+                var label = el.data("label");
+                if (label !== undefined) {
+                    $("span.l" + id, el).html(label);
+                }
             }
             var config = this.application.getResultRow("ejs-sliders", id);
             if (config == undefined)
-                return;
+                return el;
             var minValue = Number(config.min);
             var maxValue = Number(config.max);
             var defaultConfigValue = this.application.getResultValue("ejs-defaults", id, "value") || // what is in ejs-defaults
@@ -1326,6 +1658,7 @@ $(function () {
                 }
                 else {
                     instance = noUiSlider.create(slider, sliderOptions);
+                    el.attr("data-kat-initialized", "true");
                     // Hook up this event so that the label associated with the slider updates *whenever* there is a change.
                     // https://refreshless.com/nouislider/events-callbacks/
                     instance.on('update.RBLe', function () {
@@ -1369,347 +1702,209 @@ $(function () {
                     sliderJQuery.parent().removeClass("has-pips");
                 }
             }
+            return el;
         };
         StandardTemplateBuilder.prototype.buildCarousel = function (el) {
             var carouselName = el.attr("rbl-name");
-            if (KatApp.pageParameters["debugkatapp"] === "t.{thisTemplate}.c." + carouselName) {
-                debugger;
-            }
             if (carouselName !== undefined && !carouselName.includes("{")) {
                 this.application.trace("Processing carousel: " + carouselName, TraceVerbosity.Detailed);
+                $(".carousel-inner .item, .carousel-indicators li", el).removeClass("active");
                 //add active class to carousel items
                 $(".carousel-inner .item", el).first().addClass("active");
                 //add 'target needed by indicators, referencing name of carousel
                 $(".carousel-indicators li", el)
                     .attr("data-target", "#carousel-" + carouselName)
                     .first().addClass("active");
-                var carousel_1 = $('.carousel', el);
-                var carouselAll_1 = $('.carousel-all', el);
-                //add buttons to show/hide
-                $('<a class="list-btn"> Show More</a>')
-                    .appendTo($(".carousel-indicators", el))
-                    .click(function () {
-                    carousel_1.hide();
-                    carouselAll_1.show();
-                });
-                $('<div class="text-center"><a class="carousel-btn"> Show Less</a></div>')
-                    .appendTo(carouselAll_1)
-                    .click(function () {
-                    carouselAll_1.hide();
-                    carousel_1.show();
-                });
+                var carousel = $('.carousel', el);
                 //show initial item, start carousel:
-                carousel_1.carousel(0);
+                carousel.carousel(0);
             }
+            return el;
         };
-        StandardTemplateBuilder.prototype.stringCompare = function (strA, strB, ignoreCase) {
-            if (strA === undefined && strB === undefined) {
-                return 0;
-            }
-            else if (strA === undefined) {
-                return -1;
-            }
-            else if (strB === undefined) {
-                return 1;
-            }
-            else if (ignoreCase) {
-                return strA.toUpperCase().localeCompare(strB.toUpperCase());
-            }
-            else {
-                return strA.localeCompare(strB);
-            }
-        };
-        ;
-        StandardTemplateBuilder.prototype.getHighchartsConfigValue = function (configurationName) {
-            var _this = this;
-            var _a, _b, _c, _d, _e;
-            // Look in override table first, then fall back to 'regular' options table
-            return (_c = (_b = (_a = this.highchartsOverrides) === null || _a === void 0 ? void 0 : _a.filter(function (r) { return _this.stringCompare(r.key, configurationName, true) === 0; }).shift()) === null || _b === void 0 ? void 0 : _b.value) !== null && _c !== void 0 ? _c : (_e = (_d = this.highchartsOptions) === null || _d === void 0 ? void 0 : _d.filter(function (r) { return _this.stringCompare(r.key, configurationName, true) === 0; }).shift()) === null || _e === void 0 ? void 0 : _e.value;
-        };
-        StandardTemplateBuilder.prototype.ensureHighchartsCulture = function () {
-            var _a;
-            // Set some default highcharts culture options globally if this is the first chart I'm processing
-            if (this.firstHighcharts) {
-                this.firstHighcharts = false;
-                var culture = (_a = this.application.getResultValue("variable", "culture", "value")) !== null && _a !== void 0 ? _a : "en-";
-                if (!culture.startsWith("en-")) {
-                    Highcharts.setOptions({
-                        yAxis: {
-                            labels: {
-                                formatter: function () {
-                                    return String.localeFormat("{0:c0}", this.value);
-                                }
-                            },
-                            stackLabels: {
-                                formatter: function () {
-                                    return String.localeFormat("{0:c0}", this.value);
-                                }
-                            }
-                        }
-                    });
-                }
-            }
-        };
-        StandardTemplateBuilder.prototype.removeRBLEncoding = function (value) {
-            if (value === undefined)
-                return value;
-            // http://stackoverflow.com/a/1144788/166231
-            /*
-            function escapeRegExp(string) {
-                return string.replace(/([.*+?^=!:${}()|\[\]\/\\])/g, "\\$1");
-            }
-            */
-            return value.replace(/<</g, "<")
-                .replace(/&lt;&lt;/g, "<")
-                .replace(/>>/g, ">")
-                .replace(/&gt;&gt;/g, ">")
-                .replace(/&quot;/g, "\"")
-                .replace(/&amp;nbsp;/g, "&nbsp;");
-        };
-        StandardTemplateBuilder.prototype.getHighChartsOptionValue = function (value) {
-            var d = Number(value);
-            if (value === undefined || this.stringCompare(value, "null", true) === 0)
-                return undefined;
-            else if (!isNaN(d) && value !== "")
-                return d;
-            else if (this.stringCompare(value, "true", true) === 0)
-                return true;
-            else if (this.stringCompare(value, "false", true) === 0)
-                return false;
-            else if (value.startsWith("json:"))
-                return JSON.parse(value.substring(5));
-            else if (value.startsWith("var ")) {
-                var v_1 = value.substring(4);
-                return function () { return eval(v_1); }; // eslint-disable-line @typescript-eslint/no-explicit-any
-            }
-            else if (value.startsWith("function ")) {
-                var f_1 = this.removeRBLEncoding("function f() {value} f.call(this);".format({ value: value.substring(value.indexOf("{")) }));
-                return function () { return eval(f_1); }; // eslint-disable-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-non-null-assertion
-            }
-            else
-                return this.removeRBLEncoding(value);
-        };
-        StandardTemplateBuilder.prototype.setHighChartsOption = function (optionsContainer, name, value) {
-            var optionJson = optionsContainer;
-            var optionNames = name.split(".");
-            var optionValue = this.getHighChartsOptionValue(value);
-            // Build up a json object...
-            // chart.title.text, Hello = { chart: { title: { text: "Hello } } }
-            // annotations[0].labels[0], { point: 'series1.69', text: 'Life Exp' } = { annotations: [ { labels: [ { point: 'series1.69', text: 'Life Exp' } ] } ] }
-            for (var k = 0; k < optionNames.length; k++) {
-                var optionName = optionNames[k];
-                var optionIndex = -1;
-                if (optionName.endsWith("]")) {
-                    var nameParts = optionName.split("[");
-                    optionName = nameParts[0];
-                    optionIndex = parseInt(nameParts[1].substring(0, nameParts[1].length - 1));
-                }
-                var onPropertyValue = k === optionNames.length - 1;
-                // When you are on the last name part, instead of setting it
-                // to new {} object, set it appropriately to the value passed in CE
-                var newValue = onPropertyValue
-                    ? optionValue
-                    : {};
-                // If doesn't exist, set it to new object or array
-                if (optionJson[optionName] === undefined || onPropertyValue) {
-                    optionJson[optionName] = optionIndex > -1 ? [] : newValue;
-                }
-                // If property is an array and index isn't there yet, push a new element
-                if (optionIndex > -1 && optionJson[optionName].length - 1 < optionIndex) { // eslint-disable-line @typescript-eslint/no-explicit-any
-                    optionJson[optionName].push(newValue); // eslint-disable-line @typescript-eslint/no-explicit-any
-                }
-                // Reset my local variable to the most recently added/created object
-                optionJson = optionIndex > -1
-                    ? optionJson[optionName][optionIndex]
-                    : optionJson[optionName];
-            }
-        };
-        StandardTemplateBuilder.prototype.getHighChartsXAxisOptions = function (existingOptions, chartData) {
-            var _this = this;
-            var _a;
-            var xAxis = (_a = existingOptions) !== null && _a !== void 0 ? _a : {};
-            xAxis.categories = chartData.map(function (d) { var _a; return (_a = _this.removeRBLEncoding(d.category)) !== null && _a !== void 0 ? _a : ""; });
-            var plotInformation = chartData
-                .map(function (d, index) { var _a, _b; return ({ Index: index, PlotLine: (_a = d.plotLine) !== null && _a !== void 0 ? _a : "", PlotBand: (_b = d.plotBand) !== null && _b !== void 0 ? _b : "" }); })
-                .filter(function (r) { return r.PlotLine !== "" || r.PlotBand !== ""; });
-            var plotLines = [];
-            var plotBands = [];
-            // Offset should be zero unless you want to adjust the line/band to draw between categories.  If you want to draw before the category, use -0.5.  If you want to draw after category, use 0.5
-            // i.e. if you had a column at age 65 and wanted to plot band from there to end of chart, the band would start half way in column starting band 'between' 64 and 65 (i.e. 64.5) will make it so
-            // whole bar is in span.
-            plotInformation.forEach(function (row) {
-                if (row.PlotLine !== "") {
-                    var info = row.PlotLine.split("|");
-                    var color = info[0];
-                    var width = Number(info[1]);
-                    var offset = info.length > 2 ? Number(info[2]) : 0;
-                    var plotLine = {
-                        color: color,
-                        value: row.Index + offset,
-                        width: width,
-                        zIndex: 1
-                    };
-                    plotLines.push(plotLine);
-                }
-                if (row.PlotBand !== "") {
-                    var info = row.PlotBand.split("|");
-                    var color = info[0];
-                    var span = info[1];
-                    var offset = info.length > 2 ? Number(info[2]) : 0;
-                    var from = _this.stringCompare(span, "lower", true) === 0 ? -1 : row.Index + offset;
-                    var to = _this.stringCompare(span, "lower", true) === 0 ? row.Index + offset :
-                        _this.stringCompare(span, "higher", true) === 0 ? chartData.length :
-                            row.Index + Number(span) + offset;
-                    var plotBand = {
-                        color: color,
-                        from: from,
-                        to: to
-                    };
-                    plotBands.push(plotBand);
-                }
-            });
-            if (plotLines.length > 0) {
-                xAxis.plotLines = plotLines;
-            }
-            if (plotBands.length > 0) {
-                xAxis.plotBands = plotBands;
-            }
-            return xAxis;
-        };
-        StandardTemplateBuilder.prototype.getHighchartsTooltipOptions = function (seriesColumns, chartConfigurationRows) {
-            var tooltipFormat = this.removeRBLEncoding(this.getHighchartsConfigValue("config-tooltipFormat"));
-            if (tooltipFormat === undefined) {
-                return undefined;
-            }
-            // Get the 'format' configuration row to look for specified format, otherwise return c0 as default
-            var configFormat = chartConfigurationRows.filter(function (c) { return c.category === "config-format"; }).shift();
-            var seriesFormats = seriesColumns
-                // Ensure the series/column is visible
-                .filter(function (seriesName) { return chartConfigurationRows.filter(function (c) { return c.category === "config-visible" && c[seriesName] === "0"; }).length === 0; })
-                .map(function (seriesName) { return (configFormat === null || configFormat === void 0 ? void 0 : configFormat[seriesName]) || "c0"; });
-            return {
-                formatter: function () {
-                    var s = "";
-                    var t = 0;
-                    var template = Sys.CultureInfo.CurrentCulture.name.startsWith("fr")
-                        ? "<br/>{name} : {value}"
-                        : "<br/>{name}: {value}";
-                    this.points.forEach(function (point) {
-                        if (point.y > 0) {
-                            s += template.format({ name: point.series.name, value: String.localeFormat("{0:" + seriesFormats[0] + "}", point.y) });
-                            t += point.y;
-                        }
-                    });
-                    return tooltipFormat
-                        .replace(new RegExp("\\{x\\}", "g"), String(this.x))
-                        .replace(new RegExp("\\{stackTotal\\}", "g"), String.localeFormat("{0:" + seriesFormats[0] + "}", t))
-                        .replace(new RegExp("\\{seriesDetail\\}", "g"), s);
-                },
-                shared: true
-            };
-        };
-        StandardTemplateBuilder.prototype.getHighchartsOptions = function (firstDataRow) {
-            var _this = this;
-            var _a;
-            var chartOptions = {};
-            // If chart has at least 1 data row and options/overrides arrays have been initialized
-            if (this.highchartsData !== undefined && this.highchartsOptions !== undefined && this.highchartsOverrides !== undefined) {
-                // First set all properties from the options/overrides rows
-                var overrideProperties = this.highchartsOverrides.filter(function (r) { return !r.key.startsWith("config-"); });
-                this.highchartsOptions.concat(overrideProperties).forEach(function (optionRow) {
-                    _this.setHighChartsOption(chartOptions, optionRow.key, optionRow.value);
+        StandardTemplateBuilder.prototype.processCarousels = function (application) {
+            var that = this;
+            var view = application.element;
+            // Hook up event handlers only when *not* already initialized
+            $('.carousel-control-group:not([data-kat-initialized="true"])', view).each(function () {
+                var el = $(this);
+                var carousel = $('.carousel', el);
+                var carouselAll = $('.carousel-all', el);
+                //add buttons to show/hide
+                $(".carousel-indicators .list-btn", el)
+                    .click(function () {
+                    carousel.hide();
+                    carouselAll.show();
                 });
-                // Get series data
-                var allChartColumns = Object.keys(firstDataRow);
-                var seriesColumns = allChartColumns.filter(function (k) { return k.startsWith("series"); });
-                var chartConfigurationRows = this.highchartsData.filter(function (e) { return e.category.startsWith("config-"); });
-                var chartData = this.highchartsData.filter(function (e) { return !e.category.startsWith("config-"); });
-                var chartType = this.getHighchartsConfigValue("chart.type");
-                var isXAxisChart = chartType !== "pie" && chartType !== "solidgauge" && chartType !== "scatter3d" && chartType !== "scatter3d";
-                chartOptions.series = this.getHighChartsSeries(allChartColumns, seriesColumns, chartConfigurationRows, chartData, isXAxisChart);
-                if (isXAxisChart) {
-                    chartOptions.xAxis = this.getHighChartsXAxisOptions(chartOptions.xAxis, chartData);
-                }
-                chartOptions.tooltip = (_a = this.getHighchartsTooltipOptions(seriesColumns, chartConfigurationRows)) !== null && _a !== void 0 ? _a : chartOptions.tooltip;
-            }
-            return chartOptions;
-        };
-        StandardTemplateBuilder.prototype.getHighChartsSeriesDataRow = function (row, allColumnNames, seriesName, isXAxisChart) {
-            // id: is for annotations so that points can reference a 'point name/id'
-            // name: is for pie chart's built in highcharts label formatter and it looks for '.name' on the point
-            var _this = this;
-            var dataRow = { y: +row[seriesName], id: seriesName + "." + row.category };
-            if (!isXAxisChart) {
-                dataRow.name = row.category;
-            }
-            // Get all the 'data point' configuration values for the current chart data row
-            // TODO: Get documentation here of some samples of when this is needed
-            var pointColumnHeader = "point." + seriesName + ".";
-            allColumnNames.filter(function (k) { return k.startsWith(pointColumnHeader); }).forEach(function (k) {
-                dataRow[k.substring(pointColumnHeader.length)] = _this.getHighChartsOptionValue(row[k]);
+                $(".carousel-btn", carouselAll)
+                    .click(function () {
+                    carouselAll.hide();
+                    carousel.show();
+                });
+                el.attr("data-kat-initialized", "true");
             });
-            return dataRow;
+            $('.carousel-control-group', view).each(function () {
+                var el = $(this);
+                that.buildCarousel(el);
+            });
         };
-        StandardTemplateBuilder.prototype.getHighChartsSeries = function (allColumns, seriesColumns, chartConfigurationRows, chartData, isXAxisChart) {
-            var _this = this;
-            var seriesInfo = [];
-            seriesColumns.forEach(function (seriesName) {
-                var _a;
-                var isVisible = chartConfigurationRows.filter(function (c) { return c.category === "config-visible" && c[seriesName] === "0"; }).length === 0;
-                // Don't want series on chart or legend but want it in tooltip/chart data
-                var isHidden = chartConfigurationRows.filter(function (c) { return c.category === "config-hidden" && c[seriesName] === "1"; }).length > 0;
-                if (isVisible) {
-                    var series_1 = {};
-                    var properties = chartConfigurationRows
-                        .filter(function (c) { return ["config-visible", "config-hidden", "config-format"].indexOf(c.category) === -1 && c[seriesName] !== undefined; })
-                        .map(function (c) { return ({ key: c.category.substring(7), value: c[seriesName] }); });
-                    series_1.data = chartData.map(function (d) { return _this.getHighChartsSeriesDataRow(d, allColumns, seriesName, isXAxisChart); });
-                    properties.forEach(function (c) {
-                        _this.setHighChartsOption(series_1, c.key, c.value);
+        StandardTemplateBuilder.prototype.processHighcharts = function (application) {
+            var view = application.element;
+            var highchartsBuilder = $.fn.KatApp.highchartsBuilderFactory(application);
+            $("[rbl-tid='chart-highcharts']", view).each(function () {
+                highchartsBuilder.buildChart($(this));
+            });
+        };
+        StandardTemplateBuilder.prototype.processTextBoxes = function (view) {
+            $('[rbl-tid="input-textbox"]:not([data-kat-initialized="true"])', view).each(function () {
+                var _a, _b;
+                var el = $(this);
+                var id = el.data("inputname");
+                var inputType = (_a = el.data("type")) === null || _a === void 0 ? void 0 : _a.toLowerCase();
+                var label = el.data("label");
+                var prefix = el.data("prefix");
+                var suffix = el.data("suffix");
+                var placeholder = el.data("placeholder");
+                var maxlength = el.data("maxlength");
+                var autocomplete = el.data("autocomplete");
+                var value = el.data("value");
+                if (label !== undefined) {
+                    $("span.l" + id, el).html(label);
+                }
+                var input = $("input[name='" + id + "']", el);
+                if (placeholder !== undefined) {
+                    input.attr("placeholder", placeholder);
+                }
+                if (maxlength !== undefined) {
+                    input.attr("maxlength", maxlength);
+                }
+                if (inputType === "password") {
+                    input.attr("type", "password");
+                }
+                else if (inputType === "multiline") {
+                    // Replace textbox with a textarea
+                    var rows = (_b = el.data("rows")) !== null && _b !== void 0 ? _b : "4";
+                    input.replaceWith($('<textarea name="' + id + '" rows="' + rows + '" _id="' + id + '" class="form-control ' + id + '"></textarea>'));
+                    input = $("textarea[name='" + id + "']", el);
+                }
+                if (autocomplete === "false" || inputType === "password") {
+                    input.attr("autocomplete", "off");
+                }
+                if (value !== undefined) {
+                    input.val(value);
+                }
+                var validatorContainer = $(".validator-container", el);
+                if (inputType === "date") {
+                    validatorContainer.addClass("input-group date");
+                    validatorContainer.append($("<span class='input-group-addon'><i class='glyphicon glyphicon-calendar'></i></span>"));
+                    $('.input-group.date', el)
+                        .datepicker({
+                        componentSelector: "i.fa-calendar-day, i.glyphicon-th, i.glyphicon-calendar",
+                        clearBtn: true,
+                        showOnFocus: false,
+                        autoclose: true,
+                        enableOnReadonly: false,
+                        forceParse: false,
+                        language: $(".bootstrapLocale").html(),
+                        format: $(".bootstrapLocaleFormat").html(),
+                        zIndexOffset: 2000 /* admin site sticky bar */
+                    })
+                        .on("show", function () {
+                        // To prevent the datepicker from being 'stuck' open if they are trying
+                        // to click icon *AGAIN* in an attempt to toggle/close the picker.  I
+                        // first check to see if my own custom data is added and if not I inject
+                        // some custom data.  If it is present (meaning it was already shown, I hide
+                        // the datepicker.  Then in the hide event I always remove this custom data.
+                        var dp = $(this);
+                        if (dp.data("datepicker-show") != undefined) {
+                            dp.datepicker('hide');
+                        }
+                        else {
+                            dp.data("datepicker-show", true);
+                            var dateInput_1 = $("input", $(this));
+                            // Originally, I had an .on("clearDate", ... ) event handler that simply
+                            // called dateInput.change() to trigger a calc.  But clearing input with keyboard
+                            // also triggered this, so if I cleared with keyboard, it triggered change, then when
+                            // I lost focus on input, it triggered 'normal' change event resulting in two calcs.
+                            // So now I attach click on clear button as well and call change still
+                            // so that works, but problem is that input isn't cleared before change event happens
+                            // so I also clear the input myself.
+                            $(".datepicker-days .clear", view).bind("click", function () {
+                                dateInput_1.val("");
+                                dateInput_1.change();
+                            });
+                        }
+                    })
+                        .on("hide", function () {
+                        var dp = $(this);
+                        dp.removeData("datepicker-show");
+                        $(".datepicker-days .clear", view).unbind("click");
+                    })
+                        .on('show.bs.modal', function (event) {
+                        // https://stackoverflow.com/questions/30113228/why-does-bootstrap-datepicker-trigger-show-bs-modal-when-it-is-displayed/31199817
+                        // prevent datepicker from firing bootstrap modal "show.bs.modal"
+                        event.stopPropagation();
                     });
-                    if (isHidden) {
-                        series_1.visible = false;
-                        series_1.showInLegend = (_a = series_1.showInLegend) !== null && _a !== void 0 ? _a : false;
-                    }
-                    seriesInfo.push(series_1);
+                    // Hack for https://github.com/uxsolutions/bootstrap-datepicker/issues/2402
+                    // Still have an issue if they open date picker, then paste (date picker updates) then try to
+                    // click a date...since the input then blurs, it fires a calc and the 'click' into the date picker (a specific day)
+                    // seems to be ignored, but rare case I guess.
+                    $('.input-group.date input', el)
+                        .on("blur", function () {
+                        var dateInput = $(this);
+                        if (dateInput.data("datepicker-paste") != undefined) {
+                            dateInput.trigger("change");
+                        }
+                        dateInput.removeData("datepicker-paste");
+                    })
+                        .on("paste", function () {
+                        var dateInput = $(this);
+                        dateInput.data("datepicker-paste", true);
+                    })
+                        .on("keypress change", function () {
+                        // If they paste, then type keyboard before blurring, it would calc twice
+                        var dateInput = $(this);
+                        dateInput.removeData("datepicker-paste");
+                    });
                 }
+                else if (prefix !== undefined) {
+                    validatorContainer.addClass("input-group");
+                    validatorContainer.prepend($("<span class='input-group-addon input-group-text'>" + prefix + "</span>"));
+                }
+                else if (suffix !== undefined) {
+                    validatorContainer.addClass("input-group");
+                    validatorContainer.append($("<span class='input-group-addon input-group-text'>" + suffix + "</span>"));
+                }
+                el.attr("data-kat-initialized", "true");
             });
-            return seriesInfo;
         };
-        StandardTemplateBuilder.prototype.buildHighcharts = function (el) {
-            var _this = this;
-            var _a, _b;
-            this.highChartsDataName = el.attr("rbl-chartdata");
-            this.highChartsOptionsName = (_a = el.attr("rbl-chartoptions")) !== null && _a !== void 0 ? _a : this.highChartsDataName;
-            if (this.highChartsDataName !== undefined && this.highChartsOptionsName !== undefined) {
-                this.ensureHighchartsCulture();
-                this.highchartsOverrides = this.application.getResultTable("HighCharts-Overrides").filter(function (r) { return _this.stringCompare(r["@id"], _this.highChartsDataName, true) === 0; });
-                this.highchartsOptions = this.application.getResultTable("HighCharts-" + this.highChartsOptionsName + "-Options");
-                this.highchartsData = this.application.getResultTable("HighCharts-" + this.highChartsDataName + "-Data");
-                var container = $(".chart", el);
-                var renderStyle = (_b = container.attr("style")) !== null && _b !== void 0 ? _b : "";
-                var configStyle = this.getHighchartsConfigValue("config-style");
-                if (configStyle !== undefined) {
-                    if (renderStyle !== "" && !renderStyle.endsWith(";")) {
-                        renderStyle += ";";
-                    }
-                    container.attr("style", renderStyle + configStyle);
+        StandardTemplateBuilder.prototype.processDropdowns = function (view) {
+            // TOM: This is usually done by base.js in asp.net sites (simply in onReady)
+            $('[rbl-tid="input-dropdown"]:not([data-kat-initialized="true"]) .selectpicker', view)
+                .selectpicker()
+                .attr("data-kat-initialized", "true")
+                .next(".error-msg")
+                .addClass("selectpicker"); /* aid in css styling */
+            $('[rbl-tid="input-dropdown"]:not([data-kat-initialized="true"])', view).each(function () {
+                var el = $(this);
+                // Do all data-* attributes that we support
+                var id = el.data("inputname");
+                var label = el.data("label");
+                if (label !== undefined) {
+                    $("span.l" + id, el).html(label);
                 }
-                var firstDataRow = this.highchartsData.filter(function (r) { return !(r.category || "").startsWith("config-"); }).shift();
-                if (firstDataRow !== undefined) {
-                    var chartOptions = this.getHighchartsOptions(firstDataRow);
-                    var highchart = Highcharts.charts[container.data('highchartsChart')];
-                    if (highchart !== undefined) {
-                        highchart.destroy();
-                    }
-                    try {
-                        container.highcharts(chartOptions);
-                    }
-                    catch (error) {
-                        throw error;
-                    }
-                }
-            }
+                el.attr("data-kat-initialized", "true");
+            });
+        };
+        StandardTemplateBuilder.prototype.processInputs = function (application) {
+            var view = application.element;
+            application.trace("Processing onTemplatesProcessed.RBLe: " + $('[rbl-tid="input-dropdown"]:not([data-kat-initialized="true"]) .selectpicker', view).length + " selectpicker controls.", TraceVerbosity.Diagnostic);
+            this.processDropdowns(view);
+            this.processTextBoxes(view);
+            var that = this;
+            // Don't use kat-initialized here b/c they might be changing options based on another input
+            $('[rbl-tid="input-slider"]', view).each(function () {
+                that.buildSlider($(this));
+            });
         };
         return StandardTemplateBuilder;
     }());

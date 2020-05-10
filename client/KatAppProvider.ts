@@ -7,9 +7,12 @@
 
 // Discussions with Tom
 // - Templates run every calc?  Will that goof up slider config?  Need to read code closer
+//      - NOTE: for issues below solved with data-kat-initialized attribute
 //      - For example, arne't you hooking up events every time to carousel?  Since you aren't removing events?  WHere you said there were events hanging around?
 //      - Seems like you need a way to only update the 'markup' of carousel vs rebuilding entire thing?  Otherwise, probably need/should hookup a 'calcstart event' in templates to remove event handlers
-// - Show how bunch of errors are happening in boscomb (missing source elements)
+//      - Wondering if we are making multiple events on the carousel events and slider events
+// - Adding/Removing classes...was ejs-markup and ejs-output rows, no longer processing ejs-output rows
+// - Show how bunch of errors are happening in biscomb (missing source elements)
 // - Search for TOM comments
 // - Retry - how often do we 'retry' registration?  Once per session?  Once per calc attempt?
 // - Need to figure out if we have name conflicts with id's put in katapps, tom's docs made comment about name vs id, read again
@@ -18,7 +21,6 @@
 // - Downfall to our paradigm of CMS managing KatAppProvider code is never caches script and loads it each time?
 // - Talk to tom about how to check for events
 //      - Wondering if events on charts are still there or if calling destroy on chart removes
-//      - Wondering if we are making multiple events on the carousel events and slider events
 
 // External Usage Changes
 // 1. Look at KatAppOptions (properties and events) and KatAppPlugInInterface (public methods on a katapp (only 4))
@@ -74,7 +76,8 @@ $(function() {
             runConfigureUICalculation: true,
             ajaxLoaderSelector: ".ajaxloader",
             useTestCalcEngine: KatApp.pageParameters[ "test" ] === "1",
-
+            refreshCalcEngine: KatApp.pageParameters[ "expirece" ] === "1",
+    
             onCalculateStart: function( application: KatAppPlugIn ) {
                 if ( application.options.ajaxLoaderSelector !== undefined ) {
                     $( application.options.ajaxLoaderSelector, application.element ).show();
@@ -435,7 +438,7 @@ $(function() {
                             Object.keys(resourceResults).forEach( r => { // eslint-disable-line @typescript-eslint/no-non-null-assertion
                                 const data = resourceResults![ r ]; // eslint-disable-line @typescript-eslint/no-non-null-assertion
 
-                                // TOM: create container element 'rbl-templates' with an attribute 'rbl-t' for template content 
+                                // TOM (your comment, but do we need that container?): create container element 'rbl-templates' with an attribute 'rbl-t' for template content 
                                 // and this attribute used for checking(?)
                                 
                                 // Remove extension if there is one, could be a problem if you do Standard.Templates, trying to get Standard.Templates.html.
@@ -480,7 +483,7 @@ $(function() {
                                     _templateDelegates
                                         .filter( d => d.Template.toLowerCase() == t.toLowerCase() )
                                         .forEach( d => {
-                                            that.trace( "[" + d.Events + "] events registered for template [" + d.Template + "].", TraceVerbosity.Normal );
+                                            that.trace( "[" + d.Events + "] events from template [" + d.Template + "] hooked up.", TraceVerbosity.Normal );
                                             that.element.on( d.Events, function( ...args ): void {
                                                 d.Delegate.apply( this, args );
                                             } );
@@ -491,7 +494,7 @@ $(function() {
                             that.options.viewTemplates = requiredTemplates.join( "," );
 
                             // Build up template content that DOES NOT use rbl results, but instead just 
-                            // uses data-* to create a dataobject generally used to create controls like sliders.                    
+                            // uses data-* to create a dataobject.  Normally just making controls with templates here
                             $("[rbl-tid]:not([rbl-source])", that.element).each(function () {
                                 const templateId = $(this).attr('rbl-tid');
                                 if (templateId !== undefined && templateId !== "inline") {
@@ -500,13 +503,17 @@ $(function() {
                                 }
                             });
 
+                            if ( requiredTemplates.length > 0 ) {
+                                that.ui.triggerEvent( that, "onTemplatesProcessed", that, requiredTemplates );
+                            }
+
                             that.ui.bindEvents( that );
                 
                             that.ui.triggerEvent( that, "onInitialized", that );
 
                             if ( that.options.runConfigureUICalculation ) {
                                 const customOptions: KatAppOptions = {
-                                    manualInputs: { iConfigureUI: 1 }
+                                    manualInputs: { iConfigureUI: 1, iDataBind: 1 }
                                 };
                                 that.calculate( customOptions );
                             }
@@ -1314,6 +1321,16 @@ $(function() {
             }
         }
 
+        getRblSelectorValue( application: KatAppPlugIn, tableName: string, selectorParts: string[] ): string | undefined {
+            if ( selectorParts.length === 1 ) return this.getResultValue( application, tableName, selectorParts[0], "value");
+            else if (selectorParts.length === 3) return this.getResultValue( application, selectorParts[0], selectorParts[1], selectorParts[2]);
+            else if (selectorParts.length === 4) return this.getResultValueByColumn( application, selectorParts[0], selectorParts[1], selectorParts[2], selectorParts[3]);
+            else {
+                application.trace( "Invalid selector length for [" + selectorParts.join(".") + "].", TraceVerbosity.Quiet );
+                return undefined;
+            }
+        }
+        
         processRblValues( application: KatAppPlugIn ): void {
             const that = this;
 
@@ -1322,11 +1339,7 @@ $(function() {
                 const el = $(this);
                 const rblValueParts = el.attr('rbl-value')!.split('.'); // eslint-disable-line @typescript-eslint/no-non-null-assertion
 
-                let value: string | undefined = undefined;
-
-                if ( rblValueParts.length === 1 ) value = that.getResultValue( application, "ejs-output", rblValueParts[0], "value");
-                else if (rblValueParts.length === 3) value = that.getResultValue( application, rblValueParts[0], rblValueParts[1], rblValueParts[2]);
-                else if (rblValueParts.length === 4) value = that.getResultValueByColumn( application, rblValueParts[0], rblValueParts[1], rblValueParts[2], rblValueParts[3]);
+                const value = that.getRblSelectorValue( application, "ejs-output", rblValueParts );
 
                 if ( value != undefined ) {
                     $(this).html( value );
@@ -1349,7 +1362,7 @@ $(function() {
                     const elementData = el.data();
                     const tid = el.attr('rbl-tid');
 
-                    // TOM - inline needed for first case?  What does it mean if rbl-tid is blank?  Need a variable name
+                    // TOM (don't follow this code) - inline needed for first case?  What does it mean if rbl-tid is blank?  Need a variable name
                     const inlineTemplate = tid === undefined ? $("[rbl-tid]", el ) : undefined;
                     const templateContent = tid === undefined
                         ? inlineTemplate === undefined || inlineTemplate.length === 0
@@ -1360,10 +1373,10 @@ $(function() {
                     const rblSourceParts = el.attr('rbl-source')?.split('.');
 
                     if ( templateContent === undefined ) {
-                        application.trace("RBL WARNING: Template content could not be found: [" + tid + "].", TraceVerbosity.Normal);
+                        application.trace("RBL WARNING: Template content could not be found: [" + tid + "].", TraceVerbosity.Minimal);
                     }
                     else if ( rblSourceParts === undefined || rblSourceParts.length === 0) {
-                        application.trace("RBL WARNING: no rbl-source data", TraceVerbosity.Normal);
+                        application.trace("RBL WARNING: no rbl-source data", TraceVerbosity.Quiet);
                     }
                     else if ( rblSourceParts.length === 1 || rblSourceParts.length === 3 ) {
                         
@@ -1373,6 +1386,7 @@ $(function() {
                         if ( table !== undefined && table.length > 0 ) {
                             
                             el.children( ":not(.rbl-preserve, [rbl-tid='inline'])" ).remove();
+                            const prepend = el.attr('rbl-prepend') === "true";
 
                             let i = 1;
 
@@ -1380,7 +1394,13 @@ $(function() {
                                 
                                 if ( rblSourceParts.length === 1 || row[ rblSourceParts[ 1 ] ] === rblSourceParts[ 2 ] ) {
                                     const templateData = KatApp.extend( {}, row, { _index0: i - 1, _index1: i++ } )
-                                    el.append( templateContent.format( templateData ) );    
+
+                                    if ( prepend ) {
+                                        el.prepend( templateContent.format( templateData ) );    
+                                    }
+                                    else {
+                                        el.append( templateContent.format( templateData ) );    
+                                    }
                                 }
 
                             })
@@ -1433,14 +1453,10 @@ $(function() {
                 const expressionParts = rblDisplayParts[ rblDisplayParts.length - 1].split('=');
                 rblDisplayParts[ rblDisplayParts.length - 1] = expressionParts[0];
                 
-                let visibilityValue: string | boolean | undefined = undefined;
-                
-                if (rblDisplayParts.length == 1) visibilityValue = that.getResultValue( application, "ejs-output", rblDisplayParts[0], "value");
-                else if (rblDisplayParts.length == 3) visibilityValue = that.getResultValue( application, rblDisplayParts[0], rblDisplayParts[1], rblDisplayParts[2]);
-                else if (rblDisplayParts.length == 4) visibilityValue = that.getResultValueByColumn( application, rblDisplayParts[0], rblDisplayParts[1], rblDisplayParts[2], rblDisplayParts[3]);
-                
+                let visibilityValue: string | boolean | undefined = that.getRblSelectorValue( application, "ejs-output", rblDisplayParts );
+
                 if (visibilityValue != undefined) {
-                    if ( visibilityValue.length > 1) {
+                    if ( expressionParts.length > 1) {
                         visibilityValue = ( visibilityValue == expressionParts[1] ); //allows table.row.value=10
                     }
 
@@ -1460,11 +1476,8 @@ $(function() {
         processResults( application: KatAppPlugIn ): boolean {
             const results = application.results;
 
-            //processes the view with rbl results (render engine)
-			//elements using templates have rbl-tid or rbl-source
-			//templates: run once page build | run once after rbl call (not subsequent times)
-			//element content can be preserved with a class flag
-			//generated content append or prepend (only applicably when preserved content)
+			// TOM (what does this comment mean): element content can be preserved with a class flag
+			// TOM (what does this comment mean): generated content append or prepend (only applicably when preserved content)
 
             if ( results !== undefined ) {
                 // TODO Process results...implement appProcessResults
@@ -1472,8 +1485,8 @@ $(function() {
                 const version = results["@version"];
                 application.trace( "Processing results for " + calcEngineName + "(" + version + ").", TraceVerbosity.Normal );
 
-                //need two passes to support "ejs-markup"
-                // TOM - Why 2 passes needed?
+                // Need two passes to support "ejs-markup" because the markup might render something that is then
+                // processed by subsequent flow controls (ouput, sources, or values)
                 const markUpRows = this.getResultTable<HtmlContentRow>( application, "ejs-markup" )
                 markUpRows.forEach( r => { this.createHtmlFromResultRow( application, r ); });
                 
@@ -1483,8 +1496,8 @@ $(function() {
                 this.processRblSources( application );
                 this.processRblValues( application );
 
-                // apply dynamic classes after all html updates (could this be done with 'non-template' build above)
-                markUpRows.concat( outputRows ).forEach( r => {
+                // apply dynamic classes after all html updates (TOM: (this was your comment...) could this be done with 'non-template' build above)
+                markUpRows.forEach( r => {
                     if ( r.selector !== undefined ) {
                         if ( r.addclass !== undefined && r.addclass.length > 0 ) {
                             $(r.selector, application.element).addClass(r.addclass);
@@ -1510,201 +1523,18 @@ $(function() {
     }
     $.fn.KatApp.rble = new RBLeUtilities();
 
-    class StandardTemplateBuilder /* implements StandardTemplateBuilderInterface*/
+    class HighchartsBuilder
     {
-        application: KatAppPlugIn;
-
         highchartsOptions?: HighChartsOptionRow[];
         highchartsOverrides?: HighChartsOverrideRow[];
         highchartsData?: HighChartsDataRow[];
         highChartsDataName?: string;
         highChartsOptionsName?: string;
 
+        application: KatAppPlugIn;
+
         constructor( application: KatAppPlugIn ) {
             this.application = application;    
-        }
-        
-        buildSlider(el: JQuery): void {
-            const id = el.data("inputname");
-            const that = this;
-
-            if (KatApp.pageParameters["debugkatapp"] === "t.{thisTemplate}.s." + id) {
-                debugger;
-            }
-
-            const config = this.application.getResultRow<SliderConfigurationRow>("ejs-sliders", id);
-
-            if (config == undefined) return;
-
-            const minValue = Number( config.min );
-            const maxValue = Number( config.max );
-
-            const defaultConfigValue =
-                this.application.getResultValue("ejs-defaults", id, "value") || // what is in ejs-defaults
-                config.default || // what was in ejs-slider/default
-                $("." + id).val() || // what was put in the text box
-                config.min; //could/should use this
-
-            const stepValue = Number( config.step || "1" );
-            const format = config.format || "n";
-            const decimals = Number( config.decimals || "0");
-
-            const sliderJQuery = $(".slider-" + id, el);
-            $("." + id, el).val(defaultConfigValue);
-
-            if (sliderJQuery.length === 1) {
-
-                const slider = sliderJQuery[0] as noUiSlider.Instance;
-
-                sliderJQuery.data("min", minValue);
-                sliderJQuery.data("max", maxValue);
-
-                // Some modelers have 'wizards' with 'same' inputs as regular modeling page.  The 'wizard sliders'
-                // actually just set the input value of the regular input and let all the other flow (main input's
-                // change event) happen as normal.
-                const targetInput = sliderJQuery.data("input");
-
-                const defaultSliderValue = targetInput != undefined
-                    ? $("." + targetInput, this.application.element).val() as string
-                    : defaultConfigValue;
-
-                const pipsMode = config["pips-mode"] ?? "";
-                const pipValuesString = config["pips-values"] ?? "";
-                const pipsLargeValues = pipValuesString !== "" ? pipValuesString.split(',').map(Number) : [0, 25, 50, 75, 100];
-                const pipsDensity = Number(config["pips-density"] || "5");
-
-                const pips = pipsMode !== ""
-                    ? {
-                        mode: pipsMode,
-                        values: pipsLargeValues,
-                        density: pipsDensity,
-                        stepped: true
-                    } as noUiSlider.PipsOptions
-                    : undefined;
-
-                const sliderOptions: noUiSlider.Options = {
-                    start: Number( defaultSliderValue ),
-                    step: stepValue * 1,
-                    behaviour: 'tap',
-                    connect: 'lower',
-                    pips: pips,
-                    range: {
-                        min: minValue,
-                        max: maxValue
-                    },
-                    animate: true
-                };
-
-                let instance = slider.noUiSlider;
-                
-                if (instance !== undefined) {
-                    // No way to update options triggering calc in old noUiSlider library, so setting flag.
-                    // Latest library code (10.0+) solves problem, but leaving this code in for clients
-                    // who don't get updated and published with new library.
-                    $(slider).data("setting-default", 1);
-                    instance.updateOptions(sliderOptions, false);
-                    $(slider).removeData("setting-default");
-                }
-                else {
-                    instance = noUiSlider.create(
-                        slider,
-                        sliderOptions
-                    );
-
-                    // Hook up this event so that the label associated with the slider updates *whenever* there is a change.
-                    // https://refreshless.com/nouislider/events-callbacks/
-                    instance.on('update.RBLe', function ( this: noUiSlider.noUiSlider ) {
-                        const value = Number( this.get() as string );
-
-                        $("." + id).val(value);
-                        const v = format == "p" ? value / 100 : value;
-                        $("." + id + "Label, .sv" + id).html( String.localeFormat("{0:" + format + decimals + "}", v) );
-                    });
-
-                    // Check to see that the input isn't marked as a skip input and if so, run a calc when the value is 'set'.
-                    // If targetInput is present, then this is a 'wizard' slider so I need to see if 'main'
-                    // input has been marked as a 'skip'.
-                    const sliderCalcId = targetInput || id;
-
-                    if ($("." + sliderCalcId + ".skipRBLe", this.application.element).length === 0 && $("." + sliderCalcId, this.application.element).parents(".skipRBLe").length === 0) {
-
-                        if (targetInput === undefined /* never trigger run from wizard sliders */) {
-
-                            // Whenever 'regular' slider changes or is updated via set()...
-                            instance.on('set.RBLe', function ( this: noUiSlider.noUiSlider ) {
-
-                                const settingDefault = $(this.target).data("setting-default") === 1;
-
-                                if (!settingDefault && that.application.options !== undefined) {
-                                    const sliderCalcOptions = $.extend(true, {}, that.application.options, { Inputs: { iInputTrigger: id } });
-                                    that.application.calculate(sliderCalcOptions);
-                                }
-
-                            });
-                        }
-                        else {
-                            // When wizard slider changes, set matching 'regular slider' value with same value from wizard
-                            instance.on('change.RBLe', function ( this: noUiSlider.noUiSlider ) {
-                                const value = Number( this.get() as string );
-                                const targetSlider = $(".slider-" + targetInput, that.application.element);
-                                const targetSliderInstance = targetSlider.length === 1 ? targetSlider[0] as noUiSlider.Instance : undefined;
-
-                                if (targetSliderInstance?.noUiSlider !== undefined ) {
-                                    targetSliderInstance.noUiSlider.set(value); // triggers calculation
-                                }
-                            });
-                        }
-                    }
-                }
-
-                if (sliderOptions.pips !== undefined) {
-                    sliderJQuery.parent().addClass("has-pips");
-                }
-                else {
-                    sliderJQuery.parent().removeClass("has-pips");
-                }
-            }
-        }
-
-        buildCarousel(el: JQuery): void {
-            const carouselName = el.attr("rbl-name");
-
-            if (KatApp.pageParameters["debugkatapp"] === "t.{thisTemplate}.c." + carouselName) {
-                debugger;
-            }
-
-            if (carouselName !== undefined && !carouselName.includes("{")) {
-                this.application.trace("Processing carousel: " + carouselName, TraceVerbosity.Detailed);
-
-                //add active class to carousel items
-                $(".carousel-inner .item", el).first().addClass("active");
-
-                //add 'target needed by indicators, referencing name of carousel
-                $(".carousel-indicators li", el)
-                    .attr("data-target", "#carousel-" + carouselName)
-                    .first().addClass("active");
-
-                const carousel = $('.carousel', el);
-                const carouselAll = $('.carousel-all', el);
-
-                //add buttons to show/hide
-                $('<a class="list-btn"> Show More</a>')
-                    .appendTo($(".carousel-indicators", el))
-                    .click(function () {
-                        carousel.hide();
-                        carouselAll.show();
-                    });
-
-                $('<div class="text-center"><a class="carousel-btn"> Show Less</a></div>')
-                    .appendTo(carouselAll)
-                    .click(function () {
-                        carouselAll.hide();
-                        carousel.show();
-                    });
-
-                //show initial item, start carousel:
-                carousel.carousel(0);
-            }
         }
 
         stringCompare(strA: string | undefined, strB: string | undefined, ignoreCase: boolean): number {
@@ -2026,7 +1856,7 @@ $(function() {
 			return seriesInfo;
 		}
 
-        buildHighcharts(el: JQuery<HTMLElement>): void {
+        buildChart(el: JQuery<HTMLElement>): JQuery {
             this.highChartsDataName = el.attr("rbl-chartdata");
             this.highChartsOptionsName = el.attr("rbl-chartoptions") ?? this.highChartsDataName;
 
@@ -2067,6 +1897,416 @@ $(function() {
                     }
                 }
             }
+
+            return el;
+        }
+    }
+    $.fn.KatApp.highchartsBuilderFactory = function( application: KatAppPlugIn ): HighchartsBuilder {
+        return new HighchartsBuilder( application );
+    };
+
+    class StandardTemplateBuilder /* implements StandardTemplateBuilderInterface*/
+    {
+        application: KatAppPlugIn;
+
+        constructor( application: KatAppPlugIn ) {
+            this.application = application;    
+        }
+        
+        buildSlider(el: JQuery): JQuery {
+            const id = el.data("inputname");
+            const that = this;
+
+            if ( el.attr("data-kat-initialized") !== "true" ) {
+                // Do all data-* attributes that we support
+                const label = el.data("label");
+
+                if ( label !== undefined ) {
+                    $("span.l" + id, el).html(label);
+                }
+            }
+
+            const config = this.application.getResultRow<SliderConfigurationRow>("ejs-sliders", id);
+
+            if (config == undefined) return el;
+
+            const minValue = Number( config.min );
+            const maxValue = Number( config.max );
+
+            const defaultConfigValue =
+                this.application.getResultValue("ejs-defaults", id, "value") || // what is in ejs-defaults
+                config.default || // what was in ejs-slider/default
+                $("." + id).val() || // what was put in the text box
+                config.min; //could/should use this
+
+            const stepValue = Number( config.step || "1" );
+            const format = config.format || "n";
+            const decimals = Number( config.decimals || "0");
+
+            const sliderJQuery = $(".slider-" + id, el);
+            $("." + id, el).val(defaultConfigValue);
+
+            if (sliderJQuery.length === 1) {
+
+                const slider = sliderJQuery[0] as noUiSlider.Instance;
+
+                sliderJQuery.data("min", minValue);
+                sliderJQuery.data("max", maxValue);
+
+                // Some modelers have 'wizards' with 'same' inputs as regular modeling page.  The 'wizard sliders'
+                // actually just set the input value of the regular input and let all the other flow (main input's
+                // change event) happen as normal.
+                const targetInput = sliderJQuery.data("input");
+
+                const defaultSliderValue = targetInput != undefined
+                    ? $("." + targetInput, this.application.element).val() as string
+                    : defaultConfigValue;
+
+                const pipsMode = config["pips-mode"] ?? "";
+                const pipValuesString = config["pips-values"] ?? "";
+                const pipsLargeValues = pipValuesString !== "" ? pipValuesString.split(',').map(Number) : [0, 25, 50, 75, 100];
+                const pipsDensity = Number(config["pips-density"] || "5");
+
+                const pips = pipsMode !== ""
+                    ? {
+                        mode: pipsMode,
+                        values: pipsLargeValues,
+                        density: pipsDensity,
+                        stepped: true
+                    } as noUiSlider.PipsOptions
+                    : undefined;
+
+                const sliderOptions: noUiSlider.Options = {
+                    start: Number( defaultSliderValue ),
+                    step: stepValue * 1,
+                    behaviour: 'tap',
+                    connect: 'lower',
+                    pips: pips,
+                    range: {
+                        min: minValue,
+                        max: maxValue
+                    },
+                    animate: true
+                };
+
+                let instance = slider.noUiSlider;
+                
+                if (instance !== undefined) {
+                    // No way to update options triggering calc in old noUiSlider library, so setting flag.
+                    // Latest library code (10.0+) solves problem, but leaving this code in for clients
+                    // who don't get updated and published with new library.
+                    $(slider).data("setting-default", 1);
+                    instance.updateOptions(sliderOptions, false);
+                    $(slider).removeData("setting-default");
+                }
+                else {
+                    instance = noUiSlider.create(
+                        slider,
+                        sliderOptions
+                    );
+
+                    el.attr("data-kat-initialized", "true");
+
+                    // Hook up this event so that the label associated with the slider updates *whenever* there is a change.
+                    // https://refreshless.com/nouislider/events-callbacks/
+                    instance.on('update.RBLe', function ( this: noUiSlider.noUiSlider ) {
+                        const value = Number( this.get() as string );
+
+                        $("." + id).val(value);
+                        const v = format == "p" ? value / 100 : value;
+                        $("." + id + "Label, .sv" + id).html( String.localeFormat("{0:" + format + decimals + "}", v) );
+                    });
+
+                    // Check to see that the input isn't marked as a skip input and if so, run a calc when the value is 'set'.
+                    // If targetInput is present, then this is a 'wizard' slider so I need to see if 'main'
+                    // input has been marked as a 'skip'.
+                    const sliderCalcId = targetInput || id;
+
+                    if ($("." + sliderCalcId + ".skipRBLe", this.application.element).length === 0 && $("." + sliderCalcId, this.application.element).parents(".skipRBLe").length === 0) {
+
+                        if (targetInput === undefined /* never trigger run from wizard sliders */) {
+
+                            // Whenever 'regular' slider changes or is updated via set()...
+                            instance.on('set.RBLe', function ( this: noUiSlider.noUiSlider ) {
+
+                                const settingDefault = $(this.target).data("setting-default") === 1;
+
+                                if (!settingDefault && that.application.options !== undefined) {
+                                    const sliderCalcOptions = $.extend(true, {}, that.application.options, { Inputs: { iInputTrigger: id } });
+                                    that.application.calculate(sliderCalcOptions);
+                                }
+
+                            });
+                        }
+                        else {
+                            // When wizard slider changes, set matching 'regular slider' value with same value from wizard
+                            instance.on('change.RBLe', function ( this: noUiSlider.noUiSlider ) {
+                                const value = Number( this.get() as string );
+                                const targetSlider = $(".slider-" + targetInput, that.application.element);
+                                const targetSliderInstance = targetSlider.length === 1 ? targetSlider[0] as noUiSlider.Instance : undefined;
+
+                                if (targetSliderInstance?.noUiSlider !== undefined ) {
+                                    targetSliderInstance.noUiSlider.set(value); // triggers calculation
+                                }
+                            });
+                        }
+                    }
+                }
+
+                if (sliderOptions.pips !== undefined) {
+                    sliderJQuery.parent().addClass("has-pips");
+                }
+                else {
+                    sliderJQuery.parent().removeClass("has-pips");
+                }
+            }
+
+            return el;
+        }
+
+        buildCarousel(el: JQuery): JQuery {
+            const carouselName = el.attr("rbl-name");
+
+            if (carouselName !== undefined && !carouselName.includes("{")) {
+                this.application.trace("Processing carousel: " + carouselName, TraceVerbosity.Detailed);
+
+                $(".carousel-inner .item, .carousel-indicators li", el).removeClass("active");
+
+                //add active class to carousel items
+                $(".carousel-inner .item", el).first().addClass("active");
+
+                //add 'target needed by indicators, referencing name of carousel
+                $(".carousel-indicators li", el)
+                    .attr("data-target", "#carousel-" + carouselName)
+                    .first().addClass("active");
+
+                const carousel = $('.carousel', el);
+
+                //show initial item, start carousel:
+                carousel.carousel(0);
+            }
+
+            return el;
+        }
+
+        processCarousels( application: KatAppPlugIn ): void {
+            const that = this;
+            const view = application.element;
+
+            // Hook up event handlers only when *not* already initialized
+            $('.carousel-control-group:not([data-kat-initialized="true"])', view).each(function () {
+                const el = $(this);
+                const carousel = $('.carousel', el);
+                const carouselAll = $('.carousel-all', el);
+
+                //add buttons to show/hide
+                $(".carousel-indicators .list-btn", el)
+                    .click(function () {
+                        carousel.hide();
+                        carouselAll.show();
+                    });
+
+                $(".carousel-btn", carouselAll)
+                    .click(function () {
+                        carouselAll.hide();
+                        carousel.show();
+                    });
+
+                el.attr("data-kat-initialized", "true");
+            });
+
+            $('.carousel-control-group', view).each(function () {
+                const el = $(this);
+                that.buildCarousel( el );
+            });
+        }
+
+        processHighcharts( application: KatAppPlugIn ): void {
+            const view = application.element;
+            const highchartsBuilder: HighchartsBuilder = $.fn.KatApp.highchartsBuilderFactory( application );
+
+            $("[rbl-tid='chart-highcharts']", view).each(function () {
+                highchartsBuilder.buildChart( $(this) );
+            });
+        }
+
+        processTextBoxes( view: JQuery<HTMLElement> ): void {
+            $('[rbl-tid="input-textbox"]:not([data-kat-initialized="true"])', view).each(function () {
+                const el = $(this);
+                
+                const id = el.data("inputname");
+                const inputType = el.data("type")?.toLowerCase();
+                const label = el.data("label");
+                const prefix = el.data("prefix");
+                const suffix = el.data("suffix");
+                const placeholder = el.data("placeholder");
+                const maxlength = el.data("maxlength");
+                const autocomplete = el.data("autocomplete");
+                const value = el.data("value");
+
+                if ( label !== undefined ) {
+                    $("span.l" + id, el).html(label);
+                }
+
+                let input = $("input[name='" + id + "']", el);
+
+                if ( placeholder !== undefined ) {
+                    input.attr("placeholder", placeholder);
+                }
+
+                if ( maxlength !== undefined ) {
+                    input.attr("maxlength", maxlength);
+                }
+
+                if ( inputType === "password" ) {
+                    input.attr("type", "password");
+                }
+                else if ( inputType === "multiline" ) {
+                    // Replace textbox with a textarea
+                    const rows = el.data("rows") ?? "4";
+                    input.replaceWith($('<textarea name="' + id + '" rows="' + rows + '" _id="' + id + '" class="form-control ' + id + '"></textarea>'))
+                    input = $("textarea[name='" + id + "']", el);
+                }
+
+                if ( autocomplete === "false" || inputType === "password" ) {
+                    input.attr("autocomplete", "off");
+                }
+                
+                if ( value !== undefined ) {
+                    input.val(value);
+                }
+
+                const validatorContainer = $(".validator-container", el);
+
+                if ( inputType === "date" ) {
+                    validatorContainer.addClass("input-group date");
+                    validatorContainer.append($("<span class='input-group-addon'><i class='glyphicon glyphicon-calendar'></i></span>"));
+
+                    $('.input-group.date', el)
+                        .datepicker({
+                            componentSelector: "i.fa-calendar-day, i.glyphicon-th, i.glyphicon-calendar",
+                            clearBtn: true,
+                            showOnFocus: false,
+                            autoclose: true,
+                            enableOnReadonly: false,
+                            forceParse: false,
+                            language: $(".bootstrapLocale").html(),
+                            format: $(".bootstrapLocaleFormat").html(),
+                            zIndexOffset: 2000 /* admin site sticky bar */
+                        })
+                        .on("show", function () {
+                            // To prevent the datepicker from being 'stuck' open if they are trying
+                            // to click icon *AGAIN* in an attempt to toggle/close the picker.  I
+                            // first check to see if my own custom data is added and if not I inject
+                            // some custom data.  If it is present (meaning it was already shown, I hide
+                            // the datepicker.  Then in the hide event I always remove this custom data.
+                            const dp = $(this);
+                            if (dp.data("datepicker-show") != undefined) {
+                                dp.datepicker('hide');
+                            }
+                            else {
+                                dp.data("datepicker-show", true);
+
+                                const dateInput = $("input", $(this));
+
+                                // Originally, I had an .on("clearDate", ... ) event handler that simply
+                                // called dateInput.change() to trigger a calc.  But clearing input with keyboard
+                                // also triggered this, so if I cleared with keyboard, it triggered change, then when
+                                // I lost focus on input, it triggered 'normal' change event resulting in two calcs.
+                                // So now I attach click on clear button as well and call change still
+                                // so that works, but problem is that input isn't cleared before change event happens
+                                // so I also clear the input myself.
+                                $(".datepicker-days .clear", view).bind("click", function () {
+                                    dateInput.val("");
+                                    dateInput.change();
+                                });
+                            }
+                        })
+                        .on("hide", function () {
+                            const dp = $(this);
+                            dp.removeData("datepicker-show");
+
+                            $(".datepicker-days .clear", view).unbind("click");
+                        })
+                        .on('show.bs.modal', function (event) {
+                            // https://stackoverflow.com/questions/30113228/why-does-bootstrap-datepicker-trigger-show-bs-modal-when-it-is-displayed/31199817
+                            // prevent datepicker from firing bootstrap modal "show.bs.modal"
+                            event.stopPropagation();
+                        });
+
+                    // Hack for https://github.com/uxsolutions/bootstrap-datepicker/issues/2402
+                    // Still have an issue if they open date picker, then paste (date picker updates) then try to
+                    // click a date...since the input then blurs, it fires a calc and the 'click' into the date picker (a specific day)
+                    // seems to be ignored, but rare case I guess.
+                    $('.input-group.date input', el)
+                        .on("blur", function () {
+                            const dateInput = $(this);
+                            if (dateInput.data("datepicker-paste") != undefined) {
+                                dateInput.trigger("change");
+                            }
+                            dateInput.removeData("datepicker-paste");
+                        })
+                        .on("paste", function () {
+                            const dateInput = $(this);
+                            dateInput.data("datepicker-paste", true);
+                        })
+                        .on("keypress change", function () {
+                            // If they paste, then type keyboard before blurring, it would calc twice
+                            const dateInput = $(this);
+                            dateInput.removeData("datepicker-paste");
+                        });
+                }
+                else if ( prefix !== undefined ) {
+                    validatorContainer.addClass("input-group");
+                    validatorContainer.prepend($("<span class='input-group-addon input-group-text'>" + prefix + "</span>"));
+                }
+                else if ( suffix !== undefined ) {
+                    validatorContainer.addClass("input-group");
+                    validatorContainer.append($("<span class='input-group-addon input-group-text'>" + suffix + "</span>"));
+                }
+
+                el.attr("data-kat-initialized", "true");
+            });
+        }
+
+        processDropdowns( view: JQuery<HTMLElement> ): void {
+            // TOM: This is usually done by base.js in asp.net sites (simply in onReady)
+            $('[rbl-tid="input-dropdown"]:not([data-kat-initialized="true"]) .selectpicker', view)
+                .selectpicker()
+                .attr("data-kat-initialized", "true")
+                .next(".error-msg")
+                .addClass("selectpicker"); /* aid in css styling */
+
+            $('[rbl-tid="input-dropdown"]:not([data-kat-initialized="true"])', view).each( function() {
+                const el = $(this);
+
+                // Do all data-* attributes that we support
+                const id = el.data("inputname");
+                const label = el.data("label");
+
+                if ( label !== undefined ) {
+                    $("span.l" + id, el).html(label);
+                }
+                
+                el.attr("data-kat-initialized", "true");
+            });
+        }
+
+        processInputs(application: KatAppPlugIn): void {
+            const view = application.element;
+
+            application.trace("Processing onTemplatesProcessed.RBLe: " + $('[rbl-tid="input-dropdown"]:not([data-kat-initialized="true"]) .selectpicker', view).length + " selectpicker controls.", TraceVerbosity.Diagnostic);
+
+            this.processDropdowns( view );
+
+            this.processTextBoxes( view );
+
+            const that = this;
+
+            // Don't use kat-initialized here b/c they might be changing options based on another input
+            $('[rbl-tid="input-slider"]', view).each(function () {
+                that.buildSlider( $(this) );
+            });
         }
     }
 

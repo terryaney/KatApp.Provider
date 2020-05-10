@@ -39,7 +39,7 @@ class KatApp
         traceVerbosity: TraceVerbosity.None,
         functionUrl: KatApp.functionUrl,
         useTestPlugin: KatApp.pageParameters[ "testplugin"] === "1",
-        useTestCalcEngine: KatApp.pageParameters[ "test" ] === "1"
+        useTestView: KatApp.pageParameters[ "testview" ] === "1"    
     };
     
     // https://blog.logrocket.com/4-different-techniques-for-copying-objects-in-javascript-511e422ceb1e/

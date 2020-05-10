@@ -166,7 +166,7 @@ var KatApp = /** @class */ (function () {
         traceVerbosity: TraceVerbosity.None,
         functionUrl: KatApp.functionUrl,
         useTestPlugin: KatApp.pageParameters["testplugin"] === "1",
-        useTestCalcEngine: KatApp.pageParameters["test"] === "1"
+        useTestView: KatApp.pageParameters["testview"] === "1"
     };
     // https://stackoverflow.com/a/2117523
     KatApp.generateId = function () {

@@ -10,6 +10,7 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-datepicker/1.9.0/css/bootstrap-datepicker.min.css" integrity="sha256-siyOpF/pBWUPgIcQi17TLBkjvNgNQArcmwJB8YvkAgg=" crossorigin="anonymous" />
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/noUiSlider/10.0.0/nouislider.css" integrity="sha256-FosuD4ZAGQFqGAUliYx0rX1BEMviGzI3I0pjy3uIryA=" crossorigin="anonymous" />
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-select/1.13.12/css/bootstrap-select.min.css" integrity="sha256-l3FykDBm9+58ZcJJtzcFvWjBZNJO40HmvebhpHXEhC0=" crossorigin="anonymous" />
+  <link href="https://stackpath.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css" rel="stylesheet" integrity="sha384-wvfXpqpZZVQGK6TAh5PVlGOfQNHSoD2xbE+QkPxCAFlNEevoEH3Sl0sibVcOQVnN" crossorigin="anonymous">
   <link rel="stylesheet" href="css/basic.bundle.css" />
 </head>
 
@@ -76,8 +77,10 @@
       KatApp.defaultOptions.traceVerbosity = TraceVerbosity.Normal;
       KatApp.defaultOptions.useTestView = true;
       KatApp.defaultOptions.useTestCalcEngine = true;
+      KatApp.defaultOptions.refreshCalcEngine = true;
       KatApp.defaultOptions.functionUrl = "https://secure.conduentapplications.com/Services/RBL/Evolution_Test/CalculationFunction.ashx";
       
+      // Could just include this script: js/KatApp.Service.js to do the same thing
       KatApp.defaultOptions.getData = function( application, options, done, fail ) {
           //this is a demo version that gets sample data from a REST API
           const authId = KatApp.pageParameters["btrrest_testid"] || "157-911000011";

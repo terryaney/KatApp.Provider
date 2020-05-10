@@ -1,17 +1,27 @@
 <html>
     <head>
         <title>Express Applications</title>
-        <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" rel="stylesheet" crossorigin="anonymous">
+        <!--styles for RBLView -->
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.3.7/css/bootstrap.css" integrity="sha256-fmMNkMcjSw3xcp9iuPnku/ryk9kaWgrEbfJfKmdZ45o=" crossorigin="anonymous" />
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-datepicker/1.9.0/css/bootstrap-datepicker.min.css" integrity="sha256-siyOpF/pBWUPgIcQi17TLBkjvNgNQArcmwJB8YvkAgg=" crossorigin="anonymous" />
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/noUiSlider/10.0.0/nouislider.css" integrity="sha256-FosuD4ZAGQFqGAUliYx0rX1BEMviGzI3I0pjy3uIryA=" crossorigin="anonymous" />
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-select/1.13.12/css/bootstrap-select.min.css" integrity="sha256-l3FykDBm9+58ZcJJtzcFvWjBZNJO40HmvebhpHXEhC0=" crossorigin="anonymous" />
+        <link href="https://stackpath.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css" rel="stylesheet" integrity="sha384-wvfXpqpZZVQGK6TAh5PVlGOfQNHSoD2xbE+QkPxCAFlNEevoEH3Sl0sibVcOQVnN" crossorigin="anonymous">
+        <link rel="stylesheet" href="css/basic.bundle.css" />
     </head>
     <body>
         <div class="container mt-3">
             <section class="col-md-12 mt-4 mb-5">
                 <h3 class="mb-3">Welcome</h3>
                 <div class="katapp startup" rbl-trace-id="1" rbl-view="global:app1.html" rbl-view-templates="standard_templates"></div>
-                <div class="katapp startup" rbl-trace-id="2" rbl-calcengine="Buck_ASU_SE">
+                <div class="katapp startup" rbl-trace-id="2" rbl-calcengine="Buck_ASU_SE" rbl-view-templates="standard_templates">
                     <p class="myTitle" style="font-weight: bold;">Kat App View</p>
-                    <label>Input 2</label>
-                    <input id="input2" name="input2" class="input2" value="default2" />
+                    <div rbl-tid="input-textbox" data-inputname="iInput2" data-label="Text Input" data-value="default2"></div>
+                    <div rbl-tid="input-textbox" data-inputname="iInput3" data-label="Money Input" data-prefix="$" default-value="10.00"></div>
+                    <div rbl-tid="input-textbox" data-inputname="iInput4" data-label="Percent Input" data-suffix="%" default-value="10.00"></div>
+                    <div rbl-tid="input-textbox" data-inputname="iInput5" data-type="Password" data-placeholder="Enter Password (6 digits)" data-maxlength="6" data-label="Password"></div>
+                    <div rbl-tid="input-textbox" data-inputname="iInput6" data-type="Date" data-label="Date Input" data-value="5/9/1973"></div>
+                    <div rbl-tid="input-textbox" data-inputname="iInput7" data-type="Multiline" data-label="Multiline Input" data-rows="3" data-value="Some long text here to fill the textbox maybe."></div>
                 </div>
                 <!--
                 <div class="katapp" rbl-trace-id="3">
@@ -26,8 +36,16 @@
                 <div class="rbl-logclass"></div>
             </section>
         </div>
-        <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.5.0/jquery.min.js" integrity="sha256-xNzN2a4ltkB44Mc/Jz3pT4iU1cmeR0FkXs4pru/JxaQ=" crossorigin="anonymous"></script>
-        <script src="https://code.highcharts.com/highcharts.js"></script>
+        <!-- 3rd party cdn -->
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/2.2.4/jquery.js" integrity="sha256-iT6Q9iMJYuQiMWNd9lDyBUStIq/8PuOW33aOqmvFpqI=" crossorigin="anonymous"></script>    
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.3.7/js/bootstrap.js" integrity="sha256-Cr6N6zNN4bp0OwTQOZ6Z66M2r+2dpy/EwKMCyZ+SOMg=" crossorigin="anonymous"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-datepicker/1.9.0/js/bootstrap-datepicker.min.js" integrity="sha256-bqVeqGdJ7h/lYPq6xrPv/YGzMEb6dNxlfiTUHSgRCp8=" crossorigin="anonymous"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-select/1.13.12/js/bootstrap-select.min.js" integrity="sha256-+o/X+QCcfTkES5MroTdNL5zrLNGb3i4dYdWPWuq6whY=" crossorigin="anonymous"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/noUiSlider/10.0.0/nouislider.js" integrity="sha256-qBtL4kx2JuCUQp1aTQxlcVxo58MxzFpmUS0WEl99kqw=" crossorigin="anonymous"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/highcharts/6.0.7/highcharts.js" integrity="sha256-F0xKYvUdYPCgKKgKGtEjxwHXKSRbwKP+2mOlgGoR0Fs=" crossorigin="anonymous"></script>
+        <script src="https://ajax.microsoft.com/ajax/4.0/1/MicrosoftAjax.js" ></script>
+
+        <!-- Katapp added -->
         <script src="js/KatApp.js"></script>
         <script src="js/KatApp.Service.js"></script>
 
@@ -43,6 +61,7 @@
             $( function() {
                 KatApp.defaultOptions.traceVerbosity = TraceVerbosity.Normal;
                 KatApp.defaultOptions.useTestView = true;
+                KatApp.defaultOptions.refreshCalcEngine = true;
                 KatApp.defaultOptions.functionUrl = "https://secure.conduentapplications.com/Services/RBL/Evolution_Test/CalculationFunction.ashx";
                 // KatApp.defaultOptions.functionUrl = "http://localhost:54300/CalculationFunction.ashx";
 

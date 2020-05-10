@@ -10,6 +10,8 @@ interface HTMLElement {
 interface JQuery {
     KatApp( options?: KatAppOptions | string, ...args: Array<string | number | KatAppOptions> ): JQuery | KatAppPlugInShimInterface | string | undefined;
     carousel(frame: number): JQuery;
+    selectpicker(): JQuery;
+    datepicker( options: any ): JQuery; // eslint-disable-line @typescript-eslint/no-explicit-any
 }
 interface Function {
     plugInShims: KatAppPlugInShimInterface[];
@@ -19,8 +21,10 @@ interface Function {
     // Didn't want to use interface (see comments at bottom of file for the negative parts) and couldn't use
     // the 'class' implementation because that code only existed in closure.  So just use any.
     standardTemplateBuilderFactory( application: KatAppPlugInInterface ): any /*StandardTemplateBuilderInterface*/; // eslint-disable-line @typescript-eslint/no-explicit-any
+    highchartsBuilderFactory( application: KatAppPlugInInterface ): any /*StandardTemplateBuilderInterface*/; // eslint-disable-line @typescript-eslint/no-explicit-any
     ui: any /*UIUtilitiesInterface*/; // eslint-disable-line @typescript-eslint/no-explicit-any
     rble: any /*RBLeUtilitiesInterface*/; // eslint-disable-line @typescript-eslint/no-explicit-any
+    // highcharts: any /*HighchartsBuilder*/; // eslint-disable-line @typescript-eslint/no-explicit-any
 }
 
 interface HighchartsTooltipFormatterContextObject {
@@ -36,6 +40,7 @@ interface HighchartsTooltipFormatterContextObject {
 interface CalculationInputs
 {
     iConfigureUI?: number;
+    iDataBind?: number;
     iInputTrigger?: string;
 }
 interface CalculationInputTableRow {
@@ -183,6 +188,27 @@ interface KatAppOptions
     //      $("app").on("onInitialized.rble", function() { } ).KatApp();
     // Event call backs
     // If you use on() syntax for initialized, need to set it up before calling KatApp();
+
+    // Needed onTemplatesProcessed event so that standard event processing code could be called in Standard_Templates (like
+    // processing additional data-* attributes on inputs) *before* onInitialized or onCalculation.  Those events couldn't 
+    // be used because views/hosting clients might use them as well and their event handlers (due to flow of page/app construction)
+    // are registered first.  For example:
+    //
+    //      Client disables configure UI calculation by default because it needs to do additional processing after onInitialized 
+    //      is completed, *then* manually call KatApp.calculate().
+    //
+    // In the above scenario, templates would be processed, but 'additional' processing code (hooking up jquery plugin, etc.)
+    // would not happen until after the calculation finished.  Therefore, the main reasons for adding this additional event are:
+    // 
+    // a) Inputs that have plugins modify their appearance (dropdown list, dates, etc.) happen 'quickly/immediately'
+    //      instead of waiting until after a calculation might have had to occur (resulting in 1-N second delay)
+    // b) If there are any data-* attributes that define things (like label, help) that were implemented during POC phase
+    //      then later the CE controlled them, I didn't want the data-* processing to occur *after* CE processing and
+    //      overwrite what CE returned.
+    //
+    // Final comment, the vast majority of the time, only 'Template Authors' will use this event to 'finish processing' any
+    // custom (input) templates they need to handle.  View/hosting clients will *rarely* need to care about this event.
+    onTemplatesProcessed?: (this: HTMLElement, appilcation: KatAppPlugInInterface, templates: string[] )=> void;
     onInitialized?: (this: HTMLElement, appilcation: KatAppPlugInInterface )=> void;
     onDestroyed?: (this: HTMLElement, appilcation: KatAppPlugInInterface )=> void;
     onOptionsUpdated?: (this: HTMLElement, appilcation: KatAppPlugInInterface )=> void;
@@ -370,6 +396,7 @@ interface StandardTemplateBuilderInterface {
     buildSlider( element: JQuery ): void;
     buildCarousel( element: JQuery ): void;
     buildHighcharts( element: JQuery ): void;
+    processInputs( application: KatAppPlugIn ): void;
 }
 interface UIUtilitiesInterface {
     getInputName(input: JQuery): string;

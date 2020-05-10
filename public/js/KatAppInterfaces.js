@@ -17,6 +17,7 @@ interface StandardTemplateBuilderInterface {
     buildSlider( element: JQuery ): void;
     buildCarousel( element: JQuery ): void;
     buildHighcharts( element: JQuery ): void;
+    processInputs( application: KatAppPlugIn ): void;
 }
 interface UIUtilitiesInterface {
     getInputName(input: JQuery): string;

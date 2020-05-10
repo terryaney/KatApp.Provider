@@ -33,8 +33,6 @@
     }
 
     const templateBuilder = $.fn.KatApp.standardTemplateBuilderFactory( application );
-    templateBuilder.processInputs(application);
-    templateBuilder.processCarousels(application);
     $('[rbl-tid="biscomb-input-slider"]', application.element).each(function () {
       templateBuilder.buildSlider( $(this) );
     });
@@ -49,14 +47,9 @@
 
     const templateBuilder = $.fn.KatApp.standardTemplateBuilderFactory( application );
 
-    // First processInputs/processCarousels in case any were injected by ejs-markup
-    templateBuilder.processInputs(application);
-    templateBuilder.processCarousels(application);
     $('[rbl-tid="biscomb-input-slider"]', application.element).each(function () {
       templateBuilder.buildSlider( $(this) );
     });
-
-    templateBuilder.processHighcharts(application);
   });
 
 </script>

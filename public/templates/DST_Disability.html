@@ -1,0 +1,70 @@
+<div class="container">
+            
+    <style>
+        div.chart { height: 350px; }
+        @media (max-width: 767px) {
+            div.chart { height: 250px; }
+        }
+    
+    </style>
+
+    <div class="row ajaxContent">
+        <div class="hidden">
+            <input name="iHSAType" value="1"/>
+        </div>
+        <div class="col-md-6">
+            <ul class="nav nav-tabs" role="tablist">
+                <li role="presentation" class="col-xs-12 active"><a href="#tabAssumptions" role="tab" data-toggle="tab" class="text-center">Assumptions</a></li>
+            </ul>
+            <div class="tab-content">
+                <div role="tabpanel" class="tab-pane fade in active" id="tabAssumptions">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div rbl-tid="input-textbox" data-inputname="iMonthlyExpenses" data-prefix="$"></div>
+                            <div rbl-tid="input-textbox" data-inputname="iAnnualSalary" data-prefix="$"></div>
+                            <div rbl-tid="input-textbox" data-inputname="iAdditionalAnnualCompensation" data-prefix="$"></div>
+                        </div>
+                        <div class="col-md-6">
+                            <div rbl-tid="input-dropdown" data-inputname="iTaxRate"></div>
+                            <div rbl-tid="input-dropdown" data-inputname="iLongTermDisabilityEmployer"></div>
+                            <div rbl-tid="input-textbox" data-inputname="iLongTermDisabilityPersonal" data-prefix="$"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <ul class="nav nav-tabs" role="tablist">
+                <li role="presentation" class="col-xs-12 active"><a href="#tabResults" role="tab" data-toggle="tab" class="text-center">Results</a></li>
+            </ul>
+            <div class="tab-content">
+                <div role="tabpanel" class="tab-pane fade in active" id="tabResults">
+                    <div class="row">
+                        <div class="col-md-12">
+                            <div rbl-tid="chart-highcharts" rbl-chartdata="DISChart"></div>
+
+                            <div class="DISChart"></div>
+                            <p class="pFootnote"></p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="ajaxloader"></div>
+    </div>            
+
+    <div class="row">
+        <div class="col-xs-12">
+            <div class="ModelerValidationTable alert alert-danger" role="alert" title="Please review the following issues:" style="display: none;">
+                <p><strong>Please review the following issues:</strong></p>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-12 mt-4 mb-5">
+            <h3 class="mb-3">Logging</h3>
+            <div class="rbl-logclass"></div>
+        </div>
+    </div>
+</div>

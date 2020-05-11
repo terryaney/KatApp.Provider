@@ -99,7 +99,6 @@
     <div class="validator-container"> 
       <select name="{inputname}" id_="{inputname}" class="form-control selectpicker show-tick {inputname}" tabindex="-98">
       </select>
-
       <span class="error-msg" data-toggle="tooltip" data-placement="top auto"></span>      
     </div>
     <div class="h{inputname}Title" style="display: none;"></div>
@@ -125,72 +124,6 @@
     </div>
     <div class="h{inputname}Title" style="display: none;"></div>
     <div class="h{inputname}" style="display: none;"></div>
-  </div>
-</rbl-template>
-
-<rbl-template tid="input-slider-TOM">
-  <div class="form-group slider-control-group">
-    <div class="validator-container">
-      <a style="display: none;" class="vh{inputname} help-icon-anchor" role="button" tabindex="0" data-toggle="popover" data-trigger="click" data-content-selector=".h{inputname}" data-placement="top">
-        <span class="glyphicon glyphicon-info-sign help-icon"></span>
-      </a>
-      <a style="display: none;" class="vs{inputname} help-icon-anchor" role="button" tabindex="0" data-placement="top">
-        <span class="glyphicon glyphicon glyphicon-volume-up"></span>
-      </a>
-      <div class="slider-control slider-{inputname}" data-slider-type="nouislider"></div>
-      <input name="{inputname}" type="text" id_="{inputname}" class="form-control {inputname}" style="display: none" />
-      <span class="error-msg" data-toggle="tooltip" data-placement="top auto"></span>
-    </div>
-    <div class="h{inputname}Title" style="display: none;"></div>
-    <div class="h{inputname}" style="display: none;"></div>
-    <h6 class="text-center">
-      <span class="l{inputname}" style="text-transform: uppercase">{inputname} Label</span>
-      <span class="sv{inputname}" style="font-weight: bold"></span>
-    </h6>
-  </div>
-</rbl-template>
-
-<rbl-template tid="input-dropdown-TOM">
-  <div class="form-group">
-    <label for="{inputname}" class="control-label">
-      <span class="l{inputname}"></span>
-      <a style="display: none;" class="vh{inputname} help-icon-anchor" role="button" tabindex="0" data-toggle="popover"
-        data-trigger="click" data-content-selector=".h{inputname}" data-placement="top" data-original-title=""
-        title=""><span class="glyphicons glyphicons-question-sign"></span></a>
-    </label>
-    <select class="form-control {inputname}" name="{inputname}"></select>
-    <div class="h{inputname}Title" style="display: none;"></div>
-    <div class="h{inputname}" style="display: none;"></div>
-  </div>
-</rbl-template>
-
-<rbl-template tid="input-date-TOM">
-  <div class="form-group">
-    <label for="{inputname}" class="control-label">
-      <span class="l{inputname}">Spouse's Date of Birth</span>
-      <span class="sv{inputname}"></span>
-    </label>
-    <a class="vh{inputname}" role="button" tabindex="0" data-toggle="popover" data-trigger="click" data-content-selector=".h{inputname}" data-placement="top" data-original-title="" title="">
-      <span class="glyphicon glyphicon-info-sign help-icon"></span>
-    </a>
-    <a style="display: none;" class="vs{inputname}" role="button" tabindex="0" data-placement="top" href="voice/Help-SpouseDateBirth.mp3">
-      <span class="glyphicon glyphicon glyphicon-volume-up"></span>
-    </a>
-    <div class="h{inputname}Title hidden"></div>
-    <div class="h{inputname} hidden"></div>
-    <div class="validator-container input-group date">
-      <input name="{inputname}" type="text" value="1/1/2020" class="form-control {inputname}" placeholder="mm/dd/yyyy" aria-invalid="false">
-      <span class="input-group-addon"><i class="glyphicon glyphicon-calendar"></i></span>
-      <span class="error-msg addon-suffix" data-toggle="tooltip" data-placement="top" data-original-title="" title=""></span>
-    </div>
-  </div>
-</rbl-template>
-
-<rbl-template tid="input-text-TOM">
-  <div class="validator-container input-group">
-    <span class="input-group-addon">$</span>
-    <input name="{inputname}" type="text" value="0" class="form-control {inputname}" aria-invalid="false">
-    <span class="error-msg" data-toggle="tooltip" data-placement="top" data-original-title="" title=""></span>
   </div>
 </rbl-template>
 
@@ -225,9 +158,10 @@
         debugger;
     }
 
+    // Process data-* attributes and bind events
     const templateBuilder = $.fn.KatApp.standardTemplateBuilderFactory( application );
-    templateBuilder.processInputs(application);
-    templateBuilder.processCarousels(application);
+    templateBuilder.processInputs();
+    templateBuilder.processCarousels();
   });
 
   $.fn.KatApp.templateOn("{thisTemplate}", "onCalculation.RBLe", function (event, calculationResults, calcOptions, application) {
@@ -240,10 +174,9 @@
     const templateBuilder = $.fn.KatApp.standardTemplateBuilderFactory( application );
 
     // First processInputs/processCarousels in case any were injected by ejs-markup
-    templateBuilder.processInputs(application);
-    templateBuilder.processCarousels(application);
-
-    templateBuilder.processHighcharts(application);
+    templateBuilder.processInputs();
+    templateBuilder.processCarousels();
+    templateBuilder.processHighcharts();
   });
 
 </script>

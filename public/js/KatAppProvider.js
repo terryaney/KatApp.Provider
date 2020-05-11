@@ -1,6 +1,6 @@
 "use strict";
 // TODO
-// - Need to remove slider events (https://refreshless.com/nouislider/events-callbacks/) before destroying and carousel (standard)
+// - What are defaults for 'dropdowns' in asp.net (search, multiselect)
 // - How do I check/handle for errors when I try to load view
 // - Ability to have two CE's for one view might be needed for stochastic
 //      Would need to intercept init that binds onchange and instead call a getOptions or smoething
@@ -84,6 +84,15 @@ $(function () {
                 $(application.options.ajaxLoaderSelector, application.element).fadeOut();
             }
             $(".RBLe .slider-control, .RBLe input", application.element).removeAttr("disabled");
+        },
+        // Default to just an empty (non-data) package
+        getData: function (appilcation, options, done, fail) {
+            done({
+                AuthID: "Empty",
+                Client: "Empty",
+                Profile: {},
+                History: {}
+            });
         }
     }, KatApp.defaultOptions);
     var tableInputsAndBootstrapButtons = ", .RBLe-input-table :input, .dropdown-toggle, button";
@@ -223,9 +232,9 @@ $(function () {
                             e. Call configureUI calculation if needed (will release flow control when I call $ajax() method to RBLe service)
                 */
                 //#endregion
-                pipeline.push(
-                // First get the view *only*
-                function () {
+                // Made all pipeline functions variables just so that I could search on name better instead of 
+                // simply a delegate added to the pipeline array.
+                var getApplicationView = function () {
                     if (viewId !== undefined) {
                         that.trace(viewId + " requested from CMS.", TraceVerbosity.Detailed);
                         that.trace("CMS url is: " + functionUrl + ".", TraceVerbosity.Diagnostic);
@@ -241,21 +250,19 @@ $(function () {
                                 if (rblConfig.length !== 1) {
                                     that.trace("View " + viewId + " is missing rbl-config element.", TraceVerbosity.Quiet);
                                 }
-                                else {
-                                    that.options.calcEngine = (_a = that.options.calcEngine) !== null && _a !== void 0 ? _a : rblConfig.attr("calcengine");
-                                    var toFetch = rblConfig.attr("templates");
-                                    if (toFetch !== undefined) {
-                                        requiredTemplates =
-                                            requiredTemplates
-                                                .concat(toFetch.split(",").map(function (r) { return ensureGlobalPrefix(r); })) // eslint-disable-line @typescript-eslint/no-non-null-assertion
-                                                // unique templates only
-                                                .filter(function (v, i, a) { return v !== undefined && v.length != 0 && a.indexOf(v) === i; });
-                                    }
-                                    that.options.inputTab = (_b = that.options.inputTab) !== null && _b !== void 0 ? _b : rblConfig.attr("input-tab");
-                                    var attrResultTabs_1 = rblConfig.attr("result-tabs");
-                                    that.options.resultTabs = (_c = that.options.resultTabs) !== null && _c !== void 0 ? _c : (attrResultTabs_1 != undefined ? attrResultTabs_1.split(",") : undefined);
-                                    that.element.html(view.html());
+                                that.options.calcEngine = (_a = that.options.calcEngine) !== null && _a !== void 0 ? _a : rblConfig === null || rblConfig === void 0 ? void 0 : rblConfig.attr("calcengine");
+                                var toFetch = rblConfig === null || rblConfig === void 0 ? void 0 : rblConfig.attr("templates");
+                                if (toFetch !== undefined) {
+                                    requiredTemplates =
+                                        requiredTemplates
+                                            .concat(toFetch.split(",").map(function (r) { return ensureGlobalPrefix(r); })) // eslint-disable-line @typescript-eslint/no-non-null-assertion
+                                            // unique templates only
+                                            .filter(function (v, i, a) { return v !== undefined && v.length != 0 && a.indexOf(v) === i; });
                                 }
+                                that.options.inputTab = (_b = that.options.inputTab) !== null && _b !== void 0 ? _b : rblConfig === null || rblConfig === void 0 ? void 0 : rblConfig.attr("input-tab");
+                                var attrResultTabs_1 = rblConfig === null || rblConfig === void 0 ? void 0 : rblConfig.attr("result-tabs");
+                                that.options.resultTabs = (_c = that.options.resultTabs) !== null && _c !== void 0 ? _c : (attrResultTabs_1 != undefined ? attrResultTabs_1.split(",") : undefined);
+                                that.element.html(view.html());
                                 next(0);
                             }
                             else {
@@ -267,9 +274,8 @@ $(function () {
                     else {
                         next(0);
                     }
-                }, 
-                // Get all templates needed for this view
-                function () {
+                };
+                var getApplicationTemplates = function () {
                     // Total number of resources already requested that I have to wait for
                     var otherResourcesNeeded = 0;
                     // For all templates that are already being fetched, create a callback to move on when 
@@ -344,19 +350,15 @@ $(function () {
                     else if (otherResourcesNeeded === 0) {
                         next(1); // jump to finish
                     }
-                }, 
-                // Inject templates returned from CMS
-                function () {
+                };
+                var injectApplicationTemplates = function () {
                     if (resourceResults != null) {
                         // For the templates *this app* downloaded, inject them into markup                        
                         Object.keys(resourceResults).forEach(function (r) {
                             var data = resourceResults[r]; // eslint-disable-line @typescript-eslint/no-non-null-assertion
                             // TOM (your comment, but do we need that container?): create container element 'rbl-templates' with an attribute 'rbl-t' for template content 
                             // and this attribute used for checking(?)
-                            // Remove extension if there is one, could be a problem if you do Standard.Templates, trying to get Standard.Templates.html.
-                            var resourceParts = r.split(":");
-                            var tId = (resourceParts.length > 1 ? resourceParts[1] : resourceParts[0]).replace(/\.[^/.]+$/, "");
-                            var t = $("<rbl-templates style='display:none;' rbl-t='" + tId + "'>" + data.replace(/{thisTemplate}/g, r) + "</rbl-templates>");
+                            var t = $("<rbl-templates style='display:none;' rbl-t='" + r.toLowerCase() + "'>" + data.replace(/{thisTemplate}/g, r) + "</rbl-templates>");
                             t.appendTo("body");
                             that.trace(r + " injected into markup.", TraceVerbosity.Normal);
                             // Should only ever get template results for templates that I can request
@@ -370,9 +372,8 @@ $(function () {
                         });
                     }
                     next(0);
-                }, 
-                // Final processing (hook up template events and process templates that don't need RBL)
-                function () {
+                };
+                var initializeApplication = function () {
                     if (pipelineError === undefined) {
                         // Now, for every unique template reqeusted by client, see if any template delegates were
                         // registered for the template using templateOn().  If so, hook up the 'real' event requested
@@ -424,7 +425,8 @@ $(function () {
                     }
                     that.trace("Finished init", TraceVerbosity.Detailed);
                     next(0); // just to get the trace statement, can remove after all tested
-                });
+                };
+                pipeline.push(getApplicationView, getApplicationTemplates, injectApplicationTemplates, initializeApplication);
                 // Start the pipeline
                 next(0);
             })(this);
@@ -1048,9 +1050,18 @@ $(function () {
             return (_a = application.results[tableKey]) !== null && _a !== void 0 ? _a : [];
         };
         RBLeUtilities.prototype.processTemplate = function (application, templateId, data) {
+            // Look first for template overriden directly in markup of view
             var template = $("rbl-template[tid=" + templateId + "]", application.element).first();
-            if (template.length === 0) {
-                template = $("rbl-template[tid=" + templateId + "]").first();
+            // Now try to find template given precedence of views provided (last template file given highest)
+            if (application.options.viewTemplates != undefined) {
+                application.options.viewTemplates
+                    .split(",")
+                    .reverse()
+                    .forEach(function (tid) {
+                    if (template.length === 0) {
+                        template = $("rbl-templates[rbl-t='" + tid.toLowerCase() + "'] rbl-template[tid='" + templateId + "']").first();
+                    }
+                });
             }
             if (template.length === 0) {
                 application.trace("Invalid template id: " + templateId, TraceVerbosity.Quiet);
@@ -1126,8 +1137,8 @@ $(function () {
         RBLeUtilities.prototype.processRblSources = function (application) {
             var that = this;
             //[rbl-source] processing templates that use rbl results
-            $("[rbl-source]", application.element).each(function () {
-                var _a, _b;
+            $("[rbl-source], [rbl-source-table]", application.element).each(function () {
+                var _a, _b, _c, _d, _e;
                 var el = $(this);
                 // TOM - Need some flow documentation here
                 if (el.attr("rbl-configui") === undefined || ((_a = application.inputs) === null || _a === void 0 ? void 0 : _a.iConfigureUI) === 1) {
@@ -1140,7 +1151,11 @@ $(function () {
                             ? undefined
                             : $(inlineTemplate.prop("outerHTML").format(elementData)).removeAttr("rbl-tid").prop("outerHTML")
                         : that.processTemplate(application, tid, elementData);
-                    var rblSourceParts_1 = (_b = el.attr('rbl-source')) === null || _b === void 0 ? void 0 : _b.split('.');
+                    var rblSourceTableParts = (_b = el.attr('rbl-source-table')) === null || _b === void 0 ? void 0 : _b.split('.');
+                    var rblSourceParts_1 = rblSourceTableParts === undefined
+                        ? (_c = el.attr('rbl-source')) === null || _c === void 0 ? void 0 : _c.split('.') : rblSourceTableParts.length === 3
+                        ? [(_d = that.getResultValue(application, rblSourceTableParts[0], rblSourceTableParts[1], rblSourceTableParts[2])) !== null && _d !== void 0 ? _d : "unknown"]
+                        : [(_e = that.getResultValueByColumn(application, rblSourceTableParts[0], rblSourceTableParts[1], rblSourceTableParts[2], rblSourceTableParts[3])) !== null && _e !== void 0 ? _e : "unknown"];
                     if (templateContent_1 === undefined) {
                         application.trace("RBL WARNING: Template content could not be found: [" + tid + "].", TraceVerbosity.Minimal);
                     }
@@ -1221,13 +1236,181 @@ $(function () {
                 }
             });
         };
+        RBLeUtilities.prototype.processSliders = function (application) {
+            var sliderRows = this.getResultTable(application, "ejs-sliders");
+            if (typeof noUiSlider !== "object" && sliderRows.length > 0) {
+                application.trace("noUiSlider javascript is not present.", TraceVerbosity.None);
+                return;
+            }
+            sliderRows.forEach(function (config) {
+                var _a, _b;
+                var id = config["@id"];
+                var sliderJQuery = $(".slider-" + id, application.element);
+                if (sliderJQuery.length !== 1) {
+                    application.trace("RBL WARNING: No slider div can be found for " + id + ".", TraceVerbosity.Minimal);
+                }
+                else {
+                    var minValue = Number(config.min);
+                    var maxValue = Number(config.max);
+                    var input = $("." + id, application.element);
+                    var defaultConfigValue = application.getResultValue("ejs-defaults", id, "value") || // what is in ejs-defaults
+                        config.default || // what was in ejs-slider/default
+                        input.val() || // what was put in the text box
+                        config.min; //could/should use this
+                    var stepValue = Number(config.step || "1");
+                    var format_1 = config.format || "n";
+                    var decimals_1 = Number(config.decimals || "0");
+                    // Set hidden textbox value
+                    input.val(defaultConfigValue);
+                    var slider = sliderJQuery[0];
+                    sliderJQuery.data("min", minValue);
+                    sliderJQuery.data("max", maxValue);
+                    // Some modelers have 'wizards' with 'same' inputs as regular modeling page.  The 'wizard sliders'
+                    // actually just set the input value of the regular input and let all the other flow (main input's
+                    // change event) happen as normal.
+                    var targetInput_1 = sliderJQuery.data("input");
+                    var defaultSliderValue = targetInput_1 != undefined
+                        ? $("." + targetInput_1, application.element).val()
+                        : defaultConfigValue;
+                    var pipsMode = (_a = config["pips-mode"]) !== null && _a !== void 0 ? _a : "";
+                    var pipValuesString = (_b = config["pips-values"]) !== null && _b !== void 0 ? _b : "";
+                    var pipsLargeValues = pipValuesString !== "" ? pipValuesString.split(',').map(Number) : [0, 25, 50, 75, 100];
+                    var pipsDensity = Number(config["pips-density"] || "5");
+                    var pips = pipsMode !== ""
+                        ? {
+                            mode: pipsMode,
+                            values: pipsLargeValues,
+                            density: pipsDensity,
+                            stepped: true
+                        }
+                        : undefined;
+                    var sliderOptions = {
+                        start: Number(defaultSliderValue),
+                        step: stepValue * 1,
+                        behaviour: 'tap',
+                        connect: 'lower',
+                        pips: pips,
+                        range: {
+                            min: minValue,
+                            max: maxValue
+                        },
+                        animate: true
+                    };
+                    var instance = slider.noUiSlider;
+                    if (instance !== undefined) {
+                        // No way to update options triggering calc in old noUiSlider library, so setting flag.
+                        // Latest library code (10.0+) solves problem, but leaving this code in for clients
+                        // who don't get updated and published with new library.
+                        $(slider).data("setting-default", 1);
+                        instance.updateOptions(sliderOptions, false);
+                        $(slider).removeData("setting-default");
+                    }
+                    else {
+                        instance = noUiSlider.create(slider, sliderOptions);
+                        // Hook up this event so that the label associated with the slider updates *whenever* there is a change.
+                        // https://refreshless.com/nouislider/events-callbacks/
+                        instance.on('update.RBLe', function () {
+                            var value = Number(this.get());
+                            $("." + id).val(value);
+                            var v = format_1 == "p" ? value / 100 : value;
+                            $("." + id + "Label, .sv" + id).html(String.localeFormat("{0:" + format_1 + decimals_1 + "}", v));
+                        });
+                        // Check to see that the input isn't marked as a skip input and if so, run a calc when the value is 'set'.
+                        // If targetInput is present, then this is a 'wizard' slider so I need to see if 'main'
+                        // input has been marked as a 'skip'.
+                        var sliderCalcId = targetInput_1 || id;
+                        if ($("." + sliderCalcId + ".skipRBLe", application.element).length === 0 && $("." + sliderCalcId, application.element).parents(".skipRBLe").length === 0) {
+                            if (targetInput_1 === undefined /* never trigger run from wizard sliders */) {
+                                // Whenever 'regular' slider changes or is updated via set()...
+                                instance.on('set.RBLe', function () {
+                                    var settingDefault = $(this.target).data("setting-default") === 1;
+                                    if (!settingDefault && application.options !== undefined) {
+                                        var sliderCalcOptions = $.extend(true, {}, application.options, { Inputs: { iInputTrigger: id } });
+                                        application.calculate(sliderCalcOptions);
+                                    }
+                                });
+                            }
+                            else {
+                                // When wizard slider changes, set matching 'regular slider' value with same value from wizard
+                                instance.on('change.RBLe', function () {
+                                    var value = Number(this.get());
+                                    var targetSlider = $(".slider-" + targetInput_1, application.element);
+                                    var targetSliderInstance = targetSlider.length === 1 ? targetSlider[0] : undefined;
+                                    if ((targetSliderInstance === null || targetSliderInstance === void 0 ? void 0 : targetSliderInstance.noUiSlider) !== undefined) {
+                                        targetSliderInstance.noUiSlider.set(value); // triggers calculation
+                                    }
+                                });
+                            }
+                        }
+                    }
+                    if (sliderOptions.pips !== undefined) {
+                        sliderJQuery.parent().addClass("has-pips");
+                    }
+                    else {
+                        sliderJQuery.parent().removeClass("has-pips");
+                    }
+                }
+            });
+        };
+        RBLeUtilities.prototype.processListControls = function (application) {
+            var _this = this;
+            var configRows = this.getResultTable(application, "ejs-listcontrol");
+            configRows.forEach(function (row) {
+                var _a;
+                var tableName = row.table;
+                var controlName = row["@id"];
+                var isCheckboxList = $("." + controlName, application.element).hasClass("checkbox-list-horizontal");
+                var listControl = $("." + controlName + ":not(div), application.element");
+                var isSelectPicker = !isCheckboxList && listControl.hasClass("selectpicker");
+                var selectPicker = isSelectPicker ? listControl : undefined;
+                var currentValue = isCheckboxList
+                    ? undefined
+                    : (_a = selectPicker === null || selectPicker === void 0 ? void 0 : selectPicker.selectpicker('val')) !== null && _a !== void 0 ? _a : listControl.val();
+                var listRows = _this.getResultTable(application, tableName);
+                listRows.forEach(function (ls) {
+                    var listItem = isCheckboxList
+                        ? $(".v" + controlName + "_" + ls.key, application.element).parent()
+                        : $("." + controlName + " option[value='" + ls.key + "']");
+                    if (ls.visible === 0) {
+                        listItem.hide();
+                        if (!isCheckboxList /* leave in same state */) {
+                            if (currentValue === ls.key) {
+                                if (selectPicker !== undefined) {
+                                    selectPicker.selectpicker("val", "");
+                                }
+                                else {
+                                    listControl.val("");
+                                }
+                            }
+                        }
+                    }
+                    else {
+                        if (listItem.length !== 0) {
+                            listItem.show();
+                        }
+                        else if (!isCheckboxList /* for now they have to add all during iDataBind if checkbox list */) {
+                            // This doesn't work in our normal asp: server controls b/c we get a invalid postback error since
+                            // we added items only during client side.  I followed this post but as the comment says, the input will
+                            // then have no value when posted back to server. So leaving it in, but only supports 'client side only' UIs
+                            // https://stackoverflow.com/a/5144268/166231
+                            listControl.append($("<option/>", {
+                                value: ls.key,
+                                text: ls.text
+                            }));
+                        }
+                    }
+                });
+                if (selectPicker !== undefined) {
+                    selectPicker.selectpicker('refresh');
+                }
+            });
+        };
         RBLeUtilities.prototype.processResults = function (application) {
             var _this = this;
             var results = application.results;
             // TOM (what does this comment mean): element content can be preserved with a class flag
             // TOM (what does this comment mean): generated content append or prepend (only applicably when preserved content)
             if (results !== undefined) {
-                // TODO Process results...implement appProcessResults
                 var calcEngineName = results["@calcEngine"];
                 var version = results["@version"];
                 application.trace("Processing results for " + calcEngineName + "(" + version + ").", TraceVerbosity.Normal);
@@ -1251,6 +1434,8 @@ $(function () {
                     }
                 });
                 this.processVisibilities(application);
+                this.processSliders(application);
+                this.processListControls(application);
                 application.trace("Finished processing results for " + calcEngineName + "(" + version + ").", TraceVerbosity.Normal);
                 return true;
             }
@@ -1587,126 +1772,6 @@ $(function () {
         function StandardTemplateBuilder(application) {
             this.application = application;
         }
-        StandardTemplateBuilder.prototype.buildSlider = function (el) {
-            var _a, _b;
-            var id = el.data("inputname");
-            var that = this;
-            if (typeof noUiSlider !== "object") {
-                this.application.trace("noUiSlider javascript is not present.", TraceVerbosity.None);
-            }
-            if (el.attr("data-kat-initialized") !== "true") {
-                // Do all data-* attributes that we support
-                var label = el.data("label");
-                if (label !== undefined) {
-                    $("span.l" + id, el).html(label);
-                }
-            }
-            var config = this.application.getResultRow("ejs-sliders", id);
-            if (config == undefined)
-                return el;
-            var minValue = Number(config.min);
-            var maxValue = Number(config.max);
-            var defaultConfigValue = this.application.getResultValue("ejs-defaults", id, "value") || // what is in ejs-defaults
-                config.default || // what was in ejs-slider/default
-                $("." + id).val() || // what was put in the text box
-                config.min; //could/should use this
-            var stepValue = Number(config.step || "1");
-            var format = config.format || "n";
-            var decimals = Number(config.decimals || "0");
-            var sliderJQuery = $(".slider-" + id, el);
-            $("." + id, el).val(defaultConfigValue);
-            if (sliderJQuery.length === 1) {
-                var slider = sliderJQuery[0];
-                sliderJQuery.data("min", minValue);
-                sliderJQuery.data("max", maxValue);
-                // Some modelers have 'wizards' with 'same' inputs as regular modeling page.  The 'wizard sliders'
-                // actually just set the input value of the regular input and let all the other flow (main input's
-                // change event) happen as normal.
-                var targetInput_1 = sliderJQuery.data("input");
-                var defaultSliderValue = targetInput_1 != undefined
-                    ? $("." + targetInput_1, this.application.element).val()
-                    : defaultConfigValue;
-                var pipsMode = (_a = config["pips-mode"]) !== null && _a !== void 0 ? _a : "";
-                var pipValuesString = (_b = config["pips-values"]) !== null && _b !== void 0 ? _b : "";
-                var pipsLargeValues = pipValuesString !== "" ? pipValuesString.split(',').map(Number) : [0, 25, 50, 75, 100];
-                var pipsDensity = Number(config["pips-density"] || "5");
-                var pips = pipsMode !== ""
-                    ? {
-                        mode: pipsMode,
-                        values: pipsLargeValues,
-                        density: pipsDensity,
-                        stepped: true
-                    }
-                    : undefined;
-                var sliderOptions = {
-                    start: Number(defaultSliderValue),
-                    step: stepValue * 1,
-                    behaviour: 'tap',
-                    connect: 'lower',
-                    pips: pips,
-                    range: {
-                        min: minValue,
-                        max: maxValue
-                    },
-                    animate: true
-                };
-                var instance = slider.noUiSlider;
-                if (instance !== undefined) {
-                    // No way to update options triggering calc in old noUiSlider library, so setting flag.
-                    // Latest library code (10.0+) solves problem, but leaving this code in for clients
-                    // who don't get updated and published with new library.
-                    $(slider).data("setting-default", 1);
-                    instance.updateOptions(sliderOptions, false);
-                    $(slider).removeData("setting-default");
-                }
-                else {
-                    instance = noUiSlider.create(slider, sliderOptions);
-                    el.attr("data-kat-initialized", "true");
-                    // Hook up this event so that the label associated with the slider updates *whenever* there is a change.
-                    // https://refreshless.com/nouislider/events-callbacks/
-                    instance.on('update.RBLe', function () {
-                        var value = Number(this.get());
-                        $("." + id).val(value);
-                        var v = format == "p" ? value / 100 : value;
-                        $("." + id + "Label, .sv" + id).html(String.localeFormat("{0:" + format + decimals + "}", v));
-                    });
-                    // Check to see that the input isn't marked as a skip input and if so, run a calc when the value is 'set'.
-                    // If targetInput is present, then this is a 'wizard' slider so I need to see if 'main'
-                    // input has been marked as a 'skip'.
-                    var sliderCalcId = targetInput_1 || id;
-                    if ($("." + sliderCalcId + ".skipRBLe", this.application.element).length === 0 && $("." + sliderCalcId, this.application.element).parents(".skipRBLe").length === 0) {
-                        if (targetInput_1 === undefined /* never trigger run from wizard sliders */) {
-                            // Whenever 'regular' slider changes or is updated via set()...
-                            instance.on('set.RBLe', function () {
-                                var settingDefault = $(this.target).data("setting-default") === 1;
-                                if (!settingDefault && that.application.options !== undefined) {
-                                    var sliderCalcOptions = $.extend(true, {}, that.application.options, { Inputs: { iInputTrigger: id } });
-                                    that.application.calculate(sliderCalcOptions);
-                                }
-                            });
-                        }
-                        else {
-                            // When wizard slider changes, set matching 'regular slider' value with same value from wizard
-                            instance.on('change.RBLe', function () {
-                                var value = Number(this.get());
-                                var targetSlider = $(".slider-" + targetInput_1, that.application.element);
-                                var targetSliderInstance = targetSlider.length === 1 ? targetSlider[0] : undefined;
-                                if ((targetSliderInstance === null || targetSliderInstance === void 0 ? void 0 : targetSliderInstance.noUiSlider) !== undefined) {
-                                    targetSliderInstance.noUiSlider.set(value); // triggers calculation
-                                }
-                            });
-                        }
-                    }
-                }
-                if (sliderOptions.pips !== undefined) {
-                    sliderJQuery.parent().addClass("has-pips");
-                }
-                else {
-                    sliderJQuery.parent().removeClass("has-pips");
-                }
-            }
-            return el;
-        };
         StandardTemplateBuilder.prototype.buildCarousel = function (el) {
             var carouselName = el.attr("rbl-name");
             if (carouselName !== undefined && !carouselName.includes("{")) {
@@ -1724,9 +1789,9 @@ $(function () {
             }
             return el;
         };
-        StandardTemplateBuilder.prototype.processCarousels = function (application) {
+        StandardTemplateBuilder.prototype.processCarousels = function () {
             var that = this;
-            var view = application.element;
+            var view = this.application.element;
             // Hook up event handlers only when *not* already initialized
             $('.carousel-control-group:not([data-kat-initialized="true"])', view).each(function () {
                 var el = $(this);
@@ -1750,14 +1815,14 @@ $(function () {
                 that.buildCarousel(el);
             });
         };
-        StandardTemplateBuilder.prototype.processHighcharts = function (application) {
-            var view = application.element;
-            var highchartsBuilder = $.fn.KatApp.highchartsBuilderFactory(application);
+        StandardTemplateBuilder.prototype.processHighcharts = function () {
+            var view = this.application.element;
+            var highchartsBuilder = $.fn.KatApp.highchartsBuilderFactory(this.application);
             $("[rbl-tid='chart-highcharts']", view).each(function () {
                 highchartsBuilder.buildChart($(this));
             });
         };
-        StandardTemplateBuilder.prototype.processTextBoxes = function (view) {
+        StandardTemplateBuilder.prototype.buildTextBoxes = function (view) {
             $('[rbl-tid="input-textbox"]:not([data-kat-initialized="true"])', view).each(function () {
                 var _a, _b;
                 var el = $(this);
@@ -1880,7 +1945,8 @@ $(function () {
                 el.attr("data-kat-initialized", "true");
             });
         };
-        StandardTemplateBuilder.prototype.processDropdowns = function (view) {
+        StandardTemplateBuilder.prototype.buildDropdowns = function (view) {
+            this.application.trace("Processing onTemplatesProcessed.RBLe: " + $('[rbl-tid="input-dropdown"]:not([data-kat-initialized="true"]) .selectpicker', view).length + " selectpicker controls.", TraceVerbosity.Diagnostic);
             $('[rbl-tid="input-dropdown"]:not([data-kat-initialized="true"])', view).each(function () {
                 var _a;
                 var el = $(this);
@@ -1908,16 +1974,34 @@ $(function () {
                 el.attr("data-kat-initialized", "true");
             });
         };
-        StandardTemplateBuilder.prototype.processInputs = function (application) {
-            var view = application.element;
-            application.trace("Processing onTemplatesProcessed.RBLe: " + $('[rbl-tid="input-dropdown"]:not([data-kat-initialized="true"]) .selectpicker', view).length + " selectpicker controls.", TraceVerbosity.Diagnostic);
-            this.processDropdowns(view);
-            this.processTextBoxes(view);
-            var that = this;
-            // Don't use kat-initialized here b/c they might be changing options based on another input
-            $('[rbl-tid="input-slider"]', view).each(function () {
-                that.buildSlider($(this));
+        StandardTemplateBuilder.prototype.buildSliders = function (view) {
+            // Only need to process data-* attributes here because RBLeUtilities.processResults will push out 'configuration' changes
+            $('[rbl-tid="input-slider"]:not([data-kat-initialized="true"])', view).each(function () {
+                var el = $(this);
+                var id = el.data("inputname");
+                if (el.attr("data-kat-initialized") !== "true") {
+                    // Do all data-* attributes that we support
+                    var label = el.data("label");
+                    if (label !== undefined) {
+                        $("span.l" + id, el).html(label);
+                    }
+                }
+                // May need to build slider anyway if enough information is provided in the data-* values?
+                /* Don't think I need this since I push out info from CE
+                const config = this.application.getResultRow<SliderConfigurationRow>("ejs-sliders", id);
+    
+                if (config == undefined) return el;
+    
+                this.processSliderConfiguration( el, id, config );
+                */
+                el.attr("data-kat-initialized", "true");
             });
+        };
+        StandardTemplateBuilder.prototype.processInputs = function () {
+            var view = this.application.element;
+            this.buildDropdowns(view);
+            this.buildTextBoxes(view);
+            this.buildSliders(view);
         };
         return StandardTemplateBuilder;
     }());

@@ -1,0 +1,255 @@
+﻿/* https://codemyviews.com/blog/10-less-css-examples-you-should-steal-for-your-projects */
+/* Colors */
+/* Mixins */
+@media (min-width: 1280px) {
+  .container {
+    width: 1270px;
+  }
+}
+/* Body Style */
+body {
+  background-color: #c7c7c7;
+}
+/* Link Style */
+/* Button Style */
+.btn-primary,
+.btn-danger,
+.btn-default,
+.btn-success,
+.btn-info,
+.btn-warning {
+  -webkit-border-radius: 6px;
+  -moz-border-radius: 6px;
+  border-radius: 6px;
+}
+.btn-xs {
+  -webkit-border-radius: 4px;
+  -moz-border-radius: 4px;
+  border-radius: 4px;
+}
+.btn-primary {
+  background: #333;
+  background: -webkit-linear-gradient(#333, #333);
+  background: -o-linear-gradient(#333, #333);
+  background: -moz-linear-gradient(#333, #333);
+  background: linear-gradient(#333, #333);
+  color: #fff;
+}
+.btn-primary.disabled {
+  opacity: 0.3;
+}
+.btn-primary:focus,
+.btn-primary:hover {
+  background: #F6871E;
+  background: -webkit-linear-gradient(#F6871E, #F6871E);
+  background: -o-linear-gradient(#F6871E, #F6871E);
+  background: -moz-linear-gradient(#F6871E, #F6871E);
+  background: linear-gradient(#F6871E, #F6871E);
+}
+.btn-primary-inverse {
+  background: #F6871E;
+  color: #fff;
+}
+/* Header */
+header .container {
+  background-color: #fff;
+}
+/* Top Links */
+.top-links > ul > li,
+.top-links > ul > li > a {
+  color: #333;
+}
+/* Top Nav */
+.topnav-toggle {
+  background: #333;
+}
+.topnav-toggle .icon-bar {
+  background-color: #333;
+}
+.topnav {
+  background-color: #333;
+}
+.topnav > ul > li > a {
+  color: #fff;
+  background-color: #333;
+  border-right: 1px solid #333;
+  border-left: 1px solid #333;
+}
+.topnav > ul > li > a:hover,
+.topnav > ul > li > a:focus,
+.topnav > ul > .active > a {
+  background-color: #808080;
+  border-right: 1px solid #fff;
+  border-left: 1px solid #fff;
+}
+.topnav > ul > li > .dropdown-menu {
+  background-color: #333;
+  color: #333;
+}
+.topnav > ul > li > .dropdown-menu > li > a,
+.topnav > ul > li > .dropdown-menu > li > a:visited {
+  color: #333;
+}
+.topnav > ul > li > .dropdown-menu > li.active > a,
+.topnav > ul > li > .dropdown-menu > li > a:hover {
+  color: #333;
+  background-color: #808080;
+}
+/* Page Content */
+.page-header {
+  color: #333;
+}
+/* Footer */
+.footer-links {
+  background-color: #333;
+  color: #fff;
+}
+footer .footer-links > ul > li > a {
+  color: #333;
+}
+/* Nav Tabs Default */
+body.borderless .nav-tabs > li > a {
+  color: #333 !important;
+}
+body.borderless .nav-tabs > li.active > a,
+body.borderless .nav-tabs > li.active > a:focus,
+body.borderless .nav-tabs > li.active > a:hover {
+  color: #333 !important;
+}
+body:not(.borderless) .nav-tabs > li.active > a,
+body:not(.borderless) .nav-tabs > li.active > a:focus,
+body:not(.borderless) .nav-tabs > li.active > a:hover {
+  color: #fff !important;
+  background-color: #333;
+  border: 1px solid #333;
+}
+body:not(.borderless) .nav-tabs > li.active {
+  border-color: #333;
+}
+body:not(.borderless) .nav-tabs > li.active a:after {
+  border-color: #333 transparent;
+}
+/* Panel Default Style */
+.panel-default .panel-heading {
+  color: #fff;
+  background-color: #F6871E;
+}
+/* Mobile Assumptions */
+.btn-mobile-assumptions div {
+  background-color: #333;
+}
+.btn-mobile-assumptions p {
+  color: #333;
+}
+/* Mobile +/- menus */
+.mobile-toggle-collapse {
+  color: #333;
+}
+.mobile-toggle-collapse:hover,
+.mobile-toggle-collapse:focus {
+  color: #333;
+}
+/* noUIslider */
+.noUi-handle div {
+  color: #F6871E;
+}
+.noUi-handle,
+.noUi-horizontal .noUi-handle {
+  background: #F6871E;
+}
+/* Table Formatting */
+.table.table-bordered > thead > tr > th,
+.table.table-bordered > tbody > tr.header > th,
+.table.table-bordered > tbody > tr.header > td {
+  background-color: #F6871E;
+  color: #fff;
+  border-color: #F6871E;
+}
+/* Form Elements */
+/* Form Elements */
+.radio input[type="radio"]:checked + label::before {
+  border-color: #333;
+}
+.radio input[type="radio"] + label::after,
+.radio input[type="radio"]:checked + label::after {
+  background-color: #333;
+}
+@media (max-width: 767px) {
+  body {
+    padding-bottom: 50px;
+  }
+  .modelingInputs {
+    position: fixed;
+    top: 100%;
+    left: 0;
+    right: 0;
+    bottom: 50px;
+    overflow-x: hidden;
+    overflow-y: auto;
+    z-index: 1000;
+    background-color: #fff;
+    margin-right: 0;
+    margin-left: 0;
+    -webkit-transition: top 0.5s ease-out 0s;
+    -o-transition: top 0.5s ease-out 0s;
+    -moz-transition: top 0.5s ease-out 0s;
+    transition: top 0.5s ease-out 0s;
+  }
+  /* KL: The 'Save Inputs' button when in 'phone' mode is too big. */
+  .modelingInputs .btn-primary {
+    padding: 0;
+  }
+  .modelingInputs .modelingInputsInner {
+    position: relative;
+    padding-top: 15px;
+  }
+  body.mobile-assumptions {
+    overflow: hidden;
+  }
+  body.mobile-assumptions .modelingInputs {
+    display: block;
+    top: 0;
+  }
+  body.mobile-assumptions .modelingInputs .modelingInputsInner {
+    top: 0;
+  }
+  .btn-mobile-assumptions div {
+    padding: 5px 0;
+  }
+  .modelerTab p {
+    font-weight: bold;
+    font-size: 15px;
+  }
+}
+.logo-left {
+  font-size: 2em;
+  color: #333;
+}
+.logo-left span {
+  font-size: 0.8em;
+  font-weight: bold;
+  color: #333;
+}
+.summary-table table thead tr th.value {
+  text-align: right;
+}
+.summary-table table tbody tr.take-home td {
+  background-color: #fcf8e3;
+  font-weight: bold;
+  color: #118e04;
+}
+.result-table table {
+  margin-right: auto;
+  margin-left: auto;
+}
+.result-table table tbody tr td {
+  border-width: 0;
+}
+div.row > div.label-only > label {
+  padding-top: 8px;
+}
+.row.pull-bottom > div {
+  float: none;
+  vertical-align: bottom;
+  display: inline-block;
+}

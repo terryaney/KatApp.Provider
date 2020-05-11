@@ -1,4 +1,4 @@
-<rbl-template tid="biscomb-input-slider">
+<rbl-template tid="input-slider">
   <div class="form-group slider-control-group">
     <div class="validator-container">
       <a style="display: none;" class="vh{inputname} help-icon-anchor" role="button" tabindex="0" data-toggle="popover" data-trigger="click" data-content-selector=".h{inputname}" data-placement="top">
@@ -19,37 +19,3 @@
     </h6>
   </div>
 </rbl-template>
-
-<script>
-  if (KatApp.pageParameters["debugkatapp"] === "t.{thisTemplate}") {
-    debugger;
-  }
-
-  $.fn.KatApp.templateOn("{thisTemplate}", "onTemplatesProcessed.RBLe", function (event, application) {
-    application.trace("Processing onTemplatesProcessed.RBLe for Template [{thisTemplate}]...", TraceVerbosity.Normal);
-
-    if (KatApp.pageParameters["debugkatapp"] === "t.{thisTemplate}.onTemplatesProcessed") {
-        debugger;
-    }
-
-    const templateBuilder = $.fn.KatApp.standardTemplateBuilderFactory( application );
-    $('[rbl-tid="biscomb-input-slider"]', application.element).each(function () {
-      templateBuilder.buildSlider( $(this) );
-    });
-  });
-
-  $.fn.KatApp.templateOn("{thisTemplate}", "onCalculation.RBLe", function (event, calculationResults, calcOptions, application) {
-    application.trace("Processing onCalculation.RBLe for Template [{thisTemplate}]...", TraceVerbosity.Normal );
-
-    if (KatApp.pageParameters["debugkatapp"] === "t.{thisTemplate}.onCalculation") {
-        debugger;
-    }
-
-    const templateBuilder = $.fn.KatApp.standardTemplateBuilderFactory( application );
-
-    $('[rbl-tid="biscomb-input-slider"]', application.element).each(function () {
-      templateBuilder.buildSlider( $(this) );
-    });
-  });
-
-</script>

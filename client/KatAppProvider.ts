@@ -1,5 +1,5 @@
 // TODO
-// - Need to remove slider events (https://refreshless.com/nouislider/events-callbacks/) before destroying and carousel (standard)
+// - What are defaults for 'dropdowns' in asp.net (search, multiselect)
 // - How do I check/handle for errors when I try to load view
 // - Ability to have two CE's for one view might be needed for stochastic
 //      Would need to intercept init that binds onchange and instead call a getOptions or smoething
@@ -89,6 +89,16 @@ $(function() {
                     $( application.options.ajaxLoaderSelector, application.element ).fadeOut();
                 }
                 $( ".RBLe .slider-control, .RBLe input", application.element ).removeAttr("disabled");
+            },
+
+            // Default to just an empty (non-data) package
+            getData: function( appilcation: KatAppPlugInInterface, options: KatAppOptions, done: RBLeRESTServiceResultCallback, fail: JQueryFailCallback ): void {
+                done( {
+                    AuthID: "Empty",
+                    Client: "Empty",
+                    Profile: {} as JSON,
+                    History: {} as JSON
+                });
             }
         }, KatApp.defaultOptions );
 
@@ -280,251 +290,249 @@ $(function() {
                 */
                 //#endregion
 
-                pipeline.push( 
-                    // First get the view *only*
-                    function(): void { 
-                        if ( viewId !== undefined ) {
-                            that.trace(viewId + " requested from CMS.", TraceVerbosity.Detailed);
-                            that.trace("CMS url is: " + functionUrl + ".", TraceVerbosity.Diagnostic);
+                // Made all pipeline functions variables just so that I could search on name better instead of 
+                // simply a delegate added to the pipeline array.
+                const getApplicationView = function(): void { 
+                    if ( viewId !== undefined ) {
+                        that.trace(viewId + " requested from CMS.", TraceVerbosity.Detailed);
+                        that.trace("CMS url is: " + functionUrl + ".", TraceVerbosity.Diagnostic);
 
-                            KatApp.getResources( functionUrl, viewId, useTestView, false,
-                                ( errorMessage, results ) => {                                
-    
+                        KatApp.getResources( functionUrl, viewId, useTestView, false,
+                            ( errorMessage, results ) => {                                
+
+                                pipelineError = errorMessage;
+
+                                if ( pipelineError === undefined ) {
+                                    that.trace(viewId + " returned from CMS.", TraceVerbosity.Normal);
+
+                                    const data = results![ viewId! ]; // eslint-disable-line @typescript-eslint/no-non-null-assertion
+
+                                    // Process as view - get info from rbl-config and inject markup
+                                    const view = $("<div>" + data.replace( /{thisView}/g, "[rbl-application-id='" + that.id + "']" ) + "</div>");
+                                    const rblConfig = $("rbl-config", view).first();
+            
+                                    if ( rblConfig.length !== 1 ) {
+                                        that.trace("View " + viewId + " is missing rbl-config element.", TraceVerbosity.Quiet);
+                                    }
+
+                                    that.options.calcEngine = that.options.calcEngine ?? rblConfig?.attr("calcengine");
+                                    const toFetch = rblConfig?.attr("templates");
+                                    if ( toFetch !== undefined ) {
+                                        requiredTemplates = 
+                                            requiredTemplates
+                                                .concat( toFetch.split(",").map( r => ensureGlobalPrefix( r )! ) ) // eslint-disable-line @typescript-eslint/no-non-null-assertion
+                                                // unique templates only
+                                                .filter((v, i, a) => v !== undefined && v.length != 0 && a.indexOf(v) === i );
+
+                                    }
+                                    that.options.inputTab = that.options.inputTab ?? rblConfig?.attr("input-tab");
+                                    const attrResultTabs = rblConfig?.attr("result-tabs");
+                                    that.options.resultTabs = that.options.resultTabs ?? ( attrResultTabs != undefined ? attrResultTabs.split( "," ) : undefined );
+                                    
+                                    that.element.html( view.html() );
+                                    
+                                    next( 0 );
+                                }
+                                else {
                                     pipelineError = errorMessage;
+                                    next( 2 ); // jump to finish
+                                }
+                            }
+                        );
+                    }
+                    else {
+                        next( 0 );
+                    }
+                };
+                const getApplicationTemplates = function(): void { 
+                    // Total number of resources already requested that I have to wait for
+                    let otherResourcesNeeded = 0;
+                    
+                    // For all templates that are already being fetched, create a callback to move on when 
+                    // not waiting for any more resources
+                    requiredTemplates.filter( r => ( _templatesUsedByAllApps[ r ]?.requested ?? false ) )
+                        .forEach( function( r ) {                                
+                            otherResourcesNeeded++;
 
+                            that.trace("Need to wait for already requested template: " + r, TraceVerbosity.Detailed);
+
+                            _templatesUsedByAllApps[ r ].callbacks.push(
+                                function( errorMessage ) {
+                                    that.trace("Template: " + r + " is now ready.", TraceVerbosity.Detailed);
+
+                                    // only process (moving to finish or next step) if not already assigned an error
                                     if ( pipelineError === undefined ) {
-                                        that.trace(viewId + " returned from CMS.", TraceVerbosity.Normal);
-
-                                        const data = results![ viewId! ]; // eslint-disable-line @typescript-eslint/no-non-null-assertion
-
-                                        // Process as view - get info from rbl-config and inject markup
-                                        const view = $("<div>" + data.replace( /{thisView}/g, "[rbl-application-id='" + that.id + "']" ) + "</div>");
-                                        const rblConfig = $("rbl-config", view).first();
-                
-                                        if ( rblConfig.length !== 1 ) {
-                                            that.trace("View " + viewId + " is missing rbl-config element.", TraceVerbosity.Quiet);
+                                        if ( errorMessage === undefined ) {
+                                            otherResourcesNeeded--;
+                                            if ( otherResourcesNeeded === 0 ) {
+                                                that.trace("No more templates needed, process 'inject templates' pipeline.", TraceVerbosity.Diagnostic);
+                                                next( 0 ); // move to next step if not waiting for anything else
+                                            }
+                                            else {
+                                                that.trace("Waiting for " + otherResourcesNeeded + " more templates.", TraceVerbosity.Diagnostic);
+                                            }
                                         }
                                         else {
-                                            that.options.calcEngine = that.options.calcEngine ?? rblConfig.attr("calcengine");
-                                            const toFetch = rblConfig.attr("templates");
-                                            if ( toFetch !== undefined ) {
-                                                requiredTemplates = 
-                                                    requiredTemplates
-                                                        .concat( toFetch.split(",").map( r => ensureGlobalPrefix( r )! ) ) // eslint-disable-line @typescript-eslint/no-non-null-assertion
-                                                        // unique templates only
-                                                        .filter((v, i, a) => v !== undefined && v.length != 0 && a.indexOf(v) === i );
-
-                                            }
-                                            that.options.inputTab = that.options.inputTab ?? rblConfig.attr("input-tab");
-                                            const attrResultTabs = rblConfig.attr("result-tabs");
-                                            that.options.resultTabs = that.options.resultTabs ?? ( attrResultTabs != undefined ? attrResultTabs.split( "," ) : undefined );
-                                            
-                                            that.element.html( view.html() );
+                                            that.trace("Template " + r + " error: " + errorMessage, TraceVerbosity.Quiet );
+                                            pipelineError = errorMessage;
+                                            next( 1 ); // jump to finish
                                         }
-                
+                                    }
+                                }
+                            );
+                        });
+
+                    // Array of items this app will fetch because not requested yet
+                    const toFetch: string[] = [];
+
+                    // For every template this app needs that is *NOT* already requested for download
+                    // or finished, add it to the fetch list and set the state to 'requesting'
+                    requiredTemplates
+                        .filter( r => !( _templatesUsedByAllApps[ r ]?.requested ?? false ) && _templatesUsedByAllApps[ r ]?.data === undefined )
+                        .forEach( function( r ) {
+                            _templatesUsedByAllApps[ r ] = { requested: true, callbacks: [] };
+                            toFetch.push(r);
+                        });
+
+                    if ( toFetch.length > 0 ) {
+
+                        const toFetchList = toFetch.join(",");
+                        that.trace(toFetchList + " requested from CMS.", TraceVerbosity.Detailed);
+                        that.trace("CMS url is: " + functionUrl + ".", TraceVerbosity.Diagnostic);
+                        KatApp.getResources( functionUrl, toFetchList, useTestView, false,
+                            ( errorMessage, data ) => {                                
+
+                                if ( errorMessage === undefined ) {
+                                    resourceResults = data as ResourceResults;
+                                    that.trace(toFetchList + " returned from CMS.", TraceVerbosity.Normal);
+                                    
+                                    // Only move on if not waiting on any more resources from other apps
+                                    if ( otherResourcesNeeded === 0 ) {
+                                        that.trace("No more templates needed, process 'inject templates' pipeline.", TraceVerbosity.Diagnostic);
                                         next( 0 );
                                     }
                                     else {
-                                        pipelineError = errorMessage;
-                                        next( 2 ); // jump to finish
+                                        that.trace("Can't move to next step because waiting on templates.", TraceVerbosity.Diagnostic);
                                     }
                                 }
-                            );
-                        }
-                        else {
-                            next( 0 );
-                        }
-                    },
-
-                    // Get all templates needed for this view
-                    function(): void { 
-                        // Total number of resources already requested that I have to wait for
-                        let otherResourcesNeeded = 0;
-                        
-                        // For all templates that are already being fetched, create a callback to move on when 
-                        // not waiting for any more resources
-                        requiredTemplates.filter( r => ( _templatesUsedByAllApps[ r ]?.requested ?? false ) )
-                            .forEach( function( r ) {                                
-                                otherResourcesNeeded++;
-
-                                that.trace("Need to wait for already requested template: " + r, TraceVerbosity.Detailed);
-
-                                _templatesUsedByAllApps[ r ].callbacks.push(
-                                    function( errorMessage ) {
-                                        that.trace("Template: " + r + " is now ready.", TraceVerbosity.Detailed);
-
-                                        // only process (moving to finish or next step) if not already assigned an error
-                                        if ( pipelineError === undefined ) {
-                                            if ( errorMessage === undefined ) {
-                                                otherResourcesNeeded--;
-                                                if ( otherResourcesNeeded === 0 ) {
-                                                    that.trace("No more templates needed, process 'inject templates' pipeline.", TraceVerbosity.Diagnostic);
-                                                    next( 0 ); // move to next step if not waiting for anything else
-                                                }
-                                                else {
-                                                    that.trace("Waiting for " + otherResourcesNeeded + " more templates.", TraceVerbosity.Diagnostic);
-                                                }
-                                            }
-                                            else {
-                                                that.trace("Template " + r + " error: " + errorMessage, TraceVerbosity.Quiet );
-                                                pipelineError = errorMessage;
-                                                next( 1 ); // jump to finish
-                                            }
+                                else {
+                                    toFetch.forEach( r => {
+                                        // call all registered callbacks from other apps
+                                        let currentCallback: ( ( errorMessage: string )=> void ) | undefined = undefined;
+                                        while( ( currentCallback = _templatesUsedByAllApps[ r ].callbacks.pop() ) !== undefined )
+                                        {
+                                            currentCallback( errorMessage );
                                         }
-                                    }
-                                );
-                            });
+                                        _templatesUsedByAllApps[ r ].requested = false; // remove it so someone else might try to download again
+                                    });
 
-                        // Array of items this app will fetch because not requested yet
-                        const toFetch: string[] = [];
-
-                        // For every template this app needs that is *NOT* already requested for download
-                        // or finished, add it to the fetch list and set the state to 'requesting'
-                        requiredTemplates
-                            .filter( r => !( _templatesUsedByAllApps[ r ]?.requested ?? false ) && _templatesUsedByAllApps[ r ]?.data === undefined )
-                            .forEach( function( r ) {
-                                _templatesUsedByAllApps[ r ] = { requested: true, callbacks: [] };
-                                toFetch.push(r);
-                            });
-
-                        if ( toFetch.length > 0 ) {
-
-                            const toFetchList = toFetch.join(",");
-                            that.trace(toFetchList + " requested from CMS.", TraceVerbosity.Detailed);
-                            that.trace("CMS url is: " + functionUrl + ".", TraceVerbosity.Diagnostic);
-                            KatApp.getResources( functionUrl, toFetchList, useTestView, false,
-                                ( errorMessage, data ) => {                                
-    
-                                    if ( errorMessage === undefined ) {
-                                        resourceResults = data as ResourceResults;
-                                        that.trace(toFetchList + " returned from CMS.", TraceVerbosity.Normal);
-                                        
-                                        // Only move on if not waiting on any more resources from other apps
-                                        if ( otherResourcesNeeded === 0 ) {
-                                            that.trace("No more templates needed, process 'inject templates' pipeline.", TraceVerbosity.Diagnostic);
-                                            next( 0 );
-                                        }
-                                        else {
-                                            that.trace("Can't move to next step because waiting on templates.", TraceVerbosity.Diagnostic);
-                                        }
-                                    }
-                                    else {
-                                        toFetch.forEach( r => {
-                                            // call all registered callbacks from other apps
-                                            let currentCallback: ( ( errorMessage: string )=> void ) | undefined = undefined;
-                                            while( ( currentCallback = _templatesUsedByAllApps[ r ].callbacks.pop() ) !== undefined )
-                                            {
-                                                currentCallback( errorMessage );
-                                            }
-                                            _templatesUsedByAllApps[ r ].requested = false; // remove it so someone else might try to download again
-                                        });
-
-                                        pipelineError = errorMessage;
-                                        next( 1 ); // jump to finish
-                                    }
+                                    pipelineError = errorMessage;
+                                    next( 1 ); // jump to finish
                                 }
-                            );
-                        }
-                        else if ( otherResourcesNeeded === 0 ) {
-                            next( 1 ); // jump to finish
-                        }
-                    },
-
-                    // Inject templates returned from CMS
-                    function(): void {
-                        
-                        if ( resourceResults != null ) {
-                            // For the templates *this app* downloaded, inject them into markup                        
-                            Object.keys(resourceResults).forEach( r => { // eslint-disable-line @typescript-eslint/no-non-null-assertion
-                                const data = resourceResults![ r ]; // eslint-disable-line @typescript-eslint/no-non-null-assertion
-
-                                // TOM (your comment, but do we need that container?): create container element 'rbl-templates' with an attribute 'rbl-t' for template content 
-                                // and this attribute used for checking(?)
-                                
-                                // Remove extension if there is one, could be a problem if you do Standard.Templates, trying to get Standard.Templates.html.
-                                const resourceParts = r.split(":");
-                                const tId = ( resourceParts.length > 1 ? resourceParts[ 1 ]: resourceParts[ 0 ] ).replace(/\.[^/.]+$/, "");
-                                const t = $("<rbl-templates style='display:none;' rbl-t='" + tId + "'>" + data.replace( /{thisTemplate}/g, r ) + "</rbl-templates>");
-
-                                t.appendTo("body");
-
-                                that.trace( r + " injected into markup.", TraceVerbosity.Normal );
-
-                                // Should only ever get template results for templates that I can request
-                                _templatesUsedByAllApps[ r ].data = data;
-                                _templatesUsedByAllApps[ r ].requested = false;
-                                
-                                // call all registered callbacks from other apps
-                                let currentCallback: ( ( errorMessage: string | undefined )=> void ) | undefined = undefined;
-                                while( ( currentCallback = _templatesUsedByAllApps[ r ].callbacks.pop() ) !== undefined )
-                                {
-                                    currentCallback( undefined );
-                                }
-                            });
-                        }
-
-                        next( 0 );
-                    },
-
-                    // Final processing (hook up template events and process templates that don't need RBL)
-                    function(): void {
-                        if ( pipelineError === undefined ) {
-                            
-                            // Now, for every unique template reqeusted by client, see if any template delegates were
-                            // registered for the template using templateOn().  If so, hook up the 'real' event requested
-                            // to the currently running application.  Need to use templateOn() because the template is
-                            // only injected once into the markup but we need to hook up events for each event that
-                            // wants to use this template.
-                            requiredTemplates
-                                .forEach( t => {
-
-                                    // Loop every template event handler that was called when template loaded
-                                    // and register a handler to call the delegate
-                                    _templateDelegates
-                                        .filter( d => d.Template.toLowerCase() == t.toLowerCase() )
-                                        .forEach( d => {
-                                            that.trace( "[" + d.Events + "] events from template [" + d.Template + "] hooked up.", TraceVerbosity.Normal );
-                                            that.element.on( d.Events, function( ...args ): void {
-                                                d.Delegate.apply( this, args );
-                                            } );
-                                        });
-                                });
-
-                            // Update options.viewTemplates just in case someone is looking at them
-                            that.options.viewTemplates = requiredTemplates.join( "," );
-
-                            // Build up template content that DOES NOT use rbl results, but instead just 
-                            // uses data-* to create a dataobject.  Normally just making controls with templates here
-                            $("[rbl-tid]:not([rbl-source])", that.element).each(function () {
-                                const templateId = $(this).attr('rbl-tid');
-                                if (templateId !== undefined && templateId !== "inline") {
-                                    //Replace content with template processing, using data-* items in this pass
-                                    $(this).html(that.rble.processTemplate( that, templateId, $(this).data()));
-                                }
-                            });
-
-                            if ( requiredTemplates.length > 0 ) {
-                                that.ui.triggerEvent( that, "onTemplatesProcessed", that, requiredTemplates );
                             }
-
-                            that.ui.bindEvents( that );
-                
-                            that.ui.triggerEvent( that, "onInitialized", that );
-
-                            if ( that.options.runConfigureUICalculation ) {
-                                const customOptions: KatAppOptions = {
-                                    manualInputs: { iConfigureUI: 1, iDataBind: 1 }
-                                };
-                                that.calculate( customOptions );
-                            }
-                        }
-                        else {
-                            that.trace( "Error during Provider.init: " + pipelineError, TraceVerbosity.Quiet );
-                        }
-
-                        that.trace( "Finished init", TraceVerbosity.Detailed );
-                        next( 0 ); // just to get the trace statement, can remove after all tested
+                        );
                     }
+                    else if ( otherResourcesNeeded === 0 ) {
+                        next( 1 ); // jump to finish
+                    }
+                };
+                const injectApplicationTemplates = function(): void {
+                        
+                    if ( resourceResults != null ) {
+                        // For the templates *this app* downloaded, inject them into markup                        
+                        Object.keys(resourceResults).forEach( r => { // eslint-disable-line @typescript-eslint/no-non-null-assertion
+                            const data = resourceResults![ r ]; // eslint-disable-line @typescript-eslint/no-non-null-assertion
+
+                            // TOM (your comment, but do we need that container?): create container element 'rbl-templates' with an attribute 'rbl-t' for template content 
+                            // and this attribute used for checking(?)
+                            
+                            const t = $("<rbl-templates style='display:none;' rbl-t='" + r.toLowerCase() + "'>" + data.replace( /{thisTemplate}/g, r ) + "</rbl-templates>");
+
+                            t.appendTo("body");
+
+                            that.trace( r + " injected into markup.", TraceVerbosity.Normal );
+
+                            // Should only ever get template results for templates that I can request
+                            _templatesUsedByAllApps[ r ].data = data;
+                            _templatesUsedByAllApps[ r ].requested = false;
+                            
+                            // call all registered callbacks from other apps
+                            let currentCallback: ( ( errorMessage: string | undefined )=> void ) | undefined = undefined;
+                            while( ( currentCallback = _templatesUsedByAllApps[ r ].callbacks.pop() ) !== undefined )
+                            {
+                                currentCallback( undefined );
+                            }
+                        });
+                    }
+
+                    next( 0 );
+                };
+                const initializeApplication = function(): void {
+                    
+                    if ( pipelineError === undefined ) {
+                        
+                        // Now, for every unique template reqeusted by client, see if any template delegates were
+                        // registered for the template using templateOn().  If so, hook up the 'real' event requested
+                        // to the currently running application.  Need to use templateOn() because the template is
+                        // only injected once into the markup but we need to hook up events for each event that
+                        // wants to use this template.
+                        requiredTemplates
+                            .forEach( t => {
+
+                                // Loop every template event handler that was called when template loaded
+                                // and register a handler to call the delegate
+                                _templateDelegates
+                                    .filter( d => d.Template.toLowerCase() == t.toLowerCase() )
+                                    .forEach( d => {
+                                        that.trace( "[" + d.Events + "] events from template [" + d.Template + "] hooked up.", TraceVerbosity.Normal );
+                                        that.element.on( d.Events, function( ...args ): void {
+                                            d.Delegate.apply( this, args );
+                                        } );
+                                    });
+                            });
+
+                        // Update options.viewTemplates just in case someone is looking at them
+                        that.options.viewTemplates = requiredTemplates.join( "," );
+
+                        // Build up template content that DOES NOT use rbl results, but instead just 
+                        // uses data-* to create a dataobject.  Normally just making controls with templates here
+                        $("[rbl-tid]:not([rbl-source])", that.element).each(function () {
+                            const templateId = $(this).attr('rbl-tid');
+                            if (templateId !== undefined && templateId !== "inline") {
+                                //Replace content with template processing, using data-* items in this pass
+                                $(this).html(that.rble.processTemplate( that, templateId, $(this).data()));
+                            }
+                        });
+
+                        if ( requiredTemplates.length > 0 ) {
+                            that.ui.triggerEvent( that, "onTemplatesProcessed", that, requiredTemplates );
+                        }
+
+                        that.ui.bindEvents( that );
+            
+                        that.ui.triggerEvent( that, "onInitialized", that );
+
+                        if ( that.options.runConfigureUICalculation ) {
+                            const customOptions: KatAppOptions = {
+                                manualInputs: { iConfigureUI: 1, iDataBind: 1 }
+                            };
+                            that.calculate( customOptions );
+                        }
+                    }
+                    else {
+                        that.trace( "Error during Provider.init: " + pipelineError, TraceVerbosity.Quiet );
+                    }
+
+                    that.trace( "Finished init", TraceVerbosity.Detailed );
+                    next( 0 ); // just to get the trace statement, can remove after all tested
+
+                };
+
+                pipeline.push( 
+                    getApplicationView,
+                    getApplicationTemplates,
+                    injectApplicationTemplates,
+                    initializeApplication
                 );
     
                 // Start the pipeline
@@ -1263,10 +1271,19 @@ $(function() {
 		}
 
         processTemplate( application: KatAppPlugIn, templateId: string, data: JQuery.PlainObject ): string {
+            // Look first for template overriden directly in markup of view
             let template = $("rbl-template[tid=" + templateId + "]", application.element).first();
 
-            if ( template.length === 0 ) {
-                template = $("rbl-template[tid=" + templateId + "]").first();
+            // Now try to find template given precedence of views provided (last template file given highest)
+            if ( application.options.viewTemplates != undefined ) {
+                application.options.viewTemplates
+                    .split(",")
+                    .reverse()
+                    .forEach( tid => {
+                        if ( template.length === 0 ) {
+                            template = $("rbl-templates[rbl-t='" + tid.toLowerCase() + "'] rbl-template[tid='" + templateId + "']").first();
+                        }    
+                    })
             }
 
             if ( template.length === 0 ) {
@@ -1354,7 +1371,7 @@ $(function() {
             const that = this;
 
             //[rbl-source] processing templates that use rbl results
-            $("[rbl-source]", application.element).each(function () {
+            $("[rbl-source], [rbl-source-table]", application.element).each(function () {
                 const el = $(this);
 
                 // TOM - Need some flow documentation here
@@ -1370,7 +1387,13 @@ $(function() {
                             : $( inlineTemplate.prop("outerHTML").format( elementData) ).removeAttr("rbl-tid").prop("outerHTML")
                         : that.processTemplate( application, tid, elementData ); 
 
-                    const rblSourceParts = el.attr('rbl-source')?.split('.');
+                    const rblSourceTableParts = el.attr('rbl-source-table')?.split('.');
+
+                    const rblSourceParts = rblSourceTableParts === undefined
+                        ? el.attr('rbl-source')?.split('.')
+                        : rblSourceTableParts.length === 3
+                            ? [ that.getResultValue( application, rblSourceTableParts[ 0 ], rblSourceTableParts[ 1 ], rblSourceTableParts[ 2 ] ) ?? "unknown" ]
+                            : [ that.getResultValueByColumn( application, rblSourceTableParts[ 0 ], rblSourceTableParts[ 1 ], rblSourceTableParts[ 2 ], rblSourceTableParts[ 3 ] ) ?? "unknown" ];
 
                     if ( templateContent === undefined ) {
                         application.trace("RBL WARNING: Template content could not be found: [" + tid + "].", TraceVerbosity.Minimal);
@@ -1473,6 +1496,212 @@ $(function() {
             });
         }
 
+        processSliders( application: KatAppPlugIn ): void {
+            const sliderRows = this.getResultTable<SliderConfigurationRow>( application, "ejs-sliders" );
+            
+            if ( typeof noUiSlider !== "object" && sliderRows.length > 0 ) {
+                application.trace("noUiSlider javascript is not present.", TraceVerbosity.None);
+                return;
+            }
+
+            sliderRows.forEach( config => {
+                const id = config["@id"];
+
+                const sliderJQuery = $(".slider-" + id, application.element);
+
+                if ( sliderJQuery.length !== 1 ) {
+                    application.trace("RBL WARNING: No slider div can be found for " + id + ".", TraceVerbosity.Minimal);
+                }
+                else {
+                    const minValue = Number( config.min );
+                    const maxValue = Number( config.max );
+        
+                    const input = $("." + id, application.element);
+        
+                    const defaultConfigValue =
+                        application.getResultValue("ejs-defaults", id, "value") || // what is in ejs-defaults
+                        config.default || // what was in ejs-slider/default
+                        input.val() || // what was put in the text box
+                        config.min; //could/should use this
+        
+                    const stepValue = Number( config.step || "1" );
+                    const format = config.format || "n";
+                    const decimals = Number( config.decimals || "0");
+        
+                    // Set hidden textbox value
+                    input.val(defaultConfigValue);
+        
+                    const slider = sliderJQuery[0] as noUiSlider.Instance;
+        
+                    sliderJQuery.data("min", minValue);
+                    sliderJQuery.data("max", maxValue);
+        
+                    // Some modelers have 'wizards' with 'same' inputs as regular modeling page.  The 'wizard sliders'
+                    // actually just set the input value of the regular input and let all the other flow (main input's
+                    // change event) happen as normal.
+                    const targetInput = sliderJQuery.data("input");
+        
+                    const defaultSliderValue = targetInput != undefined
+                        ? $("." + targetInput, application.element).val() as string
+                        : defaultConfigValue;
+        
+                    const pipsMode = config["pips-mode"] ?? "";
+                    const pipValuesString = config["pips-values"] ?? "";
+                    const pipsLargeValues = pipValuesString !== "" ? pipValuesString.split(',').map(Number) : [0, 25, 50, 75, 100];
+                    const pipsDensity = Number(config["pips-density"] || "5");
+        
+                    const pips = pipsMode !== ""
+                        ? {
+                            mode: pipsMode,
+                            values: pipsLargeValues,
+                            density: pipsDensity,
+                            stepped: true
+                        } as noUiSlider.PipsOptions
+                        : undefined;
+        
+                    const sliderOptions: noUiSlider.Options = {
+                        start: Number( defaultSliderValue ),
+                        step: stepValue * 1,
+                        behaviour: 'tap',
+                        connect: 'lower',
+                        pips: pips,
+                        range: {
+                            min: minValue,
+                            max: maxValue
+                        },
+                        animate: true
+                    };
+        
+                    let instance = slider.noUiSlider;
+                    
+                    if (instance !== undefined) {
+                        // No way to update options triggering calc in old noUiSlider library, so setting flag.
+                        // Latest library code (10.0+) solves problem, but leaving this code in for clients
+                        // who don't get updated and published with new library.
+                        $(slider).data("setting-default", 1);
+                        instance.updateOptions(sliderOptions, false);
+                        $(slider).removeData("setting-default");
+                    }
+                    else {
+                        instance = noUiSlider.create(
+                            slider,
+                            sliderOptions
+                        );
+        
+                        // Hook up this event so that the label associated with the slider updates *whenever* there is a change.
+                        // https://refreshless.com/nouislider/events-callbacks/
+                        instance.on('update.RBLe', function ( this: noUiSlider.noUiSlider ) {
+                            const value = Number( this.get() as string );
+        
+                            $("." + id).val(value);
+                            const v = format == "p" ? value / 100 : value;
+                            $("." + id + "Label, .sv" + id).html( String.localeFormat("{0:" + format + decimals + "}", v) );
+                        });
+        
+                        // Check to see that the input isn't marked as a skip input and if so, run a calc when the value is 'set'.
+                        // If targetInput is present, then this is a 'wizard' slider so I need to see if 'main'
+                        // input has been marked as a 'skip'.
+                        const sliderCalcId = targetInput || id;
+        
+                        if ($("." + sliderCalcId + ".skipRBLe", application.element).length === 0 && $("." + sliderCalcId, application.element).parents(".skipRBLe").length === 0) {
+        
+                            if (targetInput === undefined /* never trigger run from wizard sliders */) {
+        
+                                // Whenever 'regular' slider changes or is updated via set()...
+                                instance.on('set.RBLe', function ( this: noUiSlider.noUiSlider ) {
+        
+                                    const settingDefault = $(this.target).data("setting-default") === 1;
+        
+                                    if (!settingDefault && application.options !== undefined) {
+                                        const sliderCalcOptions = $.extend(true, {}, application.options, { Inputs: { iInputTrigger: id } });
+                                        application.calculate(sliderCalcOptions);
+                                    }
+        
+                                });
+                            }
+                            else {
+                                // When wizard slider changes, set matching 'regular slider' value with same value from wizard
+                                instance.on('change.RBLe', function ( this: noUiSlider.noUiSlider ) {
+                                    const value = Number( this.get() as string );
+                                    const targetSlider = $(".slider-" + targetInput, application.element);
+                                    const targetSliderInstance = targetSlider.length === 1 ? targetSlider[0] as noUiSlider.Instance : undefined;
+        
+                                    if (targetSliderInstance?.noUiSlider !== undefined ) {
+                                        targetSliderInstance.noUiSlider.set(value); // triggers calculation
+                                    }
+                                });
+                            }
+                        }
+                    }
+        
+                    if (sliderOptions.pips !== undefined) {
+                        sliderJQuery.parent().addClass("has-pips");
+                    }
+                    else {
+                        sliderJQuery.parent().removeClass("has-pips");
+                    }
+                }
+            });
+        }
+
+        processListControls( application: KatAppPlugIn ): void {
+            const configRows = this.getResultTable<ListControlRow>( application, "ejs-listcontrol" );
+
+            configRows.forEach( row => {
+				const tableName = row.table;
+				const controlName = row["@id"];
+				const isCheckboxList = $("." + controlName, application.element).hasClass("checkbox-list-horizontal");
+				const listControl = $("." + controlName + ":not(div), application.element");
+				const isSelectPicker = !isCheckboxList && listControl.hasClass("selectpicker");
+				const selectPicker = isSelectPicker ? listControl : undefined;
+				const currentValue = isCheckboxList
+					? undefined
+					: selectPicker?.selectpicker('val') ?? listControl.val();
+
+                const listRows = this.getResultTable<ListRow>( application, tableName );
+
+                listRows.forEach( ls => {
+					const listItem = isCheckboxList
+						? $(".v" + controlName + "_" + ls.key, application.element).parent()
+                        : $("." + controlName + " option[value='" + ls.key + "']");
+                        
+                    if (ls.visible === 0) {
+                        listItem.hide();
+
+                        if (!isCheckboxList /* leave in same state */) {
+                            if (currentValue === ls.key) {
+                                if (selectPicker !== undefined) {
+                                    selectPicker.selectpicker("val", "");
+                                }
+                                else {
+                                    listControl.val("");
+                                }
+                            }
+                        }
+                    }
+                    else {
+                        if (listItem.length !== 0) {
+                            listItem.show();
+                        }
+                        else if (!isCheckboxList /* for now they have to add all during iDataBind if checkbox list */) {
+                            // This doesn't work in our normal asp: server controls b/c we get a invalid postback error since
+                            // we added items only during client side.  I followed this post but as the comment says, the input will
+                            // then have no value when posted back to server. So leaving it in, but only supports 'client side only' UIs
+                            // https://stackoverflow.com/a/5144268/166231
+                            listControl.append($("<option/>", {
+                                value: ls.key,
+                                text: ls.text
+                            }));
+                        }
+                    }
+                });
+
+				if (selectPicker !== undefined) {
+					selectPicker.selectpicker('refresh');
+				}
+            });
+        }
+
         processResults( application: KatAppPlugIn ): boolean {
             const results = application.results;
 
@@ -1480,7 +1709,6 @@ $(function() {
 			// TOM (what does this comment mean): generated content append or prepend (only applicably when preserved content)
 
             if ( results !== undefined ) {
-                // TODO Process results...implement appProcessResults
                 const calcEngineName = results["@calcEngine"];
                 const version = results["@version"];
                 application.trace( "Processing results for " + calcEngineName + "(" + version + ").", TraceVerbosity.Normal );
@@ -1511,6 +1739,10 @@ $(function() {
 
                 this.processVisibilities( application );
 
+                this.processSliders( application )
+
+                this.processListControls( application );
+                
                 application.trace( "Finished processing results for " + calcEngineName + "(" + version + ").", TraceVerbosity.Normal );
 
                 return true;
@@ -1913,161 +2145,6 @@ $(function() {
             this.application = application;    
         }
         
-        buildSlider(el: JQuery): JQuery {
-            const id = el.data("inputname");
-            const that = this;
-
-            if ( typeof noUiSlider !== "object" ) {
-                this.application.trace("noUiSlider javascript is not present.", TraceVerbosity.None);
-            }
-
-            if ( el.attr("data-kat-initialized") !== "true" ) {
-                // Do all data-* attributes that we support
-                const label = el.data("label");
-
-                if ( label !== undefined ) {
-                    $("span.l" + id, el).html(label);
-                }
-            }
-
-            const config = this.application.getResultRow<SliderConfigurationRow>("ejs-sliders", id);
-
-            if (config == undefined) return el;
-
-            const minValue = Number( config.min );
-            const maxValue = Number( config.max );
-
-            const defaultConfigValue =
-                this.application.getResultValue("ejs-defaults", id, "value") || // what is in ejs-defaults
-                config.default || // what was in ejs-slider/default
-                $("." + id).val() || // what was put in the text box
-                config.min; //could/should use this
-
-            const stepValue = Number( config.step || "1" );
-            const format = config.format || "n";
-            const decimals = Number( config.decimals || "0");
-
-            const sliderJQuery = $(".slider-" + id, el);
-            $("." + id, el).val(defaultConfigValue);
-
-            if (sliderJQuery.length === 1) {
-
-                const slider = sliderJQuery[0] as noUiSlider.Instance;
-
-                sliderJQuery.data("min", minValue);
-                sliderJQuery.data("max", maxValue);
-
-                // Some modelers have 'wizards' with 'same' inputs as regular modeling page.  The 'wizard sliders'
-                // actually just set the input value of the regular input and let all the other flow (main input's
-                // change event) happen as normal.
-                const targetInput = sliderJQuery.data("input");
-
-                const defaultSliderValue = targetInput != undefined
-                    ? $("." + targetInput, this.application.element).val() as string
-                    : defaultConfigValue;
-
-                const pipsMode = config["pips-mode"] ?? "";
-                const pipValuesString = config["pips-values"] ?? "";
-                const pipsLargeValues = pipValuesString !== "" ? pipValuesString.split(',').map(Number) : [0, 25, 50, 75, 100];
-                const pipsDensity = Number(config["pips-density"] || "5");
-
-                const pips = pipsMode !== ""
-                    ? {
-                        mode: pipsMode,
-                        values: pipsLargeValues,
-                        density: pipsDensity,
-                        stepped: true
-                    } as noUiSlider.PipsOptions
-                    : undefined;
-
-                const sliderOptions: noUiSlider.Options = {
-                    start: Number( defaultSliderValue ),
-                    step: stepValue * 1,
-                    behaviour: 'tap',
-                    connect: 'lower',
-                    pips: pips,
-                    range: {
-                        min: minValue,
-                        max: maxValue
-                    },
-                    animate: true
-                };
-
-                let instance = slider.noUiSlider;
-                
-                if (instance !== undefined) {
-                    // No way to update options triggering calc in old noUiSlider library, so setting flag.
-                    // Latest library code (10.0+) solves problem, but leaving this code in for clients
-                    // who don't get updated and published with new library.
-                    $(slider).data("setting-default", 1);
-                    instance.updateOptions(sliderOptions, false);
-                    $(slider).removeData("setting-default");
-                }
-                else {
-                    instance = noUiSlider.create(
-                        slider,
-                        sliderOptions
-                    );
-
-                    el.attr("data-kat-initialized", "true");
-
-                    // Hook up this event so that the label associated with the slider updates *whenever* there is a change.
-                    // https://refreshless.com/nouislider/events-callbacks/
-                    instance.on('update.RBLe', function ( this: noUiSlider.noUiSlider ) {
-                        const value = Number( this.get() as string );
-
-                        $("." + id).val(value);
-                        const v = format == "p" ? value / 100 : value;
-                        $("." + id + "Label, .sv" + id).html( String.localeFormat("{0:" + format + decimals + "}", v) );
-                    });
-
-                    // Check to see that the input isn't marked as a skip input and if so, run a calc when the value is 'set'.
-                    // If targetInput is present, then this is a 'wizard' slider so I need to see if 'main'
-                    // input has been marked as a 'skip'.
-                    const sliderCalcId = targetInput || id;
-
-                    if ($("." + sliderCalcId + ".skipRBLe", this.application.element).length === 0 && $("." + sliderCalcId, this.application.element).parents(".skipRBLe").length === 0) {
-
-                        if (targetInput === undefined /* never trigger run from wizard sliders */) {
-
-                            // Whenever 'regular' slider changes or is updated via set()...
-                            instance.on('set.RBLe', function ( this: noUiSlider.noUiSlider ) {
-
-                                const settingDefault = $(this.target).data("setting-default") === 1;
-
-                                if (!settingDefault && that.application.options !== undefined) {
-                                    const sliderCalcOptions = $.extend(true, {}, that.application.options, { Inputs: { iInputTrigger: id } });
-                                    that.application.calculate(sliderCalcOptions);
-                                }
-
-                            });
-                        }
-                        else {
-                            // When wizard slider changes, set matching 'regular slider' value with same value from wizard
-                            instance.on('change.RBLe', function ( this: noUiSlider.noUiSlider ) {
-                                const value = Number( this.get() as string );
-                                const targetSlider = $(".slider-" + targetInput, that.application.element);
-                                const targetSliderInstance = targetSlider.length === 1 ? targetSlider[0] as noUiSlider.Instance : undefined;
-
-                                if (targetSliderInstance?.noUiSlider !== undefined ) {
-                                    targetSliderInstance.noUiSlider.set(value); // triggers calculation
-                                }
-                            });
-                        }
-                    }
-                }
-
-                if (sliderOptions.pips !== undefined) {
-                    sliderJQuery.parent().addClass("has-pips");
-                }
-                else {
-                    sliderJQuery.parent().removeClass("has-pips");
-                }
-            }
-
-            return el;
-        }
-
         buildCarousel(el: JQuery): JQuery {
             const carouselName = el.attr("rbl-name");
 
@@ -2093,9 +2170,9 @@ $(function() {
             return el;
         }
 
-        processCarousels( application: KatAppPlugIn ): void {
+        processCarousels(): void {
             const that = this;
-            const view = application.element;
+            const view = this.application.element;
 
             // Hook up event handlers only when *not* already initialized
             $('.carousel-control-group:not([data-kat-initialized="true"])', view).each(function () {
@@ -2125,16 +2202,16 @@ $(function() {
             });
         }
 
-        processHighcharts( application: KatAppPlugIn ): void {
-            const view = application.element;
-            const highchartsBuilder: HighchartsBuilder = $.fn.KatApp.highchartsBuilderFactory( application );
+        processHighcharts(): void {
+            const view = this.application.element;
+            const highchartsBuilder: HighchartsBuilder = $.fn.KatApp.highchartsBuilderFactory( this.application );
 
             $("[rbl-tid='chart-highcharts']", view).each(function () {
                 highchartsBuilder.buildChart( $(this) );
             });
         }
 
-        processTextBoxes( view: JQuery<HTMLElement> ): void {
+        buildTextBoxes( view: JQuery<HTMLElement> ): void {
             $('[rbl-tid="input-textbox"]:not([data-kat-initialized="true"])', view).each(function () {
                 const el = $(this);
                 
@@ -2273,7 +2350,9 @@ $(function() {
             });
         }
 
-        processDropdowns( view: JQuery<HTMLElement> ): void {
+        buildDropdowns( view: JQuery<HTMLElement> ): void {
+            this.application.trace("Processing onTemplatesProcessed.RBLe: " + $('[rbl-tid="input-dropdown"]:not([data-kat-initialized="true"]) .selectpicker', view).length + " selectpicker controls.", TraceVerbosity.Diagnostic);
+
             $('[rbl-tid="input-dropdown"]:not([data-kat-initialized="true"])', view).each( function() {
                 const el = $(this);
 
@@ -2309,21 +2388,42 @@ $(function() {
             });
         }
 
-        processInputs(application: KatAppPlugIn): void {
-            const view = application.element;
+        buildSliders( view: JQuery<HTMLElement> ): void {
+            // Only need to process data-* attributes here because RBLeUtilities.processResults will push out 'configuration' changes
+            $('[rbl-tid="input-slider"]:not([data-kat-initialized="true"])', view).each(function () {
+                const el = $(this);
 
-            application.trace("Processing onTemplatesProcessed.RBLe: " + $('[rbl-tid="input-dropdown"]:not([data-kat-initialized="true"]) .selectpicker', view).length + " selectpicker controls.", TraceVerbosity.Diagnostic);
+                const id = el.data("inputname");
 
-            this.processDropdowns( view );
+                if ( el.attr("data-kat-initialized") !== "true" ) {
+                    // Do all data-* attributes that we support
+                    const label = el.data("label");
+    
+                    if ( label !== undefined ) {
+                        $("span.l" + id, el).html(label);
+                    }
+                }
+    
+                // May need to build slider anyway if enough information is provided in the data-* values?
+    
+                /* Don't think I need this since I push out info from CE
+                const config = this.application.getResultRow<SliderConfigurationRow>("ejs-sliders", id);
+    
+                if (config == undefined) return el;
+    
+                this.processSliderConfiguration( el, id, config );
+                */
 
-            this.processTextBoxes( view );
-
-            const that = this;
-
-            // Don't use kat-initialized here b/c they might be changing options based on another input
-            $('[rbl-tid="input-slider"]', view).each(function () {
-                that.buildSlider( $(this) );
+                el.attr("data-kat-initialized", "true");
             });
+        }
+
+        processInputs(): void {
+            const view = this.application.element;
+
+            this.buildDropdowns( view );
+            this.buildTextBoxes( view );
+            this.buildSliders( view );
         }
     }
 

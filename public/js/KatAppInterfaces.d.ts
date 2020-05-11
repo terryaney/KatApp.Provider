@@ -11,6 +11,8 @@ interface JQuery {
     KatApp(options?: KatAppOptions | string, ...args: Array<string | number | KatAppOptions>): JQuery | KatAppPlugInShimInterface | string | undefined;
     carousel(frame: number): JQuery;
     selectpicker(): JQuery;
+    selectpicker(option: string): string;
+    selectpicker(propertyName: string, value: string): void;
     datepicker(options: any): JQuery;
 }
 interface Function {
@@ -67,7 +69,17 @@ interface HtmlContentRow {
     addclass?: string;
     removeclass?: string;
 }
+interface ListControlRow {
+    "@id": string;
+    table: string;
+}
+interface ListRow {
+    key: string;
+    text: string;
+    visible?: number;
+}
 interface SliderConfigurationRow {
+    "@id": string;
     min: string;
     max: string;
     default?: string;

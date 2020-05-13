@@ -97,7 +97,7 @@
       </a>
     </label>
     <div class="validator-container"> 
-      <select name="{inputname}" id_="{inputname}" class="form-control selectpicker show-tick {inputname}" tabindex="-98">
+      <select name="{inputname}" id_="{inputname}" class="form-control bootstrap-select show-tick {inputname}" tabindex="-98">
       </select>
       <span class="error-msg" data-toggle="tooltip" data-placement="top auto"></span>      
     </div>
@@ -122,6 +122,24 @@
       <input name="{inputname}" type="text" id_="{inputname}" class="form-control {inputname}" style="display: none" />
       <span class="error-msg" data-toggle="tooltip" data-placement="top auto"></span>      
     </div>
+    <div class="h{inputname}Title" style="display: none;"></div>
+    <div class="h{inputname}" style="display: none;"></div>
+  </div>
+</rbl-template>
+
+<rbl-template tid="input-checkbox">
+  <div class="form-group validator-container checkbox-container v{inputname}">
+    <span class="checkbox abc-checkbox {inputname} l{inputname}">
+      <input id_="{inputname}" type="checkbox" name="{inputname}">
+      <label for="{inputname}"></label>
+    </span>
+    <a style="display: none;" class="vh{inputname} help-icon-anchor" role="button" tabindex="0" data-toggle="popover" data-trigger="click" data-content-selector=".h{inputname}" data-placement="top">
+      <span class="glyphicon glyphicon-info-sign help-icon"></span>
+    </a>
+    <a style="display: none;" class="vs{inputname} help-icon-anchor" role="button" tabindex="0">
+      <span class="glyphicon glyphicon-volume-up"></span>
+    </a>
+    <span class="error-msg" data-toggle="tooltip" data-placement="top auto"></span>      
     <div class="h{inputname}Title" style="display: none;"></div>
     <div class="h{inputname}" style="display: none;"></div>
   </div>

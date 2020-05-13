@@ -59,11 +59,11 @@
         </style>
         <script>
             $( function() {
-                KatApp.defaultOptions.traceVerbosity = TraceVerbosity.Normal;
-                KatApp.defaultOptions.useTestView = true;
-                KatApp.defaultOptions.refreshCalcEngine = true;
-                KatApp.defaultOptions.functionUrl = "https://secure.conduentapplications.com/Services/RBL/Evolution_Test/CalculationFunction.ashx";
-                // KatApp.defaultOptions.functionUrl = "http://localhost:54300/CalculationFunction.ashx";
+                KatApp.defaultOptions.debug.traceVerbosity = TraceVerbosity.Normal;
+                KatApp.defaultOptions.debug.scriptLocation = "js";
+                KatApp.defaultOptions.debug.templateLocation = "templates";
+                KatApp.defaultOptions.debug.useTestView = true;
+                KatApp.defaultOptions.debug.refreshCalcEngine = true;
 
                 // Change default onCalculateStart behavior.  No longer will show spinner
                 KatApp.defaultOptions.onCalculateStart = function( application ) {
@@ -81,7 +81,7 @@
                     application.trace("<b>Client Handler</b>: Application destroyed.", TraceVerbosity.Detailed);
                 };
 
-                $( "div.katapp.startup" ).KatApp( "rebuild", { 
+                $( "div.katapp.startup" ).KatApp( { 
                     runConfigureUICalculation: false,
                     onCalculation: function( results, options, application ) {    
                         var inputTrigger = application.inputs.iInputTrigger || "[Manual Calculation]";
@@ -89,14 +89,14 @@
                     } 
                 } );
 
-                // Samples, but there aren't three KatApp's so this will never get called
+                // Samples, but there aren't three KatApp's so this will never initialize anything
                 $("div.katapp:eq(2)")
                     .on( "onConfigureUICalculation.RBLe", function( event, calculationResults, calcOptions, application ) {
                         application.trace("<b>Client Handler</b>: onConfigureUICalculation, Called before calculationComplete. Inputs Passed: " + Object.keys( application.inputs ).map( i => i + "=" + application.inputs[ i ] ).join( ", " ) + ".")
                     }).on( "onCalculation.RBLe", function( event, calculationResults, calcOptions, application ) {
                         var inputTrigger = calcOptions.inputs.iInputTrigger || "[Manual Calculation]";
                         application.trace("<b>Client Handler</b>: onCalculation, Inputs Passed: " + Object.keys( application.inputs ).map( i => i + "=" + application.inputs[ i ] ).join( ", " ) + ".")
-                    }).KatApp("rebuild", {} );
+                    }).KatApp();
             });
         </script>
     </body>

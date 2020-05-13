@@ -48,8 +48,8 @@ var KatApp = /** @class */ (function () {
     ;
     KatApp.trace = function (application, message, verbosity) {
         if (verbosity === void 0) { verbosity = TraceVerbosity.Normal; }
-        var _a, _b, _c, _d, _e;
-        var verbosityOption = (_c = (_b = (_a = application === null || application === void 0 ? void 0 : application.options) === null || _a === void 0 ? void 0 : _a.traceVerbosity) !== null && _b !== void 0 ? _b : KatApp.defaultOptions.traceVerbosity) !== null && _c !== void 0 ? _c : TraceVerbosity.None;
+        var _a, _b, _c, _d, _e, _f, _g;
+        var verbosityOption = (_e = (_c = (_b = (_a = application === null || application === void 0 ? void 0 : application.options) === null || _a === void 0 ? void 0 : _a.debug) === null || _b === void 0 ? void 0 : _b.traceVerbosity) !== null && _c !== void 0 ? _c : (_d = KatApp.defaultOptions.debug) === null || _d === void 0 ? void 0 : _d.traceVerbosity) !== null && _e !== void 0 ? _e : TraceVerbosity.None;
         if (verbosityOption >= verbosity) {
             var item = undefined;
             var d = new Date(), year = d.getFullYear();
@@ -68,8 +68,8 @@ var KatApp = /** @class */ (function () {
             if (application !== undefined) {
                 var traceId = application.element.attr("rbl-trace-id");
                 var id = traceId !== null && traceId !== void 0 ? traceId : application.id;
-                var className = (_d = application.element[0].className) !== null && _d !== void 0 ? _d : "No classes";
-                var viewId = (_e = application.element.attr("rbl-view")) !== null && _e !== void 0 ? _e : "None";
+                var className = (_f = application.element[0].className) !== null && _f !== void 0 ? _f : "No classes";
+                var viewId = (_g = application.element.attr("rbl-view")) !== null && _g !== void 0 ? _g : "None";
                 var markupDetails = verbosityOption === TraceVerbosity.Diagnostic ? " (class=" + className + ", view=" + viewId + ")" : "";
                 item = $("<div class='applog" + (traceId !== null && traceId !== void 0 ? traceId : "") + "'>" + displayDate + " <b>Application " + id + "</b>" + markupDetails + ": " + message + "</div>");
             }
@@ -80,10 +80,10 @@ var KatApp = /** @class */ (function () {
             $(".rbl-logclass").append(item);
         }
     };
-    KatApp.getResources = function (functionUrl, resources, useTestVersion, isScript, pipelineDone) {
+    KatApp.getResources = function (application, currentOptions, resources, useTestVersion, isScript, pipelineDone) {
         (function () {
-            var _a;
-            var url = (_a = functionUrl !== null && functionUrl !== void 0 ? functionUrl : KatApp.defaultOptions.functionUrl) !== null && _a !== void 0 ? _a : KatApp.functionUrl;
+            var _a, _b;
+            var url = (_b = (_a = currentOptions.functionUrl) !== null && _a !== void 0 ? _a : KatApp.defaultOptions.functionUrl) !== null && _b !== void 0 ? _b : KatApp.functionUrl;
             var resourceArray = resources.split(",");
             // viewParts[ 0 ], viewParts[ 1 ]
             // folder: string, resource: string, optional Version
@@ -100,43 +100,76 @@ var KatApp = /** @class */ (function () {
             // TODO: Figure out how to make this asynchronous
             pipeline = resourceArray.map(function (r) {
                 return function () {
+                    var _a;
                     if (pipelineError !== undefined) {
                         next();
                         return;
                     }
                     try {
+                        console.log("downloading: " + r);
                         var resourceParts = r.split(":");
-                        var resource = resourceParts[1];
+                        var resource_1 = resourceParts[1];
                         var folder = resourceParts[0];
                         var version = resourceParts.length > 2 ? resourceParts[2] : (useTestVersion ? "Test" : "Live"); // can provide a version as third part of name if you want
                         // Template names often don't use .html syntax
-                        if (!resource.endsWith(".html") && !isScript) {
-                            resource += ".html";
+                        if (!resource_1.endsWith(".html") && !isScript) {
+                            resource_1 += ".html";
                         }
-                        var params = "?{Command:'KatAppResource',Resource:'" + resource + "',Folder:'" + folder + "',Version:'" + version + "'}";
-                        if (isScript) {
-                            // $.getScript(url + params) // Production version
-                            $.getScript("js/" + resource) // Debug version without having to upload to MgmtSite
-                                // $.ajax({ url: "js/" + resource, dataType: "script", cache: true }) // Trying to get browser caching working
-                                .done(function () { next(); })
-                                .fail(function (_jqXHR, textStatus) {
-                                pipelineError = "getResources failed requesting " + r + ":" + textStatus;
-                                next();
-                            });
-                        }
-                        else {
-                            // $.get(url + params)
-                            // Debug version without having to upload to MgmtSite
-                            $.get("templates/" + resource)
-                                .done(function (data) {
-                                resourceResults[r] = data;
-                                next();
-                            })
-                                .fail(function (_jqXHR, textStatus) {
-                                pipelineError = "getResources failed requesting " + r + ":" + textStatus;
-                                next();
-                            });
-                        }
+                        var params = {
+                            Command: 'KatAppResource',
+                            Resources: [
+                                {
+                                    Resource: resource_1,
+                                    Folder: folder,
+                                    Version: version
+                                }
+                            ]
+                        };
+                        var submit = (_a = currentOptions.submitCalculation) !== null && _a !== void 0 ? _a : function (_app, o, done, fail) {
+                            var _a, _b, _c, _d, _e;
+                            var ajaxConfig = {
+                                url: isScript
+                                    ? ((_a = currentOptions.debug) === null || _a === void 0 ? void 0 : _a.scriptLocation) !== undefined ? currentOptions.debug.scriptLocation + "/" + resource_1 : url // + JSON.stringify( params )
+                                    : ((_b = currentOptions.debug) === null || _b === void 0 ? void 0 : _b.templateLocation) !== undefined ? currentOptions.debug.templateLocation + "/" + resource_1 : url,
+                                data: ((_c = currentOptions.debug) === null || _c === void 0 ? void 0 : _c.scriptLocation) === undefined ? JSON.stringify(o) : undefined,
+                                method: ((_d = currentOptions.debug) === null || _d === void 0 ? void 0 : _d.scriptLocation) === undefined ? "POST" : undefined,
+                                dataType: ((_e = currentOptions.debug) === null || _e === void 0 ? void 0 : _e.scriptLocation) === undefined ? "json" : undefined,
+                                cache: false
+                            };
+                            $.ajax(ajaxConfig).done(done).fail(fail);
+                        };
+                        var submitFailed = function (_jqXHR, textStatus, _errorThrown) {
+                            pipelineError = "getResources failed requesting " + r + ":" + textStatus;
+                            next();
+                        };
+                        var submitDone = function (data) {
+                            var _a, _b, _c;
+                            if (data.payload !== undefined) {
+                                data = JSON.parse(data.payload);
+                            }
+                            console.log("downloaded " + r);
+                            // data.Content when request from service, just data when local files
+                            var resourceContent = (_b = (_a = data.Resources) === null || _a === void 0 ? void 0 : _a[0].Content) !== null && _b !== void 0 ? _b : data;
+                            if (isScript) {
+                                // If local script location is provided, doing the $.ajax code automatically 
+                                // injects/executes the javascript, no need to do it again
+                                if (((_c = currentOptions.debug) === null || _c === void 0 ? void 0 : _c.scriptLocation) === undefined && resourceContent !== undefined) {
+                                    $("script[rbl-script='true']").remove();
+                                    console.log("inject script");
+                                    // https://stackoverflow.com/a/56509649/166231
+                                    var script = document.createElement('script');
+                                    script.setAttribute("rbl-script", "true");
+                                    var content = resourceContent;
+                                    script.innerHTML = content;
+                                    document.querySelector('body').appendChild(script);
+                                }
+                            }
+                            else {
+                                resourceResults[r] = resourceContent;
+                            }
+                            next();
+                        };
+                        submit(application, params, submitDone, submitFailed);
                     }
                     catch (error) {
                         pipelineError = "getResources failed trying to request " + r + ":" + error;
@@ -163,10 +196,13 @@ var KatApp = /** @class */ (function () {
     KatApp.pageParameters = KatApp.readPageParameters();
     // Default Options (shim, rest of the options/features added from server plugin)
     KatApp.defaultOptions = {
-        traceVerbosity: TraceVerbosity.None,
+        debug: {
+            traceVerbosity: TraceVerbosity.None,
+            useTestPlugin: KatApp.pageParameters["testplugin"] === "1",
+            useTestView: KatApp.pageParameters["testview"] === "1",
+            saveFirstCalculationLocation: KatApp.pageParameters["save"]
+        },
         functionUrl: KatApp.functionUrl,
-        useTestPlugin: KatApp.pageParameters["testplugin"] === "1",
-        useTestView: KatApp.pageParameters["testview"] === "1"
     };
     // https://stackoverflow.com/a/2117523
     KatApp.generateId = function () {
@@ -183,12 +219,12 @@ var KatApp = /** @class */ (function () {
             this.id = id;
             // Take a copy of the options they pass in so same options aren't used in all plugin targets
             // due to a 'reference' to the object.
-            this.options = KatApp.extend({}, options);
+            this.options = KatApp.extend({}, KatApp.defaultOptions, options);
             this.element = element;
             this.element[0].KatApp = this;
         }
         KatAppPlugInShim.prototype.rebuild = function (options) {
-            this.options = KatApp.extend({}, options);
+            this.options = KatApp.extend(this.options, options);
         };
         KatAppPlugInShim.prototype.destroy = function () {
             // Remove from memory cache in case they call delete before the
@@ -258,6 +294,9 @@ var KatApp = /** @class */ (function () {
                 if (!this.KatApp) {
                     $.fn.KatApp.applicationFactory(KatApp.generateId(), $(this), options);
                 }
+                else if (options !== undefined) {
+                    this.KatApp.rebuild(options);
+                }
             });
         }
         else if (typeof options === 'string' && options[0] !== '_' && options !== 'init') {
@@ -279,24 +318,19 @@ var KatApp = /** @class */ (function () {
                 return this.each(function () {
                     var _a;
                     var instance = this.KatApp;
-                    if (options == "rebuild" && instance === undefined) {
-                        $.fn.KatApp.applicationFactory(KatApp.generateId(), $(this), args[0]);
+                    // No longer supporting this, see comment for needsCalculation in KatAppPlugInInterfaces.ts.  Just don't see the
+                    // need and given pattern of providing full blown 'app' after server loads script, don't want to have to 
+                    // support 'anything' on .KatApp() until onInitialized is completed.
+                    /*
+                    // If plugin isn't created yet and they call a method, just auto init for them
+                    if ( instance === undefined && typeof options === 'string' && $.inArray(options, autoInitMethods) != -1 ) {
+                        const appOptions = ( args.length >= 1 && typeof args[ 0 ] === "object" ? args[ 0 ] : undefined ) as KatAppOptions;
+                        instance = $.fn[pluginName].applicationFactory(KatApp.generateId(), $(this), appOptions);
                     }
-                    else {
-                        // No longer supporting this, see comment for needsCalculation in KatAppPlugInInterfaces.ts.  Just don't see the
-                        // need and given pattern of providing full blown 'app' after server loads script, don't want to have to 
-                        // support 'anything' on .KatApp() until onInitialized is completed.
-                        /*
-                        // If plugin isn't created yet and they call a method, just auto init for them
-                        if ( instance === undefined && typeof options === 'string' && $.inArray(options, autoInitMethods) != -1 ) {
-                            const appOptions = ( args.length >= 1 && typeof args[ 0 ] === "object" ? args[ 0 ] : undefined ) as KatAppOptions;
-                            instance = $.fn[pluginName].applicationFactory(KatApp.generateId(), $(this), appOptions);
-                        }
-                        */
-                        var objectType = (_a = instance === null || instance === void 0 ? void 0 : instance.constructor) === null || _a === void 0 ? void 0 : _a.name;
-                        if (instance !== undefined && (objectType === "KatAppPlugInShim" || objectType === "KatAppPlugIn") && typeof instance[options] === 'function') {
-                            instance[options].apply(instance, args); // eslint-disable-line prefer-spread
-                        }
+                    */
+                    var objectType = (_a = instance === null || instance === void 0 ? void 0 : instance.constructor) === null || _a === void 0 ? void 0 : _a.name;
+                    if (instance !== undefined && (objectType === "KatAppPlugInShim" || objectType === "KatAppPlugIn") && typeof instance[options] === 'function') {
+                        instance[options].apply(instance, args); // eslint-disable-line prefer-spread
                     }
                 });
             }
@@ -305,8 +339,8 @@ var KatApp = /** @class */ (function () {
     // 'In memory' application list until the real KatAppProvider.js script can be loaded from 
     // the CMS to properly register the applications
     $.fn.KatApp.plugInShims = [];
-    $.fn.KatApp.applicationFactory = function (id, element, options) {
-        var _a, _b, _c;
+    $.fn.KatApp.applicationFactory = $.fn.KatApp.debugApplicationFactory = function (id, element, options) {
+        var _a, _b, _c, _d, _e, _f;
         var shim = new KatAppPlugInShim(id, element, options);
         shim.trace("Starting factory", TraceVerbosity.Diagnostic);
         var applications = $.fn.KatApp.plugInShims;
@@ -314,8 +348,9 @@ var KatApp = /** @class */ (function () {
         // First time anyone has been called with .KatApp()
         if (applications.length === 1) {
             shim.trace("Loading KatAppProvider library...", TraceVerbosity.Detailed);
-            var useTestService = (_c = (_b = (_a = shim.options) === null || _a === void 0 ? void 0 : _a.useTestPlugin) !== null && _b !== void 0 ? _b : KatApp.defaultOptions.useTestPlugin) !== null && _c !== void 0 ? _c : false;
-            KatApp.getResources(undefined, "Global:KatAppProvider.js", useTestService, true, function (errorMessage) {
+            shim.trace("Downloading KatAppProvider.js from " + (((_a = shim.options.debug) === null || _a === void 0 ? void 0 : _a.scriptLocation) !== undefined ? shim.options.debug.scriptLocation + "/KatAppProvider.js" : shim.options.functionUrl), TraceVerbosity.Diagnostic);
+            var useTestService = (_f = (_d = (_c = (_b = shim.options) === null || _b === void 0 ? void 0 : _b.debug) === null || _c === void 0 ? void 0 : _c.useTestPlugin) !== null && _d !== void 0 ? _d : (_e = KatApp.defaultOptions.debug) === null || _e === void 0 ? void 0 : _e.useTestPlugin) !== null && _f !== void 0 ? _f : false;
+            KatApp.getResources(shim, shim.options, "Global:KatAppProvider.js", useTestService, true, function (errorMessage) {
                 if (errorMessage !== undefined) {
                     shim.trace("KatAppProvider library could not be loaded.", TraceVerbosity.Quiet);
                 }

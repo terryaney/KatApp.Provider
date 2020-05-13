@@ -18,8 +18,30 @@ interface JQuery {
 interface Function {
     plugInShims: KatAppPlugInShimInterface[];
     applicationFactory( id: string, element: JQuery, options: KatAppOptions): KatAppPlugInShimInterface;
+    // Debugging...let's me restore the original shim factory if I'm going to rebuild UI or script locations
+    debugApplicationFactory( id: string, element: JQuery, options: KatAppOptions): KatAppPlugInShimInterface;    
     templateOn( templateName: string, events: string, fn: TemplateOnDelegate ): void;
 
+    templatesUsedByAllApps: { 
+        [ key: string ]: { 
+            requested: boolean; 
+            data?: string; 
+            callbacks: Array<( errorMessage: string | undefined )=> void>; 
+        };
+    };
+    templateDelegates: {
+        Delegate: TemplateOnDelegate;
+        Template: string;
+        Events: string;
+    }[];
+    sharedData: { 
+        requesting: boolean;
+        lastRequested?: number;
+        data?: RBLeRESTServiceResult;
+        registeredToken?: string;
+        callbacks: Array<( errorMessage: string | undefined )=> void>; 
+    };
+    
     // Didn't want to use interface (see comments at bottom of file for the negative parts) and couldn't use
     // the 'class' implementation because that code only existed in closure.  So just use any.
     standardTemplateBuilderFactory( application: KatAppPlugInInterface ): any /*StandardTemplateBuilderInterface*/; // eslint-disable-line @typescript-eslint/no-explicit-any
@@ -53,29 +75,12 @@ interface CalculationInputTable
     Name: string;
     Rows: CalculationInputTableRow[];
 }
-interface RBLeServiceResults {
-    payload?: string; //if from l@w wrapper, escaped string returned
 
-    // Exception is only present if RBLe service threw exception and
-    // it was able to catch it and package up exception details
-    Exception?: {
-        Message: string;
-        StackTrace?: string;
-    };
-
-    Diagnostics?: JSON; // Should define interface for nested items
-    
-    // RBL is only present after successful calculation
-    RBL?: {
-        Profile: {
-            Data: {
-                TabDef: JSON;
-            };
-        };
-    };
-
-    // RegisteredToken is only present after successful registration
-    RegisteredToken?: string;
+interface RBLeRowWithId {
+    "@id": string;
+}
+interface RBLeDefaultRow extends RBLeRowWithId {
+    value?: string;
 }
 interface HtmlContentRow {
     "@id"?: string;
@@ -93,7 +98,7 @@ interface ListControlRow {
 interface ListRow {
     key: string;
     text: string;
-    visible?: number;
+    visible?: string;
 }
 interface SliderConfigurationRow {
     "@id": string;
@@ -106,6 +111,38 @@ interface SliderConfigurationRow {
     "pips-mode"?: string;
     "pips-values"?: string;
     "pips-density"?: string;
+}
+
+interface RBLeServiceResults {
+    payload?: string; //if from l@w wrapper, escaped string returned
+
+    // Exception is only present if RBLe service threw exception and
+    // it was able to catch it and package up exception details
+    Exception?: {
+        Message: string;
+        StackTrace?: string;
+    };
+
+    Diagnostics?: JSON; // Should define interface for nested items
+    
+    // Only present after successful 'get resource' call
+    Resources?: {
+        Resource: string,
+        Content: string,
+        DateLastModified: Date
+    }[];
+
+    // RBL is only present after successful calculation
+    RBL?: {
+        Profile: {
+            Data: {
+                TabDef: JSON;
+            };
+        };
+    };
+
+    // RegisteredToken is only present after successful registration
+    RegisteredToken?: string;
 }
 interface RBLeServiceCallback {
     ( data: RBLeServiceResults ): void;
@@ -145,7 +182,16 @@ interface JQueryFailCallback {
 
 interface KatAppOptions
 {
-    traceVerbosity?: TraceVerbosity;
+    debug?: {
+        traceVerbosity?: TraceVerbosity;
+        scriptLocation?: string;
+        templateLocation?: string;
+        saveFirstCalculationLocation?: string;        
+        refreshCalcEngine?: boolean; // expireCE=1 querystring
+        useTestCalcEngine?: boolean; // test=1 querystring
+        useTestView?: boolean; // testView=1 querystring
+        useTestPlugin?: boolean; // testPlugIn=1 querystring
+    }
 
     corsUrl?: string;
     functionUrl?: string;
@@ -181,16 +227,10 @@ interface KatAppOptions
     viewTemplates?: string;
     ajaxLoaderSelector?: string;
 
-    // Debugging flags that override query strings
-    refreshCalcEngine?: boolean; // expireCE=1 querystring
-    useTestCalcEngine?: boolean; // test=1 querystring
-    useTestView?: boolean; // testView=1 querystring
-    useTestPlugin?: boolean; // testPlugIn=1 querystring
-
     // Methods that might be overriden by angular/L@W hosts
     
     // If custom submit code is needed, can provide implementation here
-    submitCalculation?: ( appilcation: KatAppPlugInInterface, options: SubmitCalculationOptions, done: RBLeServiceCallback, fail: JQueryFailCallback )=> void;
+    submitCalculation?: ( appilcation: KatAppPlugInInterface, options: SubmitCalculationOptions | GetResourceOptions, done: RBLeServiceCallback, fail: JQueryFailCallback )=> void;
     // If client provides for a way to get registration data, can provide implementation here
     getData?: ( appilcation: KatAppPlugInInterface, options: KatAppOptions, done: RBLeRESTServiceResultCallback, fail: JQueryFailCallback )=> void;
     // If custom register data code is needed, can provide implementation here
@@ -232,11 +272,23 @@ interface KatAppOptions
     onCalculateEnd?: (this: HTMLElement, appilcation: KatAppPlugInInterface )=> void;
 }
 
+interface GetResourceOptions {
+    Command: string;
+    Resources:
+        {
+            Resource: string;
+            Folder: string;
+            Version: string;
+        }[];        
+}
+
 interface SubmitCalculationOptions
 {
     Data?: RBLeRESTServiceResult; // Passed in during registration or if non-session calcs being used
+    
     Inputs?: CalculationInputs; // Empty during Registration submissions
     InputTables?: CalculationInputTable[];
+
     Configuration: {
         // Used only in submit for session based calcs
         Token?: string;

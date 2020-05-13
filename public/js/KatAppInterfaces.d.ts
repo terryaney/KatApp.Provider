@@ -18,7 +18,27 @@ interface JQuery {
 interface Function {
     plugInShims: KatAppPlugInShimInterface[];
     applicationFactory(id: string, element: JQuery, options: KatAppOptions): KatAppPlugInShimInterface;
+    debugApplicationFactory(id: string, element: JQuery, options: KatAppOptions): KatAppPlugInShimInterface;
     templateOn(templateName: string, events: string, fn: TemplateOnDelegate): void;
+    templatesUsedByAllApps: {
+        [key: string]: {
+            requested: boolean;
+            data?: string;
+            callbacks: Array<(errorMessage: string | undefined) => void>;
+        };
+    };
+    templateDelegates: {
+        Delegate: TemplateOnDelegate;
+        Template: string;
+        Events: string;
+    }[];
+    sharedData: {
+        requesting: boolean;
+        lastRequested?: number;
+        data?: RBLeRESTServiceResult;
+        registeredToken?: string;
+        callbacks: Array<(errorMessage: string | undefined) => void>;
+    };
     standardTemplateBuilderFactory(application: KatAppPlugInInterface): any;
     highchartsBuilderFactory(application: KatAppPlugInInterface): any;
     ui: any;
@@ -44,21 +64,11 @@ interface CalculationInputTable {
     Name: string;
     Rows: CalculationInputTableRow[];
 }
-interface RBLeServiceResults {
-    payload?: string;
-    Exception?: {
-        Message: string;
-        StackTrace?: string;
-    };
-    Diagnostics?: JSON;
-    RBL?: {
-        Profile: {
-            Data: {
-                TabDef: JSON;
-            };
-        };
-    };
-    RegisteredToken?: string;
+interface RBLeRowWithId {
+    "@id": string;
+}
+interface RBLeDefaultRow extends RBLeRowWithId {
+    value?: string;
 }
 interface HtmlContentRow {
     "@id"?: string;
@@ -76,7 +86,7 @@ interface ListControlRow {
 interface ListRow {
     key: string;
     text: string;
-    visible?: number;
+    visible?: string;
 }
 interface SliderConfigurationRow {
     "@id": string;
@@ -89,6 +99,27 @@ interface SliderConfigurationRow {
     "pips-mode"?: string;
     "pips-values"?: string;
     "pips-density"?: string;
+}
+interface RBLeServiceResults {
+    payload?: string;
+    Exception?: {
+        Message: string;
+        StackTrace?: string;
+    };
+    Diagnostics?: JSON;
+    Resources?: {
+        Resource: string;
+        Content: string;
+        DateLastModified: Date;
+    }[];
+    RBL?: {
+        Profile: {
+            Data: {
+                TabDef: JSON;
+            };
+        };
+    };
+    RegisteredToken?: string;
 }
 interface RBLeServiceCallback {
     (data: RBLeServiceResults): void;
@@ -109,7 +140,16 @@ interface JQueryFailCallback {
     (jqXHR: JQuery.jqXHR, textStatus: string, errorThrown: string): void;
 }
 interface KatAppOptions {
-    traceVerbosity?: TraceVerbosity;
+    debug?: {
+        traceVerbosity?: TraceVerbosity;
+        scriptLocation?: string;
+        templateLocation?: string;
+        saveFirstCalculationLocation?: string;
+        refreshCalcEngine?: boolean;
+        useTestCalcEngine?: boolean;
+        useTestView?: boolean;
+        useTestPlugin?: boolean;
+    };
     corsUrl?: string;
     functionUrl?: string;
     registerDataWithService?: boolean;
@@ -127,11 +167,7 @@ interface KatAppOptions {
     view?: string;
     viewTemplates?: string;
     ajaxLoaderSelector?: string;
-    refreshCalcEngine?: boolean;
-    useTestCalcEngine?: boolean;
-    useTestView?: boolean;
-    useTestPlugin?: boolean;
-    submitCalculation?: (appilcation: KatAppPlugInInterface, options: SubmitCalculationOptions, done: RBLeServiceCallback, fail: JQueryFailCallback) => void;
+    submitCalculation?: (appilcation: KatAppPlugInInterface, options: SubmitCalculationOptions | GetResourceOptions, done: RBLeServiceCallback, fail: JQueryFailCallback) => void;
     getData?: (appilcation: KatAppPlugInInterface, options: KatAppOptions, done: RBLeRESTServiceResultCallback, fail: JQueryFailCallback) => void;
     registerData?: (appilcation: KatAppPlugInInterface, options: KatAppOptions, done: RBLeServiceCallback, fail: JQueryFailCallback) => void;
     onTemplatesProcessed?: (this: HTMLElement, appilcation: KatAppPlugInInterface, templates: string[]) => void;
@@ -144,6 +180,14 @@ interface KatAppOptions {
     onCalculation?: (this: HTMLElement, calculationResults: JSON, calcOptions: KatAppOptions, application: KatAppPlugInInterface) => void;
     onCalculationErrors?: (this: HTMLElement, key: string, message: string, exception: RBLeServiceResults | undefined, calcOptions: KatAppOptions, application: KatAppPlugInInterface) => void;
     onCalculateEnd?: (this: HTMLElement, appilcation: KatAppPlugInInterface) => void;
+}
+interface GetResourceOptions {
+    Command: string;
+    Resources: {
+        Resource: string;
+        Folder: string;
+        Version: string;
+    }[];
 }
 interface SubmitCalculationOptions {
     Data?: RBLeRESTServiceResult;

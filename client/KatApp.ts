@@ -36,10 +36,13 @@ class KatApp
     // Default Options (shim, rest of the options/features added from server plugin)
     static defaultOptions: KatAppOptions =
     {
-        traceVerbosity: TraceVerbosity.None,
+        debug: {
+            traceVerbosity: TraceVerbosity.None,
+            useTestPlugin: KatApp.pageParameters[ "testplugin"] === "1",
+            useTestView: KatApp.pageParameters[ "testview" ] === "1",
+            saveFirstCalculationLocation: KatApp.pageParameters[ "save" ]
+        },
         functionUrl: KatApp.functionUrl,
-        useTestPlugin: KatApp.pageParameters[ "testplugin"] === "1",
-        useTestView: KatApp.pageParameters[ "testview" ] === "1"    
     };
     
     // https://blog.logrocket.com/4-different-techniques-for-copying-objects-in-javascript-511e422ceb1e/
@@ -74,7 +77,7 @@ class KatApp
     };
 
     static trace( application: KatAppPlugInShimInterface | undefined, message: string, verbosity: TraceVerbosity = TraceVerbosity.Normal ): void {
-        const verbosityOption = application?.options?.traceVerbosity ?? KatApp.defaultOptions.traceVerbosity ?? TraceVerbosity.None;
+        const verbosityOption = application?.options?.debug?.traceVerbosity ?? KatApp.defaultOptions.debug?.traceVerbosity ?? TraceVerbosity.None;
         if ( verbosityOption >= verbosity ) {
 
             let item: JQuery | undefined = undefined;
@@ -112,9 +115,9 @@ class KatApp
         }
     }
 
-    static getResources( functionUrl: string | undefined, resources: string, useTestVersion: boolean, isScript: boolean, pipelineDone: PipelineCallback ): void {
+    static getResources( application: KatAppPlugInShimInterface, currentOptions: KatAppOptions, resources: string, useTestVersion: boolean, isScript: boolean, pipelineDone: PipelineCallback ): void {
         (function(): void {
-            const url = functionUrl ?? KatApp.defaultOptions.functionUrl ?? KatApp.functionUrl;
+            const url = currentOptions.functionUrl ?? KatApp.defaultOptions.functionUrl ?? KatApp.functionUrl;
             const resourceArray = resources.split(",");
     
             // viewParts[ 0 ], viewParts[ 1 ]
@@ -143,6 +146,7 @@ class KatApp
                     }
     
                     try {
+                        console.log("downloading: " + r);
                         const resourceParts = r.split(":");
                         let resource = resourceParts[ 1 ];
                         const folder = resourceParts[ 0 ];
@@ -153,31 +157,73 @@ class KatApp
                             resource += ".html";
                         }
         
-                        const params = "?{Command:'KatAppResource',Resource:'" + resource + "',Folder:'" + folder + "',Version:'" + version + "'}";
-            
-                        if ( isScript ) {
-                            // $.getScript(url + params) // Production version
-                            $.getScript("js/" + resource) // Debug version without having to upload to MgmtSite
-                            // $.ajax({ url: "js/" + resource, dataType: "script", cache: true }) // Trying to get browser caching working
-                            .done( () => { next(); } )
-                            .fail( ( _jqXHR: JQuery.jqXHR, textStatus: string) => {
-                                pipelineError = "getResources failed requesting " + r + ":" + textStatus;
-                                next();
-                            });
-                        }
-                        else {
-                            // $.get(url + params)
-                            // Debug version without having to upload to MgmtSite
-                            $.get("templates/" + resource)
-                                .done( data => {
-                                    resourceResults[ r ] = data;
-                                    next();
-                                } )
-                                .fail( ( _jqXHR: JQuery.jqXHR, textStatus: string) => {
-                                    pipelineError = "getResources failed requesting " + r + ":" + textStatus;
-                                    next();
-                                } );
-                        }
+                        const params: GetResourceOptions = {
+                            Command: 'KatAppResource',
+                            Resources: [
+                                {
+                                    Resource: resource,
+                                    Folder: folder,
+                                    Version: version
+                                }
+                            ]
+                        };
+
+                        const submit =
+                            currentOptions.submitCalculation ??
+                            function( _app, o, done, fail ): void {
+                                const ajaxConfig = 
+                                { 
+                                    url: isScript
+                                        ? currentOptions.debug?.scriptLocation !== undefined ? currentOptions.debug.scriptLocation + "/" + resource : url // + JSON.stringify( params )
+                                        : currentOptions.debug?.templateLocation !== undefined ? currentOptions.debug.templateLocation + "/" + resource : url, // + JSON.stringify( params )
+                                    data: currentOptions.debug?.scriptLocation === undefined ? JSON.stringify( o ) : undefined,
+                                    method: currentOptions.debug?.scriptLocation === undefined ? "POST" : undefined,
+                                    dataType: currentOptions.debug?.scriptLocation === undefined ? "json" : undefined,
+                                    cache: false
+                                };
+        
+                                $.ajax( ajaxConfig ).done( done ).fail(  fail );
+                            };
+                                
+                        const submitFailed: JQueryFailCallback = function( _jqXHR, textStatus, _errorThrown ): void {
+                            pipelineError = "getResources failed requesting " + r + ":" + textStatus;
+                            next();
+                        };
+
+                        const submitDone: RBLeServiceCallback = function( data ): void {
+                            if ( data.payload !== undefined ) {
+                                data = JSON.parse(data.payload);
+                            }
+                            
+                            console.log("downloaded " + r);
+                            
+                            // data.Content when request from service, just data when local files
+                            const resourceContent = data.Resources?.[ 0 ].Content ?? data as string;
+
+                            if ( isScript ) {
+                                // If local script location is provided, doing the $.ajax code automatically 
+                                // injects/executes the javascript, no need to do it again
+                                if ( currentOptions.debug?.scriptLocation === undefined && resourceContent !== undefined ) {
+
+                                    $("script[rbl-script='true']").remove()
+                                    console.log("inject script");
+
+                                    // https://stackoverflow.com/a/56509649/166231
+                                    var script = document.createElement('script');
+                                    script.setAttribute("rbl-script", "true");
+                                    var content = resourceContent;
+                                    script.innerHTML = content;
+                                    document.querySelector('body')!.appendChild(script);
+                                }
+                            }
+                            else {
+                                resourceResults[ r ] = resourceContent;
+                            }
+                            next(); 
+                        };
+
+                        submit( application as KatAppPlugInInterface, params, submitDone, submitFailed );
+                                                
                     } catch (error) {
                         pipelineError = "getResources failed trying to request " + r + ":" + error;
                         next();
@@ -218,13 +264,13 @@ class KatApp
 
             // Take a copy of the options they pass in so same options aren't used in all plugin targets
             // due to a 'reference' to the object.
-            this.options = KatApp.extend( {}, options );
+            this.options = KatApp.extend( {}, KatApp.defaultOptions, options );
             this.element = element;
             this.element[ 0 ].KatApp = this;
         }
     
         rebuild( options: KatAppOptions ): void {
-            this.options = KatApp.extend( {}, options );
+            this.options = KatApp.extend( this.options, options );
         }
 
         destroy(): void {
@@ -299,6 +345,9 @@ class KatApp
                 if (!this.KatApp) {
                     $.fn.KatApp.applicationFactory(KatApp.generateId(), $(this), options as KatAppOptions);
                 }
+                else if ( options !== undefined ) {
+                    this.KatApp.rebuild(options);
+                }
 
             });
 
@@ -326,29 +375,24 @@ class KatApp
 
                     const instance = this.KatApp;
 
-                    if ( options == "rebuild" && instance === undefined ) {
-                        $.fn.KatApp.applicationFactory(KatApp.generateId(), $(this), args[ 0 ] as KatAppOptions );
+                    // No longer supporting this, see comment for needsCalculation in KatAppPlugInInterfaces.ts.  Just don't see the
+                    // need and given pattern of providing full blown 'app' after server loads script, don't want to have to 
+                    // support 'anything' on .KatApp() until onInitialized is completed.
+
+                    /*
+                    // If plugin isn't created yet and they call a method, just auto init for them
+                    if ( instance === undefined && typeof options === 'string' && $.inArray(options, autoInitMethods) != -1 ) {
+                        const appOptions = ( args.length >= 1 && typeof args[ 0 ] === "object" ? args[ 0 ] : undefined ) as KatAppOptions;
+                        instance = $.fn[pluginName].applicationFactory(KatApp.generateId(), $(this), appOptions);
                     }
-                    else {
-                        // No longer supporting this, see comment for needsCalculation in KatAppPlugInInterfaces.ts.  Just don't see the
-                        // need and given pattern of providing full blown 'app' after server loads script, don't want to have to 
-                        // support 'anything' on .KatApp() until onInitialized is completed.
+                    */
 
-                        /*
-                        // If plugin isn't created yet and they call a method, just auto init for them
-                        if ( instance === undefined && typeof options === 'string' && $.inArray(options, autoInitMethods) != -1 ) {
-                            const appOptions = ( args.length >= 1 && typeof args[ 0 ] === "object" ? args[ 0 ] : undefined ) as KatAppOptions;
-                            instance = $.fn[pluginName].applicationFactory(KatApp.generateId(), $(this), appOptions);
-                        }
-                        */
+                    const objectType = instance?.constructor?.name;
 
-                        const objectType = instance?.constructor?.name;
-
-                        if (instance !== undefined && ( objectType === "KatAppPlugInShim" || objectType === "KatAppPlugIn") && typeof instance[options] === 'function') {
-                            instance[options].apply(instance, args); // eslint-disable-line prefer-spread
-                        }
+                    if (instance !== undefined && ( objectType === "KatAppPlugInShim" || objectType === "KatAppPlugIn") && typeof instance[options] === 'function') {
+                        instance[options].apply(instance, args); // eslint-disable-line prefer-spread
                     }
-                });
+               });
             }
         }
     };
@@ -356,7 +400,7 @@ class KatApp
     // 'In memory' application list until the real KatAppProvider.js script can be loaded from 
     // the CMS to properly register the applications
     $.fn.KatApp.plugInShims = [];
-    $.fn.KatApp.applicationFactory = function( id: string, element: JQuery, options: KatAppOptions ): KatAppPlugInShim {
+    $.fn.KatApp.applicationFactory = $.fn.KatApp.debugApplicationFactory = function( id: string, element: JQuery, options: KatAppOptions ): KatAppPlugInShim {
         const shim = new KatAppPlugInShim(id, element, options);
 
         shim.trace("Starting factory", TraceVerbosity.Diagnostic);
@@ -367,10 +411,11 @@ class KatApp
         // First time anyone has been called with .KatApp()
         if ( applications.length === 1 ) {
             shim.trace("Loading KatAppProvider library...", TraceVerbosity.Detailed);
+            shim.trace("Downloading KatAppProvider.js from " + ( shim.options.debug?.scriptLocation !== undefined ? shim.options.debug.scriptLocation + "/KatAppProvider.js" : shim.options.functionUrl ), TraceVerbosity.Diagnostic );
 
-            const useTestService = shim.options?.useTestPlugin ?? KatApp.defaultOptions.useTestPlugin ?? false;
+            const useTestService = shim.options?.debug?.useTestPlugin ?? KatApp.defaultOptions.debug?.useTestPlugin ?? false;
 
-            KatApp.getResources( undefined, "Global:KatAppProvider.js", useTestService, true,
+            KatApp.getResources( shim, shim.options, "Global:KatAppProvider.js", useTestService, true,
                 function( errorMessage ) {
                     if ( errorMessage !== undefined ) {
                         shim.trace("KatAppProvider library could not be loaded.", TraceVerbosity.Quiet);

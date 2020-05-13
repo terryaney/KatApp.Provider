@@ -1,0 +1,85 @@
+.debug {
+    border: solid red 1px;
+}
+.container {
+  background-color: white;
+  width: auto;
+  margin-left: 50px;
+}
+.sharkfin{
+  min-height: 450px;
+}
+.padding-20 {
+padding: 20px;
+}
+.savings, .hsa{
+    min-height_: 300px;
+}
+.allocation {
+min-height: 600px;
+}
+.myactions {
+  min-height: 150px;
+  background-color:#f8ecec;
+}
+.considerations {
+min-height: 150px;
+background-color: #e8f5ee
+}
+.rounded-lg {
+  border-radius: 10px !important;
+}
+
+/* bootstrap hack */
+.rounded-pill {
+border-radius: 50rem!important
+}
+.align-items-center {
+-ms-flex-align: center!important;
+align-items: center!important;
+vertical-align: middle;
+}
+.vertical-center_ {
+display: table-cell;
+vertical-align: middle;
+}
+
+.status-pill {
+  min-height: 40px;
+  padding-left: 20px;
+  color: white;
+}
+
+.status-pill div {
+  text-align: center;
+}
+.noUi-handle {
+  background: #013d79;
+}
+body {
+  background-color: white;
+  font-size_: 16px;
+}
+.highcharts-title {
+  font-family: "Helvetica Neue",Helvetica,Arial,sans-serif;
+  font-weight: bold;
+}
+
+.highcharts-legend-item, .highcharts-axis-labels, .highcharts-axis-title {
+font-family: "Helvetica Neue",Helvetica,Arial,sans-serif;
+}
+
+h4 {
+letter-spacing_: .1em;
+text-transform: uppercase;
+}
+h5 {
+font-weight: bold;
+}
+h6 {
+color: grey;
+}
+
+.slider-iReturn .noUi-connect, .redtail .noUi-connect {
+background-image: url("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAAECAIAAADAusJtAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAJcEhZcwAADsMAAA7DAcdvqGQAAAAUSURBVBhXY/i/cjETAwMDBDMwAAAgtgJSYMCo9QAAAABJRU5ErkJggg==");
+}

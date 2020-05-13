@@ -11,6 +11,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-datepicker/1.9.0/css/bootstrap-datepicker.min.css" integrity="sha256-siyOpF/pBWUPgIcQi17TLBkjvNgNQArcmwJB8YvkAgg=" crossorigin="anonymous" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/noUiSlider/10.0.0/nouislider.css" integrity="sha256-FosuD4ZAGQFqGAUliYx0rX1BEMviGzI3I0pjy3uIryA=" crossorigin="anonymous" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-select/1.13.12/css/bootstrap-select.min.css" integrity="sha256-l3FykDBm9+58ZcJJtzcFvWjBZNJO40HmvebhpHXEhC0=" crossorigin="anonymous" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/awesome-bootstrap-checkbox/0.3.7/awesome-bootstrap-checkbox.css" integrity="sha256-M9aoCVzUR/zsTFd2J1WmS91DpOOSbh3luX6xNnaY1QI=" crossorigin="anonymous" />
     <link href="https://stackpath.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css" rel="stylesheet" integrity="sha384-wvfXpqpZZVQGK6TAh5PVlGOfQNHSoD2xbE+QkPxCAFlNEevoEH3Sl0sibVcOQVnN" crossorigin="anonymous">
     <link rel="stylesheet" href="css/basic.bundle.css" />
     <link rel="stylesheet" href="css/dst.css" />
@@ -26,7 +27,60 @@
         </div>
     </header>
 
-    <div class='page-content FSA' rbl-trace-id="1" rbl-view="DST_Disability" rbl-calcengine="Buck_DecisionSupportDisability_SE" rbl-view-templates="standard_templates">
+    <div class="page-content">
+        <div class="container">
+            <div class='FSA' rbl-trace-id="1" rbl-view="DST_Disability">Loading modeling view...</div>
+            <div class='FSA' rbl-trace-id="2" rbl-view="DST_Disability">Loading modeling view...</div>
+        </div>
+
+        <div class="container">
+            <div class="row">
+                <div class="col-sm-6">
+                    <h3 class="mb-3">Debugging</h3>
+                    <div class="form-group vtraceLevel">
+                        <label for="traceLevel" class="control-label">Trace Verbosity</span> <a href="javascript:$('.rbl-logclass').empty();">clear</a></label>
+                        <select name="traceLevel" id="traceLevel" class="form-control selectpicker show-tick traceLevel" tabindex="-98">
+                            <option value="0">None</option>
+                            <option value="1">Quiet</option>
+                            <option value="2">Minimal</option>
+                            <option value="3" selected="true">Normal</option>
+                            <option value="4">Detailed</option>
+                            <option value="5">Diagnostic</option>             
+                        </select>
+                    </div>
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-sm-6 form-group validator-container checkbox-container vUseTestPlugin">
+                    <span class="checkbox abc-checkbox UseTestPlugin lUseTestPlugin">
+                        <input id="UseTestPlugin" type="checkbox" name="UseTestPlugin">
+                        <label for="UseTestPlugin">Use test PlugIn version</label>
+                    </span>
+                </div>
+                <div class="col-sm-6 form-group validator-container checkbox-container vUseTestView">
+                    <span class="checkbox abc-checkbox UseTestView lUseTestView">
+                        <input id="UseTestView" type="checkbox" name="UseTestView">
+                        <label for="UseTestView">Use test View/Template versions</label>
+                    </span>
+                </div>
+                <div class="col-sm-6 form-group validator-container checkbox-container vUseTestCalcEngine">
+                    <span class="checkbox abc-checkbox UseTestCalcEngine lUseTestCalcEngine">
+                        <input id="UseTestCalcEngine" type="checkbox" name="UseTestCalcEngine">
+                        <label for="UseTestCalcEngine">Use test CalcEngine</label>
+                    </span>
+                </div>
+                <div class="col-sm-6 form-group validator-container checkbox-container vUseLocalFiles">
+                    <span class="checkbox abc-checkbox UseLocalFiles lUseLocalFiles">
+                        <input id="UseLocalFiles" type="checkbox" name="UseLocalFiles">
+                        <label for="UseLocalFiles">Use local View/Template files</label>
+                    </span>
+                </div>
+                <div class="col-sm-12">
+                    <a class="btn btn-primary UpdateDebugOptions">Update</a>
+                    <div class="rbl-logclass"></div>                    
+                </div>
+            </div>
+        </div>
     </div>
 
     <footer class="footer">
@@ -49,10 +103,48 @@
 
     <script>
         $( function() {
-            KatApp.defaultOptions.traceVerbosity = TraceVerbosity.Normal;
-            KatApp.defaultOptions.useTestView = true;
-            KatApp.defaultOptions.refreshCalcEngine = true;
-            KatApp.defaultOptions.functionUrl = "https://qabtr.lifeatworkportal.com/Services/Evolution/CalculationFunction.ashx";
+            $("#traceLevel").selectpicker();
+            $(".UpdateDebugOptions").click(function() {
+
+                $(".FSA").KatApp("destroy"); // wouldn't need this usually on client site, but I'm going to reload/execute provider script so wanted everything destroyed
+                console.log("selectpickers to destroy: " + $(".FSA select.bootstrap-select").length);
+                $(".FSA select.bootstrap-select").selectpicker("destroy");
+                
+                const options = KatApp.extend( {}, KatApp.defaultOptions, { 
+                        debug: { 
+                            traceVerbosity: Number($("#traceLevel").val()),
+                            useTestView: $("#UseTestView").prop("checked"),
+                            useTestPlugin: $("#UseTestPlugin").prop("checked"),
+                            useTestCalcEngine: $("#UseTestCalcEngine").prop("checked"),
+                            scriptLocation: $("#UseLocalFiles").prop("checked") ? "js" : undefined,
+                            templateLocation: $("#UseLocalFiles").prop("checked") ? "templates" : undefined
+                        } 
+                    } );
+
+                // This is deleted each time the 'real' Provider js runs
+                $.fn.KatApp.plugInShims = [];
+                $.fn.KatApp.applicationFactory = $.fn.KatApp.debugApplicationFactory;
+
+                $(".FSA").KatApp(options);
+            });
+
+            KatApp.defaultOptions.debug.refreshCalcEngine = true;
+            KatApp.defaultOptions.debug.traceVerbosity = Number($("#traceLevel").val());
+
+            // KatApp.defaultOptions.debug.scriptLocation = "js";
+            // KatApp.defaultOptions.debug.templateLocation = "templates";
+            
+            // Access to XMLHttpRequest at 'https://qabtr.lifeatworkportal.com/Services/Evolution/CalculationFunction.ashx?{Command:%27KatAppResource%27,Resource:%27KatAppProvider.js%27,Folder:%27Global%27,Version:%27Live%27}' from origin 'http://localhost:1337' has been blocked by CORS policy: No 'Access-Control-Allow-Origin' header is present on the requested resource.
+            KatApp.defaultOptions.functionUrl = "https://secure.conduentapplications.com/Services/RBL/Evolution/CalculationFunction.ashx";
+            KatApp.defaultOptions.functionUrl = "http://localhost:54300/CalculationFunction.ashx";
+            KatApp.defaultOptions.functionUrl = "https://secure.conduentapplications.com/Services/RBL/Evolution_Test/CalculationFunction.ashx";
+            KatApp.defaultOptions.functionUrl = "https://btr.lifeatworkportal.com/Services/Evolution/CalculationFunction.ashx";
+
+            $("#UseTestView").prop("checked", KatApp.pageParameters[ "testview"] === "1")
+            $("#UseTestPlugin").prop("checked", KatApp.pageParameters[ "testplugin"] === "1")
+            $("#UseTestCalcEngine").prop("checked", KatApp.pageParameters[ "test"] === "1")
+            // saveFirstCalculationLocation: KatApp.pageParameters[ "save" ]
+
             $(".FSA").KatApp();
         });
     </script>

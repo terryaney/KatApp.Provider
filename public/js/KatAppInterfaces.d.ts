@@ -9,7 +9,6 @@ interface HTMLElement {
 }
 interface JQuery {
     KatApp(options?: KatAppOptions | string, ...args: Array<string | number | KatAppOptions>): JQuery | KatAppPlugInShimInterface | string | undefined;
-    carousel(frame: number): JQuery;
     selectpicker(): JQuery;
     selectpicker(option: string): string;
     selectpicker(propertyName: string, value: string): void;
@@ -78,6 +77,10 @@ interface HtmlContentRow {
     selector?: string;
     addclass?: string;
     removeclass?: string;
+}
+interface ValidationRow {
+    "@id"?: string;
+    text: string;
 }
 interface ListControlRow {
     "@id": string;
@@ -151,8 +154,7 @@ interface RegisterDataDelegate {
 interface KatAppOptions {
     debug?: {
         traceVerbosity?: TraceVerbosity;
-        scriptLocation?: string;
-        templateLocation?: string;
+        debugResourcesRoot?: string;
         saveFirstCalculationLocation?: string;
         refreshCalcEngine?: boolean;
         useTestCalcEngine?: boolean;
@@ -179,7 +181,6 @@ interface KatAppOptions {
     submitCalculation?: SubmitCalculationDelegate;
     getData?: GetDataDelegate;
     registerData?: RegisterDataDelegate;
-    onTemplatesProcessed?: (this: HTMLElement, appilcation: KatAppPlugInInterface, templates: string[]) => void;
     onInitialized?: (this: HTMLElement, appilcation: KatAppPlugInInterface) => void;
     onDestroyed?: (this: HTMLElement, appilcation: KatAppPlugInInterface) => void;
     onOptionsUpdated?: (this: HTMLElement, appilcation: KatAppPlugInInterface) => void;

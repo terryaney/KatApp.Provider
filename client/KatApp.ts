@@ -110,12 +110,15 @@ class KatApp
             else {
                 item = $("<div>" + displayDate + ": " + message + "</div>");
             }
-            console.log( item.text() /* remove any html formatting from message */ );
-            $(".rbl-logclass").append( item ); 
+            console.log( item.text() /* remove any html formatting from message */ );            
+            $(".rbl-logclass").append( item );
+            $('.rbl-logclass:not(.rbl-do-not-scroll)').each(function() {
+                this.scrollTop = this.scrollHeight;
+            })
         }
     }
 
-    static getResources( application: KatAppPlugInShimInterface, resources: string, useTestVersion: boolean, isScript: boolean, pipelineDone: PipelineCallback ): void {
+    static getResources( application: KatAppPlugInShimInterface, resources: string, useTestVersion: boolean, isScript: boolean, debugResourcesRoot: string | undefined, pipelineDone: PipelineCallback ): void {
         (function(): void {
             const currentOptions = application.options;
             const url = currentOptions.functionUrl ?? KatApp.defaultOptions.functionUrl ?? KatApp.functionUrl;
@@ -168,17 +171,17 @@ class KatApp
                             ]
                         };
 
+                        const localFolder = !isScript ? folder + "/" : "";
+
                         const submit =
                             currentOptions.submitCalculation ??
                             function( _app, o, done, fail ): void {
                                 const ajaxConfig = 
                                 { 
-                                    url: isScript
-                                        ? currentOptions.debug?.scriptLocation !== undefined ? currentOptions.debug.scriptLocation + "/" + resource : url // + JSON.stringify( params )
-                                        : currentOptions.debug?.templateLocation !== undefined ? currentOptions.debug.templateLocation + "/" + resource : url, // + JSON.stringify( params )
-                                    data: currentOptions.debug?.scriptLocation === undefined ? JSON.stringify( o ) : undefined,
-                                    method: currentOptions.debug?.scriptLocation === undefined ? "POST" : undefined,
-                                    dataType: currentOptions.debug?.scriptLocation === undefined ? "json" : undefined,
+                                    url: debugResourcesRoot !== undefined ? debugResourcesRoot + "/" + localFolder + resource : url, // + JSON.stringify( params )
+                                    data: debugResourcesRoot === undefined ? JSON.stringify( o ) : undefined,
+                                    method: debugResourcesRoot === undefined ? "POST" : undefined,
+                                    dataType: debugResourcesRoot === undefined ? "json" : undefined,
                                     cache: false
                                 };
         
@@ -206,7 +209,7 @@ class KatApp
                                 // injects/executes the javascript, no need to do it again
                                 const body = document.querySelector('body');
 
-                                if ( body !== undefined && body !== null && currentOptions.debug?.scriptLocation === undefined && resourceContent !== undefined ) {
+                                if ( body !== undefined && body !== null && debugResourcesRoot === undefined && resourceContent !== undefined ) {
 
                                     // Just keeping the markup a bit cleaner by only having one copy of the code
                                     $("script[rbl-script='true']").remove()
@@ -414,11 +417,16 @@ class KatApp
         // First time anyone has been called with .KatApp()
         if ( applications.length === 1 ) {
             shim.trace("Loading KatAppProvider library...", TraceVerbosity.Detailed);
-            shim.trace("Downloading KatAppProvider.js from " + ( shim.options.debug?.scriptLocation !== undefined ? shim.options.debug.scriptLocation + "/KatAppProvider.js" : shim.options.functionUrl ), TraceVerbosity.Diagnostic );
+
+            let debugResourcesRoot = shim.options.debug?.debugResourcesRoot;
+            if ( debugResourcesRoot !== undefined ) {
+                debugResourcesRoot += "/js";
+            }
+            shim.trace("Downloading KatAppProvider.js from " + debugResourcesRoot ?? shim.options.functionUrl, TraceVerbosity.Diagnostic );
 
             const useTestService = shim.options?.debug?.useTestPlugin ?? KatApp.defaultOptions.debug?.useTestPlugin ?? false;
 
-            KatApp.getResources( shim, "Global:KatAppProvider.js", useTestService, true,
+            KatApp.getResources( shim, "Global:KatAppProvider.js", useTestService, true, debugResourcesRoot,
                 function( errorMessage ) {
                     if ( errorMessage !== undefined ) {
                         shim.trace("KatAppProvider library could not be loaded.", TraceVerbosity.Quiet);

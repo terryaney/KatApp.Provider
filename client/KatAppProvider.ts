@@ -76,13 +76,13 @@
                 if ( application.options.ajaxLoaderSelector !== undefined ) {
                     $( application.options.ajaxLoaderSelector, application.element ).show();
                 }
-                $( ".RBLe .slider-control, .RBLe input", application.element ).attr("disabled", "true");
+                $( ".slider-control, input", application.element ).attr("disabled", "true");
             },
             onCalculateEnd: function( application: KatAppPlugIn ) {
                 if ( application.options.ajaxLoaderSelector !== undefined ) {
                     $( application.options.ajaxLoaderSelector, application.element ).fadeOut();
                 }
-                $( ".RBLe .slider-control, .RBLe input", application.element ).removeAttr("disabled");
+                $( ".slider-control, input", application.element ).removeAttr("disabled");
             },
 
             // Default to just an empty (non-data) package
@@ -284,12 +284,17 @@
 
                 // Made all pipeline functions variables just so that I could search on name better instead of 
                 // simply a delegate added to the pipeline array.
-                const getApplicationView = function(): void { 
+                const loadView = function(): void { 
                     if ( viewId !== undefined ) {
                         that.trace(viewId + " requested from CMS.", TraceVerbosity.Detailed);
-                        that.trace("Downloading " + viewId + " from " + ( that.options.debug?.templateLocation !== undefined ? that.options.debug.templateLocation + "/" + viewId : functionUrl ), TraceVerbosity.Diagnostic );
+                        
+                        let debugResourcesRoot = that.options.debug?.debugResourcesRoot;
+                        if ( debugResourcesRoot !== undefined ) {
+                            debugResourcesRoot += "/views";
+                        }
+                        that.trace("Downloading " + viewId + " from " + debugResourcesRoot ?? functionUrl, TraceVerbosity.Diagnostic );
 
-                        KatApp.getResources( that, viewId, useTestView, false,
+                        KatApp.getResources( that, viewId, useTestView, false, debugResourcesRoot,
                             ( errorMessage, results ) => {                                
 
                                 pipelineError = errorMessage;
@@ -336,7 +341,7 @@
                         next( 0 );
                     }
                 };
-                const getApplicationTemplates = function(): void { 
+                const loadTemplates = function(): void { 
                     // Total number of resources already requested that I have to wait for
                     let otherResourcesNeeded = 0;
                     
@@ -390,8 +395,13 @@
 
                         const toFetchList = toFetch.join(",");
                         that.trace(toFetchList + " requested from CMS.", TraceVerbosity.Detailed);
-                        that.trace("Downloading " + toFetchList + " from " + ( that.options.debug?.templateLocation !== undefined ? that.options.debug.templateLocation + "/" : functionUrl ), TraceVerbosity.Diagnostic );
-                        KatApp.getResources( that, toFetchList, useTestView, false,
+
+                        let debugResourcesRoot = that.options.debug?.debugResourcesRoot;
+                        if ( debugResourcesRoot !== undefined ) {
+                            debugResourcesRoot += "/templates";
+                        }
+                        that.trace("Downloading " + toFetchList + " from " + debugResourcesRoot ?? functionUrl, TraceVerbosity.Diagnostic );
+                        KatApp.getResources( that, toFetchList, useTestView, false, debugResourcesRoot,
                             ( errorMessage, data ) => {                                
 
                                 if ( errorMessage === undefined ) {
@@ -428,7 +438,7 @@
                         next( 1 ); // jump to finish
                     }
                 };
-                const injectApplicationTemplates = function(): void {
+                const injectTemplates = function(): void {
                         
                     if ( resourceResults != null ) {
                         // For the templates *this app* downloaded, inject them into markup                        
@@ -460,7 +470,7 @@
 
                     next( 0 );
                 };
-                const initializeApplication = function(): void {
+                const finalize = function(): void {
                     
                     if ( pipelineError === undefined ) {
                         
@@ -496,12 +506,27 @@
                             }
                         });
 
-                        if ( requiredTemplates.length > 0 ) {
-                            that.ui.triggerEvent( "onTemplatesProcessed", that, requiredTemplates );
-                        }
+                        // This used to be inside Standard_Template.templateOn, but since it is standard and so common, just moved it here.
+                        // Original code:
+                        /*
+                            $.fn.KatApp.templateOn("{thisTemplate}", "onInitialized.RBLe", function (event, application) {
+                                application.trace("Processing onInitialized.RBLe for Template [{thisTemplate}]...", TraceVerbosity.Normal);
 
-                        that.ui.bindEvents();
-            
+                                if (KatApp.pageParameters["debugkatapp"] === "t.{thisTemplate}.onInitialized") {
+                                    debugger;
+                                }
+
+                                const templateBuilder = $.fn.KatApp.standardTemplateBuilderFactory( application );
+                                templateBuilder.processInputs();
+                                templateBuilder.processCarousels();
+                            });
+                        */
+                        const templateBuilder: StandardTemplateBuilder = $.fn.KatApp.standardTemplateBuilderFactory( that );
+                        // Process data-* attributes and bind events
+                        templateBuilder.processUI();
+
+                        that.ui.bindCalculationInputs();
+
                         that.ui.triggerEvent( "onInitialized", that );
 
                         if ( that.options.runConfigureUICalculation ) {
@@ -518,10 +543,10 @@
                 };
 
                 pipeline.push( 
-                    getApplicationView,
-                    getApplicationTemplates,
-                    injectApplicationTemplates,
-                    initializeApplication
+                    loadView,
+                    loadTemplates,
+                    injectTemplates,
+                    finalize
                 );
     
                 // Start the pipeline
@@ -530,7 +555,7 @@
         }
 
         rebuild( options: KatAppOptions ): void {
-            this.ui.unbindEvents();
+            this.ui.unbindCalculationInputs();
             this.ui.triggerEvent( "onDestroyed", this );
             this.init( options );
         }
@@ -762,8 +787,30 @@
                                 that.ui.triggerEvent( "onConfigureUICalculation", that.results, currentOptions, that );
                             }
 
+                            // This used to be inside Standard_Template.templateOn, but since it is standard and so common, just moved it here.
+                            // Original code:
+                            /*
+                                $.fn.KatApp.templateOn("{thisTemplate}", "onCalculation.RBLe", function (event, calculationResults, calcOptions, application) {
+                                    application.trace("Processing onCalculation.RBLe for Template [{thisTemplate}]...", TraceVerbosity.Normal );
+
+                                    if (KatApp.pageParameters["debugkatapp"] === "t.{thisTemplate}.onCalculation") {
+                                        debugger;
+                                    }
+
+                                    const templateBuilder = $.fn.KatApp.standardTemplateBuilderFactory( application );
+
+                                    // First processInputs/processCarousels in case any were injected by ejs-markup
+                                    templateBuilder.processInputs();
+                                    templateBuilder.processCarousels();
+                                    templateBuilder.processHighcharts();
+                                });
+                            */
+                            const templateBuilder: StandardTemplateBuilder = $.fn.KatApp.standardTemplateBuilderFactory( that );
+                            templateBuilder.processUI();
+
                             that.ui.triggerEvent( "onCalculation", that.results, currentOptions, that );
             
+                            $(".needsRBLeConfig", that.element).removeClass("needsRBLeConfig");
                         }
                         else {
                             that.rble.setResults( undefined );
@@ -800,15 +847,15 @@
         destroy(): void {
             this.element.removeAttr("rbl-application-id");
             this.element.off(".RBLe");
-            this.ui.unbindEvents();
+            this.ui.unbindCalculationInputs();
             this.ui.triggerEvent( "onDestroyed", this );
             delete this.element[ 0 ].KatApp;
         }
 
         updateOptions( options: KatAppOptions ): void { 
             this.options = KatApp.extend( {}, this.options, options )
-            this.ui.unbindEvents();
-            this.ui.bindEvents();
+            this.ui.unbindCalculationInputs();
+            this.ui.bindCalculationInputs();
             this.ui.triggerEvent( "onOptionsUpdated", this );
         }
 
@@ -974,7 +1021,7 @@
             }        
         }
 
-        bindEvents(): void {
+        bindCalculationInputs(): void {
             const application = this.application;
             if ( application.options.inputSelector !== undefined ) {
                 // Store for later so I can unregister no matter what the selector is at time of 'destroy'
@@ -990,7 +1037,7 @@
             }
         }
 
-        unbindEvents(): void {
+        unbindCalculationInputs(): void {
             const element = this.application.element;
             const inputSelector = element.data("katapp-input-selector");
 
@@ -1746,9 +1793,125 @@
             });
         }
 
+        processCharts(): void {
+            const view = this.application.element;
+            const highchartsBuilder: HighchartsBuilder = $.fn.KatApp.highchartsBuilderFactory( this.application );
+
+            if ( typeof Highcharts !== "object" && $("[rbl-tid='chart-highcharts']", view).length > 0 ) {
+                this.application.trace("Highcharts javascript is not present.", TraceVerbosity.None);
+                return;
+            }            
+
+            $("[rbl-tid='chart-highcharts']", view).each(function () {
+                highchartsBuilder.buildChart( $(this) );
+            });
+        }
+
+        private addValidationItem(summary: JQuery<HTMLElement>, input: JQuery<HTMLElement> | undefined, message: string): void {
+            let ul = $("div:first ul", summary);
+            if (ul.length === 0) {
+                $("div:first", summary).append("<br/><ul></ul>");
+                ul = $("div:first ul", summary);
+            }
+
+            // Backward compat to remove validation with same id as input, but have changed it to 
+            // id + Error so that $(id) doesn't get confused picking the li item.
+            const inputName = input !== undefined ? this.ui.getInputName(input) : "undefined";
+            $("div:first ul li." + inputName + ", div:first ul li." + inputName + "Error", summary).remove();
+            ul.append("<li class=\"rble " + inputName + "Error\">" + message + "</li>");
+
+            if ( input !== undefined ) {
+                const isWarning = summary.hasClass("ModelerWarnings");
+                const validationClass = isWarning ? "warning" : "error";
+                const valContainer = input.closest('.validator-container').addClass(validationClass);
+    
+                const errorSpan = valContainer.find('.error-msg')
+                    .attr('data-original-title', message)
+                    .empty();
+    
+                $("<label/>").css("display", "inline-block")
+                    .addClass(validationClass)
+                    .text(message)
+                    .appendTo(errorSpan);
+            }
+        };
+
+        private processValidationRows(summary: JQuery<HTMLElement>, errors: ValidationRow[]): void {
+			// Remove all RBLe client side created errors since they would be added back
+			$(" div:first ul li.rble", summary).remove();
+
+			if (errors.length > 0) {
+                errors.forEach( r => {
+                    const selector = this.ui.getJQuerySelector( r["@id"] );
+                    const input = selector !== undefined ? $(selector, this.application.element) : undefined;
+					this.addValidationItem(summary, input, r.text);
+                });
+
+				if ($(" div:first ul li", summary).length === 0) {
+					summary.hide();
+				}
+				else {
+                    summary.show();
+					$("div:first", summary).show();
+				}
+			}
+			else if ($("div:first ul li:not(.rble)", summary).length === 0) {
+                // Some server side calcs add error messages..if only errors are those from client calcs, I can remove them here
+                summary.hide();
+                $("div:first", summary).hide();
+			}
+        }
+
+        processValidations(): void {
+            const view = this.application.element;
+            const warnings = this.getResultTable<ValidationRow>( "warnings" );
+            const errors = this.getResultTable<ValidationRow>( "errors" );
+            const errorSummary = $(".ModelerValidationTable", view);
+            let warningSummary = $(".ModelerWarnings", view);
+
+            // TODO: See Bootstrap.Validation.js - need to process server side validation errors to highlight the input correctly
+            
+            if (warnings.length > 0 && warningSummary.length === 0 && errorSummary.length > 0 ) {
+                    // Warning display doesn't exist yet, so add it right before the error display...shouldn't have errors and warnings at same time currently...
+                    warningSummary = $("<div class=\"ModelerWarnings\"><div class=\"alert alert-warning\" role=\"alert\"><p><span class=\"glyphicon glyphicon glyphicon-warning-sign\" aria-hidden=\"true\"></span> <span class=\"sr-only\">Warnings</span> Please review the following warnings: </p></div></div>");
+                    $(warningSummary).insertBefore(errorSummary);
+            }            
+
+            $('.validator-container.error:not(.server)', view).removeClass('error');
+            $('.validator-container.warning:not(.server)', view).removeClass('warning');
+
+            this.processValidationRows(warningSummary, warnings);
+            this.processValidationRows(errorSummary, errors);
+
+            if ( this.application.inputs?.iConfigureUI === 1 ) {
+            /*
+                // Scroll target will probably need some work
+				if ($(".ModelerWarnings.alert div:first ul li", view).length > 0 && warnings.length > 0) {
+					$('html, body').animate({
+						scrollTop: $(".ModelerWarnings.alert", view).offset().top - 30
+					}, 1000);
+				}
+				else if ($(".ModelerValidationTable.alert div:first ul li", view).length > 0 && errors.length > 0) {
+					$('html, body').animate({
+						scrollTop: $(".ModelerValidationTable.alert", view).offset().top - 30
+					}, 1000);
+				}
+            */
+            }
+        }
+
         processSliders(): void {
             const sliderRows = this.getResultTable<SliderConfigurationRow>( "ejs-sliders" );
             const application = this.application;
+            
+            const configIds: ( string | null )[] = sliderRows.map( r => r["@id"]);
+            $("[rbl-tid='input-slider']", application.element)
+                .filter( ( i, r ) => {
+                    return configIds.indexOf( r.getAttribute( "data-inputname" ) ) < 0;
+                })
+                .each( ( i, r ) => {
+                    application.trace("RBL WARNING: No slider configuration can be found for " + r.getAttribute( "data-inputname" ) + ".", TraceVerbosity.None);
+                });
 
             if ( typeof noUiSlider !== "object" && sliderRows.length > 0 ) {
                 application.trace("noUiSlider javascript is not present.", TraceVerbosity.None);
@@ -2008,6 +2171,10 @@
                 this.processDefaults();
 
                 this.processDisabled();
+
+                this.processCharts();
+
+                this.processValidations();
 
                 application.trace( "Finished processing results for " + calcEngineName + "(" + version + ").", TraceVerbosity.Normal );
 
@@ -2437,7 +2604,7 @@
             return el;
         }
 
-        processCarousels(): void {
+        private processCarousels(): void {
             const that: StandardTemplateBuilder = this;
             const view = this.application.element;
 
@@ -2466,15 +2633,6 @@
             $('.carousel-control-group', view).each(function () {
                 const el = $(this);
                 that.buildCarousel( el );
-            });
-        }
-
-        processHighcharts(): void {
-            const view = this.application.element;
-            const highchartsBuilder: HighchartsBuilder = $.fn.KatApp.highchartsBuilderFactory( this.application );
-
-            $("[rbl-tid='chart-highcharts']", view).each(function () {
-                highchartsBuilder.buildChart( $(this) );
             });
         }
 
@@ -2618,7 +2776,7 @@
         }
 
         buildDropdowns( view: JQuery<HTMLElement> ): void {
-            this.application.trace("Processing onTemplatesProcessed.RBLe: " + $('[rbl-tid="input-dropdown"]:not([data-kat-initialized="true"]) .selectpicker', view).length + " selectpicker controls.", TraceVerbosity.Diagnostic);
+            this.application.trace("Processing buildDropdowns: " + $('[rbl-tid="input-dropdown"]:not([data-kat-initialized="true"]) .selectpicker', view).length + " selectpicker controls.", TraceVerbosity.Diagnostic);
 
             $('[rbl-tid="input-dropdown"]:not([data-kat-initialized="true"])', view).each( function() {
                 const el = $(this);
@@ -2686,7 +2844,137 @@
             });
         }
 
-        processInputs(): void {
+        processUI(): void {
+            this.processInputs();
+            this.processCarousels();
+            this.processHelpTips();
+        }
+
+        private processHelpTips(): void {
+            // Couldn't include the Bootstrap.Tooltips.js file b/c it's selector hits entire page, and we want
+            // to be localized to our view.
+            const selector = "[data-toggle='tooltip'], [data-toggle='popover'], .tooltip-trigger, .tooltip-text-trigger, .error-trigger";
+            const application = this.application;
+
+            if ( typeof $.fn.popover !== "function" && $(selector, application.element).length > 0 ) {
+                this.application.trace("Bootstrap popover/tooltip javascript is not present.", TraceVerbosity.None);
+                return;
+            }
+
+            $(selector, application.element)
+                .not(".rbl-help, [data-kat-initialized='true']")
+                .each( function() {
+                    const isErrorValidator = $(this).hasClass('error-msg');
+                    const placement = $(this).data('placement') || "top";
+                    const trigger = $(this).data('trigger') || "hover";
+                    const container = $(this).data('container') || "body";
+
+                    var options: Bootstrap.PopoverOptions = {
+                        html: true,
+                        trigger: trigger,
+                        container: container,
+                        template:
+                            isErrorValidator
+                                ? '<div class="tooltip error kat-app-css" role="tooltip"><div class="tooltip-arrow"></div><div class="tooltip-inner"></div></div>'
+                                : '<div class="popover kat-app-css" role="tooltip"><div class="arrow"></div><h3 class="popover-title"></h3><div class="popover-content"></div></div>',
+                        placement: function (tooltip, trigger) {
+                            // Add a class to the .popover element
+            
+                            // http://stackoverflow.com/a/19875813/166231
+                            var dataClass = $(trigger).data('class');
+                            if (dataClass != undefined) {
+                                $(tooltip).addClass(dataClass);
+                            }
+            
+                            // Did they specify a data-width?
+                            dataClass = $(trigger).data('width');
+                            if (dataClass != undefined) {
+                                // context is for popups, tooltip-inner is for tooltips (bootstrap css has max-width in css)
+                                $(tooltip).add($(".tooltip-inner", tooltip))
+                                            .css("width", dataClass)
+                                            .css("max-width", dataClass);
+            
+                            }
+            
+                            return placement;
+                        },
+                        title: function () {
+                            var titleSelector = $(this).data('content-selector');
+                            return titleSelector != undefined
+                                ? $(titleSelector + "Title").text()
+                                : "";
+                        },
+                        content: function () {
+                            // See if they specified data-content directly on trigger element.
+                            var dataContent = $(this).data('content');
+                            var dataContentSelector = $(this).data('content-selector');
+                            var content = dataContent == undefined
+                                ? dataContentSelector == undefined ? $(this).next().html() : $(dataContentSelector).html()
+                                : dataContent;
+            
+                            // Replace {Label} in content with the trigger provided...used in Error Messages
+                            var labelFix = $(this).data("label-fix");
+            
+                            if (labelFix != undefined) {
+                                content = content.replace(/\{Label}/g, $("." + labelFix).html());
+                            }
+            
+                            return content;
+                        }
+                    };   
+
+                    if (isErrorValidator) {
+                        $(this).tooltip(options)
+                            .on('inserted.bs.tooltip', function (e) {
+                                var isWarning = $("label.warning", $(e.target)).length == 1;
+                                if (isWarning) {
+                                    var templateId = "#" + $(e.target).attr("aria-describedby");
+                                    $(templateId, application.element).removeClass("error").addClass("warning");
+                                }
+                            });
+                    }
+                    else {
+                        $(this).popover(options)
+                                .on('inserted.bs.popover', function () {
+                                    var current = this;
+                                    $("[data-toggle='popover'][data-trigger='click']", application.element).each(function () {
+                                        try {
+                                            if (this != current && $(this).data("bs.popover").tip().hasClass("in")) {
+                                                $(this).popover('hide');
+                                            }
+                                        } catch {
+                                            console.log(this.outerHTML);
+                                        }
+                                    });
+                                });
+                    }
+                                
+                })
+                .attr("data-kat-initialized", "true");
+
+            if ( application.element.attr("data-kat-initialized-tooltip") != "true" ) {
+                application.element.click(function (e) {
+                    // http://stackoverflow.com/a/17375353/166231
+                    if (!$(e.target).is(".popover-title, .popover-content")) {
+                        $("[data-toggle='popover'][data-trigger='click']", application.element).each(function () {
+                            if (e == undefined || (this != e.target /* text anchors with help */ && this != e.target.parentElement /* glyphicons with help */)) {
+                                var popOver = $(this).data("bs.popover"); // Just in case the tooltip hasn't been configured
+                                if (popOver != undefined && popOver.tip().hasClass("in")) {
+                                    // Trigger the click to close the popover if it is visible,
+                                    // using popover("hide") for some reason 'corrupted' something so that
+                                    // if you clicked on an icon (to show), then on the page (to hide all), the next
+                                    // click on an icon (to show) didn't trigger the show/shown events, only  the
+                                    // hide/hidden.  For some reason, popover('hide') works above in the inserted event.
+                                    $(this).click();
+                                }
+                            }
+                        });
+                    }
+                }).attr("data-kat-initialized-tooltip", "true")
+            }
+        }
+
+        private processInputs(): void {
             const view = this.application.element;
 
             this.buildDropdowns( view );
@@ -2724,5 +3012,6 @@
     // Destroy plugInShims
     delete $.fn.KatApp.plugInShims;
 })(jQuery, window, document);
-// Needed this line to make sure that I could debug in VS Code since this was dynamically loaded with $.getScript() - https://stackoverflow.com/questions/9092125/how-to-debug-dynamically-loaded-javascript-with-jquery-in-the-browsers-debugg
+// Needed this line to make sure that I could debug in VS Code since this was dynamically loaded 
+// with $.getScript() - https://stackoverflow.com/questions/9092125/how-to-debug-dynamically-loaded-javascript-with-jquery-in-the-browsers-debugg
 //# sourceURL=KatAppProvider.js

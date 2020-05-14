@@ -1,0 +1,33 @@
+﻿/* Styles that are used by all test harnesses */
+body.borderless div.page-content {
+  padding-top: 20px;
+  padding-bottom: 20px;
+}
+
+.page-content .container {
+  background-color: #fff;
+}
+
+@media (min-width: 768px) {
+  body.borderless div.page-content .container {
+    padding-left: 0;
+    padding-right: 0;
+  }
+}
+
+.rbl-logclass {
+  padding: 0 20px;
+  margin-bottom: 20px;
+  border: solid 1px black;
+  max-height: 160px;
+  overflow-y: auto;
+}
+
+.toast {
+  position: fixed;
+  bottom: 5px;
+  left: 2%;
+  width: 50%;
+  margin: 0 25% 0 25%;
+  z-index: 999;
+}

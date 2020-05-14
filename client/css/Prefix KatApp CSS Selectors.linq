@@ -23,12 +23,62 @@ foreach( var file in new DirectoryInfo( @"C:\BTR\KATApp\client\css" ).GetFiles( 
 			var mq = rule as CSSParser.ExtendedLESSParser.ContentSections.MediaQuery;
 			var s = rule as CSSParser.ExtendedLESSParser.ContentSections.Selector;
 
+			Func<IEnumerable<ICSSFragment>, string[]> getStyles = fragments =>
+			{
+				var styles = new List<string>();
+				
+				string currentProperty = null;
+				string currentStyle = null;
+
+				Action addStyle = () =>
+				{
+					if (currentProperty != null)
+					{
+						styles.Add($"{currentProperty}: {currentStyle};");
+					}
+				};
+
+				foreach( var f in fragments )
+				{
+					var n = f as StylePropertyName;
+					var v = f as StylePropertyValue;
+					
+					if ( !string.IsNullOrEmpty( n?.Value ) && !n.Value.StartsWith( "base64" ) )
+					{
+						addStyle();
+						currentProperty = n.Value;
+					}
+					else if ( n?.Value.StartsWith( "base64" ) ?? false )
+					{
+						currentStyle += n.Value;
+					}
+					else if ( currentStyle?.StartsWith( "url(data" ) ?? false )
+					{
+						currentStyle += ( ":" + v.ValueSegments.First() + ";" );
+					}
+					else
+					{
+						currentStyle = string.Join(" ", v.ValueSegments);
+					}
+				}
+				addStyle();
+				
+				return styles.ToArray();
+			};
+			
 			if (s != null)
 			{
-				var selectors = string.Join("," + Environment.NewLine, s.Selectors.Select(i => $".kat-app-css {i.Value}"));
-				var styles =
-					s.ChildFragments.Where(f => f as StylePropertyValue != null).Cast<StylePropertyValue>()
-					 .Select(f => $"{f.Property.Value}: {string.Join(" ", f.ValueSegments)};");
+				var selectors = 
+					string.Join(
+						"," + Environment.NewLine, 
+						s.Selectors.Select(i => i.Value.StartsWith( "body" )
+							? i.Value.Split( ' ' )[ 0 ] + " .kat-app-css " + string.Join( " ", i.Value.Split( ' ' ).Skip( 1 ) ) 
+							: i.Value.StartsWith( ".kat-app-css." ) // Anything that can be 'nested' but I want to scope my css, add this prefix (i.e. tooltips are only 'one at a time' and appended to the 'body' so I can't wrap inside kat-app-css)
+								? i.Value
+								: $".kat-app-css {i.Value}" 
+						)
+					);
+				var styles = getStyles( s.ChildFragments );
 
 				output.WriteLine($"{selectors} {{" + Environment.NewLine +
 				$"\t{string.Join(Environment.NewLine + "\t", styles)}" + Environment.NewLine +
@@ -43,11 +93,12 @@ foreach( var file in new DirectoryInfo( @"C:\BTR\KATApp\client\css" ).GetFiles( 
 				{
 					var selectors =
 						string.Join("," + Environment.NewLine + "\t",
-							cf.Selectors.Select(j => ".kat-app-css " + j.Value)
+							cf.Selectors.Select(i => i.Value.StartsWith("body")
+								? i.Value.Split(' ')[0] + " .kat-app-css " + string.Join(" ", i.Value.Split(' ').Skip(1))
+								: $".kat-app-css {i.Value}"
+							)
 						);
-					var styles =
-						cf.ChildFragments.Where(f => f as StylePropertyValue != null).Cast<StylePropertyValue>()
-								.Select(f => $"{f.Property.Value}: {string.Join(" ", f.ValueSegments)};");
+					var styles = getStyles(cf.ChildFragments);
 
 					output.Write(
 						$"\t{selectors} {{" + Environment.NewLine +
@@ -60,4 +111,6 @@ foreach( var file in new DirectoryInfo( @"C:\BTR\KATApp\client\css" ).GetFiles( 
 			}
 		}
 	}
+	
+	File.ReadAllText( outputFileName ).Dump();
 }

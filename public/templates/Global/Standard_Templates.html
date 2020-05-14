@@ -150,51 +150,7 @@
 </rbl-template>
 
 <script>
-  Highcharts.setOptions({
-    "lang": {
-      "decimalPoint": ".",
-      "thousandsSep": ",",
-      "months": ["January", "February", "March", "April", "May", "June", "July", "August",
-        "September", "October", "November", "December", ""
-      ],
-      "shortMonths": ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov",
-        "Dec", ""
-      ],
-      "weekdays": ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"],
-      "shortWeekdays": ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"]
-    }
-  });
-
   if (KatApp.pageParameters["debugkatapp"] === "t.{thisTemplate}") {
     debugger;
   }
-
-  $.fn.KatApp.templateOn("{thisTemplate}", "onTemplatesProcessed.RBLe", function (event, application) {
-    application.trace("Processing onTemplatesProcessed.RBLe for Template [{thisTemplate}]...", TraceVerbosity.Normal);
-
-    if (KatApp.pageParameters["debugkatapp"] === "t.{thisTemplate}.onTemplatesProcessed") {
-        debugger;
-    }
-
-    // Process data-* attributes and bind events
-    const templateBuilder = $.fn.KatApp.standardTemplateBuilderFactory( application );
-    templateBuilder.processInputs();
-    templateBuilder.processCarousels();
-  });
-
-  $.fn.KatApp.templateOn("{thisTemplate}", "onCalculation.RBLe", function (event, calculationResults, calcOptions, application) {
-    application.trace("Processing onCalculation.RBLe for Template [{thisTemplate}]...", TraceVerbosity.Normal );
-
-    if (KatApp.pageParameters["debugkatapp"] === "t.{thisTemplate}.onCalculation") {
-        debugger;
-    }
-
-    const templateBuilder = $.fn.KatApp.standardTemplateBuilderFactory( application );
-
-    // First processInputs/processCarousels in case any were injected by ejs-markup
-    templateBuilder.processInputs();
-    templateBuilder.processCarousels();
-    templateBuilder.processHighcharts();
-  });
-
 </script>

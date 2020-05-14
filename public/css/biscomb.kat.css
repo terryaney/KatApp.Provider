@@ -53,7 +53,7 @@
 .kat-app-css .noUi-handle {
 	background: #013d79;
 }
-.kat-app-css body {
+body .kat-app-css  {
 	background-color: white;
 	font-size_: 16px;
 }

@@ -46,8 +46,8 @@ interface Function {
     // the 'class' implementation because that code only existed in closure.  So just use any.
     standardTemplateBuilderFactory( application: KatAppPlugInInterface ): any /*StandardTemplateBuilderInterface*/; // eslint-disable-line @typescript-eslint/no-explicit-any
     highchartsBuilderFactory( application: KatAppPlugInInterface ): any /*StandardTemplateBuilderInterface*/; // eslint-disable-line @typescript-eslint/no-explicit-any
-    ui: any /*UIUtilitiesInterface*/; // eslint-disable-line @typescript-eslint/no-explicit-any
-    rble: any /*RBLeUtilitiesInterface*/; // eslint-disable-line @typescript-eslint/no-explicit-any
+    ui( application: KatAppPlugInInterface ): any /*UIUtilitiesInterface*/; // eslint-disable-line @typescript-eslint/no-explicit-any
+    rble( application: KatAppPlugInInterface, uiUtilities: any ): any /*RBLeUtilitiesInterface*/; // eslint-disable-line @typescript-eslint/no-explicit-any
     // highcharts: any /*HighchartsBuilder*/; // eslint-disable-line @typescript-eslint/no-explicit-any
 }
 
@@ -127,9 +127,9 @@ interface RBLeServiceResults {
     
     // Only present after successful 'get resource' call
     Resources?: {
-        Resource: string,
-        Content: string,
-        DateLastModified: Date
+        Resource: string;
+        Content: string;
+        DateLastModified: Date;
     }[];
 
     // RBL is only present after successful calculation
@@ -172,6 +172,15 @@ interface JQueryFailCallback {
     ( jqXHR: JQuery.jqXHR, textStatus: string, errorThrown: string ): void;
 }
 
+interface SubmitCalculationDelegate {
+    ( appilcation: KatAppPlugInInterface, options: SubmitCalculationOptions | GetResourceOptions, done: RBLeServiceCallback, fail: JQueryFailCallback ): void;
+}
+interface GetDataDelegate {
+    ( appilcation: KatAppPlugInInterface, options: KatAppOptions, done: RBLeRESTServiceResultCallback, fail: JQueryFailCallback ): void;
+}
+interface RegisterDataDelegate {
+    ( appilcation: KatAppPlugInInterface, options: KatAppOptions, done: RBLeServiceCallback, fail: JQueryFailCallback ): void;
+}
 // Note: Everything in this class is currently nullable so I can do partial option updates and default options, but
 // I should probably just make some partial interfaces, and correctly set nullability on members
 
@@ -191,7 +200,7 @@ interface KatAppOptions
         useTestCalcEngine?: boolean; // test=1 querystring
         useTestView?: boolean; // testView=1 querystring
         useTestPlugin?: boolean; // testPlugIn=1 querystring
-    }
+    };
 
     corsUrl?: string;
     functionUrl?: string;
@@ -230,11 +239,11 @@ interface KatAppOptions
     // Methods that might be overriden by angular/L@W hosts
     
     // If custom submit code is needed, can provide implementation here
-    submitCalculation?: ( appilcation: KatAppPlugInInterface, options: SubmitCalculationOptions | GetResourceOptions, done: RBLeServiceCallback, fail: JQueryFailCallback )=> void;
+    submitCalculation?: SubmitCalculationDelegate;
     // If client provides for a way to get registration data, can provide implementation here
-    getData?: ( appilcation: KatAppPlugInInterface, options: KatAppOptions, done: RBLeRESTServiceResultCallback, fail: JQueryFailCallback )=> void;
+    getData?: GetDataDelegate;
     // If custom register data code is needed, can provide implementation here
-    registerData?: ( appilcation: KatAppPlugInInterface, options: KatAppOptions, done: RBLeServiceCallback, fail: JQueryFailCallback )=> void;
+    registerData?: RegisterDataDelegate;
     
     // TODO - do we even want to support these?  Maybe just always do events like all bootstrap components do.
     //      $("app").on("onInitialized.rble", function() { } ).KatApp();

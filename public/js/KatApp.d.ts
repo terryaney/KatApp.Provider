@@ -15,5 +15,5 @@ declare class KatApp {
     static extend(target: object, ...sources: (object | undefined)[]): object;
     static generateId: () => string;
     static trace(application: KatAppPlugInShimInterface | undefined, message: string, verbosity?: TraceVerbosity): void;
-    static getResources(application: KatAppPlugInShimInterface, currentOptions: KatAppOptions, resources: string, useTestVersion: boolean, isScript: boolean, pipelineDone: PipelineCallback): void;
+    static getResources(application: KatAppPlugInShimInterface, resources: string, useTestVersion: boolean, isScript: boolean, pipelineDone: PipelineCallback): void;
 }

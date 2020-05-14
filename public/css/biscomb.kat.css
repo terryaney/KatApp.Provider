@@ -1,0 +1,82 @@
+.kat-app-css .debug {
+	border: solid red 1px;
+}
+.kat-app-css .container {
+	background-color: white;
+	width: auto;
+	margin-left: 50px;
+}
+.kat-app-css .sharkfin {
+	min-height: 450px;
+}
+.kat-app-css .padding-20 {
+	padding: 20px;
+}
+.kat-app-css .savings,
+.kat-app-css .hsa {
+	min-height_: 300px;
+}
+.kat-app-css .allocation {
+	min-height: 600px;
+}
+.kat-app-css .myactions {
+	min-height: 150px;
+	background-color: #f8ecec;
+}
+.kat-app-css .considerations {
+	min-height: 150px;
+	background-color: #e8f5ee;
+}
+.kat-app-css .rounded-lg {
+	border-radius: 10px !important;
+}
+.kat-app-css .rounded-pill {
+	border-radius: 50rem!important;
+}
+.kat-app-css .align-items-center {
+	-ms-flex-align: center!important;
+	align-items: center!important;
+	vertical-align: middle;
+}
+.kat-app-css .vertical-center_ {
+	display: table-cell;
+	vertical-align: middle;
+}
+.kat-app-css .status-pill {
+	min-height: 40px;
+	padding-left: 20px;
+	color: white;
+}
+.kat-app-css .status-pill div {
+	text-align: center;
+}
+.kat-app-css .noUi-handle {
+	background: #013d79;
+}
+.kat-app-css body {
+	background-color: white;
+	font-size_: 16px;
+}
+.kat-app-css .highcharts-title {
+	font-family: "Helvetica Neue",Helvetica,Arial,sans-serif;
+	font-weight: bold;
+}
+.kat-app-css .highcharts-legend-item,
+.kat-app-css .highcharts-axis-labels,
+.kat-app-css .highcharts-axis-title {
+	font-family: "Helvetica Neue",Helvetica,Arial,sans-serif;
+}
+.kat-app-css h4 {
+	letter-spacing_: .1em;
+	text-transform: uppercase;
+}
+.kat-app-css h5 {
+	font-weight: bold;
+}
+.kat-app-css h6 {
+	color: grey;
+}
+.kat-app-css .slider-iReturn .noUi-connect,
+.kat-app-css .redtail .noUi-connect {
+	background-image: url("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAAECAIAAADAusJtAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAJcEhZcwAADsMAAA7DAcdvqGQAAAAUSURBVBhXY/i/cjETAwMDBDMwAAAgtgJSYMCo9QAAAABJRU5ErkJggg==");
+}

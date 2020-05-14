@@ -63,7 +63,7 @@ class KatApp
 
             })
         })
-        return target
+        return target;
     };
 
     // https://stackoverflow.com/a/2117523
@@ -115,8 +115,9 @@ class KatApp
         }
     }
 
-    static getResources( application: KatAppPlugInShimInterface, currentOptions: KatAppOptions, resources: string, useTestVersion: boolean, isScript: boolean, pipelineDone: PipelineCallback ): void {
+    static getResources( application: KatAppPlugInShimInterface, resources: string, useTestVersion: boolean, isScript: boolean, pipelineDone: PipelineCallback ): void {
         (function(): void {
+            const currentOptions = application.options;
             const url = currentOptions.functionUrl ?? KatApp.defaultOptions.functionUrl ?? KatApp.functionUrl;
             const resourceArray = resources.split(",");
     
@@ -146,7 +147,6 @@ class KatApp
                     }
     
                     try {
-                        console.log("downloading: " + r);
                         const resourceParts = r.split(":");
                         let resource = resourceParts[ 1 ];
                         const folder = resourceParts[ 0 ];
@@ -182,11 +182,14 @@ class KatApp
                                     cache: false
                                 };
         
+                                // Need to use .ajax isntead of .getScript/.get to get around CORS problem
+                                // and to also conform to using the submitCalculation wrapper by L@W.
                                 $.ajax( ajaxConfig ).done( done ).fail(  fail );
                             };
                                 
                         const submitFailed: JQueryFailCallback = function( _jqXHR, textStatus, _errorThrown ): void {
                             pipelineError = "getResources failed requesting " + r + ":" + textStatus;
+                            console.log( _errorThrown );
                             next();
                         };
 
@@ -195,25 +198,25 @@ class KatApp
                                 data = JSON.parse(data.payload);
                             }
                             
-                            console.log("downloaded " + r);
-                            
                             // data.Content when request from service, just data when local files
                             const resourceContent = data.Resources?.[ 0 ].Content ?? data as string;
 
                             if ( isScript ) {
                                 // If local script location is provided, doing the $.ajax code automatically 
                                 // injects/executes the javascript, no need to do it again
-                                if ( currentOptions.debug?.scriptLocation === undefined && resourceContent !== undefined ) {
+                                const body = document.querySelector('body');
 
+                                if ( body !== undefined && body !== null && currentOptions.debug?.scriptLocation === undefined && resourceContent !== undefined ) {
+
+                                    // Just keeping the markup a bit cleaner by only having one copy of the code
                                     $("script[rbl-script='true']").remove()
-                                    console.log("inject script");
 
                                     // https://stackoverflow.com/a/56509649/166231
-                                    var script = document.createElement('script');
+                                    const script = document.createElement('script');
                                     script.setAttribute("rbl-script", "true");
-                                    var content = resourceContent;
+                                    const content = resourceContent;
                                     script.innerHTML = content;
-                                    document.querySelector('body')!.appendChild(script);
+                                    body.appendChild(script);
                                 }
                             }
                             else {
@@ -415,7 +418,7 @@ class KatApp
 
             const useTestService = shim.options?.debug?.useTestPlugin ?? KatApp.defaultOptions.debug?.useTestPlugin ?? false;
 
-            KatApp.getResources( shim, shim.options, "Global:KatAppProvider.js", useTestService, true,
+            KatApp.getResources( shim, "Global:KatAppProvider.js", useTestService, true,
                 function( errorMessage ) {
                     if ( errorMessage !== undefined ) {
                         shim.trace("KatAppProvider library could not be loaded.", TraceVerbosity.Quiet);

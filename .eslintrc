@@ -1,6 +1,10 @@
 {
     "parser": "@typescript-eslint/parser",
     "extends": [
+        /*
+        "eslint:recommended",
+        "plugin:@typescript-eslint/eslint-recommended",
+        */
         "plugin:@typescript-eslint/recommended"
     ],
     "rules": {
@@ -10,6 +14,7 @@
             "before": false,
             "after": true
         }],
+        // "@typescript-eslint/no-use-before-define": 0, // Want 'important' classes/code at beginning of file to find it quicker
         "@typescript-eslint/no-this-alias": [ "error", {
             "allowedNames": [ "self", "that" ] // Allow `const self = this`; `[]` by default
         }]        

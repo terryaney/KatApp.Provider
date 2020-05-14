@@ -41,8 +41,8 @@ interface Function {
     };
     standardTemplateBuilderFactory(application: KatAppPlugInInterface): any;
     highchartsBuilderFactory(application: KatAppPlugInInterface): any;
-    ui: any;
-    rble: any;
+    ui(application: KatAppPlugInInterface): any;
+    rble(application: KatAppPlugInInterface, uiUtilities: any): any;
 }
 interface HighchartsTooltipFormatterContextObject {
     y: number;
@@ -139,6 +139,15 @@ interface PipelineCallback {
 interface JQueryFailCallback {
     (jqXHR: JQuery.jqXHR, textStatus: string, errorThrown: string): void;
 }
+interface SubmitCalculationDelegate {
+    (appilcation: KatAppPlugInInterface, options: SubmitCalculationOptions | GetResourceOptions, done: RBLeServiceCallback, fail: JQueryFailCallback): void;
+}
+interface GetDataDelegate {
+    (appilcation: KatAppPlugInInterface, options: KatAppOptions, done: RBLeRESTServiceResultCallback, fail: JQueryFailCallback): void;
+}
+interface RegisterDataDelegate {
+    (appilcation: KatAppPlugInInterface, options: KatAppOptions, done: RBLeServiceCallback, fail: JQueryFailCallback): void;
+}
 interface KatAppOptions {
     debug?: {
         traceVerbosity?: TraceVerbosity;
@@ -167,9 +176,9 @@ interface KatAppOptions {
     view?: string;
     viewTemplates?: string;
     ajaxLoaderSelector?: string;
-    submitCalculation?: (appilcation: KatAppPlugInInterface, options: SubmitCalculationOptions | GetResourceOptions, done: RBLeServiceCallback, fail: JQueryFailCallback) => void;
-    getData?: (appilcation: KatAppPlugInInterface, options: KatAppOptions, done: RBLeRESTServiceResultCallback, fail: JQueryFailCallback) => void;
-    registerData?: (appilcation: KatAppPlugInInterface, options: KatAppOptions, done: RBLeServiceCallback, fail: JQueryFailCallback) => void;
+    submitCalculation?: SubmitCalculationDelegate;
+    getData?: GetDataDelegate;
+    registerData?: RegisterDataDelegate;
     onTemplatesProcessed?: (this: HTMLElement, appilcation: KatAppPlugInInterface, templates: string[]) => void;
     onInitialized?: (this: HTMLElement, appilcation: KatAppPlugInInterface) => void;
     onDestroyed?: (this: HTMLElement, appilcation: KatAppPlugInInterface) => void;

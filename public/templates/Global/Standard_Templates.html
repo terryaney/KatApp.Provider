@@ -52,18 +52,23 @@
   <li data-slide-to="{_index0}" class=""></li>
 </rbl-template>
 
+<rbl-template tid="validation-summary">
+  <div class="ModelerValidationTable alert alert-danger" role="alert" title="Please review the following issues:" style="display: none;">
+    <p><strong>Please review the following issues:</strong></p>
+  </div>
+</rbl-template>
+
 <!-- Input templates -->
 <!--
   Should I process similiar 'data-*' items as Bootstrap* server controls?
   1) HideLabel
-  2) DisplayOnly (bootstrap label basically)
   3) LabelCss
   4) HelpContent/HelpPlacement/HelpIcon/Bootstrap4 glyph or no?
   5) InputCss
   6) FormGroupCss
   
   Should I process data-* attributes on slider
-  1) everything that CAN come from the config?
+  1) Can 'make' a slider from only data-* attributes?
 -->
 <rbl-template tid="input-textbox">
   <div class="form-group v{inputname}">
@@ -77,7 +82,8 @@
       </a>
     </label>
     <div class="validator-container"> 
-      <input name="{inputname}" _id="{inputname}" type="text" class="form-control {inputname}">
+      <input name="{inputname}" id="{inputname}" type="text" class="form-control {inputname}">
+      <div class="{inputname}DisplayOnly"></div>
       <span class="error-msg" data-toggle="tooltip" data-placement="top auto"></span>      
     </div>
     <div class="h{inputname}Title" style="display: none;"></div>
@@ -97,7 +103,7 @@
       </a>
     </label>
     <div class="validator-container"> 
-      <select name="{inputname}" id_="{inputname}" class="form-control bootstrap-select show-tick {inputname}" tabindex="-98">
+      <select name="{inputname}" id="{inputname}" class="form-control bootstrap-select show-tick {inputname}" tabindex="-98">
       </select>
       <span class="error-msg" data-toggle="tooltip" data-placement="top auto"></span>      
     </div>
@@ -119,7 +125,7 @@
     </label>
     <div class="validator-container"> 
       <div class="slider-control slider-{inputname}" data-slider-type="nouislider"></div>
-      <input name="{inputname}" type="text" id_="{inputname}" class="form-control {inputname}" style="display: none" />
+      <input name="{inputname}" type="text" id="{inputname}" class="form-control {inputname}" style="display: none" />
       <span class="error-msg" data-toggle="tooltip" data-placement="top auto"></span>      
     </div>
     <div class="h{inputname}Title" style="display: none;"></div>
@@ -130,7 +136,7 @@
 <rbl-template tid="input-checkbox">
   <div class="form-group validator-container checkbox-container v{inputname}">
     <span class="checkbox abc-checkbox {inputname} l{inputname}">
-      <input id_="{inputname}" type="checkbox" name="{inputname}">
+      <input id="{inputname}" type="checkbox" name="{inputname}">
       <label for="{inputname}"></label>
     </span>
     <a style="display: none;" class="vh{inputname} help-icon-anchor" role="button" tabindex="0" data-toggle="popover" data-trigger="click" data-content-selector=".h{inputname}" data-placement="top">

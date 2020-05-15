@@ -1257,7 +1257,7 @@
                     $(this).html(value);
                 }
                 else {
-                    application.trace("RBL WARNING: no data returned for rbl-value=" + el.attr('rbl-value'), TraceVerbosity.Minimal);
+                    application.trace("<b style='color: Red;'>RBL WARNING</b>: no data returned for rbl-value=" + el.attr('rbl-value'), TraceVerbosity.Minimal);
                 }
             });
         };
@@ -1285,10 +1285,10 @@
                         ? [(_d = that.getResultValue(rblSourceTableParts[0], rblSourceTableParts[1], rblSourceTableParts[2])) !== null && _d !== void 0 ? _d : "unknown"]
                         : [(_e = that.getResultValueByColumn(rblSourceTableParts[0], rblSourceTableParts[1], rblSourceTableParts[2], rblSourceTableParts[3])) !== null && _e !== void 0 ? _e : "unknown"];
                     if (templateContent_1 === undefined) {
-                        application.trace("RBL WARNING: Template content could not be found: [" + tid + "].", TraceVerbosity.Minimal);
+                        application.trace("<b style='color: Red;'>RBL WARNING</b>: Template content could not be found: [" + tid + "].", TraceVerbosity.Minimal);
                     }
                     else if (rblSourceParts_1 === undefined || rblSourceParts_1.length === 0) {
-                        application.trace("RBL WARNING: no rbl-source data", TraceVerbosity.Quiet);
+                        application.trace("<b style='color: Red;'>RBL WARNING</b>: no rbl-source data", TraceVerbosity.Quiet);
                     }
                     else if (rblSourceParts_1.length === 1 || rblSourceParts_1.length === 3) {
                         //table in array format.  Clear element, apply template to all table rows and .append
@@ -1310,7 +1310,7 @@
                             });
                         }
                         else {
-                            application.trace("RBL WARNING: no data returned for rbl-source=" + el.attr('rbl-source'), TraceVerbosity.Normal);
+                            application.trace("<b style='color: Red;'>RBL WARNING</b>: no data returned for rbl-source=" + el.attr('rbl-source'), TraceVerbosity.Normal);
                         }
                     }
                     else if (rblSourceParts_1.length === 2) {
@@ -1319,7 +1319,7 @@
                             el.html(templateContent_1.format(row));
                         }
                         else {
-                            application.trace("RBL WARNING: no data returned for rbl-source=" + el.attr('rbl-source'), TraceVerbosity.Normal);
+                            application.trace("<b style='color: Red;'>RBL WARNING</b>: no data returned for rbl-source=" + el.attr('rbl-source'), TraceVerbosity.Normal);
                         }
                     }
                     else if (rblSourceParts_1.length === 3) {
@@ -1328,7 +1328,7 @@
                             el.html(templateContent_1.format({ "value": value }));
                         }
                         else {
-                            application.trace("RBL WARNING: no data returned for rbl-source=" + el.attr('rbl-source'), TraceVerbosity.Normal);
+                            application.trace("<b style='color: Red;'>RBL WARNING</b>: no data returned for rbl-source=" + el.attr('rbl-source'), TraceVerbosity.Normal);
                         }
                     }
                 }
@@ -1362,7 +1362,7 @@
                     }
                 }
                 else {
-                    application.trace("RBL WARNING: no data returned for rbl-display=" + el.attr('rbl-display'), TraceVerbosity.Normal);
+                    application.trace("<b style='color: Red;'>RBL WARNING</b>: no data returned for rbl-display=" + el.attr('rbl-display'), TraceVerbosity.Normal);
                 }
             });
             // Legacy, might not be needed
@@ -1582,6 +1582,7 @@
             var errors = this.getResultTable("errors");
             var errorSummary = $(".ModelerValidationTable", view);
             var warningSummary = $(".ModelerWarnings", view);
+            // TODO: See Bootstrap.Validation.js - need to process server side validation errors to highlight the input correctly
             if (warnings.length > 0 && warningSummary.length === 0 && errorSummary.length > 0) {
                 // Warning display doesn't exist yet, so add it right before the error display...shouldn't have errors and warnings at same time currently...
                 warningSummary = $("<div class=\"ModelerWarnings\"><div class=\"alert alert-warning\" role=\"alert\"><p><span class=\"glyphicon glyphicon glyphicon-warning-sign\" aria-hidden=\"true\"></span> <span class=\"sr-only\">Warnings</span> Please review the following warnings: </p></div></div>");
@@ -1609,16 +1610,19 @@
         };
         RBLeUtilities.prototype.processSliders = function () {
             var _this = this;
+            var _a;
             var sliderRows = this.getResultTable("ejs-sliders");
             var application = this.application;
-            var configIds = sliderRows.map(function (r) { return r["@id"]; });
-            $("[rbl-tid='input-slider']", application.element)
-                .filter(function (i, r) {
-                return configIds.indexOf(r.getAttribute("data-inputname")) < 0;
-            })
-                .each(function (i, r) {
-                application.trace("RBL WARNING: No slider configuration can be found for " + r.getAttribute("data-inputname") + ".", TraceVerbosity.None);
-            });
+            if (((_a = application.inputs) === null || _a === void 0 ? void 0 : _a.iConfigureUI) === 1) {
+                var configIds_1 = sliderRows.map(function (r) { return r["@id"]; });
+                $("[rbl-tid='input-slider']", application.element)
+                    .filter(function (i, r) {
+                    return configIds_1.indexOf(r.getAttribute("data-inputname")) < 0;
+                })
+                    .each(function (i, r) {
+                    application.trace("<b style='color: Red;'>RBL WARNING</b>: No slider configuration can be found for " + r.getAttribute("data-inputname") + ".", TraceVerbosity.None);
+                });
+            }
             if (typeof noUiSlider !== "object" && sliderRows.length > 0) {
                 application.trace("noUiSlider javascript is not present.", TraceVerbosity.None);
                 return;
@@ -1628,7 +1632,7 @@
                 var id = config["@id"];
                 var sliderJQuery = $(".slider-" + id, application.element);
                 if (sliderJQuery.length !== 1) {
-                    application.trace("RBL WARNING: No slider div can be found for " + id + ".", TraceVerbosity.Minimal);
+                    application.trace("<b style='color: Red;'>RBL WARNING</b>: No slider div can be found for " + id + ".", TraceVerbosity.Minimal);
                 }
                 else {
                     var minValue = Number(config.min);
@@ -2211,6 +2215,21 @@
                 that.buildCarousel(el);
             });
         };
+        StandardTemplateBuilder.prototype.buildCheckboxes = function (view) {
+            $('[rbl-tid="input-checkbox"]:not([data-kat-initialized="true"])', view).each(function () {
+                var el = $(this);
+                var id = el.data("inputname");
+                var label = el.data("label");
+                var checked = el.data("checked");
+                if (label !== undefined) {
+                    $("span.l" + id + " label", el).html(label);
+                }
+                if (checked) {
+                    $("span." + id + " input", el).prop("checked", true);
+                }
+                el.attr("data-kat-initialized", "true");
+            });
+        };
         StandardTemplateBuilder.prototype.buildTextBoxes = function (view) {
             $('[rbl-tid="input-textbox"]:not([data-kat-initialized="true"])', view).each(function () {
                 var _a, _b;
@@ -2220,16 +2239,18 @@
                 var label = el.data("label");
                 var prefix = el.data("prefix");
                 var suffix = el.data("suffix");
-                var placeholder = el.data("placeholder");
+                var placeHolder = el.data("placeholder");
                 var maxlength = el.data("maxlength");
-                var autocomplete = el.data("autocomplete");
+                var autoComplete = el.data("autocomplete") !== false;
                 var value = el.data("value");
+                var displayOnly = el.data("displayonly") === true;
                 if (label !== undefined) {
                     $("span.l" + id, el).html(label);
                 }
                 var input = $("input[name='" + id + "']", el);
-                if (placeholder !== undefined) {
-                    input.attr("placeholder", placeholder);
+                var displayOnlyLabel = $("div." + id + "DisplayOnly", el);
+                if (placeHolder !== undefined) {
+                    input.attr("placeholder", placeHolder);
                 }
                 if (maxlength !== undefined) {
                     input.attr("maxlength", maxlength);
@@ -2243,93 +2264,100 @@
                     input.replaceWith($('<textarea name="' + id + '" rows="' + rows + '" _id="' + id + '" class="form-control ' + id + '"></textarea>'));
                     input = $("textarea[name='" + id + "']", el);
                 }
-                if (autocomplete === "false" || inputType === "password") {
+                if (autoComplete || inputType === "password") {
                     input.attr("autocomplete", "off");
                 }
                 if (value !== undefined) {
                     input.val(value);
                 }
                 var validatorContainer = $(".validator-container", el);
-                if (inputType === "date") {
-                    validatorContainer.addClass("input-group date");
-                    validatorContainer.append($("<span class='input-group-addon'><i class='glyphicon glyphicon-calendar'></i></span>"));
-                    $('.input-group.date', el)
-                        .datepicker({
-                        componentSelector: "i.fa-calendar-day, i.glyphicon-th, i.glyphicon-calendar",
-                        clearBtn: true,
-                        showOnFocus: false,
-                        autoclose: true,
-                        enableOnReadonly: false,
-                        forceParse: false,
-                        language: $(".bootstrapLocale").html(),
-                        format: $(".bootstrapLocaleFormat").html(),
-                        zIndexOffset: 2000 /* admin site sticky bar */
-                    })
-                        .on("show", function () {
-                        // To prevent the datepicker from being 'stuck' open if they are trying
-                        // to click icon *AGAIN* in an attempt to toggle/close the picker.  I
-                        // first check to see if my own custom data is added and if not I inject
-                        // some custom data.  If it is present (meaning it was already shown, I hide
-                        // the datepicker.  Then in the hide event I always remove this custom data.
-                        var dp = $(this);
-                        if (dp.data("datepicker-show") != undefined) {
-                            dp.datepicker('hide');
-                        }
-                        else {
-                            dp.data("datepicker-show", true);
-                            var dateInput_1 = $("input", $(this));
-                            // Originally, I had an .on("clearDate", ... ) event handler that simply
-                            // called dateInput.change() to trigger a calc.  But clearing input with keyboard
-                            // also triggered this, so if I cleared with keyboard, it triggered change, then when
-                            // I lost focus on input, it triggered 'normal' change event resulting in two calcs.
-                            // So now I attach click on clear button as well and call change still
-                            // so that works, but problem is that input isn't cleared before change event happens
-                            // so I also clear the input myself.
-                            $(".datepicker-days .clear", view).bind("click", function () {
-                                dateInput_1.val("");
-                                dateInput_1.change();
-                            });
-                        }
-                    })
-                        .on("hide", function () {
-                        var dp = $(this);
-                        dp.removeData("datepicker-show");
-                        $(".datepicker-days .clear", view).unbind("click");
-                    })
-                        .on('show.bs.modal', function (event) {
-                        // https://stackoverflow.com/questions/30113228/why-does-bootstrap-datepicker-trigger-show-bs-modal-when-it-is-displayed/31199817
-                        // prevent datepicker from firing bootstrap modal "show.bs.modal"
-                        event.stopPropagation();
-                    });
-                    // Hack for https://github.com/uxsolutions/bootstrap-datepicker/issues/2402
-                    // Still have an issue if they open date picker, then paste (date picker updates) then try to
-                    // click a date...since the input then blurs, it fires a calc and the 'click' into the date picker (a specific day)
-                    // seems to be ignored, but rare case I guess.
-                    $('.input-group.date input', el)
-                        .on("blur", function () {
-                        var dateInput = $(this);
-                        if (dateInput.data("datepicker-paste") != undefined) {
-                            dateInput.trigger("change");
-                        }
-                        dateInput.removeData("datepicker-paste");
-                    })
-                        .on("paste", function () {
-                        var dateInput = $(this);
-                        dateInput.data("datepicker-paste", true);
-                    })
-                        .on("keypress change", function () {
-                        // If they paste, then type keyboard before blurring, it would calc twice
-                        var dateInput = $(this);
-                        dateInput.removeData("datepicker-paste");
-                    });
+                if (!displayOnly) {
+                    displayOnlyLabel.remove();
+                    if (inputType === "date") {
+                        validatorContainer.addClass("input-group date");
+                        validatorContainer.append($("<span class='input-group-addon'><i class='glyphicon glyphicon-calendar'></i></span>"));
+                        $('.input-group.date', el)
+                            .datepicker({
+                            componentSelector: "i.fa-calendar-day, i.glyphicon-th, i.glyphicon-calendar",
+                            clearBtn: true,
+                            showOnFocus: false,
+                            autoclose: true,
+                            enableOnReadonly: false,
+                            forceParse: false,
+                            language: $(".bootstrapLocale").html(),
+                            format: $(".bootstrapLocaleFormat").html(),
+                            zIndexOffset: 2000 /* admin site sticky bar */
+                        })
+                            .on("show", function () {
+                            // To prevent the datepicker from being 'stuck' open if they are trying
+                            // to click icon *AGAIN* in an attempt to toggle/close the picker.  I
+                            // first check to see if my own custom data is added and if not I inject
+                            // some custom data.  If it is present (meaning it was already shown, I hide
+                            // the datepicker.  Then in the hide event I always remove this custom data.
+                            var dp = $(this);
+                            if (dp.data("datepicker-show") != undefined) {
+                                dp.datepicker('hide');
+                            }
+                            else {
+                                dp.data("datepicker-show", true);
+                                var dateInput_1 = $("input", $(this));
+                                // Originally, I had an .on("clearDate", ... ) event handler that simply
+                                // called dateInput.change() to trigger a calc.  But clearing input with keyboard
+                                // also triggered this, so if I cleared with keyboard, it triggered change, then when
+                                // I lost focus on input, it triggered 'normal' change event resulting in two calcs.
+                                // So now I attach click on clear button as well and call change still
+                                // so that works, but problem is that input isn't cleared before change event happens
+                                // so I also clear the input myself.
+                                $(".datepicker-days .clear", view).bind("click", function () {
+                                    dateInput_1.val("");
+                                    dateInput_1.change();
+                                });
+                            }
+                        })
+                            .on("hide", function () {
+                            var dp = $(this);
+                            dp.removeData("datepicker-show");
+                            $(".datepicker-days .clear", view).unbind("click");
+                        })
+                            .on('show.bs.modal', function (event) {
+                            // https://stackoverflow.com/questions/30113228/why-does-bootstrap-datepicker-trigger-show-bs-modal-when-it-is-displayed/31199817
+                            // prevent datepicker from firing bootstrap modal "show.bs.modal"
+                            event.stopPropagation();
+                        });
+                        // Hack for https://github.com/uxsolutions/bootstrap-datepicker/issues/2402
+                        // Still have an issue if they open date picker, then paste (date picker updates) then try to
+                        // click a date...since the input then blurs, it fires a calc and the 'click' into the date picker (a specific day)
+                        // seems to be ignored, but rare case I guess.
+                        $('.input-group.date input', el)
+                            .on("blur", function () {
+                            var dateInput = $(this);
+                            if (dateInput.data("datepicker-paste") != undefined) {
+                                dateInput.trigger("change");
+                            }
+                            dateInput.removeData("datepicker-paste");
+                        })
+                            .on("paste", function () {
+                            var dateInput = $(this);
+                            dateInput.data("datepicker-paste", true);
+                        })
+                            .on("keypress change", function () {
+                            // If they paste, then type keyboard before blurring, it would calc twice
+                            var dateInput = $(this);
+                            dateInput.removeData("datepicker-paste");
+                        });
+                    }
+                    else if (prefix !== undefined) {
+                        validatorContainer.addClass("input-group");
+                        validatorContainer.prepend($("<span class='input-group-addon input-group-text'>" + prefix + "</span>"));
+                    }
+                    else if (suffix !== undefined) {
+                        validatorContainer.addClass("input-group");
+                        validatorContainer.append($("<span class='input-group-addon input-group-text'>" + suffix + "</span>"));
+                    }
                 }
-                else if (prefix !== undefined) {
-                    validatorContainer.addClass("input-group");
-                    validatorContainer.prepend($("<span class='input-group-addon input-group-text'>" + prefix + "</span>"));
-                }
-                else if (suffix !== undefined) {
-                    validatorContainer.addClass("input-group");
-                    validatorContainer.append($("<span class='input-group-addon input-group-text'>" + suffix + "</span>"));
+                else {
+                    input.css("display", "none");
+                    displayOnlyLabel.html(value);
                 }
                 el.attr("data-kat-initialized", "true");
             });
@@ -2506,6 +2534,7 @@
             var view = this.application.element;
             this.buildDropdowns(view);
             this.buildTextBoxes(view);
+            this.buildCheckboxes(view);
             this.buildSliders(view);
         };
         return StandardTemplateBuilder;

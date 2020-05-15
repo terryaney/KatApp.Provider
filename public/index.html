@@ -46,7 +46,8 @@
                     <div class="form-group vCurrentApp">
                         <label for="CurrentApp" class="control-label">Current Application</label>
                         <select name="CurrentApp" id="CurrentApp" class="form-control selectpicker show-tick CurrentApp" tabindex="-98">
-                            <option value="DST:DST_Disability" selected="true">DST - Disability</option>
+                            <option value="DST:Disability" selected="true">DST - Disability</option>
+                            <option value="DST:DevROI">DST - Dependent Eligibility Verification Savings Estimator</option>
                         </select>
                     </div>
                 </div>
@@ -130,6 +131,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/noUiSlider/10.0.0/nouislider.js" integrity="sha256-qBtL4kx2JuCUQp1aTQxlcVxo58MxzFpmUS0WEl99kqw=" crossorigin="anonymous"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/highcharts/6.0.7/highcharts.js" integrity="sha256-F0xKYvUdYPCgKKgKGtEjxwHXKSRbwKP+2mOlgGoR0Fs=" crossorigin="anonymous"></script>
     <script src="https://ajax.microsoft.com/ajax/4.0/1/MicrosoftAjax.js" ></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery.matchHeight/0.7.2/jquery.matchHeight-min.js" integrity="sha256-+oeQRyZyY2StGafEsvKyDuEGNzJWAbWqiO2L/ctxF6c=" crossorigin="anonymous"></script>
 
     <!-- Katapp added -->
     <script src="js/KatApp.js"></script>
@@ -212,7 +214,8 @@
                 $.fn.KatApp.plugInShims = [];
                 $.fn.KatApp.applicationFactory = $.fn.KatApp.debugApplicationFactory;
 
-                $(".KatApp").KatApp(options);
+
+                $(".KatApp").attr("rbl-trace-id", $("#CurrentApp").val().split(":")[1]).KatApp(options);
             });
 
             KatApp.defaultOptions.debug.refreshCalcEngine = true;
@@ -234,7 +237,7 @@
             // saveFirstCalculationLocation: KatApp.pageParameters[ "save" ]
 
             $(".logo-left").html("KatApp Test Harness: " + $("#CurrentApp").text());
-            $(".KatApp").KatApp( { view: $("#CurrentApp").val() } );
+            $(".KatApp").attr("rbl-trace-id", $("#CurrentApp").val().split(":")[1]).KatApp( { view: $("#CurrentApp").val() } );
         });
     </script>
 

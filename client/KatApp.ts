@@ -13,6 +13,24 @@ class KatApp
     static functionUrl = "https://btr.lifeatworkportal.com/services/evolution/CalculationFunction.ashx";
     static corsUrl = "https://secure.conduentapplications.com/services/rbl/rbleproxy/RBLeCORS.ashx";
 
+    static stringCompare(strA: string, strB: string, ignoreCase: boolean): number {
+        if (strA === undefined && strB === undefined) {
+            return 0;
+        }
+        else if (strA === undefined) {
+            return -1;
+        }
+        else if (strB === undefined) {
+            return 1;
+        }
+        else if (ignoreCase) {
+            return strA.toUpperCase().localeCompare(strB.toUpperCase());
+        }
+        else {
+            return strA.localeCompare(strB);
+        }
+    };
+
     static readPageParameters(): JSON {
         const params = {};
         const paramsArray = window.location.search.substr(1).split('&');

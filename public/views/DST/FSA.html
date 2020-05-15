@@ -1,0 +1,258 @@
+<rbl-config calcengine="Buck_DecisionSupportFSA_SE" templates="Standard_Templates"></rbl-config>
+
+<style>
+    .kat-app-css div.chart { height: 350px; }
+    @media (max-width: 767px) {
+        .kat-app-css div.chart { height: 250px; }
+    }
+    .kat-app-css .summary-table.table thead tr th.value {
+        text-align: right;
+    }
+    .kat-app-css .summary-table.table tbody tr.take-home td {
+        background-color: #fcf8e3;
+        font-weight: bold;
+        color: #118e04;
+    }
+    .kat-app-css .result-table.table {
+        margin-right: auto;
+        margin-left: auto;
+    }
+    .kat-app-css .result-table.table tbody tr td {
+        border-width: 0;
+    }
+    .kat-app-css .ws-info {
+        padding-right: 5px;
+        text-decoration: none;
+        outline: none;
+    }
+    .kat-app-css a.ws-info:focus {
+        border: 0;
+        outline: none;
+    }
+</style>
+
+<script>
+	$(document).ready(function () {
+        if ( $("{thisView}").data("debugger" ) == true ) {
+            debugger;
+        }
+
+        $("{thisView} .iFSAFlag").val($("{thisView}").data("fsa"));
+        $("{thisView} .iPlanID").val($("{thisView}").data("planid"));
+
+        $("{thisView}").on( "onInitialized.RBLe", function( event, application ) {
+            let ws = $("<a style='display: none;' class='ws-info wsiHCE vShowWorksheet' role='button' tabindex='0' title='Click for Health Care Expense Worksheet' href='#' data-toggle='modal' data-target='#modal-worksheet'><span class='glyphicon glyphicon glyphicon-list-alt'></span></a>");
+            ws.insertBefore($(".liHCE", application.element));
+            ws = $("<a style='display: none;' class='ws-info wsiDCE vShowWorksheet' role='button' tabindex='0' title='Click for Dependent Care Expense Worksheet' href='#' data-toggle='modal' data-target='#modal-worksheet'><span class='glyphicon glyphicon glyphicon-list-alt'></span></a>");
+            ws.insertBefore($(".liDCE", application.element));
+        });
+
+        if ( $.fn.matchHeight !== undefined ) {
+            $("{thisView} .match-height").matchHeight({ property: 'height' });
+            $.fn.matchHeight._maintainScroll = true;
+
+            $("{thisView}").on( "onCalculation.RBLe", function( event, calculationResults, calcOptions, application ) {
+                // Doesn't look like I can only call 'update' to match height items within my view, so this will update
+                // all and any match heights applied on page, but my bindings were set scoped to my view, so it should
+                // not have adverse affects.  The project page mentioned that match heights can be achieved in modern
+                // browsers by using CSS Flexbox and CSS Grid instead.  So could look at that.
+                $.fn.matchHeight._update();
+            });
+        }
+    });
+
+	var worksheetMax = 0;
+	var worksheetIsHC = false;
+	var hcValues = Array.apply(null, Array(6)).map(function () { return 0; });
+	var dcValues = Array.apply(null, Array(7)).map(function () { return 0; });
+
+	$(document).ready(function () {
+		$("{thisView} #modal-worksheet").on('show.bs.modal', function (e) {
+			worksheetIsHC = $(e.relatedTarget).hasClass("wsiHCE");
+
+			$("{thisView} #modal-worksheet .modal-title").html(worksheetIsHC ? "Health Care Worksheet" : "Dependent Care Worksheet");
+
+			$("{thisView} #hcwAlert").addClass('hide');
+
+			worksheetMax = worksheetIsHC
+				? $("{thisView} .slider-iHCE").data("max") * 1
+				: $("{thisView} .slider-iDCE").data("max") * 1;
+
+			$("{thisView} #modal-worksheet .plan-limit").html(String.localeFormat("{0:c0}", worksheetMax));
+
+			if (worksheetIsHC) {
+				$("{thisView} .viWorksheet7").hide();
+			}
+			else {
+				$("{thisView} .viWorksheet7").show();
+			}
+
+			var values = worksheetIsHC ? hcValues : dcValues;
+
+			for (var i = 0; i < values.length; i++) {
+				$("{thisView} .iWorksheet" + (i + 1)).val(values[i]);
+			}
+
+			$("{thisView} #modal-worksheet label.control-label").each(function () {
+				var id = $(this).attr("for");
+				$(this).html($(".l" + id + (worksheetIsHC ? "HC" : "DC" )).html());
+			});
+		})
+		.on('shown.bs.modal', function (e) {
+			$($("{thisView} .iWorksheet")[0]).change();
+		});
+
+		$("{thisView} .iWorksheet").change(function () {
+			$("{thisView} #modal-worksheet .total").html(String.localeFormat("{0:c0}", Math.min(worksheetMax, GetTotal())));
+		})
+		$($("{thisView} .iWorksheet")[0]).change();
+
+		$("{thisView} #modal-worksheet .btn-use").on('click', function (e) {
+			var hasErrors = false;
+			$("{thisView} #hcwAlert").html("");
+
+			$("{thisView} .iWorksheet:visible").each(function () {
+				var value = Number($(this).val());
+				if (isNaN(value)) {
+					var label = $(this).parent().parent().children("label").text();
+					$("{thisView} #hcwAlert").removeClass('hide').append('<p>' + label + ': Please provide blank or a valid numeric value.</p>');
+					hasErrors = true;
+				}
+			});
+
+			if (hasErrors) {
+				return false;
+			}
+			else {
+				var values = worksheetIsHC ? hcValues : dcValues;
+
+				for (var i = 0; i < values.length; i++) {
+					var val = $("{thisView} .iWorksheet" + (i + 1)).val() * 1;
+					values[i] = val != undefined ? val : 0;
+				}
+
+				var total = GetTotal();
+
+				var noUiSlider = worksheetIsHC
+					? $("{thisView} .slider-iHCE")
+					: $("{thisView} .slider-iDCE")
+				noUiSlider[0].noUiSlider.set(total);
+			}
+		});
+	});
+
+	function GetTotal() {
+		var total = 0;
+
+		$("{thisView} .iWorksheet:visible").each(function () {
+			var value = Number($(this).val());
+			if (!isNaN(value)) total += value;
+		});
+
+		var increment = 50;
+		return Math.round(total / increment) * increment;
+	}
+</script>
+
+<div class="hidden">
+    <input id="iFSAFlag" class="iFSAFlag" value="">
+    <input id="iPlanID" class="iPlanID" value="">
+</div>
+
+<div class="row ajaxContent">
+    <div class="col-md-4">
+        <ul class="nav nav-tabs" role="tablist">
+            <li role="presentation" class="col-xs-12 active"><a href="#tabAssumptions" role="tab" data-toggle="tab" class="text-center">Assumptions</a></li>
+        </ul>
+        <div class="tab-content">
+            <div role="tabpanel" class="tab-pane fade in active match-height" id="tabAssumptions">
+				<p><b>Please enter your personal information below.</b></p>
+                <div class="row">
+                    <div class="col-md-12">
+                        <div rbl-tid="input-dropdown" data-inputname="iYear"></div>
+                        <div rbl-tid="input-dropdown" data-inputname="iTaxStatus"></div>
+                        <div rbl-tid="input-slider" data-inputname="iTotalFamilyMembers"></div>
+                        <div rbl-tid="input-textbox" data-inputname="iAnnualIncome" data-prefix="$"></div>
+                        <div rbl-tid="input-slider" data-inputname="iHCE"></div>
+                        <div rbl-tid="input-slider" data-inputname="iDCE"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-8">
+        <ul class="nav nav-tabs" role="tablist">
+            <li role="presentation" class="col-xs-12 active"><a href="#tabResults" role="tab" data-toggle="tab" class="text-center">Results</a></li>
+        </ul>
+        <div class="tab-content">
+			<div role="tabpanel" class="tab-pane fade in active" id="tabResults">
+				<div class="row">
+					<div class="col-md-5">
+						<div class="text-center">
+                            <div rbl-tid="chart-highcharts" rbl-chartdata="TaxCalculator"></div>
+                        </div>
+					</div>
+					<div class="col-md-7">
+                        <div rbl-tid="result-table" rbl-tablename="summary-table"></div>
+					</div>
+				</div>
+			</div>
+        </div>
+    </div>
+    <div class="ajaxloader"></div>
+</div>            
+
+<div class="row">
+    <div class="col-xs-12">
+        <div rbl-tid="validation-summary"></div>
+    </div>
+</div>
+
+<div class="modal fade skipRBLe" tabindex="-1" role="dialog" id="modal-worksheet" data-backdrop="static">
+	<div class="modal-dialog">
+		<div class="modal-content">
+			<div class="modal-header"><h4 class="modal-title">Health Care Worksheet</h4></div>
+			<div class="modal-body">
+				<div class="alert alert-warning hide" id="hcwAlert"></div>
+				<div class="row">
+					<div class="hidden lDC liWorksheet1DC"></div>
+					<div class="hidden lHC liWorksheet1HC"></div>
+                    <div rbl-tid="input-textbox" data-inputname="iWorksheet1" data-inputcss="iWorksheet" data-css="col-sm-6" data-prefix="$"></div>
+					<div class="hidden lDC liWorksheet4DC"></div>
+					<div class="hidden lHC liWorksheet4HC"></div>
+                    <div rbl-tid="input-textbox" data-inputname="iWorksheet4" data-inputcss="iWorksheet" data-css="col-sm-6" data-prefix="$"></div>
+					<div class="hidden lDC liWorksheet2DC"></div>
+					<div class="hidden lHC liWorksheet2HC"></div>
+                    <div rbl-tid="input-textbox" data-inputname="iWorksheet2" data-inputcss="iWorksheet" data-css="col-sm-6" data-prefix="$"></div>
+					<div class="hidden lDC liWorksheet5DC"></div>
+					<div class="hidden lHC liWorksheet5HC"></div>
+                    <div rbl-tid="input-textbox" data-inputname="iWorksheet5" data-inputcss="iWorksheet" data-css="col-sm-6" data-prefix="$"></div>
+					<div class="hidden lDC liWorksheet3DC"></div>
+					<div class="hidden lHC liWorksheet3HC"></div>
+                    <div rbl-tid="input-textbox" data-inputname="iWorksheet3" data-inputcss="iWorksheet" data-css="col-sm-6" data-prefix="$"></div>
+					<div class="hidden lDC liWorksheet6DC"></div>
+					<div class="hidden lHC liWorksheet6HC"></div>
+                    <div rbl-tid="input-textbox" data-inputname="iWorksheet6" data-inputcss="iWorksheet" data-css="col-sm-6" data-prefix="$"></div>
+					<div class="hidden lDC liWorksheet7DC"></div>
+					<div class="hidden lHC liWorksheet7HC"></div>
+                    <div rbl-tid="input-textbox" data-inputname="iWorksheet7" data-inputcss="iWorksheet" data-css="col-sm-6" data-prefix="$"></div>
+				</div>
+				<div class="row">
+					<div class="col-sm-6">
+						<h3>Total Eligible Expenses</h3>
+					</div>
+					<div class="col-sm-6 text-right">
+						<h3 class="total"></h3>
+					</div>
+					<div class="col-sm-12 text-right">
+						<b>Total rounded to nearest $50.  Not to exceed annual plan limit of <span class="plan-limit"></span>.</b>
+					</div>
+				</div>
+			</div>
+			<div class="modal-footer">
+				<button type="button" class="btn btn-primary btn-action btn-use" data-dismiss="modal">Use Result</button>
+				<button type="button" class="btn btn-primary btn-primary-inverse" data-dismiss="modal">Cancel</button>
+			</div>
+		</div>
+	</div>
+</div>

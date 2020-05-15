@@ -11,6 +11,24 @@ var TraceVerbosity;
 var KatApp = /** @class */ (function () {
     function KatApp() {
     }
+    KatApp.stringCompare = function (strA, strB, ignoreCase) {
+        if (strA === undefined && strB === undefined) {
+            return 0;
+        }
+        else if (strA === undefined) {
+            return -1;
+        }
+        else if (strB === undefined) {
+            return 1;
+        }
+        else if (ignoreCase) {
+            return strA.toUpperCase().localeCompare(strB.toUpperCase());
+        }
+        else {
+            return strA.localeCompare(strB);
+        }
+    };
+    ;
     KatApp.readPageParameters = function () {
         var params = {};
         var paramsArray = window.location.search.substr(1).split('&');

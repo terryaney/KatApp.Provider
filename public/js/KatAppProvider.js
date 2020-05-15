@@ -62,7 +62,7 @@
         functionUrl: KatApp.functionUrl,
         corsUrl: KatApp.corsUrl,
         currentPage: "Unknown",
-        inputSelector: "input",
+        inputSelector: "input, textarea, select",
         inputTab: "RBLInput",
         resultTabs: ["RBLResult"],
         runConfigureUICalculation: true,
@@ -90,7 +90,7 @@
         }
     }, KatApp.defaultOptions);
     var tableInputsAndBootstrapButtons = ", .RBLe-input-table :input, .dropdown-toggle, button";
-    var validInputSelector = ":not(.notRBLe, .rbl-exclude" + tableInputsAndBootstrapButtons + ")";
+    var validInputSelector = ".notRBLe, .rbl-exclude" + tableInputsAndBootstrapButtons;
     var skipBindingInputSelector = ".notRBLe, .rbl-exclude, .skipRBLe, .skipRBLe :input, .rbl-nocalc, .rbl-nocalc :input" + tableInputsAndBootstrapButtons;
     // Get Global: put as prefix if missing
     function ensureGlobalPrefix(id) {
@@ -763,7 +763,7 @@
             // http://bytes.com/topic/asp-net/answers/433532-control-name-change-asp-net-2-0-generated-html
             // http://weblogs.asp.net/scottgu/gotcha-don-t-use-xhtmlconformance-mode-legacy-with-asp-net-ajax
             // data-input-name - Checkbox list items, I put the 'name' into a parent span (via attribute on ListItem)
-            var htmlName = (input.parent().attr("data-input-name") || input.attr("name"));
+            var htmlName = (input.parent().attr("data-input-name") || input.attr("name") || input.attr("id"));
             if (htmlName === undefined)
                 return "UnknownId";
             var nameParts = htmlName.split(htmlName.indexOf("$") === -1 ? ":" : "$");
@@ -792,17 +792,20 @@
             var that = this;
             // skip table inputs b/c those are custom, and .dropdown-toggle b/c bootstrap select
             // puts a 'button input' inside of select in there
-            jQuery.each($(customOptions.inputSelector + validInputSelector, this.application.element), function () {
-                var input = $(this);
-                // bootstrap selectpicker has some 'helper' inputs that I need to ignore
-                if (input.parents(".bs-searchbox").length === 0) {
-                    var value = that.getInputValue(input);
-                    if (value !== undefined) {
-                        var name_1 = that.getInputName(input);
-                        inputs[name_1] = value;
+            if (customOptions.inputSelector !== undefined) {
+                var validInputs = $(customOptions.inputSelector, this.application.element).not(validInputSelector);
+                jQuery.each(validInputs, function () {
+                    var input = $(this);
+                    // bootstrap selectpicker has some 'helper' inputs that I need to ignore
+                    if (input.parents(".bs-searchbox").length === 0) {
+                        var value = that.getInputValue(input);
+                        if (value !== undefined) {
+                            var name_1 = that.getInputName(input);
+                            inputs[name_1] = value;
+                        }
                     }
-                }
-            });
+                });
+            }
             return inputs;
         };
         UIUtilities.prototype.getInputTables = function () {
@@ -864,7 +867,7 @@
                 // Store for later so I can unregister no matter what the selector is at time of 'destroy'
                 application.element.data("katapp-input-selector", application.options.inputSelector);
                 var that_1 = this;
-                $(application.options.inputSelector + ":not(" + skipBindingInputSelector + ")", application.element).each(function () {
+                $(application.options.inputSelector, application.element).not(skipBindingInputSelector).each(function () {
                     $(this).bind("change.RBLe", function () {
                         that_1.changeRBLe($(this));
                     });
@@ -951,7 +954,7 @@
                 // Ensure that all tables are an array
                 propertyNames.forEach(function (k) {
                     var table = results[k];
-                    if (!(table instanceof Array)) {
+                    if (!(table instanceof Array) && table != null) {
                         results[k] = [table];
                     }
                 });
@@ -1515,6 +1518,174 @@
                 }
             });
         };
+        RBLeUtilities.prototype.createResultTableElement = function (value, elementName, cssClass) {
+            return "<{name}{class}>{value}</{nameClose}>".format({
+                name: elementName,
+                class: (cssClass !== undefined && cssClass !== "" ? " class=\"" + cssClass + "\"" : ""),
+                value: value,
+                // Not sure what would be in elementName with a space in it, but just bringing over legacy code
+                nameClose: elementName.split(" ")[0]
+            });
+        };
+        RBLeUtilities.prototype.getResultTableValue = function (row, columnName) {
+            var _a, _b;
+            // For the first row of a table, if there was a width row in CE, then each 'column' has text and @width attribute,
+            // so row[columnName] is no longer a string but a { #text: someText, @width: someWidth }.  This happens during process
+            // turning the calculation into json.  http://www.newtonsoft.com/json/help/html/convertingjsonandxml.htm
+            return typeof (row[columnName]) === "object"
+                ? (_a = row[columnName]["#text"]) !== null && _a !== void 0 ? _a : "" : (_b = row[columnName]) !== null && _b !== void 0 ? _b : "";
+        };
+        RBLeUtilities.prototype.getCellMarkup = function (row, columnName, element, columnClass, colSpan) {
+            var value = this.getResultTableValue(row, columnName);
+            if (colSpan !== undefined) {
+                element += " colspan=\"" + colSpan + "\"";
+            }
+            return this.createResultTableElement(value, element, columnClass);
+        };
+        ;
+        // If only one cell with value and it is header, span entire row
+        RBLeUtilities.prototype.getHeaderSpanCellName = function (row) {
+            var _this = this;
+            var keys = Object.keys(row);
+            var values = keys
+                .filter(function (k) { return k.startsWith("text") || k.startsWith("value"); })
+                .map(function (k) { return ({ Name: k, Value: _this.getResultTableValue(row, k) }); })
+                .filter(function (c) { return c.Value !== ""; });
+            return values.length === 1 ? values[0].Name : undefined;
+        };
+        ;
+        RBLeUtilities.prototype.processTables = function () {
+            var application = this.application;
+            var view = application.element;
+            var that = this;
+            $("[rbl-tid='result-table']", view).each(function (i, r) {
+                var tableName = r.getAttribute("rbl-tablename");
+                if (tableName !== null) {
+                    var configRow = application.getResultTable("contents").filter(function (r) { return r.section === "1" && KatApp.stringCompare(r.type, "table", true) === 0 && r.item === tableName; }).shift();
+                    var configCss = configRow === null || configRow === void 0 ? void 0 : configRow.class;
+                    var tableCss = configCss !== undefined
+                        ? "table table-striped table-bordered table-condensed rbl " + tableName
+                        : "rbl " + tableName + " " + configCss;
+                    var tableRows = application.getResultTable(tableName);
+                    if (tableRows.length === 0) {
+                        return;
+                    }
+                    var tableConfigRow_1 = tableRows[0];
+                    var includeAllColumns_1 = false; // This is a param in RBLe.js
+                    var hasResponsiveTable_1 = tableCss.indexOf("table-responsive") > -1;
+                    tableCss = tableCss.replace("table-responsive", "");
+                    var tableColumns_1 = Object.keys(tableConfigRow_1)
+                        .filter(function (k) { return k.startsWith("text") || k.startsWith("value") || (includeAllColumns_1 && k !== "@name"); })
+                        .map(function (k) { return ({
+                        Name: k,
+                        Element: tableConfigRow_1[k],
+                        Width: tableConfigRow_1[k][hasResponsiveTable_1 ? "@r-width" : "@width"]
+                    }); })
+                        .map(function (e) { return ({
+                        name: e.Name,
+                        isTextColumn: e.Name.startsWith("text"),
+                        cssClass: e.Element["@class"],
+                        width: e.Width !== undefined && !e.Width.endsWith("%") ? +e.Width : undefined,
+                        widthPct: e.Width !== undefined && e.Width.endsWith("%") ? e.Width : undefined,
+                        xsColumns: e.Element["@xs-width"] || (hasResponsiveTable_1 ? e.Element["@width"] : undefined),
+                        smColumns: e.Element["@sm-width"],
+                        mdColumns: e.Element["@md-width"],
+                        lgColumns: e.Element["@lg-width"]
+                    }); });
+                    var columnConfiguration_1 = {};
+                    tableColumns_1.forEach(function (c) {
+                        columnConfiguration_1[c.name] = c;
+                    });
+                    var tableConfiguration = {
+                        totalRows: tableRows.length,
+                        columnConfiguration: columnConfiguration_1,
+                        columnConfigurationQuery: tableColumns_1
+                    };
+                    var hasBootstrapTableWidths_1 = tableColumns_1.filter(function (c) { return c.xsColumns !== undefined || c.smColumns !== undefined || c.mdColumns !== undefined || c.lgColumns !== undefined; }).length > 0;
+                    var colGroupDef_1 = undefined; // This was an optional param in RBLe
+                    if (colGroupDef_1 === undefined) {
+                        colGroupDef_1 = "";
+                        tableColumns_1.forEach(function (c) {
+                            var isFixedWidth = !hasBootstrapTableWidths_1 || hasResponsiveTable_1;
+                            var width = isFixedWidth && (c.width !== undefined || c.widthPct !== undefined)
+                                ? " width=\"{width}\"".format({ width: c.widthPct || (c.width + "px") })
+                                : "";
+                            var bsClass = c.xsColumns !== undefined ? " col-xs-" + c.xsColumns : "";
+                            bsClass += c.smColumns !== undefined ? " col-sm-" + c.smColumns : "";
+                            bsClass += c.mdColumns !== undefined ? " col-md-" + c.mdColumns : "";
+                            bsClass += c.lgColumns !== undefined ? " col-lg-" + c.lgColumns : "";
+                            colGroupDef_1 += "<col class=\"{table}-{column}{bsClass}\"{width} />".format({
+                                table: tableName,
+                                column: c.name,
+                                bsClass: !isFixedWidth ? bsClass : "",
+                                width: width
+                            });
+                        });
+                    }
+                    var colGroup = that.createResultTableElement(colGroupDef_1, "colgroup");
+                    var headerHtml_1 = "";
+                    var bodyHtml_1 = "";
+                    var needBootstrapWidthsOnEveryRow_1 = false;
+                    var includeBootstrapColumnWidths = hasBootstrapTableWidths_1 && !hasResponsiveTable_1;
+                    tableRows.forEach(function (row) {
+                        var _a, _b, _c, _d;
+                        var code = (_a = row["code"]) !== null && _a !== void 0 ? _a : "";
+                        var id = (_b = row["@id"]) !== null && _b !== void 0 ? _b : "";
+                        var isHeaderRow = (code === "h" || code.startsWith("header") || code.startsWith("hdr")) ||
+                            (id === "h" || id.startsWith("header") || id.startsWith("hdr"));
+                        var element = isHeaderRow ? "th" : "td";
+                        var rowClass = (_c = row["@class"]) !== null && _c !== void 0 ? _c : row["class"];
+                        var span = that.getResultTableValue(row, "span");
+                        var rowHtml = "";
+                        var headerSpanCellName = "";
+                        if (isHeaderRow && span === "" && (headerSpanCellName = that.getHeaderSpanCellName(row)) !== undefined) {
+                            // Need bootstraps on every row if already set or this is first row
+                            needBootstrapWidthsOnEveryRow_1 = needBootstrapWidthsOnEveryRow_1 || i === 0;
+                            var hClass = (columnConfiguration_1[headerSpanCellName].isTextColumn ? "text" : "value") + " span-" + headerSpanCellName;
+                            rowHtml += that.getCellMarkup(row, headerSpanCellName, element, hClass, tableColumns_1.length);
+                        }
+                        else if (span !== "") {
+                            // Need bootstraps on every row if already set or this is first row
+                            needBootstrapWidthsOnEveryRow_1 = needBootstrapWidthsOnEveryRow_1 || i === 0;
+                            var parts = span.split(":");
+                            for (var p = 0; p < parts.length; p++) {
+                                if (p % 2 === 0) {
+                                    var colSpan = +parts[p + 1];
+                                    var colSpanName = parts[p];
+                                    var spanConfig = columnConfiguration_1[colSpanName];
+                                    var textCol = spanConfig.isTextColumn;
+                                    var sClass = (_d = spanConfig.cssClass) !== null && _d !== void 0 ? _d : "";
+                                    sClass += (textCol ? " text" : " value ");
+                                    rowHtml += that.getCellMarkup(row, colSpanName, element, sClass, /* includeBootstrapColumnWidths, */ colSpan);
+                                }
+                            }
+                        }
+                        else {
+                            tableColumns_1.forEach(function (c) {
+                                var _a;
+                                var cClass = (_a = c.cssClass) !== null && _a !== void 0 ? _a : "";
+                                cClass += (c.isTextColumn ? " text" : " value");
+                                rowHtml += that.getCellMarkup(row, c.name, element, cClass /*, includeBootstrapColumnWidths && (needBootstrapWidthsOnEveryRow || i === 0) */);
+                            });
+                        }
+                        if (isHeaderRow && bodyHtml_1 === "") {
+                            headerHtml_1 += that.createResultTableElement(rowHtml, "tr", rowClass);
+                        }
+                        else {
+                            bodyHtml_1 += that.createResultTableElement(rowHtml, "tr", rowClass);
+                        }
+                    });
+                    var tableHtml = that.createResultTableElement(colGroup +
+                        (headerHtml_1 !== ""
+                            ? that.createResultTableElement(headerHtml_1, "thead")
+                            : "") + that.createResultTableElement(bodyHtml_1, "tbody"), "table border=\"0\" cellspacing=\"0\" cellpadding=\"0\"", tableCss);
+                    var html = hasResponsiveTable_1
+                        ? that.createResultTableElement(tableHtml, "div", "table-responsive")
+                        : tableHtml;
+                    $(r).empty().append($(html));
+                }
+            });
+        };
         RBLeUtilities.prototype.processCharts = function () {
             var view = this.application.element;
             var highchartsBuilder = $.fn.KatApp.highchartsBuilderFactory(this.application);
@@ -1832,6 +2003,7 @@
                 this.processDefaults();
                 this.processDisabled();
                 this.processCharts();
+                this.processTables();
                 this.processValidations();
                 application.trace("Finished processing results for " + calcEngineName + "(" + version + ").", TraceVerbosity.Normal);
                 return true;
@@ -2243,12 +2415,20 @@
                 var maxlength = el.data("maxlength");
                 var autoComplete = el.data("autocomplete") !== false;
                 var value = el.data("value");
+                var css = el.data("css");
+                var inputCss = el.data("inputcss");
                 var displayOnly = el.data("displayonly") === true;
+                if (css !== undefined) {
+                    $(".v" + id, el).addClass(css);
+                }
                 if (label !== undefined) {
                     $("span.l" + id, el).html(label);
                 }
                 var input = $("input[name='" + id + "']", el);
                 var displayOnlyLabel = $("div." + id + "DisplayOnly", el);
+                if (inputCss !== undefined) {
+                    input.addClass(inputCss);
+                }
                 if (placeHolder !== undefined) {
                     input.attr("placeholder", placeHolder);
                 }

@@ -9,6 +9,7 @@ declare enum TraceVerbosity {
 declare class KatApp {
     static functionUrl: string;
     static corsUrl: string;
+    static stringCompare(strA: string, strB: string, ignoreCase: boolean): number;
     static readPageParameters(): JSON;
     static pageParameters: JSON;
     static defaultOptions: KatAppOptions;

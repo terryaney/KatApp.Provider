@@ -48,7 +48,15 @@
                         <select name="CurrentApp" id="CurrentApp" class="form-control selectpicker show-tick CurrentApp" tabindex="-98">
                             <option value="DST:Disability" selected="true">DST - Disability</option>
                             <option value="DST:DevROI">DST - Dependent Eligibility Verification Savings Estimator</option>
+                            <option value="DST:FSA">DST - FSA Tax Savings Calculator</option>
                         </select>
+                    </div>
+                    <div class="form-group vDataAttributes">
+                        <label for="" class="control-label lDataAttributes">Data Attributes To Apply...</label>
+                        <div class="validator-container">
+                            <input name="DataAttributes" id="DataAttributes" type="text" class="form-control DataAttributes">
+                            <span class="error-msg" data-toggle="tooltip" data-placement="top"></span>
+                        </div>
                     </div>
                 </div>
                 <div class="col-sm-6">
@@ -198,10 +206,43 @@
 
                 $(".KatApp").KatApp("destroy"); // wouldn't need this usually on client site, but I'm going to reload/execute provider script so wanted everything destroyed
                 $(".KatApp select.bootstrap-select").selectpicker("destroy");
-                
+
+                var initialSaveLocation = $(".SaveCalcEngineLocation").val() || "";
+                var dataAttributes = $(".DataAttributes").val() || "";
+
+                $('.KatApp').removeData().each(function() {
+                    // get the native attributes object
+                    var attrs = this.attributes;
+                    var toRemove = [];
+
+                    // iterate the attributes
+                    for (attr in attrs) {
+                        if ( typeof attrs[attr].name === 'string' && (/^data-/).test(attrs[attr].name) ) {
+                            toRemove.push(attrs[attr].name);
+                        }
+                    }
+
+                    // cache the jquery object containing the element for better performance
+                    var element = $(this);
+                    for (var i = 0; i < toRemove.length; i++) {
+                        element.removeAttr(toRemove[i]);
+                    }
+                });                
+
+                if ( dataAttributes !== "" ) {
+                    dataAttributes.split(",").forEach( function( a ) {
+                        const attrs = a.trim().split(":");
+                        $(".KatApp").attr("data-" + attrs[ 0 ], attrs[ 1 ]);
+                    });
+                }
+
+                $(".SaveCalcEngineLocation, .DataAttributes").val("");
+
                 const options = KatApp.extend( {}, KatApp.defaultOptions, { 
                         view: $("#CurrentApp").val(),
                         debug: { 
+                            saveFirstCalculationLocation: initialSaveLocation !== "" ? initialSaveLocation : undefined,
+                            refreshCalcEngine: true,
                             traceVerbosity: Number($("#traceLevel").val()),
                             useTestView: $("#UseTestView").prop("checked"),
                             useTestPlugin: $("#UseTestPlugin").prop("checked"),
@@ -214,7 +255,7 @@
                 $.fn.KatApp.plugInShims = [];
                 $.fn.KatApp.applicationFactory = $.fn.KatApp.debugApplicationFactory;
 
-
+                $(".logo-left").html("KatApp Test Harness: " + $("#CurrentApp option:selected").text());
                 $(".KatApp").attr("rbl-trace-id", $("#CurrentApp").val().split(":")[1]).KatApp(options);
             });
 
@@ -236,7 +277,7 @@
             $("#UseTestCalcEngine").prop("checked", KatApp.pageParameters[ "test"] === "1")
             // saveFirstCalculationLocation: KatApp.pageParameters[ "save" ]
 
-            $(".logo-left").html("KatApp Test Harness: " + $("#CurrentApp").text());
+            $(".logo-left").html("KatApp Test Harness: " + $("#CurrentApp option:selected").text());
             $(".KatApp").attr("rbl-trace-id", $("#CurrentApp").val().split(":")[1]).KatApp( { view: $("#CurrentApp").val() } );
         });
     </script>

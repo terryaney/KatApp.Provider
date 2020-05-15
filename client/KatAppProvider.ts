@@ -66,7 +66,7 @@
             functionUrl: KatApp.functionUrl,
             corsUrl: KatApp.corsUrl,
             currentPage: "Unknown",
-            inputSelector: "input",
+            inputSelector: "input, textarea, select",
             inputTab: "RBLInput",
             resultTabs: ["RBLResult"],
             runConfigureUICalculation: true,
@@ -97,7 +97,7 @@
         } as KatAppOptions, KatApp.defaultOptions );
 
     const tableInputsAndBootstrapButtons = ", .RBLe-input-table :input, .dropdown-toggle, button";
-    const validInputSelector = ":not(.notRBLe, .rbl-exclude" + tableInputsAndBootstrapButtons + ")";
+    const validInputSelector = ".notRBLe, .rbl-exclude" + tableInputsAndBootstrapButtons;
     const skipBindingInputSelector = ".notRBLe, .rbl-exclude, .skipRBLe, .skipRBLe :input, .rbl-nocalc, .rbl-nocalc :input" + tableInputsAndBootstrapButtons;
 
     // Get Global: put as prefix if missing
@@ -904,7 +904,7 @@
             // http://weblogs.asp.net/scottgu/gotcha-don-t-use-xhtmlconformance-mode-legacy-with-asp-net-ajax
 
             // data-input-name - Checkbox list items, I put the 'name' into a parent span (via attribute on ListItem)
-            const htmlName = (input.parent().attr("data-input-name") || input.attr("name")) as string;
+            const htmlName = (input.parent().attr("data-input-name") || input.attr("name") || input.attr("id")) as string;
 
             if (htmlName === undefined) return "UnknownId";
 
@@ -944,19 +944,23 @@
 
             // skip table inputs b/c those are custom, and .dropdown-toggle b/c bootstrap select
             // puts a 'button input' inside of select in there
-            jQuery.each($(customOptions.inputSelector + validInputSelector, this.application.element), function () {
-                const input = $(this);
+            if ( customOptions.inputSelector !== undefined ) {
+                const validInputs = $(customOptions.inputSelector, this.application.element).not(validInputSelector);
 
-                // bootstrap selectpicker has some 'helper' inputs that I need to ignore
-                if (input.parents(".bs-searchbox").length === 0) {
-                    const value = that.getInputValue(input);
-
-                    if (value !== undefined) {
-                        const name = that.getInputName(input);
-                        inputs[name] = value;
+                jQuery.each(validInputs, function () {
+                    const input = $(this);
+    
+                    // bootstrap selectpicker has some 'helper' inputs that I need to ignore
+                    if (input.parents(".bs-searchbox").length === 0) {
+                        const value = that.getInputValue(input);
+    
+                        if (value !== undefined) {
+                            const name = that.getInputName(input);
+                            inputs[name] = value;
+                        }
                     }
-                }
-            });
+                });
+            }
 
             return inputs as unknown as JSON;
         }
@@ -1029,7 +1033,7 @@
                 
                 const that: UIUtilities = this;
 
-                $(application.options.inputSelector + ":not(" + skipBindingInputSelector + ")", application.element).each(function () {        
+                $(application.options.inputSelector, application.element).not(skipBindingInputSelector).each(function () {        
                     $(this).bind("change.RBLe", function () {
                         that.changeRBLe($(this));
                     });
@@ -1128,7 +1132,7 @@
                 propertyNames.forEach( k => {
                     const table = results[ k ];
 
-                    if (!(table instanceof Array)) {
+                    if (!(table instanceof Array) && table != null ) {
                         results[ k ] = [table];
                     }
                 });
@@ -1793,6 +1797,224 @@
             });
         }
 
+        private createResultTableElement(value: string, elementName: string, cssClass?: string): string {
+            return "<{name}{class}>{value}</{nameClose}>".format(
+                {
+                    name: elementName,
+                    class: (cssClass !== undefined && cssClass !== "" ? " class=\"" + cssClass + "\"" : ""),
+                    value: value, 
+                    // Not sure what would be in elementName with a space in it, but just bringing over legacy code
+                    nameClose: elementName.split(" ")[0]
+                }
+            );
+        }
+
+        private getResultTableValue( row: ResultTableRow, columnName: string ): string {
+            // For the first row of a table, if there was a width row in CE, then each 'column' has text and @width attribute,
+            // so row[columnName] is no longer a string but a { #text: someText, @width: someWidth }.  This happens during process
+            // turning the calculation into json.  http://www.newtonsoft.com/json/help/html/convertingjsonandxml.htm
+            return typeof (row[columnName]) === "object"
+                ? row[columnName]["#text"] ?? ""
+                : row[columnName] ?? ""
+        }
+
+        private getCellMarkup(row: ResultTableRow, columnName: string, element: string, columnClass: string, colSpan?: number): string {
+            const value = this.getResultTableValue( row, columnName );
+
+            if (colSpan !== undefined) {
+                element += " colspan=\"" + colSpan + "\"";
+            }
+            return this.createResultTableElement(value, element, columnClass);
+        };
+
+        // If only one cell with value and it is header, span entire row
+        private getHeaderSpanCellName(row: ResultTableRow): string | undefined {
+            const keys = Object.keys(row);
+            const values = keys
+                .filter(k => k.startsWith("text") || k.startsWith("value"))
+                .map(k => ({ Name: k, Value: this.getResultTableValue(row, k) }))
+                .filter(c => c.Value !== "");
+
+            return values.length === 1 ? values[0].Name : undefined;
+        };
+
+        processTables(): void {
+            const application = this.application;
+            const view = application.element;
+            const that: RBLeUtilities = this;
+
+            $("[rbl-tid='result-table']", view).each(function ( i, r ) {
+                const tableName = r.getAttribute( "rbl-tablename" );
+
+                if ( tableName !== null ) {
+                    const configRow = application.getResultTable<ContentsRow>( "contents" ).filter( r => r.section === "1" && KatApp.stringCompare( r.type, "table", true ) === 0 && r.item === tableName ).shift();
+                    const configCss = configRow?.class;
+                    let tableCss = configCss !== undefined
+                        ? "table table-striped table-bordered table-condensed rbl " + tableName
+                        : "rbl " + tableName + " " + configCss;
+    
+                    const tableRows = application.getResultTable<ResultTableRow>( tableName );
+
+                    if ( tableRows.length === 0 ) {
+                        return;
+                    }
+
+                    const tableConfigRow = tableRows[ 0 ];
+                    const includeAllColumns = false; // This is a param in RBLe.js
+                    const hasResponsiveTable = tableCss.indexOf("table-responsive") > -1;
+                    tableCss = tableCss.replace("table-responsive", "");
+
+                    const tableColumns = 
+                        Object.keys(tableConfigRow)
+                            .filter(k => k.startsWith("text") || k.startsWith("value") || (includeAllColumns && k !== "@name"))
+                            .map(k => (
+                                { 
+                                    Name: k, 
+                                    Element: tableConfigRow[k], 
+                                    Width: tableConfigRow[k][hasResponsiveTable ? "@r-width" : "@width"] 
+                                })
+                            )
+                            .map(e => ({
+                                name: e.Name,
+                                isTextColumn: e.Name.startsWith("text"),
+                                cssClass: e.Element["@class"],
+                                width: e.Width !== undefined && !e.Width.endsWith("%") ? + e.Width : undefined,
+                                widthPct: e.Width !== undefined && e.Width.endsWith("%") ? e.Width : undefined,
+                                xsColumns: e.Element["@xs-width"] || (hasResponsiveTable ? e.Element["@width"] : undefined),
+                                smColumns: e.Element["@sm-width"],
+                                mdColumns: e.Element["@md-width"],
+                                lgColumns: e.Element["@lg-width"]
+                            }) as ResultTableColumnConfiguration );
+                    
+                    const columnConfiguration: { 
+                        [ key: string ]: ResultTableColumnConfiguration
+                    } = {};
+                
+                    tableColumns.forEach( c => {
+                        columnConfiguration[ c.name ] = c;
+                    });
+
+                    const tableConfiguration: ResultTableConfiguration = {
+                        totalRows: tableRows.length,
+                        columnConfiguration: columnConfiguration,
+                        columnConfigurationQuery: tableColumns
+                    };        
+
+                    const hasBootstrapTableWidths = tableColumns.filter(c => c.xsColumns !== undefined || c.smColumns !== undefined || c.mdColumns !== undefined || c.lgColumns !== undefined).length > 0;
+
+                    let colGroupDef: string | undefined = undefined; // This was an optional param in RBLe
+
+                    if ( colGroupDef === undefined ) {
+                        colGroupDef = "";
+
+                        tableColumns.forEach(c => {
+                            const isFixedWidth = !hasBootstrapTableWidths || hasResponsiveTable;
+    
+                            const width = isFixedWidth && (c.width !== undefined || c.widthPct !== undefined)
+                                ? " width=\"{width}\"".format( { width: c.widthPct || (c.width + "px") })
+                                : "";
+    
+                            let bsClass = c.xsColumns !== undefined ? " col-xs-" + c.xsColumns : "";
+                            bsClass += c.smColumns !== undefined ? " col-sm-" + c.smColumns : "";
+                            bsClass += c.mdColumns !== undefined ? " col-md-" + c.mdColumns : "";
+                            bsClass += c.lgColumns !== undefined ? " col-lg-" + c.lgColumns : "";
+    
+                            colGroupDef += "<col class=\"{table}-{column}{bsClass}\"{width} />".format(
+                                {
+                                    table: tableName,
+                                    column: c.name,
+                                    bsClass: !isFixedWidth ? bsClass : "",
+                                    width: width
+                                }
+                            );
+                        });
+                    }
+
+                    const colGroup = that.createResultTableElement(colGroupDef, "colgroup");
+
+                    let headerHtml = "";
+                    let bodyHtml = "";
+
+                    let needBootstrapWidthsOnEveryRow = false;
+                    const includeBootstrapColumnWidths = hasBootstrapTableWidths && !hasResponsiveTable;
+
+                    tableRows.forEach( row => {
+                        const code = row["code"] ?? "";
+                        const id = row["@id"] ?? "";
+                        const isHeaderRow = 
+                            (code === "h" || code.startsWith("header") || code.startsWith("hdr") ) ||
+                            (id === "h" || id.startsWith("header") || id.startsWith("hdr"));
+
+                        const element = isHeaderRow ? "th" : "td";
+                        const rowClass = row["@class"] ?? row["class"];
+                        const span = that.getResultTableValue(row, "span");
+
+                        let rowHtml = "";
+                        let headerSpanCellName: string | undefined = "";
+    
+                        if (isHeaderRow && span === "" && (headerSpanCellName = that.getHeaderSpanCellName(row)) !== undefined) {
+                            // Need bootstraps on every row if already set or this is first row
+                            needBootstrapWidthsOnEveryRow = needBootstrapWidthsOnEveryRow || i === 0;
+    
+                            const hClass = (columnConfiguration[headerSpanCellName].isTextColumn ? "text" : "value") + " span-" + headerSpanCellName;
+                            rowHtml += that.getCellMarkup(row, headerSpanCellName, element, hClass, tableColumns.length);
+                        }
+                        else if (span !== "") {
+                            // Need bootstraps on every row if already set or this is first row
+                            needBootstrapWidthsOnEveryRow = needBootstrapWidthsOnEveryRow || i === 0;
+
+                            const parts = span.split(":");
+                            
+                            for (let p = 0; p < parts.length; p++) {
+                                if (p % 2 === 0) {
+                                    const colSpan = +parts[p + 1];
+    
+                                    const colSpanName = parts[p];
+                                    const spanConfig = columnConfiguration[colSpanName];
+                                    const textCol = spanConfig.isTextColumn;
+    
+                                    let sClass = spanConfig.cssClass ?? "";
+                                    sClass += (textCol ? " text" : " value ");
+    
+                                    rowHtml += that.getCellMarkup(row, colSpanName, element, sClass, /* includeBootstrapColumnWidths, */ colSpan);
+                                }
+                            }
+                        }
+    					else {
+                            tableColumns.forEach(c => {
+                                let cClass = c.cssClass ?? "";
+                                cClass += (c.isTextColumn ? " text" : " value");
+                                rowHtml += that.getCellMarkup(row, c.name, element, cClass /*, includeBootstrapColumnWidths && (needBootstrapWidthsOnEveryRow || i === 0) */ );
+                            });
+                        }    
+
+                        if (isHeaderRow && bodyHtml === "") {
+                            headerHtml += that.createResultTableElement(rowHtml, "tr", rowClass);
+                        }
+                        else {
+                            bodyHtml += that.createResultTableElement(rowHtml, "tr", rowClass);
+                        }
+                    });
+                    
+                    const tableHtml = that.createResultTableElement(
+                        colGroup + 
+                        ( headerHtml !== "" 
+                            ? that.createResultTableElement(headerHtml, "thead") 
+                            : ""
+                        ) + that.createResultTableElement(bodyHtml, "tbody"),
+                        "table border=\"0\" cellspacing=\"0\" cellpadding=\"0\"",
+                        tableCss
+                    );
+    
+                    const html = hasResponsiveTable
+                        ? that.createResultTableElement(tableHtml, "div", "table-responsive")
+                        : tableHtml;
+
+                    $(r).empty().append($(html));
+                }
+            });
+        }
+
         processCharts(): void {
             const view = this.application.element;
             const highchartsBuilder: HighchartsBuilder = $.fn.KatApp.highchartsBuilderFactory( this.application );
@@ -2175,6 +2397,8 @@
                 this.processDisabled();
 
                 this.processCharts();
+
+                this.processTables();
 
                 this.processValidations();
 
@@ -2670,7 +2894,13 @@
                 const maxlength = el.data("maxlength");
                 const autoComplete = el.data("autocomplete") !== false;
                 const value = el.data("value");
+                const css = el.data("css");
+                const inputCss = el.data("inputcss");
                 const displayOnly = el.data("displayonly") === true;
+
+                if ( css !== undefined ) {
+                    $(".v" + id, el).addClass(css);
+                }
 
                 if ( label !== undefined ) {
                     $("span.l" + id, el).html(label);
@@ -2678,6 +2908,10 @@
 
                 let input = $("input[name='" + id + "']", el);
                 let displayOnlyLabel = $("div." + id + "DisplayOnly", el);
+
+                if ( inputCss !== undefined ) {
+                    input.addClass(inputCss);
+                }
 
                 if ( placeHolder !== undefined ) {
                     input.attr("placeholder", placeHolder);

@@ -77,6 +77,47 @@ interface CalculationInputTable
     Rows: CalculationInputTableRow[];
 }
 
+interface ContentsRow {
+    section: string;
+    type: string;
+    item: string;
+    class?: string;
+}
+
+interface ResultTableColumnConfiguration { 
+    name: string;
+    cssClass?: string;
+    isTextColumn: boolean;
+    xsColumns?: number;
+    smColumns?: number;
+    mdColumns?: number;
+    lgColumns?: number;
+    width?: number;
+    widthPct?: string;         
+}
+
+interface ResultTableConfiguration {
+    totalRows: number;
+    columnConfiguration: { 
+        [ key: string ]: ResultTableColumnConfiguration
+    };
+    columnConfigurationQuery: Array<ResultTableColumnConfiguration>;
+}
+
+interface ResultTableRow extends JSON {
+    "@id"?: string;
+    "@code"?: string;
+}
+interface ResultTableColumn {
+    "@class"?: string;
+    "@width"?: string;
+    "@r-width"?: string;
+    "@xs-width"?: string;
+    "@sm-width"?: string;
+    "@md-width"?: string;
+    "@lg-width"?: string;
+}
+
 interface RBLeRowWithId {
     "@id": string;
 }

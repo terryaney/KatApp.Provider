@@ -54,6 +54,167 @@
 .kat-app-css .bs-callout-info h4 {
 	color: #1b809e;
 }
+.kat-app-css .e .m {
+	margin-left: 0;
+	margin-right: 0;
+}
+.kat-app-css no-padding {
+	padding: 0;
+}
+.kat-app-css a:focus,
+.kat-app-css a:active:focus,
+.kat-app-css a.active:focus,
+.kat-app-css a.focus,
+.kat-app-css a:active.focus,
+.kat-app-css a.active.focus,
+.kat-app-css .btn:focus,
+.kat-app-css .btn:active:focus,
+.kat-app-css .btn.active:focus,
+.kat-app-css .btn.focus,
+.kat-app-css .btn:active.focus,
+.kat-app-css .btn.active.focus {
+	outline: none;
+}
+.kat-app-css .text-center .img-responsive {
+	display: inline-block;
+}
+.kat-app-css .row-no-gap {
+	margin-left: 0;
+	margin-right: 0;
+}
+.kat-app-css .row-no-gap > [class*=col-] {
+	padding-left: 0;
+	padding-right: 0;
+}
+.kat-app-css .row-gap-5 {
+	margin-left: -5px;
+	margin-right: -5px;
+}
+.kat-app-css .row-gap-5 > [class*=col-] {
+	padding-left: 5px;
+	padding-right: 5px;
+}
+.kat-app-css .row-gap-10 {
+	margin-left: -10px;
+	margin-right: -10px;
+}
+.kat-app-css .row-gap-10 > [class*=col-] {
+	padding-left: 10px;
+	padding-right: 10px;
+}
+.kat-app-css .visible-xxs,
+.kat-app-css .visible-xxs-block,
+.kat-app-css .visible-xxs-inline,
+.kat-app-css .visible-xxs-inline-block {
+	display: none !important;
+}
+.kat-app-css .text-red {
+	color: red;
+}
+.kat-app-css .text-blue {
+	color: #013d79;
+}
+.kat-app-css .text-sm {
+	font-size: .9em;
+}
+.kat-app-css .text-lg {
+	font-size: 1.5em;
+}
+.kat-app-css .text-xl {
+	font-size: 3em;
+}
+.kat-app-css .margin-bottom-xs {
+	margin-bottom: 5px;
+}
+.kat-app-css .margin-bottom-sm {
+	margin-bottom: 10px;
+}
+.kat-app-css .margin-bottom-md {
+	margin-bottom: 20px;
+}
+.kat-app-css .margin-bottom-lg {
+	margin-bottom: 40px;
+}
+@media (max-width: 480px) {
+	.kat-app-css .block-xxs {
+		display: block;
+		width: 100%;
+	}
+	.kat-app-css .visible-xxs {
+		display: block !important;
+	}
+	.kat-app-css table.visible-xxs {
+		display: table;
+	}
+	.kat-app-css tr.visible-xxs {
+		display: table-row !important;
+	}
+	.kat-app-css th.visible-xxs,
+	.kat-app-css td.visible-xxs {
+		display: table-cell !important;
+	}
+	.kat-app-css .col-xxs-1 {
+		width: 8.33333333%;
+	}
+	.kat-app-css .col-xxs-2 {
+		width: 16.66666667%;
+	}
+	.kat-app-css .col-xxs-3 {
+		width: 25%;
+	}
+	.kat-app-css .col-xxs-4 {
+		width: 33.33333333%;
+	}
+	.kat-app-css .col-xxs-5 {
+		width: 41.66666667%;
+	}
+	.kat-app-css .col-xxs-6 {
+		width: 50%;
+	}
+	.kat-app-css .col-xxs-7 {
+		width: 58.33333333%;
+	}
+	.kat-app-css .col-xxs-8 {
+		width: 66.66666667%;
+	}
+	.kat-app-css .col-xxs-9 {
+		width: 75%;
+	}
+	.kat-app-css .col-xxs-10 {
+		width: 83.33333333%;
+	}
+	.kat-app-css .col-xxs-12 {
+		width: 100%;
+		float: none;
+	}
+	.kat-app-css .visible-xxs-block {
+		display: block !important;
+	}
+	.kat-app-css .visible-xxs-inline {
+		display: inline !important;
+	}
+	.kat-app-css .visible-xxs-inline-block {
+		display: inline-block !important;
+	}
+	.kat-app-css .hidden-xxs {
+		display: none !important;
+	}
+}
+@media (max-width: 767px) {
+	.kat-app-css .block-xs {
+		display: block;
+	}
+}
+.kat-app-css .btn {
+	border-radius: 0;
+	border: none;
+}
+.kat-app-css .btn-primary {
+	padding: 5px 30px;
+}
+.kat-app-css .btn-xs {
+	padding: 5px 5px;
+}
 .kat-app-css label.disabled {
 	color: #ccc;
 	cursor: not-allowed: #ccc;

@@ -3227,7 +3227,7 @@
                 .attr("data-kat-initialized", "true");
 
             if ( application.element.attr("data-kat-initialized-tooltip") != "true" ) {
-                $("html").click(function (e) {
+                $(application.element).click(function (e) {
                     application.trace("Application.click - close all tooltips if need to.", TraceVerbosity.Diagnostic);
                     // http://stackoverflow.com/a/17375353/166231
                     if (!$(e.target).is(".popover-title, .popover-content")) {

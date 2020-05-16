@@ -183,375 +183,374 @@
 
             this.element.attr("rbl-application-id", this.id);
 
-            // Not sure I need this closure, but put it in anyway
-            (function( that: KatAppPlugIn ): void {
-                that.trace( "Started init", TraceVerbosity.Detailed );
-                const pipeline: Array<()=> void> = [];
-                let pipelineIndex = 0;
-    
-                const next = function(offest: number ): void {
+            this.trace( "Started init", TraceVerbosity.Detailed );
+            const pipeline: Array<()=> void> = [];
+            let pipelineIndex = 0;
+
+            const that: KatAppPlugIn = this;
+
+            const initPipeline = function(offest: number ): void {
+                switch (pipelineIndex) {
+                    case 1:
+                        that.trace( "init.pipeline.getView.finish", TraceVerbosity.Detailed );
+                        break;
+                    case 2:
+                        that.trace( "init.pipeline.downloadTemplates.finish", TraceVerbosity.Detailed );
+                        break;
+                    case 3:
+                        that.trace( "init.pipeline.injectTemplates.finish", TraceVerbosity.Detailed );
+                        break;
+                }
+
+                pipelineIndex += offest;
+
+                if ( pipelineIndex < pipeline.length ) {
+
                     switch (pipelineIndex) {
+                        case 0:
+                            that.trace( "init.pipeline.getView.start", TraceVerbosity.Detailed );
+                            break;
                         case 1:
-                            that.trace( "init.pipeline.getView.finish", TraceVerbosity.Detailed );
+                            that.trace( "init.pipeline.downloadTemplates.start", TraceVerbosity.Detailed );
                             break;
                         case 2:
-                            that.trace( "init.pipeline.downloadTemplates.finish", TraceVerbosity.Detailed );
+                            that.trace( "init.pipeline.injectTemplates.start", TraceVerbosity.Detailed );
                             break;
                         case 3:
-                            that.trace( "init.pipeline.injectTemplates.finish", TraceVerbosity.Detailed );
+                            that.trace( "init.pipeline.processTemplates.start", TraceVerbosity.Detailed );
                             break;
                     }
 
-                    pipelineIndex += offest;
+                    pipeline[ pipelineIndex++ ]();
+                }
+            };
 
-                    if ( pipelineIndex < pipeline.length ) {
+            let pipelineError: string | undefined = undefined;
 
-                        switch (pipelineIndex) {
-                            case 0:
-                                that.trace( "init.pipeline.getView.start", TraceVerbosity.Detailed );
-                                break;
-                            case 1:
-                                that.trace( "init.pipeline.downloadTemplates.start", TraceVerbosity.Detailed );
-                                break;
-                            case 2:
-                                that.trace( "init.pipeline.injectTemplates.start", TraceVerbosity.Detailed );
-                                break;
-                            case 3:
-                                that.trace( "init.pipeline.processTemplates.start", TraceVerbosity.Detailed );
-                                break;
-                        }
-    
-                        pipeline[ pipelineIndex++ ]();
-                    }
-                };
-    
-                let pipelineError: string | undefined = undefined;
+            const useTestView = that.options.debug?.useTestView ?? false;
+            const functionUrl = that.options.functionUrl;
+            const viewId = ensureGlobalPrefix( that.options.view ); 
+                            
+            // Gather up all requested templates requested for the current application so I can bind up any
+            // onTemplate() delegates.
+            let requiredTemplates: string[] = that.options.viewTemplates != undefined
+                ? that.options.viewTemplates.split( "," ).map( r => ensureGlobalPrefix( r )! ) // eslint-disable-line @typescript-eslint/no-non-null-assertion
+                : [];
 
-                const useTestView = that.options.debug?.useTestView ?? false;
-                const functionUrl = that.options.functionUrl;
-                const viewId = ensureGlobalPrefix( that.options.view ); 
-                                
-                // Gather up all requested templates requested for the current application so I can bind up any
-                // onTemplate() delegates.
-                let requiredTemplates: string[] = that.options.viewTemplates != undefined
-                    ? that.options.viewTemplates.split( "," ).map( r => ensureGlobalPrefix( r )! ) // eslint-disable-line @typescript-eslint/no-non-null-assertion
-                    : [];
+            let resourceResults: ResourceResults | undefined = undefined;
 
-                let resourceResults: ResourceResults | undefined = undefined;
+            //#region - Pipeline Flow Documentation
+            /*
+                1. Get View (will release flow control when ajax.get() called)
+                    When View is returned...
+                        a. If error, set pipelineError and jump to finish
+                        b. If no error
+                            1. Inject view into markup
+                            2. If any templates specified on <rbl-config/>, append it to requiredTemplates list.
+                2. Get all requiredTemplates ...
+                    a. For any required templates *already* requested...
+                        1. Can not leave this pipeline step until notified for each template
+                        2. Register callbacks that will be called with template is ready. Each callback...
+                            a. If error occurred on any previous template callback, exit function doing nothing
+                            b. If not waiting for any more templates, continue to next pipeline
+                            c. If waiting for more, set flag and continue to wait
+                    b. For any required templates *not* already requested *or* downloaded...
+                        1. Initialize the _templatesUsedByAllApps variable for template so other apps know it is requested
+                        2. Get templates (will release flow control when ajax.get() called)
+                            When templates are returned...
+                                a. If error, set pipelineError, call all template callbacks (of other apps) signalling error, and jump to finish
+                                b. If no error
+                                    1. If not waiting for other templates, continue to next pipeline
+                                    2. If waiting for other templates, exit function, the template delegates will move pipeline along
+                3. Inject templates ...
+                    a. For all templates downloaded by *this* application...
+                        1. Inject the template into markup
+                        2. Set the _templatesUsedByAllApps.data property
+                        3. For all registered template callbacks, call the template callback signalling success.
+                4. Process templates ...
+                    1. If any error during pipeline, log error
+                    2. If no errors...
+                        a. For every template needed by this application (downloaded by *any* application)...
+                            1. Hook up all event handlers registered with onTemplate()
+                        b. Process templates that do *not* use RBL results
+                        c. Bind all change.RBLe events to all application inputs
+                        d. Trigger onInitialized event.
+                        e. Call configureUI calculation if needed (will release flow control when I call $ajax() method to RBLe service)
+            */
+            //#endregion
 
-                //#region - Pipeline Flow Documentation
-                /*
-                    1. Get View (will release flow control when ajax.get() called)
-                        When View is returned...
-                            a. If error, set pipelineError and jump to finish
-                            b. If no error
-                                1. Inject view into markup
-                                2. If any templates specified on <rbl-config/>, append it to requiredTemplates list.
-                    2. Get all requiredTemplates ...
-                        a. For any required templates *already* requested...
-                            1. Can not leave this pipeline step until notified for each template
-                            2. Register callbacks that will be called with template is ready. Each callback...
-                                a. If error occurred on any previous template callback, exit function doing nothing
-                                b. If not waiting for any more templates, continue to next pipeline
-                                c. If waiting for more, set flag and continue to wait
-                        b. For any required templates *not* already requested *or* downloaded...
-                            1. Initialize the _templatesUsedByAllApps variable for template so other apps know it is requested
-                            2. Get templates (will release flow control when ajax.get() called)
-                                When templates are returned...
-                                    a. If error, set pipelineError, call all template callbacks (of other apps) signalling error, and jump to finish
-                                    b. If no error
-                                        1. If not waiting for other templates, continue to next pipeline
-                                        2. If waiting for other templates, exit function, the template delegates will move pipeline along
-                    3. Inject templates ...
-                        a. For all templates downloaded by *this* application...
-                            1. Inject the template into markup
-                            2. Set the _templatesUsedByAllApps.data property
-                            3. For all registered template callbacks, call the template callback signalling success.
-                    4. Process templates ...
-                        1. If any error during pipeline, log error
-                        2. If no errors...
-                            a. For every template needed by this application (downloaded by *any* application)...
-                                1. Hook up all event handlers registered with onTemplate()
-                            b. Process templates that do *not* use RBL results
-                            c. Bind all change.RBLe events to all application inputs
-                            d. Trigger onInitialized event.
-                            e. Call configureUI calculation if needed (will release flow control when I call $ajax() method to RBLe service)
-                */
-                //#endregion
+            const _templatesUsedByAllApps = $.fn.KatApp.templatesUsedByAllApps;
+            const _templateDelegates = $.fn.KatApp.templateDelegates;
 
-                const _templatesUsedByAllApps = $.fn.KatApp.templatesUsedByAllApps;
-                const _templateDelegates = $.fn.KatApp.templateDelegates;
-
-                // Made all pipeline functions variables just so that I could search on name better instead of 
-                // simply a delegate added to the pipeline array.
-                const loadView = function(): void { 
-                    if ( viewId !== undefined ) {
-                        that.trace(viewId + " requested from CMS.", TraceVerbosity.Detailed);
-                        
-                        let debugResourcesRoot = that.options.debug?.debugResourcesRoot;
-                        if ( debugResourcesRoot !== undefined ) {
-                            debugResourcesRoot += "/views";
-                        }
-                        that.trace("Downloading " + viewId + " from " + debugResourcesRoot ?? functionUrl, TraceVerbosity.Diagnostic );
-
-                        KatApp.getResources( that, viewId, useTestView, false, debugResourcesRoot,
-                            ( errorMessage, results ) => {                                
-
-                                pipelineError = errorMessage;
-
-                                if ( pipelineError === undefined ) {
-                                    that.trace(viewId + " returned from CMS.", TraceVerbosity.Normal);
-
-                                    const data = results![ viewId! ]; // eslint-disable-line @typescript-eslint/no-non-null-assertion
-
-                                    // Process as view - get info from rbl-config and inject markup
-                                    const view = $("<div class='kat-app-css'>" + data.replace( /{thisView}/g, "[rbl-application-id='" + that.id + "']" ) + "</div>");
-                                    const rblConfig = $("rbl-config", view).first();
-            
-                                    if ( rblConfig.length !== 1 ) {
-                                        that.trace("View " + viewId + " is missing rbl-config element.", TraceVerbosity.Quiet);
-                                    }
-
-                                    that.options.calcEngine = that.options.calcEngine ?? rblConfig?.attr("calcengine");
-                                    const toFetch = rblConfig?.attr("templates");
-                                    if ( toFetch !== undefined ) {
-                                        requiredTemplates = 
-                                            requiredTemplates
-                                                .concat( toFetch.split(",").map( r => ensureGlobalPrefix( r )! ) ) // eslint-disable-line @typescript-eslint/no-non-null-assertion
-                                                // unique templates only
-                                                .filter((v, i, a) => v !== undefined && v.length != 0 && a.indexOf(v) === i );
-
-                                    }
-                                    that.options.inputTab = that.options.inputTab ?? rblConfig?.attr("input-tab");
-                                    const attrResultTabs = rblConfig?.attr("result-tabs");
-                                    that.options.resultTabs = that.options.resultTabs ?? ( attrResultTabs != undefined ? attrResultTabs.split( "," ) : undefined );
-                                    
-                                    that.element.empty().append( view );
-                                    
-                                    next( 0 );
-                                }
-                                else {
-                                    pipelineError = errorMessage;
-                                    next( 2 ); // jump to finish
-                                }
-                            }
-                        );
-                    }
-                    else {
-                        next( 0 );
-                    }
-                };
-                const loadTemplates = function(): void { 
-                    // Total number of resources already requested that I have to wait for
-                    let otherResourcesNeeded = 0;
+            // Made all pipeline functions variables just so that I could search on name better instead of 
+            // simply a delegate added to the pipeline array.
+            const loadView = function(): void { 
+                if ( viewId !== undefined ) {
+                    that.trace(viewId + " requested from CMS.", TraceVerbosity.Detailed);
                     
-                    // For all templates that are already being fetched, create a callback to move on when 
-                    // not waiting for any more resources
-                    requiredTemplates.filter( r => ( _templatesUsedByAllApps[ r ]?.requested ?? false ) )
-                        .forEach( function( r ) {                                
-                            otherResourcesNeeded++;
+                    let debugResourcesRoot = that.options.debug?.debugResourcesRoot;
+                    if ( debugResourcesRoot !== undefined ) {
+                        debugResourcesRoot += "/views";
+                    }
+                    that.trace("Downloading " + viewId + " from " + debugResourcesRoot ?? functionUrl, TraceVerbosity.Diagnostic );
 
-                            that.trace("Need to wait for already requested template: " + r, TraceVerbosity.Detailed);
+                    KatApp.getResources( that, viewId, useTestView, false, debugResourcesRoot,
+                        ( errorMessage, results ) => {                                
 
-                            _templatesUsedByAllApps[ r ].callbacks.push(
-                                function( errorMessage ) {
-                                    that.trace("Template: " + r + " is now ready.", TraceVerbosity.Detailed);
+                            pipelineError = errorMessage;
 
-                                    // only process (moving to finish or next step) if not already assigned an error
-                                    if ( pipelineError === undefined ) {
-                                        if ( errorMessage === undefined ) {
-                                            otherResourcesNeeded--;
-                                            if ( otherResourcesNeeded === 0 ) {
-                                                that.trace("No more templates needed, process 'inject templates' pipeline.", TraceVerbosity.Diagnostic);
-                                                next( 0 ); // move to next step if not waiting for anything else
-                                            }
-                                            else {
-                                                that.trace("Waiting for " + otherResourcesNeeded + " more templates.", TraceVerbosity.Diagnostic);
-                                            }
+                            if ( pipelineError === undefined ) {
+                                that.trace(viewId + " returned from CMS.", TraceVerbosity.Normal);
+
+                                const data = results![ viewId! ]; // eslint-disable-line @typescript-eslint/no-non-null-assertion
+
+                                // Process as view - get info from rbl-config and inject markup
+                                const view = $("<div class='kat-app-css'>" + data.replace( /{thisView}/g, "[rbl-application-id='" + that.id + "']" ) + "</div>");
+                                const rblConfig = $("rbl-config", view).first();
+        
+                                if ( rblConfig.length !== 1 ) {
+                                    that.trace("View " + viewId + " is missing rbl-config element.", TraceVerbosity.Quiet);
+                                }
+
+                                that.options.calcEngine = that.options.calcEngine ?? rblConfig?.attr("calcengine");
+                                const toFetch = rblConfig?.attr("templates");
+                                if ( toFetch !== undefined ) {
+                                    requiredTemplates = 
+                                        requiredTemplates
+                                            .concat( toFetch.split(",").map( r => ensureGlobalPrefix( r )! ) ) // eslint-disable-line @typescript-eslint/no-non-null-assertion
+                                            // unique templates only
+                                            .filter((v, i, a) => v !== undefined && v.length != 0 && a.indexOf(v) === i );
+
+                                }
+                                that.options.inputTab = that.options.inputTab ?? rblConfig?.attr("input-tab");
+                                const attrResultTabs = rblConfig?.attr("result-tabs");
+                                that.options.resultTabs = that.options.resultTabs ?? ( attrResultTabs != undefined ? attrResultTabs.split( "," ) : undefined );
+                                
+                                that.element.empty().append( view );
+                                
+                                initPipeline( 0 );
+                            }
+                            else {
+                                pipelineError = errorMessage;
+                                initPipeline( 2 ); // jump to finish
+                            }
+                        }
+                    );
+                }
+                else {
+                    initPipeline( 0 );
+                }
+            };
+            const loadTemplates = function(): void { 
+                // Total number of resources already requested that I have to wait for
+                let otherResourcesNeeded = 0;
+                
+                // For all templates that are already being fetched, create a callback to move on when 
+                // not waiting for any more resources
+                requiredTemplates.filter( r => ( _templatesUsedByAllApps[ r ]?.requested ?? false ) )
+                    .forEach( function( r ) {                                
+                        otherResourcesNeeded++;
+
+                        that.trace("Need to wait for already requested template: " + r, TraceVerbosity.Detailed);
+
+                        _templatesUsedByAllApps[ r ].callbacks.push(
+                            function( errorMessage ) {
+                                that.trace("Template: " + r + " is now ready.", TraceVerbosity.Detailed);
+
+                                // only process (moving to finish or next step) if not already assigned an error
+                                if ( pipelineError === undefined ) {
+                                    if ( errorMessage === undefined ) {
+                                        otherResourcesNeeded--;
+                                        if ( otherResourcesNeeded === 0 ) {
+                                            that.trace("No more templates needed, process 'inject templates' pipeline.", TraceVerbosity.Diagnostic);
+                                            initPipeline( 0 ); // move to next step if not waiting for anything else
                                         }
                                         else {
-                                            that.trace("Template " + r + " error: " + errorMessage, TraceVerbosity.Quiet );
-                                            pipelineError = errorMessage;
-                                            next( 1 ); // jump to finish
+                                            that.trace("Waiting for " + otherResourcesNeeded + " more templates.", TraceVerbosity.Diagnostic);
                                         }
-                                    }
-                                }
-                            );
-                        });
-
-                    // Array of items this app will fetch because not requested yet
-                    const toFetch: string[] = [];
-
-                    // For every template this app needs that is *NOT* already requested for download
-                    // or finished, add it to the fetch list and set the state to 'requesting'
-                    requiredTemplates
-                        .filter( r => !( _templatesUsedByAllApps[ r ]?.requested ?? false ) && _templatesUsedByAllApps[ r ]?.data === undefined )
-                        .forEach( function( r ) {
-                            _templatesUsedByAllApps[ r ] = { requested: true, callbacks: [] };
-                            toFetch.push(r);
-                        });
-
-                    if ( toFetch.length > 0 ) {
-
-                        const toFetchList = toFetch.join(",");
-                        that.trace(toFetchList + " requested from CMS.", TraceVerbosity.Detailed);
-
-                        let debugResourcesRoot = that.options.debug?.debugResourcesRoot;
-                        if ( debugResourcesRoot !== undefined ) {
-                            debugResourcesRoot += "/templates";
-                        }
-                        that.trace("Downloading " + toFetchList + " from " + debugResourcesRoot ?? functionUrl, TraceVerbosity.Diagnostic );
-                        KatApp.getResources( that, toFetchList, useTestView, false, debugResourcesRoot,
-                            ( errorMessage, data ) => {                                
-
-                                if ( errorMessage === undefined ) {
-                                    resourceResults = data as ResourceResults;
-                                    that.trace(toFetchList + " returned from CMS.", TraceVerbosity.Normal);
-                                    
-                                    // Only move on if not waiting on any more resources from other apps
-                                    if ( otherResourcesNeeded === 0 ) {
-                                        that.trace("No more templates needed, process 'inject templates' pipeline.", TraceVerbosity.Diagnostic);
-                                        next( 0 );
                                     }
                                     else {
-                                        that.trace("Can't move to next step because waiting on templates.", TraceVerbosity.Diagnostic);
+                                        that.trace("Template " + r + " error: " + errorMessage, TraceVerbosity.Quiet );
+                                        pipelineError = errorMessage;
+                                        initPipeline( 1 ); // jump to finish
                                     }
-                                }
-                                else {
-                                    toFetch.forEach( r => {
-                                        // call all registered callbacks from other apps
-                                        let currentCallback: ( ( errorMessage: string )=> void ) | undefined = undefined;
-                                        while( ( currentCallback = _templatesUsedByAllApps[ r ].callbacks.pop() ) !== undefined )
-                                        {
-                                            currentCallback( errorMessage );
-                                        }
-                                        _templatesUsedByAllApps[ r ].requested = false; // remove it so someone else might try to download again
-                                    });
-
-                                    pipelineError = errorMessage;
-                                    next( 1 ); // jump to finish
                                 }
                             }
                         );
+                    });
+
+                // Array of items this app will fetch because not requested yet
+                const toFetch: string[] = [];
+
+                // For every template this app needs that is *NOT* already requested for download
+                // or finished, add it to the fetch list and set the state to 'requesting'
+                requiredTemplates
+                    .filter( r => !( _templatesUsedByAllApps[ r ]?.requested ?? false ) && _templatesUsedByAllApps[ r ]?.data === undefined )
+                    .forEach( function( r ) {
+                        _templatesUsedByAllApps[ r ] = { requested: true, callbacks: [] };
+                        toFetch.push(r);
+                    });
+
+                if ( toFetch.length > 0 ) {
+
+                    const toFetchList = toFetch.join(",");
+                    that.trace(toFetchList + " requested from CMS.", TraceVerbosity.Detailed);
+
+                    let debugResourcesRoot = that.options.debug?.debugResourcesRoot;
+                    if ( debugResourcesRoot !== undefined ) {
+                        debugResourcesRoot += "/templates";
                     }
-                    else if ( otherResourcesNeeded === 0 ) {
-                        next( 1 ); // jump to finish
-                    }
-                };
-                const injectTemplates = function(): void {
-                        
-                    if ( resourceResults != null ) {
-                        // For the templates *this app* downloaded, inject them into markup                        
-                        Object.keys(resourceResults).forEach( r => { // eslint-disable-line @typescript-eslint/no-non-null-assertion
-                            const data = resourceResults![ r ]; // eslint-disable-line @typescript-eslint/no-non-null-assertion
+                    that.trace("Downloading " + toFetchList + " from " + debugResourcesRoot ?? functionUrl, TraceVerbosity.Diagnostic );
+                    KatApp.getResources( that, toFetchList, useTestView, false, debugResourcesRoot,
+                        ( errorMessage, data ) => {                                
 
-                            // TOM (your comment, but do we need that container?): create container element 'rbl-templates' with an attribute 'rbl-t' for template content 
-                            // and this attribute used for checking(?)
-                            
-                            const rblKatApps = $("rbl-katapps");
-                            const t = $("<rbl-templates style='display:none;' rbl-t='" + r.toLowerCase() + "'>" + data.replace( /{thisTemplate}/g, r ) + "</rbl-templates>");
-
-                            t.appendTo(rblKatApps);
-
-                            that.trace( r + " injected into markup.", TraceVerbosity.Normal );
-
-                            // Should only ever get template results for templates that I can request
-                            _templatesUsedByAllApps[ r ].data = data;
-                            _templatesUsedByAllApps[ r ].requested = false;
-                            
-                            // call all registered callbacks from other apps
-                            let currentCallback: ( ( errorMessage: string | undefined )=> void ) | undefined = undefined;
-                            while( ( currentCallback = _templatesUsedByAllApps[ r ].callbacks.pop() ) !== undefined )
-                            {
-                                currentCallback( undefined );
-                            }
-                        });
-                    }
-
-                    next( 0 );
-                };
-                const finalize = function(): void {
-                    
-                    if ( pipelineError === undefined ) {
-                        
-                        // Now, for every unique template reqeusted by client, see if any template delegates were
-                        // registered for the template using templateOn().  If so, hook up the 'real' event requested
-                        // to the currently running application.  Need to use templateOn() because the template is
-                        // only injected once into the markup but we need to hook up events for each event that
-                        // wants to use this template.
-                        requiredTemplates
-                            .forEach( t => {
-                                // Loop every template event handler that was called when template loaded
-                                // and register a handler to call the delegate
-                                _templateDelegates
-                                    .filter( d => d.Template.toLowerCase() == t.toLowerCase() )
-                                    .forEach( d => {
-                                        that.trace( "[" + d.Events + "] events from template [" + d.Template + "] hooked up.", TraceVerbosity.Normal );
-                                        that.element.on( d.Events, function( ...args ): void {
-                                            d.Delegate.apply( this, args );
-                                        } );
-                                    });
-                            });
-
-                        // Update options.viewTemplates just in case someone is looking at them
-                        that.options.viewTemplates = requiredTemplates.join( "," );
-
-                        // Build up template content that DOES NOT use rbl results, but instead just 
-                        // uses data-* to create a dataobject.  Normally just making controls with templates here
-                        $("[rbl-tid]:not([rbl-source])", that.element).each(function () {
-                            const templateId = $(this).attr('rbl-tid');
-                            if (templateId !== undefined && templateId !== "inline") {
-                                //Replace content with template processing, using data-* items in this pass
-                                $(this).html(that.rble.processTemplate( templateId, $(this).data()));
-                            }
-                        });
-
-                        // This used to be inside Standard_Template.templateOn, but since it is standard and so common, just moved it here.
-                        // Original code:
-                        /*
-                            $.fn.KatApp.templateOn("{thisTemplate}", "onInitialized.RBLe", function (event, application) {
-                                application.trace("Processing onInitialized.RBLe for Template [{thisTemplate}]...", TraceVerbosity.Normal);
-
-                                if (KatApp.pageParameters["debugkatapp"] === "t.{thisTemplate}.onInitialized") {
-                                    debugger;
+                            if ( errorMessage === undefined ) {
+                                resourceResults = data as ResourceResults;
+                                that.trace(toFetchList + " returned from CMS.", TraceVerbosity.Normal);
+                                
+                                // Only move on if not waiting on any more resources from other apps
+                                if ( otherResourcesNeeded === 0 ) {
+                                    that.trace("No more templates needed, process 'inject templates' pipeline.", TraceVerbosity.Diagnostic);
+                                    initPipeline( 0 );
                                 }
+                                else {
+                                    that.trace("Can't move to next step because waiting on templates.", TraceVerbosity.Diagnostic);
+                                }
+                            }
+                            else {
+                                toFetch.forEach( r => {
+                                    // call all registered callbacks from other apps
+                                    let currentCallback: ( ( errorMessage: string )=> void ) | undefined = undefined;
+                                    while( ( currentCallback = _templatesUsedByAllApps[ r ].callbacks.pop() ) !== undefined )
+                                    {
+                                        currentCallback( errorMessage );
+                                    }
+                                    _templatesUsedByAllApps[ r ].requested = false; // remove it so someone else might try to download again
+                                });
 
-                                const templateBuilder = $.fn.KatApp.standardTemplateBuilderFactory( application );
-                                templateBuilder.processInputs();
-                                templateBuilder.processCarousels();
-                            });
-                        */
-                        const templateBuilder: StandardTemplateBuilder = $.fn.KatApp.standardTemplateBuilderFactory( that );
-                        // Process data-* attributes and bind events
-                        templateBuilder.processUI();
-
-                        that.ui.bindCalculationInputs();
-
-                        that.ui.triggerEvent( "onInitialized", that );
-
-                        if ( that.options.runConfigureUICalculation ) {
-                            that.configureUI();
+                                pipelineError = errorMessage;
+                                initPipeline( 1 ); // jump to finish
+                            }
                         }
+                    );
+                }
+                else if ( otherResourcesNeeded === 0 ) {
+                    initPipeline( 1 ); // jump to finish
+                }
+            };
+            const injectTemplates = function(): void {
+                    
+                if ( resourceResults != null ) {
+                    // For the templates *this app* downloaded, inject them into markup                        
+                    Object.keys(resourceResults).forEach( r => { // eslint-disable-line @typescript-eslint/no-non-null-assertion
+                        const data = resourceResults![ r ]; // eslint-disable-line @typescript-eslint/no-non-null-assertion
+
+                        // TOM (your comment, but do we need that container?): create container element 'rbl-templates' with an attribute 'rbl-t' for template content 
+                        // and this attribute used for checking(?)
+                        
+                        const rblKatApps = $("rbl-katapps");
+                        const t = $("<rbl-templates style='display:none;' rbl-t='" + r.toLowerCase() + "'>" + data.replace( /{thisTemplate}/g, r ) + "</rbl-templates>");
+
+                        t.appendTo(rblKatApps);
+
+                        that.trace( r + " injected into markup.", TraceVerbosity.Normal );
+
+                        // Should only ever get template results for templates that I can request
+                        _templatesUsedByAllApps[ r ].data = data;
+                        _templatesUsedByAllApps[ r ].requested = false;
+                        
+                        // call all registered callbacks from other apps
+                        let currentCallback: ( ( errorMessage: string | undefined )=> void ) | undefined = undefined;
+                        while( ( currentCallback = _templatesUsedByAllApps[ r ].callbacks.pop() ) !== undefined )
+                        {
+                            currentCallback( undefined );
+                        }
+                    });
+                }
+
+                initPipeline( 0 );
+            };
+            const finalize = function(): void {
+                
+                if ( pipelineError === undefined ) {
+                    
+                    // Now, for every unique template reqeusted by client, see if any template delegates were
+                    // registered for the template using templateOn().  If so, hook up the 'real' event requested
+                    // to the currently running application.  Need to use templateOn() because the template is
+                    // only injected once into the markup but we need to hook up events for each event that
+                    // wants to use this template.
+                    requiredTemplates
+                        .forEach( t => {
+                            // Loop every template event handler that was called when template loaded
+                            // and register a handler to call the delegate
+                            _templateDelegates
+                                .filter( d => d.Template.toLowerCase() == t.toLowerCase() )
+                                .forEach( d => {
+                                    that.trace( "[" + d.Events + "] events from template [" + d.Template + "] hooked up.", TraceVerbosity.Normal );
+                                    that.element.on( d.Events, function( ...args ): void {
+                                        d.Delegate.apply( this, args );
+                                    } );
+                                });
+                        });
+
+                    // Update options.viewTemplates just in case someone is looking at them
+                    that.options.viewTemplates = requiredTemplates.join( "," );
+
+                    // Build up template content that DOES NOT use rbl results, but instead just 
+                    // uses data-* to create a dataobject.  Normally just making controls with templates here
+                    $("[rbl-tid]:not([rbl-source])", that.element).each(function () {
+                        const templateId = $(this).attr('rbl-tid');
+                        if (templateId !== undefined && templateId !== "inline") {
+                            //Replace content with template processing, using data-* items in this pass
+                            $(this).html(that.rble.processTemplate( templateId, $(this).data()));
+                        }
+                    });
+
+                    // This used to be inside Standard_Template.templateOn, but since it is standard and so common, just moved it here.
+                    // Original code:
+                    /*
+                        $.fn.KatApp.templateOn("{thisTemplate}", "onInitialized.RBLe", function (event, application) {
+                            application.trace("Processing onInitialized.RBLe for Template [{thisTemplate}]...", TraceVerbosity.Normal);
+
+                            if (KatApp.pageParameters["debugkatapp"] === "t.{thisTemplate}.onInitialized") {
+                                debugger;
+                            }
+
+                            const templateBuilder = $.fn.KatApp.standardTemplateBuilderFactory( application );
+                            templateBuilder.processInputs();
+                            templateBuilder.processCarousels();
+                        });
+                    */
+                    const templateBuilder: StandardTemplateBuilder = $.fn.KatApp.standardTemplateBuilderFactory( that );
+                    // Process data-* attributes and bind events
+                    templateBuilder.processUI();
+
+                    that.ui.bindCalculationInputs();
+
+                    that.ui.triggerEvent( "onInitialized", that );
+
+                    if ( that.options.runConfigureUICalculation ) {
+                        that.configureUI();
                     }
-                    else {
-                        that.trace( "Error during Provider.init: " + pipelineError, TraceVerbosity.Quiet );
-                    }
+                }
+                else {
+                    that.trace( "Error during Provider.init: " + pipelineError, TraceVerbosity.Quiet );
+                }
 
-                    that.trace( "Finished init", TraceVerbosity.Detailed );
-                    next( 0 ); // just to get the trace statement, can remove after all tested
+                that.trace( "Finished init", TraceVerbosity.Detailed );
+                initPipeline( 0 ); // just to get the trace statement, can remove after all tested
 
-                };
+            };
 
-                pipeline.push( 
-                    loadView,
-                    loadTemplates,
-                    injectTemplates,
-                    finalize
-                );
-    
-                // Start the pipeline
-                next( 0 );
-            })( this );
+            pipeline.push( 
+                loadView,
+                loadTemplates,
+                injectTemplates,
+                finalize
+            );
+
+            // Start the pipeline
+            initPipeline( 0 );
         }
 
         rebuild( options: KatAppOptions ): void {
@@ -575,268 +574,268 @@
 
             this.ui.triggerEvent( "onCalculateStart", this );
 
-            (function( that: KatAppPlugIn ): void {
-                // Build up complete set of options to use for this calculation call
-                const currentOptions = KatApp.extend(
-                    {}, // make a clone of the options
-                    that.options, // original options
-                    customOptions, // override options
-                ) as KatAppOptions;
+            const that: KatAppPlugIn = this;
 
-                const pipeline: Array<()=> void> = [];
-                let pipelineIndex = 0;
-    
-                const next = function( offset: number ): void {
-                    pipelineIndex += offset;
-    
-                    if ( pipelineIndex < pipeline.length ) {                    
-                        pipeline[ pipelineIndex++ ]();
+            // Build up complete set of options to use for this calculation call
+            const currentOptions = KatApp.extend(
+                {}, // make a clone of the options
+                that.options, // original options
+                customOptions, // override options
+            ) as KatAppOptions;
+
+            const pipeline: Array<()=> void> = [];
+            let pipelineIndex = 0;
+
+            const calculatePipeline = function( offset: number ): void {
+                pipelineIndex += offset;
+
+                if ( pipelineIndex < pipeline.length ) {                    
+                    pipeline[ pipelineIndex++ ]();
+                }
+            };
+
+            const callSharedCallbacks = function( errorMessage: string | undefined ): void {
+                let currentCallback: ( ( em: string | undefined )=> void ) | undefined = undefined;
+                while( ( currentCallback = _sharedData.callbacks.pop() ) !== undefined )
+                {
+                    currentCallback( errorMessage );
+                }
+                _sharedData.requesting = false;
+                _sharedData.lastRequested = Date.now();
+            };
+
+            let pipelineError: string | undefined = undefined;
+
+            // Made all pipeline functions variables just so that I could search on name better instead of 
+            // simply a delegate added to the pipeline array.
+            const submitCalculation = function(): void { 
+                try {
+                    that.rble.submitCalculation( 
+                        currentOptions, 
+                        // If failed, let it do next job (getData, register, resubmit), otherwise, jump to finish
+                        errorMessage => { 
+                            pipelineError = errorMessage; 
+                            calculatePipeline( errorMessage !== undefined ? 0 : 3 );
+                        } 
+                    );
+                } catch (error) {
+                    pipelineError = "Submit.Pipeline exception: " + error;
+                    calculatePipeline( 3 );
+                }
+            };
+            const getCalculationData = function(): void {
+                try {
+                    pipelineError = undefined; // Was set in previous pipeline calculate attempt, but clear out and try flow again
+
+                    if ( shareDataWithOtherApplications && _sharedData.requesting ) {
+                        that.trace("Need to wait for already requested data.", TraceVerbosity.Detailed);
+                        // Wait for callback...
+
+                        _sharedData.callbacks.push( function( errorMessage ) {
+                            if ( errorMessage === undefined ) {
+                                // When called back, it'll be after getting data *or* after
+                                // registration if options call for it, so just jump to resubmit
+                                that.trace("Data is now ready.", TraceVerbosity.Detailed);
+                                that.options.data = currentOptions.data = _sharedData.data;
+                                that.options.registeredToken = currentOptions.registeredToken = _sharedData.registeredToken;
+                                that.options.sharedDataLastRequested = _sharedData.lastRequested;
+                                calculatePipeline( 1 ); 
+                            }
+                            else {
+                                that.trace("Data retrieval failed in other application.", TraceVerbosity.Detailed);
+                                pipelineError = errorMessage;
+                                calculatePipeline( 2 ); // If error, jump to finish
+                            }                  
+                        });
                     }
-                };
-    
-                const callSharedCallbacks = function( errorMessage: string | undefined ): void {
-                    let currentCallback: ( ( em: string | undefined )=> void ) | undefined = undefined;
-                    while( ( currentCallback = _sharedData.callbacks.pop() ) !== undefined )
-                    {
-                        currentCallback( errorMessage );
+                    else if ( shareDataWithOtherApplications && _sharedData.lastRequested != null && ( that.options.sharedDataLastRequested === undefined || _sharedData.lastRequested > that.options.sharedDataLastRequested ) ) {
+                        // Protecting against following scenario:
+                        // Two applications registered data on server and timed out due to inactivity.  Then both
+                        // applications triggered calculations at 'similar times' and both submit to server.  
+                        // Both throw an error because they can not find registered transaction package.
+                        // 1. Application 1 returns from error and enters *this* pipeline to get data.
+                        // 2. Application 1 gets data and successfully registers it, then sets 'requesting'=false.
+                        // 3. Application 1 submits calculation again.
+                        // 4. Application 2 returns from first calculation attempt with error of no registered data.
+                        // 5. Application 2 enters *this* pipeline, but requesting is no longer true.
+                        //      - Normally, it would then think it has to get/register data itself, but with this
+                        //        logic, it'll first check to see if there is 'new' data, and use that if possible.
+                        //
+                        // So, if Sharing data, and the shared request date > application.shared request date, then
+                        // just grab the data from _shared and move on to resubmit.
+                        that.options.data = currentOptions.data = _sharedData.data;
+                        that.options.registeredToken = currentOptions.registeredToken = _sharedData.registeredToken;
+                        that.options.sharedDataLastRequested = _sharedData.lastRequested;
+                        calculatePipeline( 1 ); 
                     }
-                    _sharedData.requesting = false;
-                    _sharedData.lastRequested = Date.now();
-                };
+                    else {
+                        try {
+                            if ( shareDataWithOtherApplications ) {
+                                _sharedData.requesting = true;
+                                _sharedData.registeredToken = undefined;
+                                _sharedData.data = undefined;
+                            }
+                            that.options.data = currentOptions.data = undefined;
+                            that.options.registeredToken = currentOptions.registeredToken = undefined;
+                
+                            that.rble.getData( 
+                                currentOptions, 
+                                // If failed, then I am unable to register data, so just jump to finish, 
+                                // otherwise continue to registerData or submit
+                                ( errorMessage, data ) => { 
+                                    if ( errorMessage !== undefined ) {
+                                        pipelineError = errorMessage;
 
-                let pipelineError: string | undefined = undefined;
-    
-                // Made all pipeline functions variables just so that I could search on name better instead of 
-                // simply a delegate added to the pipeline array.
-                const submitCalculation = function(): void { 
-                    try {
-                        that.rble.submitCalculation( 
-                            currentOptions, 
-                            // If failed, let it do next job (getData, register, resubmit), otherwise, jump to finish
-                            errorMessage => { 
-                                pipelineError = errorMessage; 
-                                next( errorMessage !== undefined ? 0 : 3 );
-                            } 
-                        );
-                    } catch (error) {
-                        pipelineError = "Submit.Pipeline exception: " + error;
-                        next( 3 );
-                    }
-                };
-                const getCalculationData = function(): void {
-                    try {
-                        pipelineError = undefined; // Was set in previous pipeline calculate attempt, but clear out and try flow again
+                                        if ( shareDataWithOtherApplications ) {
+                                            callSharedCallbacks( errorMessage );
+                                        }
 
-                        if ( shareDataWithOtherApplications && _sharedData.requesting ) {
-                            that.trace("Need to wait for already requested data.", TraceVerbosity.Detailed);
-                            // Wait for callback...
+                                        calculatePipeline( 2 ); // If error, jump to finish
+                                    }
+                                    else {
+                                        that.options.data = currentOptions.data = data as RBLeRESTServiceResult;
 
-                            _sharedData.callbacks.push( function( errorMessage ) {
-                                if ( errorMessage === undefined ) {
-                                    // When called back, it'll be after getting data *or* after
-                                    // registration if options call for it, so just jump to resubmit
-                                    that.trace("Data is now ready.", TraceVerbosity.Detailed);
-                                    that.options.data = currentOptions.data = _sharedData.data;
-                                    that.options.registeredToken = currentOptions.registeredToken = _sharedData.registeredToken;
-                                    that.options.sharedDataLastRequested = _sharedData.lastRequested;
-                                    next( 1 ); 
-                                }
-                                else {
-                                    that.trace("Data retrieval failed in other application.", TraceVerbosity.Detailed);
-                                    pipelineError = errorMessage;
-                                    next( 2 ); // If error, jump to finish
-                                }                  
-                            });
-                        }
-                        else if ( shareDataWithOtherApplications && _sharedData.lastRequested != null && ( that.options.sharedDataLastRequested === undefined || _sharedData.lastRequested > that.options.sharedDataLastRequested ) ) {
-                            // Protecting against following scenario:
-                            // Two applications registered data on server and timed out due to inactivity.  Then both
-                            // applications triggered calculations at 'similar times' and both submit to server.  
-                            // Both throw an error because they can not find registered transaction package.
-                            // 1. Application 1 returns from error and enters *this* pipeline to get data.
-                            // 2. Application 1 gets data and successfully registers it, then sets 'requesting'=false.
-                            // 3. Application 1 submits calculation again.
-                            // 4. Application 2 returns from first calculation attempt with error of no registered data.
-                            // 5. Application 2 enters *this* pipeline, but requesting is no longer true.
-                            //      - Normally, it would then think it has to get/register data itself, but with this
-                            //        logic, it'll first check to see if there is 'new' data, and use that if possible.
-                            //
-                            // So, if Sharing data, and the shared request date > application.shared request date, then
-                            // just grab the data from _shared and move on to resubmit.
-                            that.options.data = currentOptions.data = _sharedData.data;
-                            that.options.registeredToken = currentOptions.registeredToken = _sharedData.registeredToken;
-                            that.options.sharedDataLastRequested = _sharedData.lastRequested;
-                            next( 1 ); 
-                        }
-                        else {
-                            try {
-                                if ( shareDataWithOtherApplications ) {
-                                    _sharedData.requesting = true;
-                                    _sharedData.registeredToken = undefined;
-                                    _sharedData.data = undefined;
-                                }
-                                that.options.data = currentOptions.data = undefined;
-                                that.options.registeredToken = currentOptions.registeredToken = undefined;
-                    
-                                that.rble.getData( 
-                                    currentOptions, 
-                                    // If failed, then I am unable to register data, so just jump to finish, 
-                                    // otherwise continue to registerData or submit
-                                    ( errorMessage, data ) => { 
-                                        if ( errorMessage !== undefined ) {
-                                            pipelineError = errorMessage;
+                                        if ( shareDataWithOtherApplications ) {
+                                            _sharedData.data = that.options.data;
 
-                                            if ( shareDataWithOtherApplications ) {
-                                                callSharedCallbacks( errorMessage );
+                                            // If don't need to register, then let any applications waiting for data know that it is ready
+                                            if ( !that.options.registerDataWithService ) {
+                                                callSharedCallbacks( undefined );
                                             }
+                                        }
 
-                                            next( 2 ); // If error, jump to finish
+                                        if ( !that.options.registerDataWithService ) {
+                                            calculatePipeline( 1 ); // If not registering data, jump to submit
                                         }
                                         else {
-                                            that.options.data = currentOptions.data = data as RBLeRESTServiceResult;
+                                            calculatePipeline( 0 ); // Continue to register data
+                                        }                                        
+                                    }
+                                } 
+                            );                                        
+                        } catch (error) {
+                            if ( shareDataWithOtherApplications ) {
+                                callSharedCallbacks( error );
+                            }
+                            throw error;
+                        }
+                    }
+                } catch (error) {
+                    pipelineError = "GetData.Pipeline exception: " + error;
+                    calculatePipeline( 2 ); // If error, jump to finish
+                }
+            };
+            const registerData = function(): void {
 
-                                            if ( shareDataWithOtherApplications ) {
-                                                _sharedData.data = that.options.data;
+                try {
+                    that.rble.registerData( 
+                        currentOptions, that.options.data as RBLeRESTServiceResult,
+                        // If failed, then I am unable to register data, so just jump to finish, otherwise continue to submit again
+                        errorMessage => { 
 
-                                                // If don't need to register, then let any applications waiting for data know that it is ready
-                                                if ( !that.options.registerDataWithService ) {
-                                                    callSharedCallbacks( undefined );
-                                                }
-                                            }
-
-                                            if ( !that.options.registerDataWithService ) {
-                                                next( 1 ); // If not registering data, jump to submit
-                                            }
-                                            else {
-                                                next( 0 ); // Continue to register data
-                                            }                                        
-                                        }
-                                    } 
-                                );                                        
-                            } catch (error) {
+                            if ( errorMessage === undefined ) {
                                 if ( shareDataWithOtherApplications ) {
-                                    callSharedCallbacks( error );
+                                    _sharedData.registeredToken = that.options.registeredToken;
+                                    callSharedCallbacks( undefined );
                                 }
-                                throw error;
+                                calculatePipeline( 0 );
                             }
-                        }
-                    } catch (error) {
-                        pipelineError = "GetData.Pipeline exception: " + error;
-                        next( 2 ); // If error, jump to finish
-                    }
-                };
-                const registerData = function(): void {
-
-                    try {
-                        that.rble.registerData( 
-                            currentOptions, that.options.data as RBLeRESTServiceResult,
-                            // If failed, then I am unable to register data, so just jump to finish, otherwise continue to submit again
-                            errorMessage => { 
-
-                                if ( errorMessage === undefined ) {
-                                    if ( shareDataWithOtherApplications ) {
-                                        _sharedData.registeredToken = that.options.registeredToken;
-                                        callSharedCallbacks( undefined );
-                                    }
-                                    next( 0 );
-                                }
-                                else {
-                                    pipelineError = errorMessage; 
-                                    if ( shareDataWithOtherApplications ) {
-                                        callSharedCallbacks( errorMessage );
-                                    }
-                                    // If error, jump to finish
-                                    next( 1 );
-                                }
-                            } 
-                        );
-                    } catch (error) {
-                        pipelineError = "Register.Pipeline exception: " + error;
-                        if ( shareDataWithOtherApplications ) {
-                            callSharedCallbacks( pipelineError );
-                        }
-                        next( 1 );                            
-                    }
-                };
-                const resubmitCalculation = function(): void {
-                    try {
-                        that.rble.submitCalculation( 
-                            currentOptions,
-                            // If failed, let it do next job (getData), otherwise, jump to finish
-                            errorMessage => { 
+                            else {
                                 pipelineError = errorMessage; 
-                                next( 0 );
-                            } 
-                        );
-                    } catch (error) {
-                        pipelineError = "ReSubmit.Pipeline exception: " + error;
-                        next( 0 );
-                    }
-                };
-                const processResults = function(): void {
-
-                    try {
-                        if ( pipelineError === undefined ) {
-                            that.element.removeData("katapp-save-calcengine");
-                            that.element.removeData("katapp-trace-calcengine");
-                            that.element.removeData("katapp-refresh-calcengine");
-
-                            that.rble.processResults();
-    
-                            if ( that.inputs?.iConfigureUI === 1 ) {
-                                that.ui.triggerEvent( "onConfigureUICalculation", that.results, currentOptions, that );
+                                if ( shareDataWithOtherApplications ) {
+                                    callSharedCallbacks( errorMessage );
+                                }
+                                // If error, jump to finish
+                                calculatePipeline( 1 );
                             }
-
-                            // This used to be inside Standard_Template.templateOn, but since it is standard and so common, just moved it here.
-                            // Original code:
-                            /*
-                                $.fn.KatApp.templateOn("{thisTemplate}", "onCalculation.RBLe", function (event, calculationResults, calcOptions, application) {
-                                    application.trace("Processing onCalculation.RBLe for Template [{thisTemplate}]...", TraceVerbosity.Normal );
-
-                                    if (KatApp.pageParameters["debugkatapp"] === "t.{thisTemplate}.onCalculation") {
-                                        debugger;
-                                    }
-
-                                    const templateBuilder = $.fn.KatApp.standardTemplateBuilderFactory( application );
-
-                                    // First processInputs/processCarousels in case any were injected by ejs-markup
-                                    templateBuilder.processInputs();
-                                    templateBuilder.processCarousels();
-                                    templateBuilder.processHighcharts();
-                                });
-                            */
-                            const templateBuilder: StandardTemplateBuilder = $.fn.KatApp.standardTemplateBuilderFactory( that );
-                            templateBuilder.processUI();
-
-                            that.ui.triggerEvent( "onCalculation", that.results, currentOptions, that );
-            
-                            $(".needsRBLeConfig", that.element).removeClass("needsRBLeConfig");
-                        }
-                        else {
-                            that.rble.setResults( undefined );
-                            // TODO: Need error status key?  Might want to swap between calc and registration, but not sure
-                            that.ui.triggerEvent( "onCalculationErrors", "RunCalculation", pipelineError, that.exception, currentOptions, that );
-                        }
-                    } catch (error) {
-                        that.trace( "Error duing result processing: " + error, TraceVerbosity.Quiet );
-                        that.ui.triggerEvent( "onCalculationErrors", "RunCalculation", error, that.exception, currentOptions, that );
+                        } 
+                    );
+                } catch (error) {
+                    pipelineError = "Register.Pipeline exception: " + error;
+                    if ( shareDataWithOtherApplications ) {
+                        callSharedCallbacks( pipelineError );
                     }
-                    finally {
-                        that.ui.triggerEvent( "onCalculateEnd", that );
-                    }
-                };
+                    calculatePipeline( 1 );                            
+                }
+            };
+            const resubmitCalculation = function(): void {
+                try {
+                    that.rble.submitCalculation( 
+                        currentOptions,
+                        // If failed, let it do next job (getData), otherwise, jump to finish
+                        errorMessage => { 
+                            pipelineError = errorMessage; 
+                            calculatePipeline( 0 );
+                        } 
+                    );
+                } catch (error) {
+                    pipelineError = "ReSubmit.Pipeline exception: " + error;
+                    calculatePipeline( 0 );
+                }
+            };
+            const processResults = function(): void {
 
-                pipeline.push( 
-                    submitCalculation,
-                    getCalculationData,
-                    registerData,
-                    resubmitCalculation,
-                    processResults
-                )
-    
-                // Start the pipeline
-                next( 0 );
-            })( this );
+                try {
+                    if ( pipelineError === undefined ) {
+                        that.element.removeData("katapp-save-calcengine");
+                        that.element.removeData("katapp-trace-calcengine");
+                        that.element.removeData("katapp-refresh-calcengine");
+
+                        that.rble.processResults();
+
+                        if ( that.inputs?.iConfigureUI === 1 ) {
+                            that.ui.triggerEvent( "onConfigureUICalculation", that.results, currentOptions, that );
+                        }
+
+                        // This used to be inside Standard_Template.templateOn, but since it is standard and so common, just moved it here.
+                        // Original code:
+                        /*
+                            $.fn.KatApp.templateOn("{thisTemplate}", "onCalculation.RBLe", function (event, calculationResults, calcOptions, application) {
+                                application.trace("Processing onCalculation.RBLe for Template [{thisTemplate}]...", TraceVerbosity.Normal );
+
+                                if (KatApp.pageParameters["debugkatapp"] === "t.{thisTemplate}.onCalculation") {
+                                    debugger;
+                                }
+
+                                const templateBuilder = $.fn.KatApp.standardTemplateBuilderFactory( application );
+
+                                // First processInputs/processCarousels in case any were injected by ejs-markup
+                                templateBuilder.processInputs();
+                                templateBuilder.processCarousels();
+                                templateBuilder.processHighcharts();
+                            });
+                        */
+                        const templateBuilder: StandardTemplateBuilder = $.fn.KatApp.standardTemplateBuilderFactory( that );
+                        templateBuilder.processUI();
+
+                        that.ui.triggerEvent( "onCalculation", that.results, currentOptions, that );
+        
+                        $(".needsRBLeConfig", that.element).removeClass("needsRBLeConfig");
+                    }
+                    else {
+                        that.rble.setResults( undefined );
+                        // TODO: Need error status key?  Might want to swap between calc and registration, but not sure
+                        that.ui.triggerEvent( "onCalculationErrors", "RunCalculation", pipelineError, that.exception, currentOptions, that );
+                    }
+                } catch (error) {
+                    that.trace( "Error duing result processing: " + error, TraceVerbosity.Quiet );
+                    that.ui.triggerEvent( "onCalculationErrors", "RunCalculation", error, that.exception, currentOptions, that );
+                }
+                finally {
+                    that.ui.triggerEvent( "onCalculateEnd", that );
+                }
+            };
+
+            pipeline.push( 
+                submitCalculation,
+                getCalculationData,
+                registerData,
+                resubmitCalculation,
+                processResults
+            )
+
+            // Start the pipeline
+            calculatePipeline( 0 );
         }
 
         configureUI( customOptions?: KatAppOptions ): void {
@@ -1142,11 +1141,11 @@
             this.application.resultRowLookups = undefined;
         }
 
-        getData( currentOptions: KatAppOptions, next: PipelineCallback ): void {
+        getData( currentOptions: KatAppOptions, getDataHandler: PipelineCallback ): void {
         
             if ( currentOptions.getData === undefined ) 
             {
-                next( "getData handler does not exist." );
+                getDataHandler( "getData handler does not exist." );
                 return;
             }
     
@@ -1154,16 +1153,16 @@
                 this.application,
                 currentOptions, 
                 data => { 
-                    next( undefined, data ); 
+                    getDataHandler( undefined, data ); 
                 },
                 ( _jqXHR, textStatus ) => {
                     this.application.trace("getData AJAX Error Status: " + textStatus, TraceVerbosity.Quiet);
-                    next( "getData AJAX Error Status: " + textStatus );
+                    getDataHandler( "getData AJAX Error Status: " + textStatus );
                 }
             );  
         }
     
-        registerData( currentOptions: KatAppOptions, data: RBLeRESTServiceResult, next: PipelineCallback ): void {
+        registerData( currentOptions: KatAppOptions, data: RBLeRESTServiceResult, registerDataHandler: PipelineCallback ): void {
             const that: RBLeUtilities = this;
             const application = this.application;;
 
@@ -1210,7 +1209,7 @@
     
             const registerFailed: JQueryFailCallback = function( _jqXHR, textStatus ): void {
                 application.trace("registerData AJAX Error Status: " + textStatus, TraceVerbosity.Quiet);
-                next( "registerData AJAX Error Status: " + textStatus );
+                registerDataHandler( "registerData AJAX Error Status: " + textStatus );
             };
         
             const registerDone: RBLeServiceCallback = function( payload ): void {
@@ -1223,22 +1222,22 @@
                     application.options.data = currentOptions.data = undefined;
 
                     that.ui.triggerEvent( "onRegistration", currentOptions, application );
-                    next();
+                    registerDataHandler();
                 }
                 else {
                     application.exception = payload;
                     application.trace("registerData Error Status: " + payload.Exception.Message, TraceVerbosity.Quiet);
-                    next( "RBLe Register Data Error: " + payload.Exception.Message );
+                    registerDataHandler( "RBLe Register Data Error: " + payload.Exception.Message );
                 }
             }
     
             register( application, currentOptions, registerDone, registerFailed );
         }
     
-        submitCalculation( currentOptions: KatAppOptions, next: PipelineCallback ): void {
+        submitCalculation( currentOptions: KatAppOptions, submitCalculationHandler: PipelineCallback ): void {
 
             if ( currentOptions.registeredToken === undefined && currentOptions.data === undefined ) {
-                next( "submitCalculation no registered token." );
+                submitCalculationHandler( "submitCalculation no registered token." );
                 return;
             }
             
@@ -1284,18 +1283,18 @@
     
                 if ( payload.Exception === undefined ) {
                     that.setResults( payload.RBL?.Profile.Data.TabDef );
-                    next();
+                    submitCalculationHandler();
                 }
                 else {
                     application.exception = payload;
                     application.trace( "RBLe Service Result Exception: " + payload.Exception.Message, TraceVerbosity.Quiet )
-                    next( "RBLe Service Result Exception: " + payload.Exception.Message );
+                    submitCalculationHandler( "RBLe Service Result Exception: " + payload.Exception.Message );
                 }
             };
     
             const submitFailed: JQueryFailCallback = function( _jqXHR, textStatus ): void {
                 application.trace("submitCalculation AJAX Error Status: " + textStatus, TraceVerbosity.Quiet);
-                next( "submitCalculation AJAX Error Status: " + textStatus );
+                submitCalculationHandler( "submitCalculation AJAX Error Status: " + textStatus );
             };
     
             const submit: SubmitCalculationDelegate =

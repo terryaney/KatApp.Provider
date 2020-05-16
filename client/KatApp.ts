@@ -136,140 +136,138 @@ class KatApp
         }
     }
 
-    static getResources( application: KatAppPlugInShimInterface, resources: string, useTestVersion: boolean, isScript: boolean, debugResourcesRoot: string | undefined, pipelineDone: PipelineCallback ): void {
-        (function(): void {
-            const currentOptions = application.options;
-            const url = currentOptions.functionUrl ?? KatApp.defaultOptions.functionUrl ?? KatApp.functionUrl;
-            const resourceArray = resources.split(",");
-    
-            // viewParts[ 0 ], viewParts[ 1 ]
-            // folder: string, resource: string, optional Version
-    
-            let pipeline: Array<()=> void> = [];
-            let pipelineIndex = 0;
-    
-            const next = function(): void {
-                if ( pipelineIndex < pipeline.length ) {                    
-                    pipeline[ pipelineIndex++ ]();
+    static getResources( application: KatAppPlugInShimInterface, resources: string, useTestVersion: boolean, isScript: boolean, debugResourcesRoot: string | undefined, getResourcesHandler: PipelineCallback ): void {
+        const currentOptions = application.options;
+        const url = currentOptions.functionUrl ?? KatApp.defaultOptions.functionUrl ?? KatApp.functionUrl;
+        const resourceArray = resources.split(",");
+
+        // viewParts[ 0 ], viewParts[ 1 ]
+        // folder: string, resource: string, optional Version
+
+        let pipeline: Array<()=> void> = [];
+        let pipelineIndex = 0;
+
+        const getResourcesPipeline = function(): void {
+            if ( pipelineIndex < pipeline.length ) {                    
+                pipeline[ pipelineIndex++ ]();
+            }
+        };
+
+        let pipelineError: string | undefined = undefined;
+
+        const resourceResults: ResourceResults = {};
+
+        // Build a pipeline of functions for each resource requested.
+        // TODO: Figure out how to make this asynchronous
+        pipeline = resourceArray.map( r => {
+            return function(): void {
+                if ( pipelineError !== undefined ) {
+                    getResourcesPipeline();
+                    return;
                 }
-            };
 
-            let pipelineError: string | undefined = undefined;
-
-            const resourceResults: ResourceResults = {};
+                try {
+                    const resourceParts = r.split(":");
+                    let resource = resourceParts[ 1 ];
+                    const folder = resourceParts[ 0 ];
+                    const version = resourceParts.length > 2 ? resourceParts[ 2 ] : ( useTestVersion ? "Test" : "Live" ); // can provide a version as third part of name if you want
     
-            // Build a pipeline of functions for each resource requested.
-            // TODO: Figure out how to make this asynchronous
-            pipeline = resourceArray.map( r => {
-                return function(): void {
-                    if ( pipelineError !== undefined ) {
-                        next();
-                        return;
+                    // Template names often don't use .html syntax
+                    if ( !resource.endsWith( ".html" ) && !isScript ) {
+                        resource += ".html";
                     }
     
-                    try {
-                        const resourceParts = r.split(":");
-                        let resource = resourceParts[ 1 ];
-                        const folder = resourceParts[ 0 ];
-                        const version = resourceParts.length > 2 ? resourceParts[ 2 ] : ( useTestVersion ? "Test" : "Live" ); // can provide a version as third part of name if you want
-        
-                        // Template names often don't use .html syntax
-                        if ( !resource.endsWith( ".html" ) && !isScript ) {
-                            resource += ".html";
-                        }
-        
-                        const params: GetResourceOptions = {
-                            Command: 'KatAppResource',
-                            Resources: [
-                                {
-                                    Resource: resource,
-                                    Folder: folder,
-                                    Version: version
-                                }
-                            ]
-                        };
+                    const params: GetResourceOptions = {
+                        Command: 'KatAppResource',
+                        Resources: [
+                            {
+                                Resource: resource,
+                                Folder: folder,
+                                Version: version
+                            }
+                        ]
+                    };
 
-                        const localFolder = !isScript ? folder + "/" : "";
+                    const localFolder = !isScript ? folder + "/" : "";
 
-                        const submit =
-                            currentOptions.submitCalculation ??
-                            function( _app, o, done, fail ): void {
-                                const ajaxConfig = 
-                                { 
-                                    url: debugResourcesRoot !== undefined ? debugResourcesRoot + "/" + localFolder + resource : url, // + JSON.stringify( params )
-                                    data: debugResourcesRoot === undefined ? JSON.stringify( o ) : undefined,
-                                    method: debugResourcesRoot === undefined ? "POST" : undefined,
-                                    dataType: debugResourcesRoot === undefined ? "json" : undefined,
-                                    cache: false
-                                };
-        
-                                // Need to use .ajax isntead of .getScript/.get to get around CORS problem
-                                // and to also conform to using the submitCalculation wrapper by L@W.
-                                $.ajax( ajaxConfig ).done( done ).fail(  fail );
+                    const submit =
+                        currentOptions.submitCalculation ??
+                        function( _app, o, done, fail ): void {
+                            const ajaxConfig = 
+                            { 
+                                url: debugResourcesRoot !== undefined ? debugResourcesRoot + "/" + localFolder + resource : url, // + JSON.stringify( params )
+                                data: debugResourcesRoot === undefined ? JSON.stringify( o ) : undefined,
+                                method: debugResourcesRoot === undefined ? "POST" : undefined,
+                                dataType: debugResourcesRoot === undefined ? "json" : undefined,
+                                cache: false
                             };
-                                
-                        const submitFailed: JQueryFailCallback = function( _jqXHR, textStatus, _errorThrown ): void {
-                            pipelineError = "getResources failed requesting " + r + ":" + textStatus;
-                            console.log( _errorThrown );
-                            next();
+    
+                            // Need to use .ajax isntead of .getScript/.get to get around CORS problem
+                            // and to also conform to using the submitCalculation wrapper by L@W.
+                            $.ajax( ajaxConfig ).done( done ).fail(  fail );
                         };
-
-                        const submitDone: RBLeServiceCallback = function( data ): void {
-                            if ( data.payload !== undefined ) {
-                                data = JSON.parse(data.payload);
-                            }
                             
-                            // data.Content when request from service, just data when local files
-                            const resourceContent = data.Resources?.[ 0 ].Content ?? data as string;
+                    const submitFailed: JQueryFailCallback = function( _jqXHR, textStatus, _errorThrown ): void {
+                        pipelineError = "getResources failed requesting " + r + ":" + textStatus;
+                        console.log( _errorThrown );
+                        getResourcesPipeline();
+                    };
 
-                            if ( isScript ) {
-                                // If local script location is provided, doing the $.ajax code automatically 
-                                // injects/executes the javascript, no need to do it again
-                                const body = document.querySelector('body');
+                    const submitDone: RBLeServiceCallback = function( data ): void {
+                        if ( data.payload !== undefined ) {
+                            data = JSON.parse(data.payload);
+                        }
+                        
+                        // data.Content when request from service, just data when local files
+                        const resourceContent = data.Resources?.[ 0 ].Content ?? data as string;
 
-                                if ( body !== undefined && body !== null && debugResourcesRoot === undefined && resourceContent !== undefined ) {
+                        if ( isScript ) {
+                            // If local script location is provided, doing the $.ajax code automatically 
+                            // injects/executes the javascript, no need to do it again
+                            const body = document.querySelector('body');
 
-                                    // Just keeping the markup a bit cleaner by only having one copy of the code
-                                    $("script[rbl-script='true']").remove()
+                            if ( body !== undefined && body !== null && debugResourcesRoot === undefined && resourceContent !== undefined ) {
 
-                                    // https://stackoverflow.com/a/56509649/166231
-                                    const script = document.createElement('script');
-                                    script.setAttribute("rbl-script", "true");
-                                    const content = resourceContent;
-                                    script.innerHTML = content;
-                                    body.appendChild(script);
-                                }
+                                // Just keeping the markup a bit cleaner by only having one copy of the code
+                                $("script[rbl-script='true']").remove()
+
+                                // https://stackoverflow.com/a/56509649/166231
+                                const script = document.createElement('script');
+                                script.setAttribute("rbl-script", "true");
+                                const content = resourceContent;
+                                script.innerHTML = content;
+                                body.appendChild(script);
                             }
-                            else {
-                                resourceResults[ r ] = resourceContent;
-                            }
-                            next(); 
-                        };
-
-                        submit( application as KatAppPlugInInterface, params, submitDone, submitFailed );
-                                                
-                    } catch (error) {
-                        pipelineError = "getResources failed trying to request " + r + ":" + error;
-                        next();
-                    }
-                }
-            }).concat( 
-                [
-                    // Last function
-                    function(): void {
-                        if ( pipelineError !== undefined ) {
-                            pipelineDone( pipelineError );
                         }
                         else {
-                            pipelineDone( undefined, resourceResults );
+                            resourceResults[ r ] = resourceContent;
                         }
+                        getResourcesPipeline(); 
+                    };
+
+                    submit( application as KatAppPlugInInterface, params, submitDone, submitFailed );
+                                            
+                } catch (error) {
+                    pipelineError = "getResources failed trying to request " + r + ":" + error;
+                    getResourcesPipeline();
+                }
+            }
+        }).concat( 
+            [
+                // Last function
+                function(): void {
+                    if ( pipelineError !== undefined ) {
+                        getResourcesHandler( pipelineError );
                     }
-                ]
-            );
-    
-            // Start the pipeline
-            next();
-        })();
+                    else {
+                        getResourcesHandler( undefined, resourceResults );
+                    }
+                }
+            ]
+        );
+
+        // Start the pipeline
+        getResourcesPipeline();
     }
 }
 

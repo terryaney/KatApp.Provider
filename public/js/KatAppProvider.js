@@ -2609,14 +2609,15 @@
             this.processHelpTips();
         };
         StandardTemplateBuilder.prototype.processHelpTips = function () {
-            // Couldn't include the Bootstrap.Tooltips.js file b/c it's selector hits entire page, and we want
-            // to be localized to our view.
+            // Couldn't include the Bootstrap.Tooltips.js file b/c it's selector hits entire page, and we want to be localized to our view.
             var selector = "[data-toggle='tooltip'], [data-toggle='popover'], .tooltip-trigger, .tooltip-text-trigger, .error-trigger";
             var application = this.application;
             if (typeof $.fn.popover !== "function" && $(selector, application.element).length > 0) {
                 this.application.trace("Bootstrap popover/tooltip javascript is not present.", TraceVerbosity.None);
                 return;
             }
+            // When you 
+            var currentTooltip;
             $(selector, application.element)
                 .not(".rbl-help, [data-kat-initialized='true']")
                 .each(function () {
@@ -2681,47 +2682,51 @@
                 }
                 else {
                     $(this).popover(options)
-                        .on('inserted.bs.popover', function () {
-                        var current = this;
-                        $("[data-toggle='popover'][data-trigger='click']", application.element).each(function () {
-                            try {
-                                if (this != current && $(this).data("bs.popover").tip().hasClass("in")) {
-                                    $(this).popover('hide');
-                                }
-                            }
-                            catch (_a) {
-                                console.log(this.outerHTML);
-                            }
-                        });
+                        .on('inserted.bs.popover', function (event) {
+                        currentTooltip = $(this).attr("aria-describedby");
+                    })
+                        .on("shown.bs.popover", function () {
+                        currentTooltip = undefined;
                     });
                 }
             })
                 .attr("data-kat-initialized", "true");
+            // Close all tooltips when you click 'somewhere else' in the document (if you click on the tooltip - maybe to copy/paste, I don't close)
+            // currentTooltip is only valid while building/showing a current tooltip.
+            // The flow is: inserted.popover, $(application.element).click, inserted.shown
+            //      NOTE: For anchors inside labels (i.e. these help tips), the onclick returns false to prevent getting a click/setting focus to
+            //      the input label is associated with.  However, the anchor/helpicon had to be placed inside the <label/> element for better wrapping
+            //      handling for long labels.
+            //
+            // So when this click happens, find any tips currently open with aria-describedby != currently processing tooltip and close them if
+            // their help has been configured already.
+            var popoverHideStopper = false;
             if (application.element.attr("data-kat-initialized-tooltip") != "true") {
                 $(application.element).click(function (e) {
-                    var _a, _b;
-                    application.trace("Application.click - close all tooltips if need to.", TraceVerbosity.Diagnostic);
+                    // Don't want to waste processing power on looping all tooltips again
+                    // when I call $(this).click() below - since popover('hide') doesn't work.
+                    if (popoverHideStopper)
+                        return;
                     // http://stackoverflow.com/a/17375353/166231
                     if (!$(e.target).is(".popover-title, .popover-content")) {
-                        application.trace("Application.click - item clicked: e.target class: " + e.target.classList + ", e.target.parentElement class: " + ((_b = (_a = e.target) === null || _a === void 0 ? void 0 : _a.parentElement) === null || _b === void 0 ? void 0 : _b.classList), TraceVerbosity.Diagnostic);
-                        $("[data-toggle='popover'][data-trigger='click']", application.element).each(function () {
-                            var isCurrentTextAnchor = this == (e === null || e === void 0 ? void 0 : e.target); // text anchors with help
-                            var isCurrentIcon = this == (e === null || e === void 0 ? void 0 : e.target.parentElement); // glyphicons with help
-                            if (e == undefined || (!isCurrentTextAnchor && !isCurrentIcon)) {
-                                var popOver = $(this).data("bs.popover"); // Just in case the tooltip hasn't been configured
-                                application.trace("Application.click - checking: this class: " + this.classList + ", isCurrentTextAnchor: " + isCurrentTextAnchor + ", isCurrentIcon: " + isCurrentIcon + ", popOver: " + (popOver != undefined) + ", hasClass(in): " + (popOver != undefined && popOver.tip().hasClass("in")), TraceVerbosity.Diagnostic);
-                                if (popOver != undefined && popOver.tip().hasClass("in")) {
-                                    // Trigger the click to close the popover if it is visible,
-                                    // using popover("hide") for some reason 'corrupted' something so that
-                                    // if you clicked on an icon (to show), then on the page (to hide all), the next
-                                    // click on an icon (to show) didn't trigger the show/shown events, only  the
-                                    // hide/hidden.  For some reason, popover('hide') works above in the inserted event.
-                                    application.trace("Application.click - popOver click this: " + this.classList, TraceVerbosity.Diagnostic);
-                                    $(this).click();
-                                }
-                            }
-                            else {
-                                application.trace("Application.click - checking: " + this.classList + " <b>isCurrentTextAnchor: " + isCurrentTextAnchor + ", isCurrentIcon: " + isCurrentIcon + "</b>", TraceVerbosity.Diagnostic);
+                        console.log("Hide tooltips other than: " + e.target.classList);
+                        $("[data-toggle='popover'][data-trigger='click'][aria-describedby!='" + currentTooltip + "']", application.element).each(function () {
+                            var popOver = $(this).data("bs.popover"); // Just in case the tooltip hasn't been configured
+                            if (popOver != undefined && popOver.tip().hasClass("in")) {
+                                // Trigger the click to close the popover if it is visible,
+                                // using popover("hide") for some reason 'corrupted' something so that
+                                // if you clicked on an icon (to show), then on the page (to hide all), the next
+                                // click on an icon (to show) didn't trigger the show/shown events, only  the
+                                // hide/hidden.  Previous version of this code had popover('hide') above in
+                                // inserted.bs.popover as well to hide other tooltips and for some reason
+                                // popover('hide') didn't corrupt anything there, but then I realized
+                                // that I only needed code in one place (here, in case clicking in body 'outside' a 
+                                // tooltip) so I removed that code as well.
+                                popoverHideStopper = true;
+                                // $(this).click();
+                                $(this).popover("hide");
+                                $(this).data("bs.popover").inState.click = false;
+                                popoverHideStopper = false;
                             }
                         });
                     }

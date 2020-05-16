@@ -2393,6 +2393,10 @@
                 var id = el.data("inputname");
                 var label = el.data("label");
                 var checked = el.data("checked");
+                var css = el.data("css");
+                if (css !== undefined) {
+                    $(".v" + id, el).addClass(css);
+                }
                 if (label !== undefined) {
                     $("span.l" + id + " label", el).html(label);
                 }
@@ -2444,7 +2448,7 @@
                     input.replaceWith($('<textarea name="' + id + '" rows="' + rows + '" _id="' + id + '" class="form-control ' + id + '"></textarea>'));
                     input = $("textarea[name='" + id + "']", el);
                 }
-                if (autoComplete || inputType === "password") {
+                if (!autoComplete || inputType === "password") {
                     input.attr("autocomplete", "off");
                 }
                 if (value !== undefined) {
@@ -2580,6 +2584,10 @@
                 if (el.attr("data-kat-initialized") !== "true") {
                     // Do all data-* attributes that we support
                     var label = el.data("label");
+                    var css = el.data("css");
+                    if (css !== undefined) {
+                        $(".v" + id, el).addClass(css);
+                    }
                     if (label !== undefined) {
                         $("span.l" + id, el).html(label);
                     }
@@ -2690,20 +2698,30 @@
             })
                 .attr("data-kat-initialized", "true");
             if (application.element.attr("data-kat-initialized-tooltip") != "true") {
-                application.element.click(function (e) {
+                $("html").click(function (e) {
+                    var _a, _b;
+                    application.trace("Application.click - close all tooltips if need to.", TraceVerbosity.Diagnostic);
                     // http://stackoverflow.com/a/17375353/166231
                     if (!$(e.target).is(".popover-title, .popover-content")) {
+                        application.trace("Application.click - item clicked: e.target class: " + e.target.classList + ", e.target.parentElement class: " + ((_b = (_a = e.target) === null || _a === void 0 ? void 0 : _a.parentElement) === null || _b === void 0 ? void 0 : _b.classList), TraceVerbosity.Diagnostic);
                         $("[data-toggle='popover'][data-trigger='click']", application.element).each(function () {
-                            if (e == undefined || (this != e.target /* text anchors with help */ && this != e.target.parentElement /* glyphicons with help */)) {
+                            var isCurrentTextAnchor = this == (e === null || e === void 0 ? void 0 : e.target); // text anchors with help
+                            var isCurrentIcon = this == (e === null || e === void 0 ? void 0 : e.target.parentElement); // glyphicons with help
+                            if (e == undefined || (!isCurrentTextAnchor && !isCurrentIcon)) {
                                 var popOver = $(this).data("bs.popover"); // Just in case the tooltip hasn't been configured
+                                application.trace("Application.click - checking: this class: " + this.classList + ", isCurrentTextAnchor: " + isCurrentTextAnchor + ", isCurrentIcon: " + isCurrentIcon + ", popOver: " + (popOver != undefined) + ", hasClass(in): " + (popOver != undefined && popOver.tip().hasClass("in")), TraceVerbosity.Diagnostic);
                                 if (popOver != undefined && popOver.tip().hasClass("in")) {
                                     // Trigger the click to close the popover if it is visible,
                                     // using popover("hide") for some reason 'corrupted' something so that
                                     // if you clicked on an icon (to show), then on the page (to hide all), the next
                                     // click on an icon (to show) didn't trigger the show/shown events, only  the
                                     // hide/hidden.  For some reason, popover('hide') works above in the inserted event.
+                                    application.trace("Application.click - popOver click this: " + this.classList, TraceVerbosity.Diagnostic);
                                     $(this).click();
                                 }
+                            }
+                            else {
+                                application.trace("Application.click - checking: " + this.classList + " <b>isCurrentTextAnchor: " + isCurrentTextAnchor + ", isCurrentIcon: " + isCurrentIcon + "</b>", TraceVerbosity.Diagnostic);
                             }
                         });
                     }

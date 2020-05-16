@@ -3232,20 +3232,33 @@
             // So when this click happens, find any tips currently open with aria-describedby != currently processing tooltip and close them if
             // their help has been configured already.
             if ( application.element.attr("data-kat-initialized-tooltip") != "true" ) {
-                $(application.element).click(function (e) {
-                    // http://stackoverflow.com/a/17375353/166231
-                    if (!$(e.target).is(".popover-title, .popover-content")) {
-                        console.log("Hide tooltips other than: " + e.target.classList);
-                        $("[data-toggle='popover'][data-trigger='click'][aria-describedby!='" + currentTooltip + "']", application.element).each(function () {                    
-                            var popOver = $(this).data("bs.popover"); // Just in case the tooltip hasn't been configured
+                // Combo of http://stackoverflow.com/a/17375353/166231 and https://stackoverflow.com/a/21007629/166231 (and 3rd comment)
+                let visiblePopover: Element | undefined = undefined;
+                
+                const hideVisiblePopover = function(): void {
+                    // Just in case the tooltip hasn't been configured
+                    if ( visiblePopover === undefined || $(visiblePopover).data("bs.popover") === undefined ) return;
 
-                            if (popOver != undefined && popOver.tip().hasClass("in")) {
-                                $(this).popover("hide");
-                                $(this).data("bs.popover").inState.click = false
-                            }
-                        });
-                    }
-                }).attr("data-kat-initialized-tooltip", "true")
+                    // Call this first b/c popover 'hide' event sets visiblePopover = undefined
+                    $(visiblePopover).data("bs.popover").inState.click = false
+                    $(visiblePopover).popover("hide");
+                };
+
+                application.element
+                    .on("shown.bs.popover.RBLe", function( e ) { visiblePopover = e.target; })
+                    .on("hide.bs.popover.RBLe", function() { visiblePopover = undefined; })
+                    .on("keyup.RBLe", function( e ) {
+                        if (e.keyCode != 27) // esc
+                            return;
+
+                        hideVisiblePopover();
+                        e.preventDefault();
+                    })
+                    .on("click.RBLe", function( e ) {
+                        if ($(e.target).is(".popover-title, .popover-content")) return;
+                        hideVisiblePopover();
+                    })
+                    .attr("data-kat-initialized-tooltip", "true");
             }
         }
 

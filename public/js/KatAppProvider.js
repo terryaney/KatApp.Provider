@@ -2700,37 +2700,48 @@
             //
             // So when this click happens, find any tips currently open with aria-describedby != currently processing tooltip and close them if
             // their help has been configured already.
-            var popoverHideStopper = false;
             if (application.element.attr("data-kat-initialized-tooltip") != "true") {
-                $(application.element).click(function (e) {
-                    // Don't want to waste processing power on looping all tooltips again
-                    // when I call $(this).click() below - since popover('hide') doesn't work.
-                    if (popoverHideStopper)
+                // Combo of http://stackoverflow.com/a/17375353/166231 and https://stackoverflow.com/a/21007629/166231 (and 3rd comment)
+                var visiblePopover_1 = undefined;
+                var hideVisiblePopover_1 = function () {
+                    if (visiblePopover_1 === undefined || $(visiblePopover_1).data("bs.popover") === undefined)
                         return;
+                    // Call this first b/c popover 'hide' sets visiblePopover = undefined
+                    $(visiblePopover_1).data("bs.popover").inState.click = false;
+                    $(visiblePopover_1).popover("hide");
+                };
+                application.element
+                    .on("shown.bs.popover.RBLe", function (e) { visiblePopover_1 = e.target; })
+                    .on("hide.bs.popover.RBLe", function () { visiblePopover_1 = undefined; })
+                    .on("keyup.RBLe", function (e) {
+                    if (e.keyCode != 27) // esc
+                        return;
+                    hideVisiblePopover_1();
+                    e.preventDefault();
+                })
+                    .on("click.RBLe", function (e) {
+                    if ($(e.target).is(".popover-title, .popover-content"))
+                        return;
+                    hideVisiblePopover_1();
+                })
+                    .attr("data-kat-initialized-tooltip", "true");
+                /*
+                $(application.element).click(function (e) {
+                    return;
                     // http://stackoverflow.com/a/17375353/166231
                     if (!$(e.target).is(".popover-title, .popover-content")) {
                         console.log("Hide tooltips other than: " + e.target.classList);
                         $("[data-toggle='popover'][data-trigger='click'][aria-describedby!='" + currentTooltip + "']", application.element).each(function () {
                             var popOver = $(this).data("bs.popover"); // Just in case the tooltip hasn't been configured
+
                             if (popOver != undefined && popOver.tip().hasClass("in")) {
-                                // Trigger the click to close the popover if it is visible,
-                                // using popover("hide") for some reason 'corrupted' something so that
-                                // if you clicked on an icon (to show), then on the page (to hide all), the next
-                                // click on an icon (to show) didn't trigger the show/shown events, only  the
-                                // hide/hidden.  Previous version of this code had popover('hide') above in
-                                // inserted.bs.popover as well to hide other tooltips and for some reason
-                                // popover('hide') didn't corrupt anything there, but then I realized
-                                // that I only needed code in one place (here, in case clicking in body 'outside' a 
-                                // tooltip) so I removed that code as well.
-                                popoverHideStopper = true;
-                                // $(this).click();
                                 $(this).popover("hide");
-                                $(this).data("bs.popover").inState.click = false;
-                                popoverHideStopper = false;
+                                $(this).data("bs.popover").inState.click = false
                             }
                         });
                     }
-                }).attr("data-kat-initialized-tooltip", "true");
+                }).attr("data-kat-initialized-tooltip", "true")
+                */
             }
         };
         StandardTemplateBuilder.prototype.processInputs = function () {

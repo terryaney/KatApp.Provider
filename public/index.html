@@ -29,6 +29,7 @@
 
     <div class="page-content">
         <div class="container">
+            <div class='KatAppDebugger' rbl-view='Debugger' rbl-trace-id='Debugger' data-selector='.KatApp'>Loading KatApp Debugger...</div>
             <div class='KatApp' rbl-view="DST:IRP" rbl-trace-id="1">Loading KatApp...</div>
         </div>
     </div>
@@ -78,7 +79,7 @@
             KatApp.defaultOptions.functionUrl = "http://localhost:54300/CalculationFunction.ashx";
             KatApp.defaultOptions.functionUrl = "https://secure.conduentapplications.com/Services/RBL/Evolution_Test/CalculationFunction.ashx";
             KatApp.defaultOptions.functionUrl = "https://btr.lifeatworkportal.com/Services/Evolution/CalculationFunction.ashx";
-            $(".KatApp").KatApp();
+            $(".KatApp, .KatAppDebugger").KatApp();
         });
     </script>
 

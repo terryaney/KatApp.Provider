@@ -172,9 +172,9 @@ class KatApp
                     const folder = resourceParts[ 0 ];
                     const version = resourceParts.length > 2 ? resourceParts[ 2 ] : ( useTestVersion ? "Test" : "Live" ); // can provide a version as third part of name if you want
     
-                    // Template names often don't use .html syntax
-                    if ( !resource.endsWith( ".html" ) && !isScript ) {
-                        resource += ".html";
+                    // Template names often don't use .xhtml syntax
+                    if ( !resource.endsWith( ".kaml" ) && !isScript ) {
+                        resource += ".kaml";
                     }
     
                     const params: GetResourceOptions = {

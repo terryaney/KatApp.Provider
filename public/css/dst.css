@@ -10,6 +10,23 @@
 body {
   background-color: #c7c7c7;
 }
+
+body.borderless div.page-content {
+  padding-top: 20px;
+  padding-bottom: 20px;
+}
+
+.page-content .container {
+  background-color: #fff;
+}
+
+@media (min-width: 768px) {
+  body.borderless div.page-content .container {
+    padding-left: 0;
+    padding-right: 0;
+  }
+}
+
 /* Link Style */
 /* Button Style */
 .btn-primary,

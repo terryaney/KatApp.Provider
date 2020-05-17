@@ -220,6 +220,14 @@
 	cursor: not-allowed: #ccc;
 	font-weight: normal;
 }
+.kat-app-css .input-group-btn .btn,
+.kat-app-css .input-group-append .btn {
+	border: none;
+	border: 1px solid #ccc;
+}
+.kat-app-css .input-group-btn .btn-primary {
+	padding: 6px 12px;
+}
 .kat-app-css .bootstrap-select .dropdown-toggle {
 	border: 1px solid #ccc;
 	border-radius: 4px;

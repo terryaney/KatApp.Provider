@@ -71,13 +71,19 @@
             if (application.options.ajaxLoaderSelector !== undefined) {
                 $(application.options.ajaxLoaderSelector, application.element).show();
             }
-            $(".slider-control, input", application.element).attr("disabled", "true");
+            $(".slider-control:enabled, input:enabled, select:enabled", application.element).attr("disabled", "true").attr("kat-disabled", "true");
+            if (typeof $.fn.selectpicker === "function") {
+                $("select.bootstrap-select[data-kat-bootstrap-select='true'][kat-disabled='true']").selectpicker("refresh");
+            }
         },
         onCalculateEnd: function (application) {
             if (application.options.ajaxLoaderSelector !== undefined) {
                 $(application.options.ajaxLoaderSelector, application.element).fadeOut();
             }
-            $(".slider-control, input", application.element).removeAttr("disabled");
+            if (typeof $.fn.selectpicker === "function") {
+                $("select[data-kat-bootstrap-select='true'][kat-disabled='true']", application.element).removeAttr("disabled").selectpicker("refresh");
+            }
+            $("[kat-disabled='true']", application.element).removeAttr("disabled");
         },
         // Default to just an empty (non-data) package
         getData: function (appilcation, options, done, _fail) {
@@ -471,6 +477,9 @@
                 this.options.data = _sharedData.data;
                 this.options.sharedDataLastRequested = _sharedData.lastRequested;
             }
+            if (this.options.calcEngine === undefined) {
+                return;
+            }
             this.exception = undefined; // Should I set results to undefined too?
             this.ui.triggerEvent("onCalculateStart", this);
             var that = this;
@@ -759,7 +768,14 @@
             // http://bytes.com/topic/asp-net/answers/433532-control-name-change-asp-net-2-0-generated-html
             // http://weblogs.asp.net/scottgu/gotcha-don-t-use-xhtmlconformance-mode-legacy-with-asp-net-ajax
             // data-input-name - Checkbox list items, I put the 'name' into a parent span (via attribute on ListItem)
-            var htmlName = (input.parent().attr("data-input-name") || input.attr("name") || input.attr("id"));
+            var htmlName = input.parent().attr("data-input-name") || input.attr("name");
+            if (htmlName === undefined) {
+                var id_1 = input.attr("id");
+                if (id_1 !== undefined) {
+                    var idParts = id_1.split("_");
+                    htmlName = idParts[idParts.length - 1];
+                }
+            }
             if (htmlName === undefined)
                 return "UnknownId";
             var nameParts = htmlName.split(htmlName.indexOf("$") === -1 ? ":" : "$");
@@ -859,7 +875,7 @@
         };
         UIUtilities.prototype.bindCalculationInputs = function () {
             var application = this.application;
-            if (application.options.inputSelector !== undefined) {
+            if (application.options.inputSelector !== undefined && application.options.calcEngine !== undefined) {
                 // Store for later so I can unregister no matter what the selector is at time of 'destroy'
                 application.element.data("katapp-input-selector", application.options.inputSelector);
                 var that_1 = this;
@@ -1194,7 +1210,7 @@
                 return "";
             }
             else {
-                return template.html().format(data);
+                return template.html().format(KatApp.extend({}, data, { id: application.id })).replace(" _id", " id");
             }
         };
         RBLeUtilities.prototype.createHtmlFromResultRow = function (resultRow) {
@@ -1470,7 +1486,7 @@
                     else {
                         input.val(value);
                         // In case it is bootstrap-select
-                        var isSelectPicker = input.hasClass("bootstrap-select") && input.selectpicker !== undefined;
+                        var isSelectPicker = input.attr("data-kat-bootstrap-select-initialized") !== undefined;
                         if (isSelectPicker) {
                             input.selectpicker("refresh");
                         }
@@ -1494,7 +1510,7 @@
                     var slider = _this.ui.getNoUiSliderContainer(row["@id"], application.element);
                     if (slider !== undefined) {
                         if (value === "1") {
-                            slider.attr("disabled", "true");
+                            slider.attr("disabled", "true").removeAttr("kat-disabled");
                         }
                         else {
                             slider.removeAttr("disabled");
@@ -1502,7 +1518,7 @@
                     }
                     else {
                         if (value === "1") {
-                            input.prop("disabled", true);
+                            input.prop("disabled", true).removeAttr("kat-disabled");
                         }
                         else {
                             input.prop("disabled", false);
@@ -1914,7 +1930,7 @@
                 var controlName = row["@id"];
                 var listControl = $("." + controlName + ":not(div)", application.element);
                 var isCheckboxList = $("." + controlName, application.element).hasClass("checkbox-list-horizontal");
-                var isSelectPicker = !isCheckboxList && listControl.hasClass("bootstrap-select");
+                var isSelectPicker = !isCheckboxList && listControl.attr("data-kat-bootstrap-select-initialized") !== undefined;
                 var selectPicker = isSelectPicker ? listControl : undefined;
                 var currentValue = isCheckboxList
                     ? undefined
@@ -2543,7 +2559,7 @@
             });
         };
         StandardTemplateBuilder.prototype.buildDropdowns = function (view) {
-            this.application.trace("Processing buildDropdowns: " + $('[rbl-tid="input-dropdown"]:not([data-kat-initialized="true"]) .selectpicker', view).length + " selectpicker controls.", TraceVerbosity.Diagnostic);
+            this.application.trace("Processing buildDropdowns: " + $('[rbl-tid="input-dropdown"]:not([data-kat-initialized="true"]) .bootstrap-select', view).length + " bootstrap-select controls.", TraceVerbosity.Diagnostic);
             $('[rbl-tid="input-dropdown"]:not([data-kat-initialized="true"])', view).each(function () {
                 var _a, _b;
                 var el = $(this);
@@ -2567,6 +2583,7 @@
                 }
                 // changed this from .selectpicker because selectpicker initialization removes it so can't launch it again
                 $(".bootstrap-select", el).selectpicker()
+                    .attr("data-kat-bootstrap-select-initialized", "true")
                     .next(".error-msg")
                     .addClass("selectpicker"); /* aid in css styling */ /* TODO: Don't think this is matching and adding class */
                 el.attr("data-kat-initialized", "true");
@@ -2698,6 +2715,7 @@
             // their help has been configured already.
             if (application.element.attr("data-kat-initialized-tooltip") != "true") {
                 // Combo of http://stackoverflow.com/a/17375353/166231 and https://stackoverflow.com/a/21007629/166231 (and 3rd comment)
+                // This one looked interesting too: https://stackoverflow.com/a/24289767/166231 but I didn't test this one yet
                 var visiblePopover_1 = undefined;
                 var hideVisiblePopover_1 = function () {
                     // Just in case the tooltip hasn't been configured

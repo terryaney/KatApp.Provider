@@ -131,9 +131,9 @@ var KatApp = /** @class */ (function () {
                     var resource_1 = resourceParts[1];
                     var folder = resourceParts[0];
                     var version = resourceParts.length > 2 ? resourceParts[2] : (useTestVersion ? "Test" : "Live"); // can provide a version as third part of name if you want
-                    // Template names often don't use .html syntax
-                    if (!resource_1.endsWith(".html") && !isScript) {
-                        resource_1 += ".html";
+                    // Template names often don't use .xhtml syntax
+                    if (!resource_1.endsWith(".kaml") && !isScript) {
+                        resource_1 += ".kaml";
                     }
                     var params = {
                         Command: 'KatAppResource',

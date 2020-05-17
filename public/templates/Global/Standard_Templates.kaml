@@ -76,7 +76,7 @@
 -->
 <rbl-template tid="input-textbox">
   <div class="form-group v{inputname}">
-    <label for="{inputname}" class="control-label">
+    <label for="katapp_{id}_{inputname}" class="control-label">
       <span class="l{inputname}"></span> <span class="sv{inputname}"></span>
       <a style="display: none;" onclick="return false;" class="vh{inputname} help-icon-anchor" role="button" tabindex="0" data-toggle="popover" data-trigger="click" data-content-selector=".h{inputname}" data-placement="top">
         <span class="glyphicon glyphicon-info-sign help-icon"></span>
@@ -86,7 +86,7 @@
       </a>
     </label>
     <div class="validator-container"> 
-      <input name="{inputname}" _id="{id}" type="text" class="form-control {inputname}">
+      <input name="{inputname}" _id="katapp_{id}_{inputname}" type="text" class="form-control {inputname}">
       <div class="{inputname}DisplayOnly"></div>
       <span class="error-msg" data-toggle="tooltip" data-placement="top auto"></span>      
     </div>
@@ -97,7 +97,7 @@
 
 <rbl-template tid="input-dropdown">
   <div class="form-group v{inputname}">
-    <label class="control-label">
+    <label class="control-label" for="katapp_{id}_{inputname}">
       <span class="l{inputname}"></span> <span class="sv{inputname}"></span>
       <a style="display: none;" onclick="return false;" class="vh{inputname} help-icon-anchor" role="button" tabindex="0" data-toggle="popover" data-trigger="click" data-content-selector=".h{inputname}" data-placement="top">
         <span class="glyphicon glyphicon-info-sign help-icon"></span>
@@ -107,7 +107,7 @@
       </a>
     </label>
     <div class="validator-container"> 
-      <select name="{inputname}" _id="{id}" class="form-control bootstrap-select show-tick {inputname}" tabindex="-98">
+      <select name="{inputname}" _id="katapp_{id}_{inputname}" class="form-control bootstrap-select show-tick {inputname}" tabindex="-98">
       </select>
       <span class="error-msg" data-toggle="tooltip" data-placement="top auto"></span>      
     </div>
@@ -118,7 +118,7 @@
 
 <rbl-template tid="input-slider">
   <div class="form-group v{inputname}">
-    <label class="control-label">
+    <label class="control-label" for="katapp_{id}_{inputname}">
       <span class="l{inputname}"></span> <span class="sv{inputname}"></span>
       <a style="display: none;" onclick="return false;" class="vh{inputname} help-icon-anchor" role="button" tabindex="0" data-toggle="popover" data-trigger="click" data-content-selector=".h{inputname}" data-placement="top">
         <span class="glyphicon glyphicon-info-sign help-icon"></span>
@@ -129,7 +129,7 @@
     </label>
     <div class="validator-container"> 
       <div class="slider-control slider-{inputname}" data-slider-type="nouislider"></div>
-      <input name="{inputname}" type="text" _id="{id}" class="form-control {inputname}" style="display: none" />
+      <input name="{inputname}" type="text" _id="katapp_{id}_{inputname}" class="form-control {inputname}" style="display: none" />
       <span class="error-msg" data-toggle="tooltip" data-placement="top auto"></span>      
     </div>
     <div class="h{inputname}Title" style="display: none;"></div>
@@ -140,8 +140,8 @@
 <rbl-template tid="input-checkbox">
   <div class="form-group validator-container checkbox-container v{inputname}">
     <span class="checkbox abc-checkbox {inputname} l{inputname}">
-      <input _id="{id}" type="checkbox" name="{inputname}">
-      <label for="{inputname}"></label>
+      <input _id="katapp_{id}_{inputname}" type="checkbox" name="{inputname}">
+      <label for="katapp_{id}_{inputname}"></label>
     </span>
     <a style="display: none;" onclick="return false;" class="vh{inputname} help-icon-anchor" role="button" tabindex="0" data-toggle="popover" data-trigger="click" data-content-selector=".h{inputname}" data-placement="top">
       <span class="glyphicon glyphicon-info-sign help-icon"></span>
@@ -163,4 +163,5 @@
   if (KatApp.pageParameters["debugkatapp"] === "t.{thisTemplate}") {
     debugger;
   }
+//# sourceURL=Standard_Templates.kaml
 </script>

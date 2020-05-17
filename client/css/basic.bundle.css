@@ -273,6 +273,15 @@ label.disabled {
   font-weight: normal
 }
 
+.input-group-btn .btn, .input-group-append .btn {
+  border: none;
+  border: 1px solid #ccc;
+}
+
+.input-group-btn .btn-primary {
+  padding: 6px 12px;
+}
+
 /* Boostrap select */
 
 .bootstrap-select .dropdown-toggle {

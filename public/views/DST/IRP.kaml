@@ -27,37 +27,38 @@
             ws.insertBefore($(".liAnnualFuturePayIncreaseRate", application.element));
             ws = $("<a class='ws-info wsiMedicalCostInflation' role='button' tabindex='0' title='Click for Advanced Assumptions Worksheet' href='#' data-toggle='modal' data-target='#iMedicalCostInflation-worksheet'><span class='glyphicon glyphicon glyphicon-list-alt'></span></a>");
             ws.insertBefore($(".liMedicalCostInflation", application.element));
-        });
 
-		$("{thisView} .assumptionType").on('change', function () {
-			var nav = $(this).val();
-			$("{thisView} .tabAssumption:not(" + nav + ")").hide();
-			$(nav).show();
-			$.fn.matchHeight._update();
-		}).trigger("change");
+			$(".assumptionType", application.element).on('change', function () {
+				var nav = $(this).val();
+				$(".tabAssumption:not(" + nav + ")").hide();
+				$(nav).show();
+				$.fn.matchHeight._update();
+			}).trigger("change");
 
-		$("{thisView} #iAnnualFuturePayIncreaseRate-worksheet").on('hidden.bs.modal', function (e) {
-			$(".iAnnualFuturePayIncreaseRate").trigger("change");
-		})
-		$("{thisView} #iMedicalCostInflation-worksheet").on('hidden.bs.modal', function (e) {
-			$(".iMedicalCostInflation").trigger("change");
-		})
-		$("{thisView} .modelingDefaultsModal").on('hidden.bs.modal', function (e) {
-			$(".iAnnualPay").trigger("change"); // Run calc
-		})
+			$("#iAnnualFuturePayIncreaseRate-worksheet", application.element).on('hidden.bs.modal', function (e) {
+				$(".iAnnualFuturePayIncreaseRate", application.element).trigger("change");
+			})
+			$("#iMedicalCostInflation-worksheet").on('hidden.bs.modal', function (e) {
+				$(".iMedicalCostInflation", application.element).trigger("change");
+			})
+			$(".modelingDefaultsModal").on('hidden.bs.modal', function (e) {
+				$(".iAnnualPay", application.element).trigger("change"); // Run calc
+			})
+			$(".assumptionType", application.element).selectpicker();
+			
+			if ( $.fn.matchHeight !== undefined ) {
+				$(".match-height", application.element).matchHeight({ property: 'height' });
+				$.fn.matchHeight._maintainScroll = true;
 
-		if ( $.fn.matchHeight !== undefined ) {
-            $("{thisView} .match-height").matchHeight({ property: 'height' });
-            $.fn.matchHeight._maintainScroll = true;
-
-            $("{thisView}").on( "onCalculation.RBLe", function( event, calculationResults, calcOptions, application ) {
-                // Doesn't look like I can only call 'update' to match height items within my view, so this will update
-                // all and any match heights applied on page, but my bindings were set scoped to my view, so it should
-                // not have adverse affects.  The project page mentioned that match heights can be achieved in modern
-                // browsers by using CSS Flexbox and CSS Grid instead.  So could look at that.
-                $.fn.matchHeight._update();
-            });
-        }
+				$(application.element).on( "onCalculation.RBLe", function( event, calculationResults, calcOptions, application ) {
+					// Doesn't look like I can only call 'update' to match height items within my view, so this will update
+					// all and any match heights applied on page, but my bindings were set scoped to my view, so it should
+					// not have adverse affects.  The project page mentioned that match heights can be achieved in modern
+					// browsers by using CSS Flexbox and CSS Grid instead.  So could look at that.
+					$.fn.matchHeight._update();
+				});
+			}
+		});
     });
 
 </script>
@@ -258,3 +259,7 @@
     </div>
   </div>
 </div>
+
+<script>
+//# sourceURL=IRP.kaml
+</script>

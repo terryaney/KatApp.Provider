@@ -1,4 +1,4 @@
-<rbl-config calcengine="Buck_DecisionSupportDisability_SE" templates="Standard_Templates"></rbl-config>
+<rbl-config calcengine="Buck_DecisionSupportDisability_SE" templates="Standard_Templates"/>
 
 <style>
     div.chart { height: 350px; }
@@ -56,3 +56,7 @@
         <div rbl-tid="validation-summary"></div>
     </div>
 </div>
+
+<script>
+//# sourceURL=Disability.kaml
+</script>

@@ -2,5 +2,8 @@
     "files.exclude": {
         "**/*.map": true,
         "public/js/*.d.ts": true
-    }
+    },
+    "files.associations": {
+        "*.kaml": "html"
+      }    
 }

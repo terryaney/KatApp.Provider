@@ -79,7 +79,7 @@
                 $( ".slider-control:enabled, input:enabled, select:enabled", application.element ).attr("disabled", "true").attr("kat-disabled", "true");
 
                 if ( typeof $.fn.selectpicker === "function" ) {
-                    $("select.bootstrap-select[data-kat-bootstrap-select='true'][kat-disabled='true']").selectpicker("refresh");
+                    $("select.bootstrap-select[data-kat-bootstrap-select-initialized='true'][kat-disabled='true']").selectpicker("refresh");
                 }
             },
             onCalculateEnd: function( application: KatAppPlugIn ) {
@@ -87,7 +87,7 @@
                     $( application.options.ajaxLoaderSelector, application.element ).fadeOut();
                 }
                 if ( typeof $.fn.selectpicker === "function" ) {
-                    $( "select[data-kat-bootstrap-select='true'][kat-disabled='true']", application.element ).removeAttr("disabled").selectpicker("refresh");
+                    $( "select[data-kat-bootstrap-select-initialized='true'][kat-disabled='true']", application.element ).removeAttr("disabled").selectpicker("refresh");
                 }
                 $( "[kat-disabled='true']", application.element ).removeAttr("disabled");
             },
@@ -295,13 +295,13 @@
                 if ( viewId !== undefined ) {
                     that.trace(viewId + " requested from CMS.", TraceVerbosity.Detailed);
                     
-                    let debugResourcesRoot = that.options.debug?.debugResourcesRoot;
-                    if ( debugResourcesRoot !== undefined ) {
-                        debugResourcesRoot += "/views";
+                    let debugResourcesDomain = that.options.debug?.debugResourcesDomain;
+                    if ( debugResourcesDomain !== undefined ) {
+                        debugResourcesDomain += "/views";
                     }
-                    that.trace("Downloading " + viewId + " from " + debugResourcesRoot ?? functionUrl, TraceVerbosity.Diagnostic );
+                    that.trace("Downloading " + viewId + " from " + debugResourcesDomain ?? functionUrl, TraceVerbosity.Diagnostic );
 
-                    KatApp.getResources( that, viewId, useTestView, false, debugResourcesRoot,
+                    KatApp.getResources( that, viewId, useTestView, false, debugResourcesDomain,
                         ( errorMessage, results ) => {                                
 
                             pipelineError = errorMessage;
@@ -403,12 +403,12 @@
                     const toFetchList = toFetch.join(",");
                     that.trace(toFetchList + " requested from CMS.", TraceVerbosity.Detailed);
 
-                    let debugResourcesRoot = that.options.debug?.debugResourcesRoot;
-                    if ( debugResourcesRoot !== undefined ) {
-                        debugResourcesRoot += "/templates";
+                    let debugResourcesDomain = that.options.debug?.debugResourcesDomain;
+                    if ( debugResourcesDomain !== undefined ) {
+                        debugResourcesDomain += "/templates";
                     }
-                    that.trace("Downloading " + toFetchList + " from " + debugResourcesRoot ?? functionUrl, TraceVerbosity.Diagnostic );
-                    KatApp.getResources( that, toFetchList, useTestView, false, debugResourcesRoot,
+                    that.trace("Downloading " + toFetchList + " from " + debugResourcesDomain ?? functionUrl, TraceVerbosity.Diagnostic );
+                    KatApp.getResources( that, toFetchList, useTestView, false, debugResourcesDomain,
                         ( errorMessage, data ) => {                                
 
                             if ( errorMessage === undefined ) {

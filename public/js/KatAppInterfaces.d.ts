@@ -191,7 +191,7 @@ interface RegisterDataDelegate {
 interface KatAppOptions {
     debug?: {
         traceVerbosity?: TraceVerbosity;
-        debugResourcesRoot?: string;
+        debugResourcesDomain?: string;
         saveFirstCalculationLocation?: string;
         refreshCalcEngine?: boolean;
         useTestCalcEngine?: boolean;

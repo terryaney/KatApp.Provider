@@ -73,7 +73,7 @@
             }
             $(".slider-control:enabled, input:enabled, select:enabled", application.element).attr("disabled", "true").attr("kat-disabled", "true");
             if (typeof $.fn.selectpicker === "function") {
-                $("select.bootstrap-select[data-kat-bootstrap-select='true'][kat-disabled='true']").selectpicker("refresh");
+                $("select.bootstrap-select[data-kat-bootstrap-select-initialized='true'][kat-disabled='true']").selectpicker("refresh");
             }
         },
         onCalculateEnd: function (application) {
@@ -81,7 +81,7 @@
                 $(application.options.ajaxLoaderSelector, application.element).fadeOut();
             }
             if (typeof $.fn.selectpicker === "function") {
-                $("select[data-kat-bootstrap-select='true'][kat-disabled='true']", application.element).removeAttr("disabled").selectpicker("refresh");
+                $("select[data-kat-bootstrap-select-initialized='true'][kat-disabled='true']", application.element).removeAttr("disabled").selectpicker("refresh");
             }
             $("[kat-disabled='true']", application.element).removeAttr("disabled");
         },
@@ -247,12 +247,12 @@
                 var _a, _b;
                 if (viewId !== undefined) {
                     that.trace(viewId + " requested from CMS.", TraceVerbosity.Detailed);
-                    var debugResourcesRoot = (_a = that.options.debug) === null || _a === void 0 ? void 0 : _a.debugResourcesRoot;
-                    if (debugResourcesRoot !== undefined) {
-                        debugResourcesRoot += "/views";
+                    var debugResourcesDomain = (_a = that.options.debug) === null || _a === void 0 ? void 0 : _a.debugResourcesDomain;
+                    if (debugResourcesDomain !== undefined) {
+                        debugResourcesDomain += "/views";
                     }
-                    that.trace((_b = "Downloading " + viewId + " from " + debugResourcesRoot) !== null && _b !== void 0 ? _b : functionUrl, TraceVerbosity.Diagnostic);
-                    KatApp.getResources(that, viewId, useTestView, false, debugResourcesRoot, function (errorMessage, results) {
+                    that.trace((_b = "Downloading " + viewId + " from " + debugResourcesDomain) !== null && _b !== void 0 ? _b : functionUrl, TraceVerbosity.Diagnostic);
+                    KatApp.getResources(that, viewId, useTestView, false, debugResourcesDomain, function (errorMessage, results) {
                         var _a, _b, _c;
                         pipelineError = errorMessage;
                         if (pipelineError === undefined) {
@@ -334,12 +334,12 @@
                 if (toFetch.length > 0) {
                     var toFetchList_1 = toFetch.join(",");
                     that.trace(toFetchList_1 + " requested from CMS.", TraceVerbosity.Detailed);
-                    var debugResourcesRoot = (_a = that.options.debug) === null || _a === void 0 ? void 0 : _a.debugResourcesRoot;
-                    if (debugResourcesRoot !== undefined) {
-                        debugResourcesRoot += "/templates";
+                    var debugResourcesDomain = (_a = that.options.debug) === null || _a === void 0 ? void 0 : _a.debugResourcesDomain;
+                    if (debugResourcesDomain !== undefined) {
+                        debugResourcesDomain += "/templates";
                     }
-                    that.trace((_b = "Downloading " + toFetchList_1 + " from " + debugResourcesRoot) !== null && _b !== void 0 ? _b : functionUrl, TraceVerbosity.Diagnostic);
-                    KatApp.getResources(that, toFetchList_1, useTestView, false, debugResourcesRoot, function (errorMessage, data) {
+                    that.trace((_b = "Downloading " + toFetchList_1 + " from " + debugResourcesDomain) !== null && _b !== void 0 ? _b : functionUrl, TraceVerbosity.Diagnostic);
+                    KatApp.getResources(that, toFetchList_1, useTestView, false, debugResourcesDomain, function (errorMessage, data) {
                         if (errorMessage === undefined) {
                             resourceResults = data;
                             that.trace(toFetchList_1 + " returned from CMS.", TraceVerbosity.Normal);

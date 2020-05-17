@@ -101,7 +101,7 @@ var KatApp = /** @class */ (function () {
             });
         }
     };
-    KatApp.getResources = function (application, resources, useTestVersion, isScript, debugResourcesRoot, getResourcesHandler) {
+    KatApp.getResources = function (application, resources, useTestVersion, isScript, debugResourcesDomain, getResourcesHandler) {
         var _a, _b;
         var currentOptions = application.options;
         var url = (_b = (_a = currentOptions.functionUrl) !== null && _a !== void 0 ? _a : KatApp.defaultOptions.functionUrl) !== null && _b !== void 0 ? _b : KatApp.functionUrl;
@@ -148,10 +148,10 @@ var KatApp = /** @class */ (function () {
                     var localFolder_1 = !isScript ? folder + "/" : "";
                     var submit = (_a = currentOptions.submitCalculation) !== null && _a !== void 0 ? _a : function (_app, o, done, fail) {
                         var ajaxConfig = {
-                            url: debugResourcesRoot !== undefined ? debugResourcesRoot + "/" + localFolder_1 + resource_1 : url,
-                            data: debugResourcesRoot === undefined ? JSON.stringify(o) : undefined,
-                            method: debugResourcesRoot === undefined ? "POST" : undefined,
-                            dataType: debugResourcesRoot === undefined ? "json" : undefined,
+                            url: debugResourcesDomain !== undefined ? debugResourcesDomain + "/" + localFolder_1 + resource_1 : url,
+                            data: debugResourcesDomain === undefined ? JSON.stringify(o) : undefined,
+                            method: debugResourcesDomain === undefined ? "POST" : undefined,
+                            dataType: debugResourcesDomain === undefined ? "json" : undefined,
                             cache: false
                         };
                         // Need to use .ajax isntead of .getScript/.get to get around CORS problem
@@ -165,30 +165,37 @@ var KatApp = /** @class */ (function () {
                     };
                     var submitDone = function (data) {
                         var _a, _b;
-                        if (data.payload !== undefined) {
-                            data = JSON.parse(data.payload);
-                        }
-                        // data.Content when request from service, just data when local files
-                        var resourceContent = (_b = (_a = data.Resources) === null || _a === void 0 ? void 0 : _a[0].Content) !== null && _b !== void 0 ? _b : data;
-                        if (isScript) {
-                            // If local script location is provided, doing the $.ajax code automatically 
-                            // injects/executes the javascript, no need to do it again
-                            var body = document.querySelector('body');
-                            if (body !== undefined && body !== null && debugResourcesRoot === undefined && resourceContent !== undefined) {
-                                // Just keeping the markup a bit cleaner by only having one copy of the code
-                                $("script[rbl-script='true']").remove();
-                                // https://stackoverflow.com/a/56509649/166231
-                                var script = document.createElement('script');
-                                script.setAttribute("rbl-script", "true");
-                                var content = resourceContent;
-                                script.innerHTML = content;
-                                body.appendChild(script);
-                            }
+                        if (data == null) {
+                            // Bad return from L@W
+                            pipelineError = "getResources failed requesting " + r + " from L@W.";
+                            getResourcesPipeline();
                         }
                         else {
-                            resourceResults[r] = resourceContent;
+                            if (data.payload !== undefined) {
+                                data = JSON.parse(data.payload);
+                            }
+                            // data.Content when request from service, just data when local files
+                            var resourceContent = (_b = (_a = data.Resources) === null || _a === void 0 ? void 0 : _a[0].Content) !== null && _b !== void 0 ? _b : data;
+                            if (isScript) {
+                                // If local script location is provided, doing the $.ajax code automatically 
+                                // injects/executes the javascript, no need to do it again
+                                var body = document.querySelector('body');
+                                if (body !== undefined && body !== null && debugResourcesDomain === undefined && resourceContent !== undefined) {
+                                    // Just keeping the markup a bit cleaner by only having one copy of the code
+                                    $("script[rbl-script='true']").remove();
+                                    // https://stackoverflow.com/a/56509649/166231
+                                    var script = document.createElement('script');
+                                    script.setAttribute("rbl-script", "true");
+                                    var content = resourceContent;
+                                    script.innerHTML = content;
+                                    body.appendChild(script);
+                                }
+                            }
+                            else {
+                                resourceResults[r] = resourceContent;
+                            }
+                            getResourcesPipeline();
                         }
-                        getResourcesPipeline();
                     };
                     submit(application, params, submitDone, submitFailed);
                 }
@@ -368,13 +375,13 @@ var KatApp = /** @class */ (function () {
         // First time anyone has been called with .KatApp()
         if (applications.length === 1) {
             shim.trace("Loading KatAppProvider library...", TraceVerbosity.Detailed);
-            var debugResourcesRoot = (_a = shim.options.debug) === null || _a === void 0 ? void 0 : _a.debugResourcesRoot;
-            if (debugResourcesRoot !== undefined) {
-                debugResourcesRoot += "/js";
+            var debugResourcesDomain = (_a = shim.options.debug) === null || _a === void 0 ? void 0 : _a.debugResourcesDomain;
+            if (debugResourcesDomain !== undefined) {
+                debugResourcesDomain += "/js";
             }
-            shim.trace((_b = "Downloading KatAppProvider.js from " + debugResourcesRoot) !== null && _b !== void 0 ? _b : shim.options.functionUrl, TraceVerbosity.Diagnostic);
+            shim.trace((_b = "Downloading KatAppProvider.js from " + debugResourcesDomain) !== null && _b !== void 0 ? _b : shim.options.functionUrl, TraceVerbosity.Diagnostic);
             var useTestService = (_g = (_e = (_d = (_c = shim.options) === null || _c === void 0 ? void 0 : _c.debug) === null || _d === void 0 ? void 0 : _d.useTestPlugin) !== null && _e !== void 0 ? _e : (_f = KatApp.defaultOptions.debug) === null || _f === void 0 ? void 0 : _f.useTestPlugin) !== null && _g !== void 0 ? _g : false;
-            KatApp.getResources(shim, "Global:KatAppProvider.js", useTestService, true, debugResourcesRoot, function (errorMessage) {
+            KatApp.getResources(shim, "Global:KatAppProvider.js", useTestService, true, debugResourcesDomain, function (errorMessage) {
                 if (errorMessage !== undefined) {
                     shim.trace("KatAppProvider library could not be loaded.", TraceVerbosity.Quiet);
                 }
@@ -387,4 +394,5 @@ var KatApp = /** @class */ (function () {
         return shim;
     };
 })(jQuery, window, document);
+//# sourceURL=KatApp.js
 //# sourceMappingURL=KatApp.js.map

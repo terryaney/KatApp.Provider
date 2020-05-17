@@ -8,20 +8,18 @@
 </style>
 
 <script>
-	$(document).ready(function () {
-        if ( $.fn.matchHeight !== undefined ) {
-            $("{thisView} .match-height").matchHeight({ property: 'height' });
-            $.fn.matchHeight._maintainScroll = true;
+    if ( $.fn.matchHeight !== undefined ) {
+        $("{thisView} .match-height").matchHeight({ property: 'height' });
+        $.fn.matchHeight._maintainScroll = true;
 
-            $("{thisView}").on( "onCalculation.RBLe", function( event, calculationResults, calcOptions, application ) {
-                // Doesn't look like I can only call 'update' to match height items within my view, so this will update
-                // all and any match heights applied on page, but my bindings were set scoped to my view, so it should
-                // not have adverse affects.  The project page mentioned that match heights can be achieved in modern
-                // browsers by using CSS Flexbox and CSS Grid instead.  So could look at that.
-                $.fn.matchHeight._update();
-            });
-        }
-    });
+        $("{thisView}").on( "onCalculation.RBLe", function( event, calculationResults, calcOptions, application ) {
+            // Doesn't look like I can only call 'update' to match height items within my view, so this will update
+            // all and any match heights applied on page, but my bindings were set scoped to my view, so it should
+            // not have adverse affects.  The project page mentioned that match heights can be achieved in modern
+            // browsers by using CSS Flexbox and CSS Grid instead.  So could look at that.
+            $.fn.matchHeight._update();
+        });
+    }
     //# sourceURL=DevROI.kaml
 </script>
 

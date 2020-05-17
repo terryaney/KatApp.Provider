@@ -32,113 +32,109 @@
 </style>
 
 <script>
-	$(document).ready(function () {
-        if ( $("{thisView}").data("debugger" ) == true ) {
-            debugger;
-        }
+	if ( $("{thisView}").data("debugger" ) == true ) {
+		debugger;
+	}
 
-        $("{thisView} .iFSAFlag").val($("{thisView}").data("fsa"));
-        $("{thisView} .iPlanID").val($("{thisView}").data("planid"));
+	$("{thisView} .iFSAFlag").val($("{thisView}").data("fsa"));
+	$("{thisView} .iPlanID").val($("{thisView}").data("planid"));
 
-        $("{thisView}").on( "onInitialized.RBLe", function( event, application ) {
-            let ws = $("<a style='display: none;' class='ws-info wsiHCE vShowWorksheet' role='button' tabindex='0' title='Click for Health Care Expense Worksheet' href='#' data-toggle='modal' data-target='#modal-worksheet'><span class='glyphicon glyphicon glyphicon-list-alt'></span></a>");
-            ws.insertBefore($(".liHCE", application.element));
-            ws = $("<a style='display: none;' class='ws-info wsiDCE vShowWorksheet' role='button' tabindex='0' title='Click for Dependent Care Expense Worksheet' href='#' data-toggle='modal' data-target='#modal-worksheet'><span class='glyphicon glyphicon glyphicon-list-alt'></span></a>");
-            ws.insertBefore($(".liDCE", application.element));
-        });
+	$("{thisView}").on( "onInitialized.RBLe", function( event, application ) {
+		let ws = $("<a style='display: none;' class='ws-info wsiHCE vShowWorksheet' role='button' tabindex='0' title='Click for Health Care Expense Worksheet' href='#' data-toggle='modal' data-target='#modal-worksheet'><span class='glyphicon glyphicon glyphicon-list-alt'></span></a>");
+		ws.insertBefore($(".liHCE", application.element));
+		ws = $("<a style='display: none;' class='ws-info wsiDCE vShowWorksheet' role='button' tabindex='0' title='Click for Dependent Care Expense Worksheet' href='#' data-toggle='modal' data-target='#modal-worksheet'><span class='glyphicon glyphicon glyphicon-list-alt'></span></a>");
+		ws.insertBefore($(".liDCE", application.element));
+	});
 
-        if ( $.fn.matchHeight !== undefined ) {
-            $("{thisView} .match-height").matchHeight({ property: 'height' });
-            $.fn.matchHeight._maintainScroll = true;
+	if ( $.fn.matchHeight !== undefined ) {
+		$("{thisView} .match-height").matchHeight({ property: 'height' });
+		$.fn.matchHeight._maintainScroll = true;
 
-            $("{thisView}").on( "onCalculation.RBLe", function( event, calculationResults, calcOptions, application ) {
-                // Doesn't look like I can only call 'update' to match height items within my view, so this will update
-                // all and any match heights applied on page, but my bindings were set scoped to my view, so it should
-                // not have adverse affects.  The project page mentioned that match heights can be achieved in modern
-                // browsers by using CSS Flexbox and CSS Grid instead.  So could look at that.
-                $.fn.matchHeight._update();
-            });
-        }
-    });
+		$("{thisView}").on( "onCalculation.RBLe", function( event, calculationResults, calcOptions, application ) {
+			// Doesn't look like I can only call 'update' to match height items within my view, so this will update
+			// all and any match heights applied on page, but my bindings were set scoped to my view, so it should
+			// not have adverse affects.  The project page mentioned that match heights can be achieved in modern
+			// browsers by using CSS Flexbox and CSS Grid instead.  So could look at that.
+			$.fn.matchHeight._update();
+		});
+	}
 
 	var worksheetMax = 0;
 	var worksheetIsHC = false;
 	var hcValues = Array.apply(null, Array(6)).map(function () { return 0; });
 	var dcValues = Array.apply(null, Array(7)).map(function () { return 0; });
 
-	$(document).ready(function () {
-		$("{thisView} #modal-worksheet").on('show.bs.modal', function (e) {
-			worksheetIsHC = $(e.relatedTarget).hasClass("wsiHCE");
+	$("{thisView} #modal-worksheet").on('show.bs.modal', function (e) {
+		worksheetIsHC = $(e.relatedTarget).hasClass("wsiHCE");
 
-			$("{thisView} #modal-worksheet .modal-title").html(worksheetIsHC ? "Health Care Worksheet" : "Dependent Care Worksheet");
+		$("{thisView} #modal-worksheet .modal-title").html(worksheetIsHC ? "Health Care Worksheet" : "Dependent Care Worksheet");
 
-			$("{thisView} #hcwAlert").addClass('hide');
+		$("{thisView} #hcwAlert").addClass('hide');
 
-			worksheetMax = worksheetIsHC
-				? $("{thisView} .slider-iHCE").data("max") * 1
-				: $("{thisView} .slider-iDCE").data("max") * 1;
+		worksheetMax = worksheetIsHC
+			? $("{thisView} .slider-iHCE").data("max") * 1
+			: $("{thisView} .slider-iDCE").data("max") * 1;
 
-			$("{thisView} #modal-worksheet .plan-limit").html(String.localeFormat("{0:c0}", worksheetMax));
+		$("{thisView} #modal-worksheet .plan-limit").html(String.localeFormat("{0:c0}", worksheetMax));
 
-			if (worksheetIsHC) {
-				$("{thisView} .viWorksheet7").hide();
+		if (worksheetIsHC) {
+			$("{thisView} .viWorksheet7").hide();
+		}
+		else {
+			$("{thisView} .viWorksheet7").show();
+		}
+
+		var values = worksheetIsHC ? hcValues : dcValues;
+
+		for (var i = 0; i < values.length; i++) {
+			$("{thisView} .iWorksheet" + (i + 1)).val(values[i]);
+		}
+
+		$("{thisView} #modal-worksheet label.control-label").each(function () {
+			var id = $(this).attr("for");
+			$(this).html($(".l" + id + (worksheetIsHC ? "HC" : "DC" )).html());
+		});
+	})
+	.on('shown.bs.modal', function (e) {
+		$($("{thisView} .iWorksheet")[0]).change();
+	});
+
+	$("{thisView} .iWorksheet").change(function () {
+		$("{thisView} #modal-worksheet .total").html(String.localeFormat("{0:c0}", Math.min(worksheetMax, GetTotal())));
+	})
+	$($("{thisView} .iWorksheet")[0]).change();
+
+	$("{thisView} #modal-worksheet .btn-use").on('click', function (e) {
+		var hasErrors = false;
+		$("{thisView} #hcwAlert").html("");
+
+		$("{thisView} .iWorksheet:visible").each(function () {
+			var value = Number($(this).val());
+			if (isNaN(value)) {
+				var label = $(this).parent().parent().children("label").text();
+				$("{thisView} #hcwAlert").removeClass('hide').append('<p>' + label + ': Please provide blank or a valid numeric value.</p>');
+				hasErrors = true;
 			}
-			else {
-				$("{thisView} .viWorksheet7").show();
-			}
+		});
 
+		if (hasErrors) {
+			return false;
+		}
+		else {
 			var values = worksheetIsHC ? hcValues : dcValues;
 
 			for (var i = 0; i < values.length; i++) {
-				$("{thisView} .iWorksheet" + (i + 1)).val(values[i]);
+				var val = $("{thisView} .iWorksheet" + (i + 1)).val() * 1;
+				values[i] = val != undefined ? val : 0;
 			}
 
-			$("{thisView} #modal-worksheet label.control-label").each(function () {
-				var id = $(this).attr("for");
-				$(this).html($(".l" + id + (worksheetIsHC ? "HC" : "DC" )).html());
-			});
-		})
-		.on('shown.bs.modal', function (e) {
-			$($("{thisView} .iWorksheet")[0]).change();
-		});
+			var total = GetTotal();
 
-		$("{thisView} .iWorksheet").change(function () {
-			$("{thisView} #modal-worksheet .total").html(String.localeFormat("{0:c0}", Math.min(worksheetMax, GetTotal())));
-		})
-		$($("{thisView} .iWorksheet")[0]).change();
-
-		$("{thisView} #modal-worksheet .btn-use").on('click', function (e) {
-			var hasErrors = false;
-			$("{thisView} #hcwAlert").html("");
-
-			$("{thisView} .iWorksheet:visible").each(function () {
-				var value = Number($(this).val());
-				if (isNaN(value)) {
-					var label = $(this).parent().parent().children("label").text();
-					$("{thisView} #hcwAlert").removeClass('hide').append('<p>' + label + ': Please provide blank or a valid numeric value.</p>');
-					hasErrors = true;
-				}
-			});
-
-			if (hasErrors) {
-				return false;
-			}
-			else {
-				var values = worksheetIsHC ? hcValues : dcValues;
-
-				for (var i = 0; i < values.length; i++) {
-					var val = $("{thisView} .iWorksheet" + (i + 1)).val() * 1;
-					values[i] = val != undefined ? val : 0;
-				}
-
-				var total = GetTotal();
-
-				var noUiSlider = worksheetIsHC
-					? $("{thisView} .slider-iHCE")
-					: $("{thisView} .slider-iDCE")
-				noUiSlider[0].noUiSlider.set(total);
-			}
-		});
+			var noUiSlider = worksheetIsHC
+				? $("{thisView} .slider-iHCE")
+				: $("{thisView} .slider-iDCE")
+			noUiSlider[0].noUiSlider.set(total);
+		}
 	});
 
 	function GetTotal() {

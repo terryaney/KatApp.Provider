@@ -28,7 +28,7 @@
             "type": "chrome",
             "request": "launch",
             "name": "Debug Client",
-            "url": "http://localhost:1337",
+            "url": "http://localhost:8887",
             "webRoot": "${workspaceRoot}/public/js"
         },
         {

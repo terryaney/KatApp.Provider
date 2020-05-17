@@ -1,4 +1,4 @@
-<rbl-config calcengine="Conduent_BiscombPOC_SE" templates="Standard_Templates,Biscomb_Templates"></rbl-config>
+<rbl-config calcengine="Conduent_BiscombPOC_SE" templates="Standard_Templates,POC:Biscomb_Templates"></rbl-config>
 
 <div class="row border-0 RBLe">
   <div class="ajaxloader"></div>

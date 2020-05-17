@@ -247,7 +247,7 @@
 
                 let currentView = $("#CurrentApp", application.element).val();
 
-                if ( currentView === "Current" ) {
+                if ( currentView === "Custom" ) {
                     currentView = $(".CustomView", application.element).val() || "";
                 }
 

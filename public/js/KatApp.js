@@ -151,7 +151,7 @@ var KatApp = /** @class */ (function () {
                         ]
                     };
                     var localFolder_1 = !isScript ? folder + "/" : "";
-                    var submit = (_a = currentOptions.submitCalculation) !== null && _a !== void 0 ? _a : function (_app, o, done, fail) {
+                    var submit = (_a = (debugResourcesDomain === undefined ? currentOptions.submitCalculation : undefined)) !== null && _a !== void 0 ? _a : function (_app, o, done, fail) {
                         var ajaxConfig = {
                             url: debugResourcesDomain !== undefined ? debugResourcesDomain + localFolder_1 + resource_1 : url,
                             data: debugResourcesDomain === undefined ? JSON.stringify(o) : undefined,

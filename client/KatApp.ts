@@ -197,7 +197,7 @@ class KatApp
                     const localFolder = !isScript ? folder + "/" : "";
 
                     const submit =
-                        currentOptions.submitCalculation ??
+                        ( debugResourcesDomain === undefined ? currentOptions.submitCalculation : undefined ) ??
                         function( _app, o, done, fail ): void {
                             const ajaxConfig = 
                             { 

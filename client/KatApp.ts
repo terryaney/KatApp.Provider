@@ -145,10 +145,16 @@ class KatApp
         // folder: string, resource: string, optional Version
 
         let pipeline: Array<()=> void> = [];
+        let pipelineNames: Array<string> = [];
         let pipelineIndex = 0;
 
         const getResourcesPipeline = function(): void {
+            if ( pipelineIndex > 0 ) {
+                application.trace( pipelineNames[ pipelineIndex - 1 ] + ".finish", TraceVerbosity.Detailed );
+            }
+
             if ( pipelineIndex < pipeline.length ) {                    
+                application.trace( pipelineNames[ pipelineIndex ] + ".start", TraceVerbosity.Detailed );
                 pipeline[ pipelineIndex++ ]();
             }
         };
@@ -195,7 +201,7 @@ class KatApp
                         function( _app, o, done, fail ): void {
                             const ajaxConfig = 
                             { 
-                                url: debugResourcesDomain !== undefined ? debugResourcesDomain + "/" + localFolder + resource : url, // + JSON.stringify( params )
+                                url: debugResourcesDomain !== undefined ? debugResourcesDomain + localFolder + resource : url, // + JSON.stringify( params )
                                 data: debugResourcesDomain === undefined ? JSON.stringify( o ) : undefined,
                                 method: debugResourcesDomain === undefined ? "POST" : undefined,
                                 dataType: debugResourcesDomain === undefined ? "json" : undefined,
@@ -232,7 +238,12 @@ class KatApp
                                 // injects/executes the javascript, no need to do it again
                                 const body = document.querySelector('body');
 
-                                if ( body !== undefined && body !== null && debugResourcesDomain === undefined && resourceContent !== undefined ) {
+                                // Still trying to figure out how to best determine if I inject or not, might have to make a variable
+                                // at top of code in KatAppProvider, but if it 'ran', then $.fn.KatApp.plugInShims should be undefined.
+                                // Originally, I just looked to see if debugResourcesDomain was undefined...but if that is set and the domain
+                                // does NOT match domain of site running (i.e. debugging site in asp.net that uses KatApps and I want it to
+                                // hit development KatApp resources) then it doesn't inject it.  So can't just check undefined or not.
+                                if ( body !== undefined && body !== null && $.fn.KatApp.plugInShims !== undefined && resourceContent !== undefined ) {
 
                                     // Just keeping the markup a bit cleaner by only having one copy of the code
                                     $("script[rbl-script='true']").remove()
@@ -272,6 +283,8 @@ class KatApp
                 }
             ]
         );
+
+        pipelineNames = resourceArray.map( r => "getResourcesPipeline." + r ).concat( [ "getResourcesPipeline.finalize" ] );
 
         // Start the pipeline
         getResourcesPipeline();
@@ -404,21 +417,7 @@ class KatApp
 
                     const instance = this.KatApp;
 
-                    // No longer supporting this, see comment for needsCalculation in KatAppPlugInInterfaces.ts.  Just don't see the
-                    // need and given pattern of providing full blown 'app' after server loads script, don't want to have to 
-                    // support 'anything' on .KatApp() until onInitialized is completed.
-
-                    /*
-                    // If plugin isn't created yet and they call a method, just auto init for them
-                    if ( instance === undefined && typeof options === 'string' && $.inArray(options, autoInitMethods) != -1 ) {
-                        const appOptions = ( args.length >= 1 && typeof args[ 0 ] === "object" ? args[ 0 ] : undefined ) as KatAppOptions;
-                        instance = $.fn[pluginName].applicationFactory(KatApp.generateId(), $(this), appOptions);
-                    }
-                    */
-
-                    const objectType = instance?.constructor?.name;
-
-                    if (instance !== undefined && ( objectType === "KatAppPlugInShim" || objectType === "KatAppPlugIn") && typeof instance[options] === 'function') {
+                    if (instance !== undefined && typeof instance[options] === 'function') {
                         instance[options].apply(instance, args); // eslint-disable-line prefer-spread
                     }
                });
@@ -443,7 +442,7 @@ class KatApp
 
             let debugResourcesDomain = shim.options.debug?.debugResourcesDomain;
             if ( debugResourcesDomain !== undefined ) {
-                debugResourcesDomain += "/js";
+                debugResourcesDomain += "js/";
             }
             shim.trace("Downloading KatAppProvider.js from " + debugResourcesDomain ?? shim.options.functionUrl, TraceVerbosity.Diagnostic );
 
@@ -467,4 +466,3 @@ class KatApp
     };
 
 })(jQuery, window, document);
-//# sourceURL=KatApp.js

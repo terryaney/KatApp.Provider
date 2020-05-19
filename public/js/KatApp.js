@@ -109,9 +109,14 @@ var KatApp = /** @class */ (function () {
         // viewParts[ 0 ], viewParts[ 1 ]
         // folder: string, resource: string, optional Version
         var pipeline = [];
+        var pipelineNames = [];
         var pipelineIndex = 0;
         var getResourcesPipeline = function () {
+            if (pipelineIndex > 0) {
+                application.trace(pipelineNames[pipelineIndex - 1] + ".finish", TraceVerbosity.Detailed);
+            }
             if (pipelineIndex < pipeline.length) {
+                application.trace(pipelineNames[pipelineIndex] + ".start", TraceVerbosity.Detailed);
                 pipeline[pipelineIndex++]();
             }
         };
@@ -148,7 +153,7 @@ var KatApp = /** @class */ (function () {
                     var localFolder_1 = !isScript ? folder + "/" : "";
                     var submit = (_a = currentOptions.submitCalculation) !== null && _a !== void 0 ? _a : function (_app, o, done, fail) {
                         var ajaxConfig = {
-                            url: debugResourcesDomain !== undefined ? debugResourcesDomain + "/" + localFolder_1 + resource_1 : url,
+                            url: debugResourcesDomain !== undefined ? debugResourcesDomain + localFolder_1 + resource_1 : url,
                             data: debugResourcesDomain === undefined ? JSON.stringify(o) : undefined,
                             method: debugResourcesDomain === undefined ? "POST" : undefined,
                             dataType: debugResourcesDomain === undefined ? "json" : undefined,
@@ -180,7 +185,12 @@ var KatApp = /** @class */ (function () {
                                 // If local script location is provided, doing the $.ajax code automatically 
                                 // injects/executes the javascript, no need to do it again
                                 var body = document.querySelector('body');
-                                if (body !== undefined && body !== null && debugResourcesDomain === undefined && resourceContent !== undefined) {
+                                // Still trying to figure out how to best determine if I inject or not, might have to make a variable
+                                // at top of code in KatAppProvider, but if it 'ran', then $.fn.KatApp.plugInShims should be undefined.
+                                // Originally, I just looked to see if debugResourcesDomain was undefined...but if that is set and the domain
+                                // does NOT match domain of site running (i.e. debugging site in asp.net that uses KatApps and I want it to
+                                // hit development KatApp resources) then it doesn't inject it.  So can't just check undefined or not.
+                                if (body !== undefined && body !== null && $.fn.KatApp.plugInShims !== undefined && resourceContent !== undefined) {
                                     // Just keeping the markup a bit cleaner by only having one copy of the code
                                     $("script[rbl-script='true']").remove();
                                     // https://stackoverflow.com/a/56509649/166231
@@ -215,6 +225,7 @@ var KatApp = /** @class */ (function () {
                 }
             }
         ]);
+        pipelineNames = resourceArray.map(function (r) { return "getResourcesPipeline." + r; }).concat(["getResourcesPipeline.finalize"]);
         // Start the pipeline
         getResourcesPipeline();
     };
@@ -343,20 +354,8 @@ var KatApp = /** @class */ (function () {
             else {
                 // Invoke the speficied method on each selected element
                 return this.each(function () {
-                    var _a;
                     var instance = this.KatApp;
-                    // No longer supporting this, see comment for needsCalculation in KatAppPlugInInterfaces.ts.  Just don't see the
-                    // need and given pattern of providing full blown 'app' after server loads script, don't want to have to 
-                    // support 'anything' on .KatApp() until onInitialized is completed.
-                    /*
-                    // If plugin isn't created yet and they call a method, just auto init for them
-                    if ( instance === undefined && typeof options === 'string' && $.inArray(options, autoInitMethods) != -1 ) {
-                        const appOptions = ( args.length >= 1 && typeof args[ 0 ] === "object" ? args[ 0 ] : undefined ) as KatAppOptions;
-                        instance = $.fn[pluginName].applicationFactory(KatApp.generateId(), $(this), appOptions);
-                    }
-                    */
-                    var objectType = (_a = instance === null || instance === void 0 ? void 0 : instance.constructor) === null || _a === void 0 ? void 0 : _a.name;
-                    if (instance !== undefined && (objectType === "KatAppPlugInShim" || objectType === "KatAppPlugIn") && typeof instance[options] === 'function') {
+                    if (instance !== undefined && typeof instance[options] === 'function') {
                         instance[options].apply(instance, args); // eslint-disable-line prefer-spread
                     }
                 });
@@ -377,7 +376,7 @@ var KatApp = /** @class */ (function () {
             shim.trace("Loading KatAppProvider library...", TraceVerbosity.Detailed);
             var debugResourcesDomain = (_a = shim.options.debug) === null || _a === void 0 ? void 0 : _a.debugResourcesDomain;
             if (debugResourcesDomain !== undefined) {
-                debugResourcesDomain += "/js";
+                debugResourcesDomain += "js/";
             }
             shim.trace((_b = "Downloading KatAppProvider.js from " + debugResourcesDomain) !== null && _b !== void 0 ? _b : shim.options.functionUrl, TraceVerbosity.Diagnostic);
             var useTestService = (_g = (_e = (_d = (_c = shim.options) === null || _c === void 0 ? void 0 : _c.debug) === null || _d === void 0 ? void 0 : _d.useTestPlugin) !== null && _e !== void 0 ? _e : (_f = KatApp.defaultOptions.debug) === null || _f === void 0 ? void 0 : _f.useTestPlugin) !== null && _g !== void 0 ? _g : false;
@@ -394,5 +393,4 @@ var KatApp = /** @class */ (function () {
         return shim;
     };
 })(jQuery, window, document);
-//# sourceURL=KatApp.js
 //# sourceMappingURL=KatApp.js.map

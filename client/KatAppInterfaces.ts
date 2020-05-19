@@ -1,232 +1,3 @@
-// Prototypes / polyfills
-interface String {
-    format(json: JQuery.PlainObject): string;
-	startsWith(str: string): boolean;
-    endsWith(searchString: string, position?: number): boolean;
-}
-interface HTMLElement {
-    KatApp?: KatAppPlugInShimInterface;
-}
-interface JQuery {
-    KatApp( options?: KatAppOptions | string, ...args: Array<string | number | KatAppOptions> ): JQuery | KatAppPlugInShimInterface | string | undefined;
-
-    selectpicker(): JQuery;
-    selectpicker( option: string ): string;
-    selectpicker( propertyName: string, value: string ): void;
-
-    datepicker( options: any ): JQuery; // eslint-disable-line @typescript-eslint/no-explicit-any
-}
-interface Function {
-    plugInShims: KatAppPlugInShimInterface[];
-    applicationFactory( id: string, element: JQuery, options: KatAppOptions): KatAppPlugInShimInterface;
-    // Debugging...let's me restore the original shim factory if I'm going to rebuild UI or script locations
-    debugApplicationFactory( id: string, element: JQuery, options: KatAppOptions): KatAppPlugInShimInterface;    
-    templateOn( templateName: string, events: string, fn: TemplateOnDelegate ): void;
-
-    templatesUsedByAllApps: { 
-        [ key: string ]: { 
-            requested: boolean; 
-            data?: string; 
-            callbacks: Array<( errorMessage: string | undefined )=> void>; 
-        };
-    };
-    templateDelegates: {
-        Delegate: TemplateOnDelegate;
-        Template: string;
-        Events: string;
-    }[];
-    sharedData: { 
-        requesting: boolean;
-        lastRequested?: number;
-        data?: RBLeRESTServiceResult;
-        registeredToken?: string;
-        callbacks: Array<( errorMessage: string | undefined )=> void>; 
-    };
-    
-    // Didn't want to use interface (see comments at bottom of file for the negative parts) and couldn't use
-    // the 'class' implementation because that code only existed in closure.  So just use any.
-    standardTemplateBuilderFactory( application: KatAppPlugInInterface ): any /*StandardTemplateBuilderInterface*/; // eslint-disable-line @typescript-eslint/no-explicit-any
-    highchartsBuilderFactory( application: KatAppPlugInInterface ): any /*StandardTemplateBuilderInterface*/; // eslint-disable-line @typescript-eslint/no-explicit-any
-    ui( application: KatAppPlugInInterface ): any /*UIUtilitiesInterface*/; // eslint-disable-line @typescript-eslint/no-explicit-any
-    rble( application: KatAppPlugInInterface, uiUtilities: any ): any /*RBLeUtilitiesInterface*/; // eslint-disable-line @typescript-eslint/no-explicit-any
-    // highcharts: any /*HighchartsBuilder*/; // eslint-disable-line @typescript-eslint/no-explicit-any
-}
-
-interface HighchartsTooltipFormatterContextObject {
-    y: number;
-    x: number;
-    series: {
-        name: string;
-    };
-    points: Array<HighchartsTooltipFormatterContextObject>;
-}
-
-// RBLe Service Callback handler and input/result classes
-interface CalculationInputs
-{
-    iConfigureUI?: number;
-    iDataBind?: number;
-    iInputTrigger?: string;
-}
-interface CalculationInputTableRow {
-    index: string;
-}
-interface CalculationInputTable
-{
-    Name: string;
-    Rows: CalculationInputTableRow[];
-}
-
-interface ContentsRow {
-    section: string;
-    type: string;
-    item: string;
-    class?: string;
-}
-
-interface ResultTableColumnConfiguration { 
-    name: string;
-    cssClass?: string;
-    isTextColumn: boolean;
-    xsColumns?: number;
-    smColumns?: number;
-    mdColumns?: number;
-    lgColumns?: number;
-    width?: number;
-    widthPct?: string;         
-}
-
-interface ResultTableConfiguration {
-    totalRows: number;
-    columnConfiguration: { 
-        [ key: string ]: ResultTableColumnConfiguration
-    };
-    columnConfigurationQuery: Array<ResultTableColumnConfiguration>;
-}
-
-interface ResultTableRow extends JSON {
-    "@id"?: string;
-    "@code"?: string;
-}
-interface ResultTableColumn {
-    "@class"?: string;
-    "@width"?: string;
-    "@r-width"?: string;
-    "@xs-width"?: string;
-    "@sm-width"?: string;
-    "@md-width"?: string;
-    "@lg-width"?: string;
-}
-
-interface RBLeRowWithId {
-    "@id": string;
-}
-interface RBLeDefaultRow extends RBLeRowWithId {
-    value?: string;
-}
-interface HtmlContentRow {
-    "@id"?: string;
-    content?: string;
-    html?: string;
-    value?: string;
-    selector?: string;
-    addclass?: string;
-    removeclass?: string;
-}
-interface ValidationRow {
-    "@id"?: string;
-    text: string;
-}
-interface ListControlRow {
-    "@id": string;
-    table: string;
-}
-interface ListRow {
-    key: string;
-    text: string;
-    visible?: string;
-}
-interface SliderConfigurationRow {
-    "@id": string;
-    min: string;
-    max: string;
-    default?: string;
-    step?: string;
-    format?: string;
-    decimals?: string;
-    "pips-mode"?: string;
-    "pips-values"?: string;
-    "pips-density"?: string;
-}
-
-interface RBLeServiceResults {
-    payload?: string; //if from l@w wrapper, escaped string returned
-
-    // Exception is only present if RBLe service threw exception and
-    // it was able to catch it and package up exception details
-    Exception?: {
-        Message: string;
-        StackTrace?: string;
-    };
-
-    Diagnostics?: JSON; // Should define interface for nested items
-    
-    // Only present after successful 'get resource' call
-    Resources?: {
-        Resource: string;
-        Content: string;
-        DateLastModified: Date;
-    }[];
-
-    // RBL is only present after successful calculation
-    RBL?: {
-        Profile: {
-            Data: {
-                TabDef: JSON;
-            };
-        };
-    };
-
-    // RegisteredToken is only present after successful registration
-    RegisteredToken?: string;
-}
-interface RBLeServiceCallback {
-    ( data: RBLeServiceResults ): void;
-}
-
-
-// REST Service Callback handlers and results
-interface RBLeRESTServiceResult {
-    // AuthID/Client/Profile/History is present after calling GET request
-    AuthID?: string;
-    Client?: string;
-    Profile: JSON;
-    History?: JSON;
-}
-interface RBLeRESTServiceResultCallback {
-    ( data: RBLeRESTServiceResult ): void;
-}
-
-
-// Generic callback when I make pipelines to handle several async events
-// but want a pipeline pattern to make them 'look' synchronous in code
-interface PipelineCallback {
-    ( errorMessage?: string, data?: RBLeRESTServiceResult | ResourceResults ): void;
-}
-// JQuery Callback signatures used during pipeline calls to $.get(), $.getScript()
-interface JQueryFailCallback {
-    ( jqXHR: JQuery.jqXHR, textStatus: string, errorThrown: string ): void;
-}
-
-interface SubmitCalculationDelegate {
-    ( appilcation: KatAppPlugInInterface, options: SubmitCalculationOptions | GetResourceOptions, done: RBLeServiceCallback, fail: JQueryFailCallback ): void;
-}
-interface GetDataDelegate {
-    ( appilcation: KatAppPlugInInterface, options: KatAppOptions, done: RBLeRESTServiceResultCallback, fail: JQueryFailCallback ): void;
-}
-interface RegisterDataDelegate {
-    ( appilcation: KatAppPlugInInterface, options: KatAppOptions, done: RBLeServiceCallback, fail: JQueryFailCallback ): void;
-}
 // Note: Everything in this class is currently nullable so I can do partial option updates and default options, but
 // I should probably just make some partial interfaces, and correctly set nullability on members
 
@@ -262,17 +33,9 @@ interface KatAppOptions
     resultTabs?: string[];
 
     inputSelector?: string;
-    // This is normally used internally by the Provider code, but if client needs to get some additional 
-    // inputs that normal KatApp processing would not grab, they can be provided here.  The most common 
-    // example are DST's where the caller creates a KatAppOptions object and passes as along a few variables
-    // from its site before opening new DST window.
-    //
-    // var options = {
-    //      manualInputs: {
-    //          "iAge": 65, // This would probably be a calculated value from results
-    //          "iRetirementSavingsPct": 85 // This would probably be a calculated value from results
-    //      }       
-    // };
+    // This is normally used internally by the Provider code.  If there are some inputs that should
+    // always be passed in on a calculation but aren't available in the UI, they can be assigned here.
+    // The most common use of this is iConfigureUI/iDataBind/iInputTrigger
     manualInputs?: CalculationInputs;
     runConfigureUICalculation?: boolean;
 
@@ -304,6 +67,22 @@ interface KatAppOptions
     onCalculationErrors?: (this: HTMLElement, key: string, message: string, exception: RBLeServiceResults | undefined, calcOptions: KatAppOptions, application: KatAppPlugInInterface)=> void;
     onCalculateEnd?: (this: HTMLElement, appilcation: KatAppPlugInInterface )=> void;
 }
+// These are the only methods available to call on .KatApp() until onInitialized is triggered (meaning
+// that the provider object has been loaded and replaced the Shim and all methods of the KatAppPlugInInterface 
+// are now implemented)
+interface KatAppPlugInShimInterface {
+    options: KatAppOptions;
+    element: JQuery;
+    id: string;
+    // needsCalculation would only be set if $("app").KatApp("calculate"); was called before .KatApp() was
+    // called and initialized.  Only reason that that pattern should be used is if you have turned off
+    // ConfigureUI calc and you want to immediately calculate all applications with a 'normal' calculation.
+    // Even that seems weird though because CalcEngine could just ignore it.
+    // needsCalculation?: boolean;
+    destroy: ()=> void;
+    rebuild: ( options: KatAppOptions )=> void;
+    trace: ( message: string, verbosity?: TraceVerbosity )=> void;
+}
 
 interface GetResourceOptions {
     Command: string;
@@ -313,6 +92,10 @@ interface GetResourceOptions {
             Folder: string;
             Version: string;
         }[];        
+}
+
+interface ResourceResults { 
+    [ key: string ]: string; 
 }
 
 interface SubmitCalculationOptions
@@ -348,34 +131,37 @@ interface SubmitCalculationOptions
     };
 }
 
-interface ResourceResults { 
-    [ key: string ]: string; 
+// REST Service Callback handlers and results
+interface RBLeRESTServiceResult {
+    // AuthID/Client/Profile/History is present after calling GET request
+    AuthID?: string;
+    Client?: string;
+    Profile: JSON;
+    History?: JSON;
+}
+interface RBLeRESTServiceResultCallback {
+    ( data: RBLeRESTServiceResult ): void;
 }
 
-interface ResultRowLookupsInterface { 
-    [ key: string ]: {
-        LastRowSearched: number;
-        Mapping: { 
-            [ key: string ]: number; 
-        };
-    }; 
+
+// Generic callback when I make pipelines to handle several async events
+// but want a pipeline pattern to make them 'look' synchronous in code
+interface PipelineCallback {
+    ( errorMessage?: string, data?: RBLeRESTServiceResult | ResourceResults ): void;
+}
+// JQuery Callback signatures used during pipeline calls to $.get(), $.getScript()
+interface JQueryFailCallback {
+    ( jqXHR: JQuery.jqXHR, textStatus: string, errorThrown: string ): void;
 }
 
-// These are the only methods available to call on .KatApp() until onInitialized is triggered (meaning
-// that the provider object has been loaded and replaced the Shim and all methods of the KatAppPlugInInterface 
-// are now implemented)
-interface KatAppPlugInShimInterface {
-    options: KatAppOptions;
-    element: JQuery;
-    id: string;
-    // needsCalculation would only be set if $("app").KatApp("calculate"); was called before .KatApp() was
-    // called and initialized.  Only reason that that pattern should be used is if you have turned off
-    // ConfigureUI calc and you want to immediately calculate all applications with a 'normal' calculation.
-    // Even that seems weird though because CalcEngine could just ignore it.
-    // needsCalculation?: boolean;
-    destroy: ()=> void;
-    rebuild: ( options: KatAppOptions )=> void;
-    trace: ( message: string, verbosity?: TraceVerbosity )=> void;
+interface SubmitCalculationDelegate {
+    ( appilcation: KatAppPlugInInterface, options: SubmitCalculationOptions | GetResourceOptions, done: RBLeServiceCallback, fail: JQueryFailCallback ): void;
+}
+interface GetDataDelegate {
+    ( appilcation: KatAppPlugInInterface, options: KatAppOptions, done: RBLeRESTServiceResultCallback, fail: JQueryFailCallback ): void;
+}
+interface RegisterDataDelegate {
+    ( appilcation: KatAppPlugInInterface, options: KatAppOptions, done: RBLeServiceCallback, fail: JQueryFailCallback ): void;
 }
 
 // This is the actual plug in interface.  Accessible via:

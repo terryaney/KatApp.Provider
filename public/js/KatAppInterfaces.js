@@ -1,4 +1,6 @@
 "use strict";
+// Note: Everything in this class is currently nullable so I can do partial option updates and default options, but
+// I should probably just make some partial interfaces, and correctly set nullability on members
 // Made the following an interface/factory just so that I could put the
 // implementation of this code below the implementation of the KatAppPlugIn
 // so it was easier to read/maintain the code inside the Provider file (i.e.

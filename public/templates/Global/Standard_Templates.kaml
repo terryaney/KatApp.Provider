@@ -74,7 +74,7 @@
   Should I process data-* attributes on slider
   1) Can 'make' a slider from only data-* attributes?
 -->
-<rbl-template tid="input-textbox">
+<rbl-template tid="input-textbox" type="katapp-textbox">
   <div class="form-group v{inputname}">
     <label for="katapp_{id}_{inputname}" class="control-label">
       <span class="l{inputname}"></span> <span class="sv{inputname}"></span>
@@ -95,7 +95,7 @@
   </div>
 </rbl-template>
 
-<rbl-template tid="input-dropdown">
+<rbl-template tid="input-dropdown" type="katapp-dropdown">
   <div class="form-group v{inputname}">
     <label class="control-label" for="katapp_{id}_{inputname}">
       <span class="l{inputname}"></span> <span class="sv{inputname}"></span>
@@ -116,7 +116,7 @@
   </div>
 </rbl-template>
 
-<rbl-template tid="input-slider">
+<rbl-template tid="input-slider" type="katapp-slider">
   <div class="form-group v{inputname}">
     <label class="control-label" for="katapp_{id}_{inputname}">
       <span class="l{inputname}"></span> <span class="sv{inputname}"></span>
@@ -137,7 +137,7 @@
   </div>
 </rbl-template>
 
-<rbl-template tid="input-checkbox">
+<rbl-template tid="input-checkbox" type="katapp-checkbox">
   <div class="form-group validator-container checkbox-container v{inputname}">
     <span class="checkbox abc-checkbox {inputname} l{inputname}">
       <input _id="katapp_{id}_{inputname}" type="checkbox" name="{inputname}">
@@ -155,7 +155,7 @@
   </div>
 </rbl-template>
 
-<rbl-template tid="chart-highcharts">
+<rbl-template tid="chart-highcharts" type="katapp-highcharts">
   <div class="chart chart-responsive"></div>
 </rbl-template>
 
@@ -163,5 +163,11 @@
   if (KatApp.pageParameters["debugkatapp"] === "t.{thisTemplate}") {
     debugger;
   }
-//# sourceURL=Standard_Templates.kaml
+
+  $.fn.KatApp.templateOn("{thisTemplate}", "onInitialized.RBLe", function (event, application) {
+    application.trace("Processing onInitialized.RBLe for Template [{thisTemplate}]...", TraceVerbosity.Normal);
+    const templateBuilder = $.fn.KatApp.standardTemplateBuilderFactory( application );
+    // Could use templateBuilder here...
+  });
+  //# sourceURL=Standard_Templates.kaml
 </script>

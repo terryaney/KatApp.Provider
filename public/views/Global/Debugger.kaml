@@ -126,6 +126,7 @@
         <div class="col-sm-12" style="padding-top: 10px;">
             <a class="btn btn-primary UpdateDebugOptions">Update</a>
             <a class="btn btn-primary LogResults">Log Results</a>
+            <a class="btn btn-primary ConfigureUI">ConfigureUI Calculation</a>
         </div>
     </div>
     <div class="row">
@@ -199,6 +200,10 @@
             }
         })
 
+        $(".ConfigureUI", application.element).click( function() {
+            $(getSelector()).KatApp("configureUI");
+        });
+
         $(".LogResults", application.element).click( function () {
             $(getSelector()).each(function() {
                 const application = $(this).KatApp();
@@ -206,7 +211,7 @@
                 console.group("Application " + application.displayId + " Results");
                 console.log(application.results);
                 console.groupEnd("Application " + application.displayId + " Results");
-            })                
+            });
         });
 
         $(".UpdateDebugOptions", application.element).click(function() {
@@ -236,6 +241,7 @@
                 useTestCalcEngine: $("#UseTestCalcEngine").prop("checked"),
                 debugResourcesDomain: $("#UseLocalFiles").prop("checked") ? "http://localhost:8887/" /* start at root of site */ : undefined,
             };
+            KatApp.defaultOptions = { debug: debugOptions, functionUrl: KatApp.functionUrl };
 
             if ( currentView !== "" ) {
                 $(selector).KatApp("destroy"); // wouldn't need this usually on client site, but I'm going to reload/execute provider script so wanted everything destroyed
@@ -275,13 +281,15 @@
                 
                 const options = KatApp.extend( {}, KatApp.defaultOptions, { 
                     view: currentView,
-                    calcEngine: calcEngine,
-                    debug: debugOptions 
+                    calcEngine: calcEngine
                 } );
 
                 // This is deleted each time the 'real' Provider js runs, so rebuild it and reset factory to shim factory
                 $.fn.KatApp.plugInShims = [];
                 $.fn.KatApp.applicationFactory = $.fn.KatApp.debugApplicationFactory;
+                $("rbl-katapps").empty(); // remove templates
+                $.fn.KatApp.templatesUsedByAllApps = {};
+                $.fn.KatApp.templateDelegates = [];
 
                 $(".logo-left").html("KatApp Test Harness: " + $("#CurrentApp option:selected").text());
                 $(selector).attr("rbl-trace-id", $("#CurrentApp").val().split(":")[1]).KatApp(options);
@@ -293,7 +301,7 @@
 
         KatApp.defaultOptions.debug.refreshCalcEngine = true;
         KatApp.defaultOptions.debug.traceVerbosity = Number($("#traceLevel").val());
-
+        
         if ( $("#UseLocalFiles", application.element).prop("checked") ) {
             KatApp.defaultOptions.debug.debugResourcesDomain = "http://localhost:8887/";
         }

@@ -79,7 +79,13 @@
             KatApp.defaultOptions.functionUrl = "http://localhost:54300/CalculationFunction.ashx";
             KatApp.defaultOptions.functionUrl = "https://secure.conduentapplications.com/Services/RBL/Evolution_Test/CalculationFunction.ashx";
             KatApp.defaultOptions.functionUrl = "https://btr.lifeatworkportal.com/Services/Evolution/CalculationFunction.ashx";
-            $(".KatApp, .KatAppDebugger").KatApp();
+            $(".KatApp").KatApp();
+            var debuggerOptions = {
+                debug: {
+                    debugResourcesDomain: KatApp.pageParameters[ "localdebugger" ] === "1" ? "http://localhost:8887/" : undefined
+                }
+            };
+            $(".KatAppDebugger").KatApp(debuggerOptions);             
         });
     </script>
 

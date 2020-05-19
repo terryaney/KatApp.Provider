@@ -27,9 +27,13 @@
 		ws = $("<a class='ws-info wsiMedicalCostInflation' role='button' tabindex='0' title='Click for Advanced Assumptions Worksheet' href='#' data-toggle='modal' data-target='#iMedicalCostInflation-worksheet'><span class='glyphicon glyphicon glyphicon-list-alt'></span></a>");
 		ws.insertBefore($(".liMedicalCostInflation", application.element));
 
-		$(".assumptionType", application.element).on('change', function () {
+		$(".closeLearnMore", application.element).click(function() {
+			$(".learnMoreModal", application.element).modal("hide");
+		});
+
+		$(".assumptionType_{id}", application.element).on('change', function () {
 			var nav = $(this).val();
-			$(".tabAssumption:not(" + nav + ")").hide();
+			$(".tabAssumption_{id}:not(" + nav + ")", application.element).hide();
 			$(nav).show();
 			$.fn.matchHeight._update();
 		}).trigger("change");
@@ -43,7 +47,7 @@
 		$(".modelingDefaultsModal").on('hidden.bs.modal', function (e) {
 			$(".iAnnualPay", application.element).trigger("change"); // Run calc
 		})
-		$(".assumptionType", application.element).selectpicker();
+		$(".assumptionType_{id}", application.element).selectpicker();
 		
 		if ( $.fn.matchHeight !== undefined ) {
 			$(".match-height", application.element).matchHeight({ property: 'height' });
@@ -58,6 +62,7 @@
 			});
 		}
 	});
+	//# sourceURL=IRP.kaml
 </script>
 
 <div class="hidden">
@@ -65,7 +70,7 @@
     <input name="iCPI" class="iCPI" value="">
 </div>
 
-<div class="row ajaxContent RBLe">
+<div class="row ajaxContent">
 	<div class="col-md-4">
 		<ul class="nav nav-tabs" role="tablist">
 			<li role="presentation" class="col-xs-12 active"><a href="#tabAssumptions" role="tab" data-toggle="tab" class="text-center">Assumptions</a></li>
@@ -75,22 +80,22 @@
 				<div class="alert alert-warning" role="alert">
 					<p>Please enter your personal information below.</p>
 					<div class="row">
-						<div class="col-sm-12 vassumptionType">
+						<div class="col-sm-12">
 							<div class="form-group">
 								<label for="" class="control-label">Assumptions to View</label>
-								<a class="vhassumptionType" role="button" tabindex="0" data-toggle="popover" data-trigger="click" data-content-selector=".hassumptionType" data-placement="top">
+								<a class="vhassumptionType" role="button" tabindex="0" data-toggle="popover" data-trigger="click" data-content-selector=".hassumptionType_{id}" data-placement="top">
 									<span class="glyphicon glyphicon-info-sign help-icon"></span>
 								</a>
-								<div class="hidden hassumptionType">Use the dropdown to toggle between your Data/Assumptions and your Changes in Finances.</div>
-								<select class="form-control bootstrap-select skipRBLe assumptionType">
-									<option selected="selected" value=".tabDataAssumptions">Data / Assumptions</option>
-									<option value=".tabFutureFinancial">Changes in Finances</option>
+								<div class="hidden hassumptionType_{id}">Use the dropdown to toggle between your Data/Assumptions and your Changes in Finances.</div>
+								<select class="form-control bootstrap-select notRBLe skipRBLe assumptionType_{id}">
+									<option selected="selected" value=".tabDataAssumptions_{id}">Data / Assumptions</option>
+									<option value=".tabFutureFinancial_{id}">Changes in Finances</option>
 								</select>
 							</div>
 						</div>
 					</div>
 				</div>
-				<div class="tabAssumption tabDataAssumptions">
+				<div class="tabAssumption_{id} tabDataAssumptions_{id}">
 					<div class="row">
 						<div rbl-tid="input-textbox" data-css="col-sm-12" data-inputname="iAnnualPay" data-prefix="$"></div>
 						<div rbl-tid="input-slider" data-css="col-sm-12" data-inputname="iCurrentAge"></div>
@@ -100,7 +105,7 @@
 						<div rbl-tid="input-slider" data-css="col-sm-12" data-inputname="iMedicalCostInflation"></div>
 					</div>
 				</div>
-				<div class="tabAssumption tabFutureFinancial" style="display: none;">
+				<div class="tabAssumption_{id} tabFutureFinancial_{id}" style="display: none;">
 					<div class="row">
 						<div rbl-tid="input-slider" data-css="col-sm-12" data-inputname="iRetirementSavingsPct"></div>
 						<div rbl-tid="input-slider" data-css="col-sm-12" data-inputname="iMonthlyFoodExpenses"></div>
@@ -155,7 +160,7 @@
 								</ul>
 							</div>
 							<div class="modal-footer">
-								<button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+								<button type="button" class="btn btn-default closeLearnMore">Close</button>
 							</div>
 						</div>
 					</div>
@@ -256,7 +261,3 @@
     </div>
   </div>
 </div>
-
-<script>
-//# sourceURL=IRP.kaml
-</script>

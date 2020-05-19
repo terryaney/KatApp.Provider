@@ -37,7 +37,6 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                 // useTestView: KatApp.pageParameters[ "testview"] === "1",
                 // useTestPlugin: KatApp.pageParameters[ "testplugin"] === "1",
             },
-            registerDataWithService: false,
             shareDataWithOtherApplications: true,
             functionUrl: KatApp.functionUrl,
             corsUrl: KatApp.corsUrl,
@@ -821,7 +820,10 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
             });
             this.calculate();
         }
-    
+        getInputs(): JSON {
+            return this.ui.getInputs( this.options );
+        };
+
         // Result helper
         getResultTable<T>( tableName: string): Array<T> {
             return this.rble.getResultTable<T>( tableName );

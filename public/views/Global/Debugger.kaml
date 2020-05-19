@@ -241,7 +241,7 @@
                 useTestCalcEngine: $("#UseTestCalcEngine").prop("checked"),
                 debugResourcesDomain: $("#UseLocalFiles").prop("checked") ? "http://localhost:8887/" /* start at root of site */ : undefined,
             };
-            KatApp.defaultOptions = { debug: debugOptions, functionUrl: KatApp.functionUrl };
+            KatApp.defaultOptions = KatApp.extend( KatApp.defaultOptions, { debug: debugOptions, functionUrl: KatApp.functionUrl } );
 
             if ( currentView !== "" ) {
                 $(selector).KatApp("destroy"); // wouldn't need this usually on client site, but I'm going to reload/execute provider script so wanted everything destroyed

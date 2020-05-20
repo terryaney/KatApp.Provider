@@ -3,23 +3,23 @@
 <style>
 /* Link Style */
 /* Button Style */
-{thisView} .btn-primary,
-{thisView} .btn-danger,
-{thisView} .btn-default,
-{thisView} .btn-success,
-{thisView} .btn-info,
-{thisView} .btn-warning {
+{thisClass} .btn-primary,
+{thisClass} .btn-danger,
+{thisClass} .btn-default,
+{thisClass} .btn-success,
+{thisClass} .btn-info,
+{thisClass} .btn-warning {
   -webkit-border-radius: 6px;
   -moz-border-radius: 6px;
   border-radius: 6px;
 }
-{thisView} .btn-xs {
+{thisClass} .btn-xs {
   -webkit-border-radius: 4px;
   -moz-border-radius: 4px;
   border-radius: 4px;
 }
 
-{thisView} .rbl-logclass {
+{thisClass} .rbl-logclass {
   padding: 0 20px;
   margin-bottom: 20px;
   border: solid 1px black;
@@ -27,7 +27,7 @@
   overflow-y: auto;
 }
 
-{thisView} .toast {
+{thisClass} .toast {
   position: fixed;
   bottom: 5px;
   left: 2%;
@@ -150,164 +150,170 @@
 </div>
 
 <script>
-    if ( KatApp.pageParameters[ "debugkatapp"] === "1" ) {
-        debugger;
-    }
+    (function() {
+        const view = $("{thisView}");
 
-    $("{thisView}").on( "onInitialized.RBLe", function( event, application ) {
-        if ( typeof $.fn.selectpicker === "function" ) {
-            $(".bootstrap-select", application.element).selectpicker();
+        if ( KatApp.pageParameters[ "debugkatapp"] === "1" ) {
+            debugger;
         }
 
-        $(".KatAppSelector").val($(application.element).data("selector"));
-
-        $("select.CurrentApp", application.element).change(function() {
-            if ( $(this).val() === "Custom" ) {
-                $(".vCustomView", application.element).show();
+        view.on( "onInitialized.RBLe", function( event, application ) {
+            if ( typeof $.fn.selectpicker === "function" ) {
+                $(".bootstrap-select", view).selectpicker();
             }
-            else {
-                $(".vCustomView", application.element).hide();
+
+            $(".KatAppSelector").val($(view).data("selector"));
+
+            $("select.CurrentApp", view).change(function() {
+                if ( $(this).val() === "Custom" ) {
+                    $(".vCustomView", view).show();
+                }
+                else {
+                    $(".vCustomView", view).hide();
+                }
+            }).trigger("change");
+
+            const getSelector = function() {
+                return $(".KatAppSelector", view).val() || "[rbl-application-id]"; // Default to all katapps on page;
             }
-        }).trigger("change");
 
-        const getSelector = function() {
-            return $(".KatAppSelector", application.element).val() || "[rbl-application-id]"; // Default to all katapps on page;
-        }
-
-        $("#traceLevel", application.element).change( function() {
-            $(getSelector()).KatApp("updateOptions", { debug: { traceVerbosity: Number($("#traceLevel").val()) } });
-        });
-        
-        $(".SaveCalcEngineLocation", application.element).bind("keyup.RBLe", function (e) {
-            var keycode = (e.keyCode ? e.keyCode : e.which);
-            if (keycode == 13) {
-                e.preventDefault();
-                $(".lnkSaveCalcEngine", application.element).trigger("click");
-            }
-        });
-    
-        $(".lnkSaveCalcEngine", application.element).click(function() {
-            const location = $(".SaveCalcEngineLocation", application.element).val();
-
-            if ( location !== "" ) {
-                $(getSelector()).KatApp("saveCalcEngine", location);
-                $(".SaveCalcEngineLocation", application.element).val("");
-
-                $(".toast", application.element).html("<p><b>Save Next CalcEngine...</b></p><p>Next calculation will be saved to " + location + " secure file location.</p>").slideDown();
-                window.setTimeout(function() {
-                    $(".toast").slideUp();
-                }, 2500);
-            }
-        })
-
-        $(".ConfigureUI", application.element).click( function() {
-            $(getSelector()).KatApp("configureUI");
-        });
-
-        $(".LogResults", application.element).click( function () {
-            $(getSelector()).each(function() {
-                const application = $(this).KatApp();
-
-                console.group("Application " + application.displayId + " Results");
-                console.log(application.results);
-                console.groupEnd("Application " + application.displayId + " Results");
+            $("#traceLevel", view).change( function() {
+                $(getSelector()).KatApp("updateOptions", { debug: { traceVerbosity: Number($("#traceLevel").val()) } });
             });
-        });
-
-        $(".UpdateDebugOptions", application.element).click(function() {
-            const selector = getSelector();
-
-            var initialSaveLocation = $(".SaveCalcEngineLocation", application.element).val() || "";
-            $(".SaveCalcEngineLocation", application.element).val("");
-
-            let currentView = $("#CurrentApp", application.element).val();
-            let calcEngine = undefined;
-
-            if ( currentView === "Custom" ) {
-                currentView = $(".CustomView", application.element).val() || "";
-                const viewParts = currentView.split("|");
-                if ( viewParts.length === 2 ) {
-                    currentView = viewParts[ 0 ];
-                    calcEngine = viewParts[ 1 ];
+            
+            $(".SaveCalcEngineLocation", view).bind("keyup.RBLe", function (e) {
+                var keycode = (e.keyCode ? e.keyCode : e.which);
+                if (keycode == 13) {
+                    e.preventDefault();
+                    $(".lnkSaveCalcEngine", view).trigger("click");
                 }
-            }
-
-            const debugOptions = { 
-                saveFirstCalculationLocation: initialSaveLocation !== "" ? initialSaveLocation : undefined,
-                refreshCalcEngine: true,
-                traceVerbosity: Number($("#traceLevel").val()),
-                useTestView: $("#UseTestView").prop("checked"),
-                useTestPlugin: $("#UseTestPlugin").prop("checked"),
-                useTestCalcEngine: $("#UseTestCalcEngine").prop("checked"),
-                debugResourcesDomain: $("#UseLocalFiles").prop("checked") ? "http://localhost:8887/" /* start at root of site */ : undefined,
-            };
-            KatApp.defaultOptions = KatApp.extend( KatApp.defaultOptions, { debug: debugOptions, functionUrl: KatApp.functionUrl } );
-
-            if ( currentView !== "" ) {
-                $(selector).KatApp("destroy"); // wouldn't need this usually on client site, but I'm going to reload/execute provider script so wanted everything destroyed
-                if ( typeof $.fn.selectpicker === "function" ) {
-                    $(selector + " select.bootstrap-select").selectpicker("destroy");
-                }
-
-                var dataAttributes = $(".DataAttributes", application.element).val() || "";
-
-                $(selector).removeData().each(function() {
-                    // get the native attributes object
-                    var attrs = this.attributes;
-                    var toRemove = [];
-
-                    // iterate the attributes
-                    for (attr in attrs) {
-                        if ( typeof attrs[attr].name === 'string' && (/^data-/).test(attrs[attr].name) ) {
-                            toRemove.push(attrs[attr].name);
-                        }
-                    }
-
-                    // cache the jquery object containing the element for better performance
-                    var element = $(this);
-                    for (var i = 0; i < toRemove.length; i++) {
-                        element.removeAttr(toRemove[i]);
-                    }
-                });                
-
-                if ( dataAttributes !== "" ) {
-                    dataAttributes.split(",").forEach( function( a ) {
-                        const attrs = a.trim().split("=");
-                        $(selector).attr("data-" + attrs[ 0 ], attrs[ 1 ]);
-                    });
-                }
-
-                $(".DataAttributes", application.element).val("");
-                
-                const options = KatApp.extend( {}, KatApp.defaultOptions, { 
-                    view: currentView,
-                    calcEngine: calcEngine
-                } );
-
-                // This is deleted each time the 'real' Provider js runs, so rebuild it and reset factory to shim factory
-                $.fn.KatApp.plugInShims = [];
-                $.fn.KatApp.applicationFactory = $.fn.KatApp.debugApplicationFactory;
-                $("rbl-katapps").empty(); // remove templates
-                $.fn.KatApp.templatesUsedByAllApps = {};
-                $.fn.KatApp.templateDelegates = [];
-
-                $(".logo-left").html("KatApp Test Harness: " + $("#CurrentApp option:selected").text());
-                $(selector).attr("rbl-trace-id", $("#CurrentApp").val().split(":")[1]).KatApp(options);
-            }
-            else {
-                $(selector).KatApp("updateOptions", { debug: debugOptions });
-            }
-        });
-
-        KatApp.defaultOptions.debug.refreshCalcEngine = true;
-        KatApp.defaultOptions.debug.traceVerbosity = Number($("#traceLevel").val());
+            });
         
-        if ( $("#UseLocalFiles", application.element).prop("checked") ) {
-            KatApp.defaultOptions.debug.debugResourcesDomain = "http://localhost:8887/";
-        }
-        $("#UseTestView", application.element).prop("checked", KatApp.pageParameters[ "testview"] === "1")
-        $("#UseTestPlugin", application.element).prop("checked", KatApp.pageParameters[ "testplugin"] === "1")
-        $("#UseTestCalcEngine", application.element).prop("checked", KatApp.pageParameters[ "test"] === "1")
-    });
+            $(".lnkSaveCalcEngine", view).click(function() {
+                const location = $(".SaveCalcEngineLocation", view).val();
+
+                if ( location !== "" ) {
+                    $(getSelector()).KatApp("saveCalcEngine", location);
+                    $(".SaveCalcEngineLocation", view).val("");
+
+                    $(".toast", view).html("<p><b>Save Next CalcEngine...</b></p><p>Next calculation will be saved to " + location + " secure file location.</p>").slideDown();
+                    window.setTimeout(function() {
+                        $(".toast").slideUp();
+                    }, 2500);
+                }
+            })
+
+            $(".ConfigureUI", view).click( function() {
+                $(getSelector()).KatApp("configureUI");
+            });
+
+            $(".LogResults", view).click( function () {
+                $(getSelector()).each(function() {
+                    const application = $(this).KatApp();
+
+                    console.group("Application " + application.displayId + " Results");
+                    console.log(application.results);
+                    console.groupEnd("Application " + application.displayId + " Results");
+                });
+            });
+
+            $(".UpdateDebugOptions", view).click(function() {
+                const selector = getSelector();
+
+                var initialSaveLocation = $(".SaveCalcEngineLocation", view).val() || "";
+                $(".SaveCalcEngineLocation", view).val("");
+
+                let currentView = $("#CurrentApp", view).val();
+                let calcEngine = undefined;
+
+                if ( currentView === "Custom" ) {
+                    currentView = $(".CustomView", view).val() || "";
+                    const viewParts = currentView.split("|");
+                    if ( viewParts.length === 2 ) {
+                        currentView = viewParts[ 0 ];
+                        calcEngine = viewParts[ 1 ];
+                    }
+                }
+
+                const debugOptions = { 
+                    saveFirstCalculationLocation: initialSaveLocation !== "" ? initialSaveLocation : undefined,
+                    refreshCalcEngine: true,
+                    traceVerbosity: Number($("#traceLevel").val()),
+                    useTestView: $("#UseTestView").prop("checked"),
+                    useTestPlugin: $("#UseTestPlugin").prop("checked"),
+                    useTestCalcEngine: $("#UseTestCalcEngine").prop("checked"),
+                    debugResourcesDomain: $("#UseLocalFiles").prop("checked") ? "http://localhost:8887/" /* start at root of site */ : undefined,
+                };
+                KatApp.defaultOptions = KatApp.extend( KatApp.defaultOptions, { debug: debugOptions, functionUrl: KatApp.functionUrl } );
+
+                if ( currentView !== "" ) {
+                    $(selector).KatApp("destroy"); // wouldn't need this usually on client site, but I'm going to reload/execute provider script so wanted everything destroyed
+                    if ( typeof $.fn.selectpicker === "function" ) {
+                        $(selector + " select.bootstrap-select").selectpicker("destroy");
+                    }
+
+                    var dataAttributes = $(".DataAttributes", view).val() || "";
+
+                    $(selector).removeData().each(function() {
+                        // get the native attributes object
+                        var attrs = this.attributes;
+                        var toRemove = [];
+
+                        // iterate the attributes
+                        for (attr in attrs) {
+                            if ( typeof attrs[attr].name === 'string' && (/^data-/).test(attrs[attr].name) ) {
+                                toRemove.push(attrs[attr].name);
+                            }
+                        }
+
+                        // cache the jquery object containing the element for better performance
+                        var element = $(this);
+                        for (var i = 0; i < toRemove.length; i++) {
+                            element.removeAttr(toRemove[i]);
+                        }
+                    });                
+
+                    if ( dataAttributes !== "" ) {
+                        dataAttributes.split(",").forEach( function( a ) {
+                            const attrs = a.trim().split("=");
+                            $(selector).attr("data-" + attrs[ 0 ], attrs[ 1 ]);
+                        });
+                    }
+
+                    $(".DataAttributes", view).val("");
+                    
+                    const options = KatApp.extend( {}, KatApp.defaultOptions, { 
+                        view: currentView,
+                        calcEngine: calcEngine
+                    } );
+
+                    // This is deleted each time the 'real' Provider js runs, so rebuild it and reset factory to shim factory
+                    $.fn.KatApp.plugInShims = [];
+                    $.fn.KatApp.applicationFactory = $.fn.KatApp.debugApplicationFactory;
+                    $("rbl-katapps").empty(); // remove templates
+                    $.fn.KatApp.templatesUsedByAllApps = {};
+                    $.fn.KatApp.templateDelegates = [];
+
+                    $(".logo-left").html("KatApp Test Harness: " + $("#CurrentApp option:selected").text());
+                    $(selector).attr("rbl-trace-id", $("#CurrentApp").val().split(":")[1]).KatApp(options);
+                }
+                else {
+                    $(selector).KatApp("updateOptions", { debug: debugOptions });
+                }
+            });
+
+            $("#UseLocalFiles", view).prop("checked", KatApp.pageParameters[ "localdebugger"] === "1")
+            $("#UseTestView", view).prop("checked", KatApp.pageParameters[ "testview"] === "1")
+            $("#UseTestPlugin", view).prop("checked", KatApp.pageParameters[ "testplugin"] === "1")
+            $("#UseTestCalcEngine", view).prop("checked", KatApp.pageParameters[ "test"] === "1")
+
+            KatApp.defaultOptions.debug.refreshCalcEngine = true;
+            KatApp.defaultOptions.debug.traceVerbosity = Number($("#traceLevel").val());
+            
+            if ( $("#UseLocalFiles", view).prop("checked") ) {
+                KatApp.defaultOptions.debug.debugResourcesDomain = "http://localhost:8887/";
+            }
+        });
+    })();
     //# sourceURL=Debugger.kaml
 </script>

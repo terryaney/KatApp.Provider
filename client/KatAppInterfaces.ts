@@ -37,6 +37,9 @@ interface KatAppOptions
     // always be passed in on a calculation but aren't available in the UI, they can be assigned here.
     // The most common use of this is iConfigureUI/iDataBind/iInputTrigger
     manualInputs?: CalculationInputs;
+    // Used during updateOptions and init to set default inputs. After being inputs are set, defaultInputs
+    // property on the options object is set to undefined so they are only applied one time.
+    defaultInputs?: CalculationInputs;
     runConfigureUICalculation?: boolean;
 
     // UI management properties
@@ -80,8 +83,63 @@ interface KatAppPlugInShimInterface {
     // Even that seems weird though because CalcEngine could just ignore it.
     // needsCalculation?: boolean;
     destroy: ()=> void;
+    
+    // Completely destroy and init an application (possibly using new view/templates) given options.
+    // NOTE: If $("selector").KatApp(options) is called on items that already had KatApp created on it,
+    // the plugin will call this method.
     rebuild: ( options: KatAppOptions )=> void;
+    
+    // If you want to update options of existing KatApp, use this method.  This will not load new
+    // view or templates, but the CalcEngine or any other options could be updated using this.
+    // NOTE: If $("selector").KatApp("ensure", options) is called.  Items that didn't have a KatApp
+    //      already created will go through normal create/init process.  However, items that already
+    //      had a KatApp created, will simply delegate to updateOptions.
+    // NOTE: updateOptions (along with init()) *will* apply options.defaultInputs every time it is called
+    //      as if setInputs() was called.
+    updateOptions: ( options: KatAppOptions )=> void;
     trace: ( message: string, verbosity?: TraceVerbosity )=> void;
+}
+
+// This is the actual plug in interface.  Accessible via:
+//
+//  $("selector").KatApp( "propertyName") - returns propertyName property for first match
+//      $("selector").KatApp().propertyName - if "selector" only returns one element, can access propertyName this way
+//      $("selector")[0].KatApp.propertyName - can get first result from selector and access KatApp.propertyName
+//
+//  $("selector").KatApp( "methodName", ...args) - call methodName on all matching KatApps passing in ...args
+//      $("selector").KatApp().methodName(...args) - if "selector" only returns one element, can call methodName this way
+//      $("selector")[0].KatApp.methodName(...args) - can get first result from selector and access KatApp.methodName
+
+// KatApp compared to jQuery syntax
+// $("selector").KatApp() similiar to jQuery $("selector").html() - returns property (KatApp or html) from first match
+// $("selector").KatApp("param") similiar to jQuery $("selector").html("param") - sets property ("param") of all items matching selector
+
+// *NOTE* - I don't use this interface in KatAppProvider implementation.  It would only be exposed in a *.d.ts file
+// for clients to be able to reference.
+interface KatAppPlugInInterface extends KatAppPlugInShimInterface {
+    results?: JSON;
+    exception?: RBLeServiceResults;
+    resultRowLookups?: ResultRowLookupsInterface;
+    getResultTable<T>( tableName: string): Array<T>;
+    getResultRow<T>( table: string, id: string, columnToSearch?: string ): T | undefined;
+    getResultValue( table: string, id: string, column: string, defaultValue?: string ): string | undefined;
+    
+    calculationInputs?: CalculationInputs;
+
+    calculate: ( customOptions?: KatAppOptions )=> void;
+
+    // Re-run configureUI calculation, it will have already ran during first calculate() 
+    // method if runConfigureUICalculation was true. This call is usually only needed if
+    // you want to explicitly save a CalcEngine from a ConfigureUI calculation, so you set
+    // the save location and call this.
+    configureUI: ( customOptions?: KatAppOptions )=> void;
+    
+    // $("selector").KatApp("saveCalcEngine", "terry.aney"); - save *next successful* calc for all selector items to terry.aney
+    saveCalcEngine: ( location: string )=> void;
+    // $("selector").KatApp("refreshCalcEngine"); - refresh calc engine on *next successful* calc for all selector items
+    refreshCalcEngine: ()=> void;
+    // $("selector").KatApp("traceCalcEngine"); - return calc engine tracing from *next successful* calc for all selector items
+    traceCalcEngine: ()=> void;
 }
 
 interface GetResourceOptions {
@@ -163,50 +221,6 @@ interface GetDataDelegate {
 interface RegisterDataDelegate {
     ( appilcation: KatAppPlugInInterface, options: KatAppOptions, done: RBLeServiceCallback, fail: JQueryFailCallback ): void;
 }
-
-// This is the actual plug in interface.  Accessible via:
-//
-//  $("selector").KatApp( "propertyName") - returns propertyName property for first match
-//      $("selector").KatApp().propertyName - if "selector" only returns one element, can access propertyName this way
-//      $("selector")[0].KatApp.propertyName - can get first result from selector and access KatApp.propertyName
-//
-//  $("selector").KatApp( "methodName", ...args) - call methodName on all matching KatApps passing in ...args
-//      $("selector").KatApp().methodName(...args) - if "selector" only returns one element, can call methodName this way
-//      $("selector")[0].KatApp.methodName(...args) - can get first result from selector and access KatApp.methodName
-
-// KatApp compared to jQuery syntax
-// $("selector").KatApp() similiar to jQuery $("selector").html() - returns property (KatApp or html) from first match
-// $("selector").KatApp("param") similiar to jQuery $("selector").html("param") - sets property ("param") of all items matching selector
-
-// *NOTE* - I don't use this interface in KatAppProvider implementation.  It would only be exposed in a *.d.ts file
-// for clients to be able to reference.
-interface KatAppPlugInInterface extends KatAppPlugInShimInterface {
-    results?: JSON;
-    exception?: RBLeServiceResults;
-    resultRowLookups?: ResultRowLookupsInterface;
-    getResultTable<T>( tableName: string): Array<T>;
-    getResultRow<T>( table: string, id: string, columnToSearch?: string ): T | undefined;
-    getResultValue( table: string, id: string, column: string, defaultValue?: string ): string | undefined;
-    
-    inputs?: CalculationInputs;
-
-    calculate: ( customOptions?: KatAppOptions )=> void;
-
-    // Re-run configureUI calculation, it will have already ran during first calculate() 
-    // method if runConfigureUICalculation was true. This call is usually only needed if
-    // you want to explicitly save a CalcEngine from a ConfigureUI calculation, so you set
-    // the save location and call this.
-    configureUI: ( customOptions?: KatAppOptions )=> void;
-    updateOptions: ( options: KatAppOptions )=> void;
-    
-    // $("selector").KatApp("saveCalcEngine", "terry.aney"); - save *next successful* calc for all selector items to terry.aney
-    saveCalcEngine: ( location: string )=> void;
-    // $("selector").KatApp("refreshCalcEngine"); - refresh calc engine on *next successful* calc for all selector items
-    refreshCalcEngine: ()=> void;
-    // $("selector").KatApp("traceCalcEngine"); - return calc engine tracing from *next successful* calc for all selector items
-    traceCalcEngine: ()=> void;
-}
-
 
 interface TemplateOnDelegate {
 /*

@@ -122,6 +122,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                 this.element.data("katapp-save-calcengine", saveFirstCalculationLocation);
             }
             this.element.attr("rbl-application-id", this.id);
+            this.element.addClass("katapp-" + this.id);
             this.trace("Started init", TraceVerbosity.Detailed);
             var pipeline = [];
             var pipelineNames = [];
@@ -206,7 +207,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                             that.trace(viewId + " returned from CMS.", TraceVerbosity.Normal);
                             var data = results[viewId]; // eslint-disable-line @typescript-eslint/no-non-null-assertion
                             // Process as view - get info from rbl-config and inject markup
-                            var view = $("<div class='kat-app-css'>" + data.format({ thisView: "[rbl-application-id='" + that.id + "']", id: that.id }) + "</div>");
+                            var view = $("<div class='kat-app-css'>" + data.format({ thisView: "[rbl-application-id='" + that.id + "']", id: that.id, thisClass: ".katapp-" + that.id }) + "</div>");
                             var rblConfig = $("rbl-config", view).first();
                             if (rblConfig.length !== 1) {
                                 that.trace("View " + viewId + " is missing rbl-config element.", TraceVerbosity.Quiet);
@@ -340,7 +341,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                 }
                 initPipeline(0);
             };
-            var finalize = function () {
+            var finalizeInit = function () {
                 if (pipelineError === undefined) {
                     // Now, for every unique template reqeusted by client, see if any template delegates were
                     // registered for the template using templateOn().  If so, hook up the 'real' event requested
@@ -394,6 +395,10 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                     // Process data-* attributes and bind events
                     templateBuilder.processUI();
                     that.ui.bindCalculationInputs();
+                    if (that.options.defaultInputs !== undefined) {
+                        that.setInputs(that.options.defaultInputs, false);
+                        that.options.defaultInputs = undefined;
+                    }
                     that.ui.triggerEvent("onInitialized", that);
                     if (that.options.runConfigureUICalculation) {
                         that.trace("Calling configureUI calculation...", TraceVerbosity.Detailed);
@@ -406,8 +411,8 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                 that.trace("Finished init", TraceVerbosity.Detailed);
                 initPipeline(0); // just to get the trace statement, can remove after all tested
             };
-            pipeline.push(loadView, loadTemplates, injectTemplates, finalize);
-            pipelineNames.push("initPipeline.loadView", "initPipeline.loadTemplates", "initPipeline.injectTemplates", "initPipeline.finalize");
+            pipeline.push(loadView, loadTemplates, injectTemplates, finalizeInit);
+            pipelineNames.push("initPipeline.loadView", "initPipeline.loadTemplates", "initPipeline.injectTemplates", "initPipeline.finalizeInit");
             // Start the pipeline
             initPipeline(0);
         };
@@ -623,7 +628,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                         that.element.removeData("katapp-trace-calcengine");
                         that.element.removeData("katapp-refresh-calcengine");
                         that.rble.processResults();
-                        if (((_a = that.inputs) === null || _a === void 0 ? void 0 : _a.iConfigureUI) === 1) {
+                        if (((_a = that.calculationInputs) === null || _a === void 0 ? void 0 : _a.iConfigureUI) === 1) {
                             that.ui.triggerEvent("onConfigureUICalculation", that.results, currentOptions, that);
                         }
                         that.ui.triggerEvent("onCalculation", that.results, currentOptions, that);
@@ -654,6 +659,10 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
         };
         KatAppPlugIn.prototype.destroy = function () {
             this.element.removeAttr("rbl-application-id");
+            this.element.removeClass("katapp-" + this.id);
+            this.element.removeData("katapp-save-calcengine");
+            this.element.removeData("katapp-refresh-calcengine");
+            this.element.removeData("katapp-trace-calcengine");
             this.element.off(".RBLe");
             this.ui.unbindCalculationInputs();
             this.ui.triggerEvent("onDestroyed", this);
@@ -662,15 +671,23 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
         KatAppPlugIn.prototype.updateOptions = function (options) {
             this.options = KatApp.extend({}, this.options, options);
             this.ui.unbindCalculationInputs();
+            if (this.options.defaultInputs !== undefined) {
+                this.setInputs(this.options.defaultInputs);
+                this.options.defaultInputs = undefined;
+            }
             this.ui.bindCalculationInputs();
             this.ui.triggerEvent("onOptionsUpdated", this);
         };
-        KatAppPlugIn.prototype.setInputs = function (inputs) {
+        KatAppPlugIn.prototype.setInputs = function (inputs, calculate) {
             var _this = this;
+            if (calculate === void 0) { calculate = true; }
+            // When called publicly, want to trigger a calculation, when called from init() we don't
             Object.keys(inputs).forEach(function (i) {
                 _this.rble.setDefaultValue(i, inputs[i]);
             });
-            this.calculate();
+            if (calculate) {
+                this.calculate();
+            }
         };
         KatAppPlugIn.prototype.getInputs = function () {
             return this.ui.getInputs(this.options);
@@ -1012,7 +1029,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
             // TODO: COnfirm all these options are right
             var calculationOptions = {
                 Data: !((_a = currentOptions.registerDataWithService) !== null && _a !== void 0 ? _a : true) ? currentOptions.data : undefined,
-                Inputs: application.inputs = KatApp.extend(this.ui.getInputs(currentOptions), currentOptions === null || currentOptions === void 0 ? void 0 : currentOptions.manualInputs),
+                Inputs: application.calculationInputs = KatApp.extend(this.ui.getInputs(currentOptions), currentOptions === null || currentOptions === void 0 ? void 0 : currentOptions.manualInputs),
                 InputTables: this.ui.getInputTables(),
                 Configuration: {
                     CalcEngine: currentOptions.calcEngine,
@@ -1251,7 +1268,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                 var _a, _b, _c, _d, _e, _f;
                 var el = $(this);
                 // TOM - Need some flow documentation here, can't really picture entire thing in my head
-                if (el.attr("rbl-configui") === undefined || ((_a = application.inputs) === null || _a === void 0 ? void 0 : _a.iConfigureUI) === 1) {
+                if (el.attr("rbl-configui") === undefined || ((_a = application.calculationInputs) === null || _a === void 0 ? void 0 : _a.iConfigureUI) === 1) {
                     var elementData = el.data();
                     var tid = el.attr('rbl-tid');
                     var rblSourceTableParts = (_b = el.attr('rbl-source-table')) === null || _b === void 0 ? void 0 : _b.split('.');
@@ -1740,7 +1757,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
             $('.validator-container.warning:not(.server)', view).removeClass('warning');
             this.processValidationRows(warningSummary, warnings);
             this.processValidationRows(errorSummary, errors);
-            if (((_a = this.application.inputs) === null || _a === void 0 ? void 0 : _a.iConfigureUI) === 1) {
+            if (((_a = this.application.calculationInputs) === null || _a === void 0 ? void 0 : _a.iConfigureUI) === 1) {
                 /*
                     // Scroll target will probably need some work
                     if ($(".ModelerWarnings.alert div:first ul li", view).length > 0 && warnings.length > 0) {
@@ -1761,7 +1778,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
             var _a;
             var sliderRows = this.getResultTable("ejs-sliders");
             var application = this.application;
-            if (((_a = application.inputs) === null || _a === void 0 ? void 0 : _a.iConfigureUI) === 1) {
+            if (((_a = application.calculationInputs) === null || _a === void 0 ? void 0 : _a.iConfigureUI) === 1) {
                 var configIds_1 = sliderRows.map(function (r) { return r["@id"]; });
                 $('[rbl-tid="input-slider"],[rbl-template-type="katapp-slider"]', application.element)
                     .filter(function (i, r) {
@@ -2348,7 +2365,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
             var that = this;
             var view = this.application.element;
             // Hook up event handlers only when *not* already initialized
-            $('.carousel-control-group:not([data-kat-initialized="true"])', view).each(function () {
+            $('.carousel-control-group:not([data-katapp-initialized="true"])', view).each(function () {
                 var el = $(this);
                 var carousel = $('.carousel', el);
                 var carouselAll = $('.carousel-all', el);
@@ -2363,7 +2380,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                     carouselAll.hide();
                     carousel.show();
                 });
-                el.attr("data-kat-initialized", "true");
+                el.attr("data-katapp-initialized", "true");
             });
             $('.carousel-control-group', view).each(function () {
                 var el = $(this);
@@ -2371,7 +2388,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
             });
         };
         StandardTemplateBuilder.prototype.buildCheckboxes = function (view) {
-            $('[rbl-tid="input-checkbox"],[rbl-template-type="katapp-checkbox"]', view).not('[data-kat-initialized="true"]').each(function () {
+            $('[rbl-tid="input-checkbox"],[rbl-template-type="katapp-checkbox"]', view).not('[data-katapp-initialized="true"]').each(function () {
                 var el = $(this);
                 var id = el.data("inputname");
                 var label = el.data("label");
@@ -2386,11 +2403,11 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                 if (checked) {
                     $("span." + id + " input", el).prop("checked", true);
                 }
-                el.attr("data-kat-initialized", "true");
+                el.attr("data-katapp-initialized", "true");
             });
         };
         StandardTemplateBuilder.prototype.buildTextBoxes = function (view) {
-            $('[rbl-tid="input-textbox"],[rbl-template-type="katapp-textbox"]', view).not('[data-kat-initialized="true"]').each(function () {
+            $('[rbl-tid="input-textbox"],[rbl-template-type="katapp-textbox"]', view).not('[data-katapp-initialized="true"]').each(function () {
                 var _a, _b;
                 var el = $(this);
                 var id = el.data("inputname");
@@ -2526,11 +2543,11 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                     input.css("display", "none");
                     displayOnlyLabel.html(value);
                 }
-                el.attr("data-kat-initialized", "true");
+                el.attr("data-katapp-initialized", "true");
             });
         };
         StandardTemplateBuilder.prototype.buildDropdowns = function (view) {
-            $('[rbl-tid="input-dropdown"],[rbl-template-type="katapp-dropdown"]', view).not('[data-kat-initialized="true"]').each(function () {
+            $('[rbl-tid="input-dropdown"],[rbl-template-type="katapp-dropdown"]', view).not('[data-katapp-initialized="true"]').each(function () {
                 var _a, _b;
                 var el = $(this);
                 // Do all data-* attributes that we support
@@ -2556,15 +2573,15 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                     .attr("data-kat-bootstrap-select-initialized", "true")
                     .next(".error-msg")
                     .addClass("selectpicker"); /* aid in css styling */ /* TODO: Don't think this is matching and adding class */
-                el.attr("data-kat-initialized", "true");
+                el.attr("data-katapp-initialized", "true");
             });
         };
         StandardTemplateBuilder.prototype.buildSliders = function (view) {
             // Only need to process data-* attributes here because RBLeUtilities.processResults will push out 'configuration' changes
-            $('[rbl-tid="input-slider"],[rbl-template-type="katapp-slider"]', view).not('[data-kat-initialized="true"]').each(function () {
+            $('[rbl-tid="input-slider"],[rbl-template-type="katapp-slider"]', view).not('[data-katapp-initialized="true"]').each(function () {
                 var el = $(this);
                 var id = el.data("inputname");
-                if (el.attr("data-kat-initialized") !== "true") {
+                if (el.attr("data-katapp-initialized") !== "true") {
                     // Do all data-* attributes that we support
                     var label = el.data("label");
                     var css = el.data("css");
@@ -2583,7 +2600,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
     
                 this.processSliderConfiguration( el, id, config );
                 */
-                el.attr("data-kat-initialized", "true");
+                el.attr("data-katapp-initialized", "true");
             });
         };
         StandardTemplateBuilder.prototype.processUI = function () {
@@ -2600,7 +2617,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                 return;
             }
             $(selector, application.element)
-                .not(".rbl-help, [data-kat-initialized='true']")
+                .not(".rbl-help, [data-katapp-initialized='true']")
                 .each(function () {
                 var isErrorValidator = $(this).hasClass('error-msg');
                 var placement = $(this).data('placement') || "top";
@@ -2665,8 +2682,8 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                     $(this).popover(options);
                 }
             })
-                .attr("data-kat-initialized", "true");
-            if (application.element.attr("data-kat-initialized-tooltip") != "true") {
+                .attr("data-katapp-initialized", "true");
+            if (application.element.attr("data-katapp-initialized-tooltip") != "true") {
                 // Combo of http://stackoverflow.com/a/17375353/166231 and https://stackoverflow.com/a/21007629/166231 (and 3rd comment)
                 // This one looked interesting too: https://stackoverflow.com/a/24289767/166231 but I didn't test this one yet
                 var visiblePopover_1 = undefined;
@@ -2692,7 +2709,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                         return;
                     hideVisiblePopover_1();
                 })
-                    .attr("data-kat-initialized-tooltip", "true");
+                    .attr("data-katapp-initialized-tooltip", "true");
             }
         };
         StandardTemplateBuilder.prototype.processInputs = function () {

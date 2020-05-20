@@ -110,7 +110,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
         exception?: RBLeServiceResults | undefined;
         results?: JSON | undefined;
         resultRowLookups?: ResultRowLookupsInterface;
-        inputs?: CalculationInputs | undefined;
+        calculationInputs?: CalculationInputs | undefined;
         
         constructor(id: string, element: JQuery, options: KatAppOptions)
         {
@@ -148,13 +148,14 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                 { registerDataWithService: KatApp.defaultOptions.registerData !== undefined || options?.registerData !== undefined } as KatAppOptions,
                 options // finally js options override all
             );
-
+            
             const saveFirstCalculationLocation = this.options.debug?.saveFirstCalculationLocation;
             if ( saveFirstCalculationLocation !== undefined && saveFirstCalculationLocation !== "1" ) {
                 this.element.data("katapp-save-calcengine", saveFirstCalculationLocation);
             }
 
             this.element.attr("rbl-application-id", this.id);
+            this.element.addClass("katapp-" + this.id);
 
             this.trace( "Started init", TraceVerbosity.Detailed );
             const pipeline: Array<()=> void> = [];
@@ -256,7 +257,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                                 const data = results![ viewId! ]; // eslint-disable-line @typescript-eslint/no-non-null-assertion
 
                                 // Process as view - get info from rbl-config and inject markup
-                                const view = $("<div class='kat-app-css'>" + data.format( { thisView: "[rbl-application-id='" + that.id + "']", id: that.id }) + "</div>");
+                                const view = $("<div class='kat-app-css'>" + data.format( { thisView: "[rbl-application-id='" + that.id + "']", id: that.id, thisClass: ".katapp-" + that.id }) + "</div>");
                                 const rblConfig = $("rbl-config", view).first();
         
                                 if ( rblConfig.length !== 1 ) {
@@ -421,7 +422,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
 
                 initPipeline( 0 );
             };
-            const finalize = function(): void {
+            const finalizeInit = function(): void {
                 
                 if ( pipelineError === undefined ) {
                     
@@ -478,6 +479,11 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
 
                     that.ui.bindCalculationInputs();
 
+                    if ( that.options.defaultInputs !== undefined ) {
+                        that.setInputs( that.options.defaultInputs, false );
+                        that.options.defaultInputs = undefined;
+                    }
+        
                     that.ui.triggerEvent( "onInitialized", that );
 
                     if ( that.options.runConfigureUICalculation ) {
@@ -498,13 +504,13 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                 loadView,
                 loadTemplates,
                 injectTemplates,
-                finalize
+                finalizeInit
             );
             pipelineNames.push( 
                 "initPipeline.loadView",
                 "initPipeline.loadTemplates",
                 "initPipeline.injectTemplates",
-                "initPipeline.finalize"
+                "initPipeline.finalizeInit"
             );
 
             // Start the pipeline
@@ -753,7 +759,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
 
                         that.rble.processResults();
 
-                       if ( that.inputs?.iConfigureUI === 1 ) {
+                       if ( that.calculationInputs?.iConfigureUI === 1 ) {
                             that.ui.triggerEvent( "onConfigureUICalculation", that.results, currentOptions, that );
                         }
 
@@ -801,6 +807,10 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
 
         destroy(): void {
             this.element.removeAttr("rbl-application-id");
+            this.element.removeClass("katapp-" + this.id);
+            this.element.removeData("katapp-save-calcengine");
+            this.element.removeData("katapp-refresh-calcengine");
+            this.element.removeData("katapp-trace-calcengine");
             this.element.off(".RBLe");
             this.ui.unbindCalculationInputs();
             this.ui.triggerEvent( "onDestroyed", this );
@@ -810,16 +820,27 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
         updateOptions( options: KatAppOptions ): void { 
             this.options = KatApp.extend( {}, this.options, options )
             this.ui.unbindCalculationInputs();
+
+            if ( this.options.defaultInputs !== undefined ) {
+                this.setInputs( this.options.defaultInputs );
+                this.options.defaultInputs = undefined;
+            }
+
             this.ui.bindCalculationInputs();
             this.ui.triggerEvent( "onOptionsUpdated", this );
         }
 
-        setInputs( inputs: JSON ): void {
+        setInputs( inputs: JSON | CalculationInputs, calculate: boolean = true ): void {
+            // When called publicly, want to trigger a calculation, when called from init() we don't
             Object.keys( inputs ).forEach( i => {
                 this.rble.setDefaultValue( i, inputs[ i ]);
             });
-            this.calculate();
+
+            if ( calculate ) {
+                this.calculate();
+            }
         }
+
         getInputs(): JSON {
             return this.ui.getInputs( this.options );
         };
@@ -1224,7 +1245,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
             // TODO: COnfirm all these options are right
             const calculationOptions: SubmitCalculationOptions = {
                 Data: !( currentOptions.registerDataWithService ?? true ) ? currentOptions.data : undefined,
-                Inputs: application.inputs = KatApp.extend( this.ui.getInputs( currentOptions ), currentOptions?.manualInputs ),
+                Inputs: application.calculationInputs = KatApp.extend( this.ui.getInputs( currentOptions ), currentOptions?.manualInputs ),
                 InputTables: this.ui.getInputTables(), 
                 Configuration: {
                     CalcEngine: currentOptions.calcEngine,
@@ -1503,7 +1524,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                 const el = $(this);
 
                 // TOM - Need some flow documentation here, can't really picture entire thing in my head
-                if ( el.attr("rbl-configui") === undefined || application.inputs?.iConfigureUI === 1 ) {
+                if ( el.attr("rbl-configui") === undefined || application.calculationInputs?.iConfigureUI === 1 ) {
 
                     const elementData = el.data();
                     const tid = el.attr('rbl-tid');
@@ -2096,7 +2117,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
             this.processValidationRows(warningSummary, warnings);
             this.processValidationRows(errorSummary, errors);
 
-            if ( this.application.inputs?.iConfigureUI === 1 ) {
+            if ( this.application.calculationInputs?.iConfigureUI === 1 ) {
             /*
                 // Scroll target will probably need some work
 				if ($(".ModelerWarnings.alert div:first ul li", view).length > 0 && warnings.length > 0) {
@@ -2117,7 +2138,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
             const sliderRows = this.getResultTable<SliderConfigurationRow>( "ejs-sliders" );
             const application = this.application;
             
-            if ( application.inputs?.iConfigureUI === 1 ) {
+            if ( application.calculationInputs?.iConfigureUI === 1 ) {
                 const configIds: ( string | null )[] = sliderRows.map( r => r["@id"]);
                 $('[rbl-tid="input-slider"],[rbl-template-type="katapp-slider"]', application.element)
                     .filter( ( i, r ) => {
@@ -2834,7 +2855,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
             const view = this.application.element;
 
             // Hook up event handlers only when *not* already initialized
-            $('.carousel-control-group:not([data-kat-initialized="true"])', view).each(function () {
+            $('.carousel-control-group:not([data-katapp-initialized="true"])', view).each(function () {
                 const el = $(this);
                 const carousel = $('.carousel', el);
                 const carouselAll = $('.carousel-all', el);
@@ -2852,7 +2873,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                         carousel.show();
                     });
 
-                el.attr("data-kat-initialized", "true");
+                el.attr("data-katapp-initialized", "true");
             });
 
             $('.carousel-control-group', view).each(function () {
@@ -2862,7 +2883,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
         }
 
         buildCheckboxes( view: JQuery<HTMLElement> ): void {
-            $('[rbl-tid="input-checkbox"],[rbl-template-type="katapp-checkbox"]', view).not('[data-kat-initialized="true"]').each(function () {
+            $('[rbl-tid="input-checkbox"],[rbl-template-type="katapp-checkbox"]', view).not('[data-katapp-initialized="true"]').each(function () {
                 const el = $(this);
                 
                 const id = el.data("inputname");
@@ -2881,12 +2902,12 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                     $("span." + id + " input", el).prop("checked", true);
                 }
 
-                el.attr("data-kat-initialized", "true");
+                el.attr("data-katapp-initialized", "true");
             });
         }
 
         buildTextBoxes( view: JQuery<HTMLElement> ): void {
-            $('[rbl-tid="input-textbox"],[rbl-template-type="katapp-textbox"]', view).not('[data-kat-initialized="true"]').each(function () {
+            $('[rbl-tid="input-textbox"],[rbl-template-type="katapp-textbox"]', view).not('[data-katapp-initialized="true"]').each(function () {
                 const el = $(this);
                 
                 const id = el.data("inputname");
@@ -3039,12 +3060,12 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                     displayOnlyLabel.html(value);
                 }
 
-                el.attr("data-kat-initialized", "true");
+                el.attr("data-katapp-initialized", "true");
             });
         }
 
         buildDropdowns( view: JQuery<HTMLElement> ): void {
-            $('[rbl-tid="input-dropdown"],[rbl-template-type="katapp-dropdown"]', view).not('[data-kat-initialized="true"]').each( function() {
+            $('[rbl-tid="input-dropdown"],[rbl-template-type="katapp-dropdown"]', view).not('[data-katapp-initialized="true"]').each( function() {
                 const el = $(this);
 
                 // Do all data-* attributes that we support
@@ -3077,18 +3098,18 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                     .next(".error-msg")
                     .addClass("selectpicker"); /* aid in css styling */ /* TODO: Don't think this is matching and adding class */
                 
-                el.attr("data-kat-initialized", "true");
+                el.attr("data-katapp-initialized", "true");
             });
         }
 
         buildSliders( view: JQuery<HTMLElement> ): void {
             // Only need to process data-* attributes here because RBLeUtilities.processResults will push out 'configuration' changes
-            $('[rbl-tid="input-slider"],[rbl-template-type="katapp-slider"]', view).not('[data-kat-initialized="true"]').each( function() {
+            $('[rbl-tid="input-slider"],[rbl-template-type="katapp-slider"]', view).not('[data-katapp-initialized="true"]').each( function() {
                 const el = $(this);
 
                 const id = el.data("inputname");
 
-                if ( el.attr("data-kat-initialized") !== "true" ) {
+                if ( el.attr("data-katapp-initialized") !== "true" ) {
                     // Do all data-* attributes that we support
                     const label = el.data("label");
                     const css = el.data("css");
@@ -3112,7 +3133,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                 this.processSliderConfiguration( el, id, config );
                 */
 
-                el.attr("data-kat-initialized", "true");
+                el.attr("data-katapp-initialized", "true");
             });
         }
 
@@ -3133,7 +3154,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
             }
 
             $(selector, application.element)
-                .not(".rbl-help, [data-kat-initialized='true']")
+                .not(".rbl-help, [data-katapp-initialized='true']")
                 .each( function() {
                     const isErrorValidator = $(this).hasClass('error-msg');
                     const placement = $(this).data('placement') || "top";
@@ -3209,9 +3230,9 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                     }
                                 
                 })
-                .attr("data-kat-initialized", "true");
+                .attr("data-katapp-initialized", "true");
 
-            if ( application.element.attr("data-kat-initialized-tooltip") != "true" ) {
+            if ( application.element.attr("data-katapp-initialized-tooltip") != "true" ) {
                 // Combo of http://stackoverflow.com/a/17375353/166231 and https://stackoverflow.com/a/21007629/166231 (and 3rd comment)
                 // This one looked interesting too: https://stackoverflow.com/a/24289767/166231 but I didn't test this one yet
                 let visiblePopover: Element | undefined = undefined;
@@ -3239,7 +3260,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                         if ($(e.target).is(".popover-title, .popover-content")) return;
                         hideVisiblePopover();
                     })
-                    .attr("data-kat-initialized-tooltip", "true");
+                    .attr("data-katapp-initialized-tooltip", "true");
             }
         }
 

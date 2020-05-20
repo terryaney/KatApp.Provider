@@ -22,6 +22,7 @@ interface KatAppOptions {
     resultTabs?: string[];
     inputSelector?: string;
     manualInputs?: CalculationInputs;
+    defaultInputs?: CalculationInputs;
     runConfigureUICalculation?: boolean;
     view?: string;
     viewTemplates?: string;
@@ -45,7 +46,22 @@ interface KatAppPlugInShimInterface {
     id: string;
     destroy: () => void;
     rebuild: (options: KatAppOptions) => void;
+    updateOptions: (options: KatAppOptions) => void;
     trace: (message: string, verbosity?: TraceVerbosity) => void;
+}
+interface KatAppPlugInInterface extends KatAppPlugInShimInterface {
+    results?: JSON;
+    exception?: RBLeServiceResults;
+    resultRowLookups?: ResultRowLookupsInterface;
+    getResultTable<T>(tableName: string): Array<T>;
+    getResultRow<T>(table: string, id: string, columnToSearch?: string): T | undefined;
+    getResultValue(table: string, id: string, column: string, defaultValue?: string): string | undefined;
+    calculationInputs?: CalculationInputs;
+    calculate: (customOptions?: KatAppOptions) => void;
+    configureUI: (customOptions?: KatAppOptions) => void;
+    saveCalcEngine: (location: string) => void;
+    refreshCalcEngine: () => void;
+    traceCalcEngine: () => void;
 }
 interface GetResourceOptions {
     Command: string;
@@ -105,21 +121,6 @@ interface GetDataDelegate {
 }
 interface RegisterDataDelegate {
     (appilcation: KatAppPlugInInterface, options: KatAppOptions, done: RBLeServiceCallback, fail: JQueryFailCallback): void;
-}
-interface KatAppPlugInInterface extends KatAppPlugInShimInterface {
-    results?: JSON;
-    exception?: RBLeServiceResults;
-    resultRowLookups?: ResultRowLookupsInterface;
-    getResultTable<T>(tableName: string): Array<T>;
-    getResultRow<T>(table: string, id: string, columnToSearch?: string): T | undefined;
-    getResultValue(table: string, id: string, column: string, defaultValue?: string): string | undefined;
-    inputs?: CalculationInputs;
-    calculate: (customOptions?: KatAppOptions) => void;
-    configureUI: (customOptions?: KatAppOptions) => void;
-    updateOptions: (options: KatAppOptions) => void;
-    saveCalcEngine: (location: string) => void;
-    refreshCalcEngine: () => void;
-    traceCalcEngine: () => void;
 }
 interface TemplateOnDelegate {
     (event: JQuery.Event, ...args: Array<object>): void;

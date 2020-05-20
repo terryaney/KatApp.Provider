@@ -261,6 +261,9 @@ var KatApp = /** @class */ (function () {
             this.element = element;
             this.element[0].KatApp = this;
         }
+        KatAppPlugInShim.prototype.updateOptions = function (options) {
+            this.options = KatApp.extend(this.options, options);
+        };
         KatAppPlugInShim.prototype.rebuild = function (options) {
             this.options = KatApp.extend(this.options, options);
         };
@@ -355,7 +358,16 @@ var KatApp = /** @class */ (function () {
                 // Invoke the speficied method on each selected element
                 return this.each(function () {
                     var instance = this.KatApp;
-                    if (instance !== undefined && typeof instance[options] === 'function') {
+                    if (options == "ensure") {
+                        var appOptions = (args.length >= 1 && typeof args[0] === "object" ? args[0] : undefined);
+                        if (instance === undefined) {
+                            $.fn.KatApp.applicationFactory(KatApp.generateId(), $(this), appOptions);
+                        }
+                        else if (appOptions !== undefined) {
+                            instance.updateOptions(appOptions);
+                        }
+                    }
+                    else if (instance !== undefined && typeof instance[options] === 'function') {
                         instance[options].apply(instance, args); // eslint-disable-line prefer-spread
                     }
                 });

@@ -311,6 +311,10 @@ class KatApp
             this.element[ 0 ].KatApp = this;
         }
     
+        updateOptions( options: KatAppOptions ): void {
+            this.options = KatApp.extend( this.options, options );
+        }
+
         rebuild( options: KatAppOptions ): void {
             this.options = KatApp.extend( this.options, options );
         }
@@ -417,7 +421,17 @@ class KatApp
 
                     const instance = this.KatApp;
 
-                    if (instance !== undefined && typeof instance[options] === 'function') {
+                    if ( options == "ensure" ) {
+                        const appOptions = ( args.length >= 1 && typeof args[ 0 ] === "object" ? args[ 0 ] : undefined ) as KatAppOptions;
+                        
+                        if ( instance === undefined ) {
+                            $.fn.KatApp.applicationFactory(KatApp.generateId(), $(this), appOptions);
+                        }
+                        else if ( appOptions !== undefined ) {
+                            instance.updateOptions( appOptions );
+                        }
+                    }
+                    else if (instance !== undefined && typeof instance[options] === 'function') {
                         instance[options].apply(instance, args); // eslint-disable-line prefer-spread
                     }
                });

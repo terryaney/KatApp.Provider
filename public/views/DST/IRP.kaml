@@ -25,10 +25,10 @@
 <div class="row ajaxContent">
 	<div class="col-md-4">
 		<ul class="nav nav-tabs" role="tablist">
-			<li role="presentation" class="col-xs-12 active"><a href="#tabAssumptions" role="tab" data-toggle="tab" class="text-center">Assumptions</a></li>
+			<li role="presentation" class="col-xs-12 active"><a href="#tabAssumptions_{id}" role="tab" data-toggle="tab" class="text-center">Assumptions</a></li>
 		</ul>
 		<div class="tab-content match-height">
-			<div role="tabpanel" class="tab-pane fade in active" id="tabAssumptions">
+			<div role="tabpanel" class="tab-pane fade in active" id="tabAssumptions_{id}">
 				<div class="alert alert-warning" role="alert">
 					<p>Please enter your personal information below.</p>
 					<div class="row">
@@ -250,7 +250,11 @@
 				$(".iAnnualPay", view).trigger("change"); // Run calc
 			});
 
-			$(".assumptionType_{id}", view).selectpicker();
+            const selectPickerAvailable = typeof $.fn.selectpicker === "function";
+
+            if ( selectPickerAvailable ) {
+				$(".assumptionType_{id}", view).selectpicker();
+            }
 			
 			if ( $.fn.matchHeight !== undefined ) {
 				$(".match-height", view).matchHeight({ property: 'height' });

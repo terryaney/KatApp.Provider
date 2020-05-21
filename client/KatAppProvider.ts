@@ -1711,7 +1711,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
 
             if ( selector !== undefined ) {
                 value = value ?? "";
-                const input = $(selector, this.application.element);
+                const input = $(selector, this.application.element).not("div");
                 const isCheckboxList = input.hasClass("checkbox-list-horizontal");
                 const aspCheckbox = this.ui.getAspNetCheckboxInput(input);
                 const radioButton = input.find("input[value='" + value + "']");
@@ -2042,16 +2042,16 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
         }
 
         private addValidationItem(summary: JQuery<HTMLElement>, input: JQuery<HTMLElement> | undefined, message: string): void {
-            let ul = $("div:first ul", summary);
+            let ul = $("ul", summary);
             if (ul.length === 0) {
-                $("div:first", summary).append("<br/><ul></ul>");
-                ul = $("div:first ul", summary);
+                summary.append("<br/><ul></ul>");
+                ul = $("ul", summary);
             }
 
             // Backward compat to remove validation with same id as input, but have changed it to 
             // id + Error so that $(id) doesn't get confused picking the li item.
             const inputName = input !== undefined ? this.ui.getInputName(input) : "undefined";
-            $("div:first ul li." + inputName + ", div:first ul li." + inputName + "Error", summary).remove();
+            $("ul li." + inputName + ", ul li." + inputName + "Error", summary).remove();
             ul.append("<li class=\"rble " + inputName + "Error\">" + message + "</li>");
 
             if ( input !== undefined ) {
@@ -2072,7 +2072,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
 
         private processValidationRows(summary: JQuery<HTMLElement>, errors: ValidationRow[]): void {
 			// Remove all RBLe client side created errors since they would be added back
-			$(" div:first ul li.rble", summary).remove();
+			$("ul li.rble", summary).remove();
 
 			if (errors.length > 0) {
                 errors.forEach( r => {
@@ -2081,7 +2081,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
 					this.addValidationItem(summary, input, r.text);
                 });
 
-				if ($(" div:first ul li", summary).length === 0) {
+				if ($("ul li", summary).length === 0) {
 					summary.hide();
 				}
 				else {
@@ -2089,7 +2089,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
 					$("div:first", summary).show();
 				}
 			}
-			else if ($("div:first ul li:not(.rble)", summary).length === 0) {
+			else if ($("ul li:not(.rble)", summary).length === 0) {
                 // Some server side calcs add error messages..if only errors are those from client calcs, I can remove them here
                 summary.hide();
                 $("div:first", summary).hide();
@@ -2120,12 +2120,12 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
             if ( this.application.calculationInputs?.iConfigureUI === 1 ) {
             /*
                 // Scroll target will probably need some work
-				if ($(".ModelerWarnings.alert div:first ul li", view).length > 0 && warnings.length > 0) {
+				if ($(".ModelerWarnings.alert ul li", view).length > 0 && warnings.length > 0) {
 					$('html, body').animate({
 						scrollTop: $(".ModelerWarnings.alert", view).offset().top - 30
 					}, 1000);
 				}
-				else if ($(".ModelerValidationTable.alert div:first ul li", view).length > 0 && errors.length > 0) {
+				else if ($(".ModelerValidationTable.alert ul li", view).length > 0 && errors.length > 0) {
 					$('html, body').animate({
 						scrollTop: $(".ModelerValidationTable.alert", view).offset().top - 30
 					}, 1000);
@@ -2921,6 +2921,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                 const value = el.data("value");
                 const css = el.data("css");
                 const inputCss = el.data("inputcss");
+                const labelCss = el.data("labelcss");
                 const displayOnly = el.data("displayonly") === true;
 
                 if ( css !== undefined ) {
@@ -2929,6 +2930,9 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
 
                 if ( label !== undefined ) {
                     $("span.l" + id, el).html(label);
+                }
+                if ( labelCss !== undefined ) {
+                    $("span.l" + id, el).addClass(labelCss);
                 }
 
                 let input = $("input[name='" + id + "']", el);
@@ -3065,7 +3069,14 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
         }
 
         buildDropdowns( view: JQuery<HTMLElement> ): void {
-            $('[rbl-tid="input-dropdown"],[rbl-template-type="katapp-dropdown"]', view).not('[data-katapp-initialized="true"]').each( function() {
+            const dropdowns = $('[rbl-tid="input-dropdown"],[rbl-template-type="katapp-dropdown"]', view);
+            const selectPickerAvailable = typeof $.fn.selectpicker === "function";
+
+            if ( selectPickerAvailable && dropdowns.length > 0 ) {
+                this.application.trace("bootstrap-select javascript is not present.", TraceVerbosity.None);
+            }
+
+            dropdowns.not('[data-katapp-initialized="true"]').each( function() {
                 const el = $(this);
 
                 // Do all data-* attributes that we support
@@ -3074,6 +3085,12 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                 const multiSelect = el.data("multiselect");
                 const liveSearch = el.data("livesearch") ?? "true";
                 const size = el.data("size") ?? "15";
+                const lookuptable = el.data("lookuptable");
+                const css = el.data("css");
+
+                if ( css !== undefined ) {
+                    $(".v" + id, el).addClass(css);
+                }
 
                 if ( label !== undefined ) {
                     $("span.l" + id, el).html(label);
@@ -3092,12 +3109,28 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                     input.attr("data-live-search", "true");
                 }
 
+                if ( lookuptable !== undefined ) {
+                    const options =
+                        $("rbl-template[tid='lookup-tables'] DataTable[id='" + lookuptable + "'] TableItem")
+                            .map( ( index, ti ) => $("<option value='" + ti.getAttribute("key") + "'>" + ti.getAttribute( "name") + "</option>"));
+
+                    options[ 0 ].attr("selected", "true");
+                    
+                    options.each( function() {
+                        input.append( $(this) );
+                    });
+                }
+
                 // changed this from .selectpicker because selectpicker initialization removes it so can't launch it again
-                $(".bootstrap-select", el).selectpicker()
+                if ( selectPickerAvailable ) {
+                    $(".bootstrap-select", el).selectpicker();
+                }
+
+                $(".bootstrap-select", el)
                     .attr("data-kat-bootstrap-select-initialized", "true")
                     .next(".error-msg")
                     .addClass("selectpicker"); /* aid in css styling */ /* TODO: Don't think this is matching and adding class */
-                
+        
                 el.attr("data-katapp-initialized", "true");
             });
         }

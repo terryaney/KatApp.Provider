@@ -1,5 +1,14 @@
-<rbl-config calcengine="Buck_DecisionSupportDisability_SE" templates="Standard_Templates"/>
+<rbl-config calcengine="Buck_DecisionSupportHSA_SE" templates="Standard_Templates"/>
 
+<rbl-template tid="lookup-tables">
+	<DataTable id="TableTaxStatus">
+        <TableItem key="1" name="Single Standard Deduction"/>
+        <TableItem key="2" name="Married File Jointly Std. Ded"/>
+        <TableItem key="3" name="Married File Sep Std. Ded"/>
+        <TableItem key="4" name="Head of Household Std. Ded"/>
+	</DataTable>
+</rbl-template>
+  
 <style>
     .kat-app-css div.chart { height: 350px; }
     @media (max-width: 767px) {
@@ -9,7 +18,7 @@
 
 <div class="row ajaxContent">
     <div class="hidden">
-        <input name="iHSAType" value="1"/>
+        <input name="iHSAType" value="2"/>
     </div>
     <div class="col-md-6">
         <ul class="nav nav-tabs" role="tablist">
@@ -18,16 +27,8 @@
         <div class="tab-content">
             <div role="tabpanel" class="tab-pane fade in active" id="tabAssumptions">
                 <div class="row">
-                    <div class="col-md-6">
-                        <div rbl-tid="input-textbox" data-inputname="iMonthlyExpenses" data-prefix="$"></div>
-                        <div rbl-tid="input-textbox" data-inputname="iAnnualSalary" data-prefix="$"></div>
-                        <div rbl-tid="input-textbox" data-inputname="iAdditionalAnnualCompensation" data-prefix="$"></div>
-                    </div>
-                    <div class="col-md-6">
-                        <div rbl-tid="input-dropdown" data-inputname="iTaxRate"></div>
-                        <div rbl-tid="input-dropdown" data-inputname="iLongTermDisabilityEmployer"></div>
-                        <div rbl-tid="input-textbox" data-inputname="iLongTermDisabilityPersonal" data-prefix="$"></div>
-                    </div>
+                    <div rbl-tid="input-dropdown" data-inputname="iYear" data-css="col-md-6" data-lookuptable="TableTaxStatus"></div>
+                    <div rbl-tid="input-dropdown" data-inputname="i55orOlder" data-css="col-md-6" data-lookuptable="TableTaxStatus"></div>
                 </div>
             </div>
         </div>
@@ -40,9 +41,7 @@
             <div role="tabpanel" class="tab-pane fade in active" id="tabResults">
                 <div class="row">
                     <div class="col-md-12">
-                        <div rbl-tid="chart-highcharts" rbl-chartdata="DISChart"></div>
-                        <div class="DISChart"></div>
-                        <p class="pFootnote"></p>
+						<div rbl-tid="result-table" rbl-tablename="results"></div>
                     </div>
                 </div>
             </div>

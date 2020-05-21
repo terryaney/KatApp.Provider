@@ -1,0 +1,427 @@
+<rbl-config calcengine="Buck_DecisionSupportLI_SE" templates="Standard_Templates"></rbl-config>
+
+<style>
+    .kat-app-css .ws-info {
+        padding-right: 5px;
+        text-decoration: none;
+        outline: none;
+    }
+    .kat-app-css a.ws-info:focus {
+        border: 0;
+        outline: none;
+    }
+</style>
+
+<div class="row ajaxContent">
+	<div class="col-md-6">
+		<ul class="nav nav-tabs" role="tablist">
+			<li role="presentation" class="col-xs-12 active"><a href="#tabAssumptions" role="tab" data-toggle="tab" class="text-center">Assumptions</a></li>
+		</ul>
+		<div class="tab-content match-height">
+			<div role="tabpanel" class="tab-pane fade in active" id="tabAssumptions">
+				<div class="alert alert-warning" role="alert">
+					<p>Please enter your personal information below.</p>
+					<div class="row">
+						<div class="col-sm-12 vassumptionType">
+							<div class="form-group">
+								<label for="" class="control-label">Assumptions to View</label>
+								<a class="vhassumptionType" role="button" tabindex="0" data-toggle="popover" data-trigger="click" data-content-selector=".hassumptionType" data-placement="top">
+									<span class="glyphicon glyphicon-info-sign help-icon"></span>
+								</a>
+								<div class="hidden hassumptionType">Use the dropdown to toggle between your Financial Information and your Insurance Assumptions inputs.</div>
+								<select class="form-control bootstrap-select notRBLe skipRBLe assumptionType_{id}">
+									<option selected="selected" value=".tabFutureFinancial_{id}">Financial Information</option>
+									<option value=".tabBeneficiaryInputs_{id}">Insurance Assumptions</option>
+								</select>
+							</div>
+						</div>
+					</div>
+				</div>
+				<div class="tabAssumption_{id} tabBeneficiaryInputs_{id}" style="display: none;">
+                    <div class="row">
+                        <div class="col-sm-6">
+							<div rbl-tid="input-slider" data-css="col-sm-12" data-inputname="iAge"></div>
+							<div rbl-tid="input-slider" data-css="col-sm-12" data-inputname="iSpouseAge"></div>
+							<div rbl-tid="input-slider" data-css="col-sm-12" data-inputname="iYoungestChildAge"></div>
+                        </div>
+                        <div class="col-sm-6">
+							<div rbl-tid="input-checkbox" data-css="col-sm-12" data-inputname="iCoverFinalExpenses"></div>
+							<div rbl-tid="input-checkbox" data-css="col-sm-12" data-inputname="iCoverExistingDebts"></div>
+							<div rbl-tid="input-checkbox" data-css="col-sm-12" data-inputname="iCoverFutureExpenses"></div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-sm-6">
+							<div rbl-tid="input-slider" data-css="col-sm-12" data-inputname="iInflation"></div>
+							<div rbl-tid="input-slider" data-css="col-sm-12" data-inputname="iInvestmentReturn"></div>
+                        </div>
+                        <div class="col-sm-6">
+							<div rbl-tid="input-dropdown" data-css="col-sm-12" data-inputname="iSurvivorIncomeGoal"></div>
+							<div rbl-tid="input-slider" data-css="col-sm-12" data-inputname="iEnterSetNumberYears"></div>
+                        </div>
+                    </div>
+				</div>
+				<div class="tabAssumption_{id} tabFutureFinancial_{id}" style="display: none;">
+                    <div class="row">
+						<div rbl-tid="input-dropdown" data-css="col-sm-6" data-inputname="iFamilyStatus"></div>
+                    </div>
+					<div class="row">
+						<div rbl-tid="input-textbox" data-css="col-sm-6" data-inputname="iTotalFinalExpense" data-prefix="$"></div>
+						<div rbl-tid="input-textbox" data-css="col-sm-6" data-inputname="iTotalExistingDebt" data-prefix="$"></div>
+                    </div>
+					<div class="row">
+						<div rbl-tid="input-textbox" data-css="col-sm-6" data-inputname="iAnnualIncomeReplacement" data-prefix="$"></div>
+						<div rbl-tid="input-textbox" data-css="col-sm-6" data-inputname="iAnnualChildcareExpenses" data-prefix="$"></div>
+                    </div>
+					<div class="row">
+						<div rbl-tid="input-textbox" data-css="col-sm-6" data-inputname="iEmergencyFund" data-prefix="$"></div>
+						<div rbl-tid="input-textbox" data-css="col-sm-6" data-inputname="iAnnualPropertyTaxes" data-prefix="$"></div>
+                    </div>
+					<div class="row">
+                        <div class="col-sm-6" style="padding: 0">
+							<div rbl-tid="input-textbox" data-css="col-sm-12" data-inputname="iAnnualAnnuityPayment" data-prefix="$"></div>
+							<div rbl-tid="input-slider" data-css="col-sm-12" data-inputname="iAnnuityPaymentsStartAge"></div>
+                        </div>
+					    <div class="col-sm-6" style="padding: 0">
+							<div rbl-tid="input-textbox" data-css="col-sm-12" data-inputname="iCollegeTotal" data-prefix="$"></div>
+							<div rbl-tid="input-textbox" data-css="col-sm-12" data-inputname="iCurrentInvestments" data-prefix="$"></div>
+							<div rbl-tid="input-textbox" data-css="col-sm-12" data-inputname="iCurrentLifeInsurance" data-prefix="$"></div>
+					    </div>
+                    </div>
+				</div>
+			</div>
+		</div>
+	</div>
+	<div class="col-md-6">
+		<ul class="nav nav-tabs resultTabs" role="tablist">
+			<li role="presentation" class="col-xs-6 active"><a href="#tabChart_{id}" role="tab" data-toggle="tab" class="text-center">Your Results</a></li>
+			<li role="presentation" class="col-xs-6"><a href="#tabFinancial_{id}" role="tab" data-toggle="tab" class="text-center">Financial Details</a></li>
+		</ul>
+		<div class="tab-content match-height">
+			<div role="tabpanel" class="tab-pane fade in active" id="tabChart_{id}">
+				<p class="resultIntro"></p>
+				<div class="row">
+					<div class="col-sm-6 col-sm-offset-3">
+						<div rbl-tid="result-table" rbl-tablename="result-table"></div>
+					</div>
+					<div class="col-xs-12">
+						<div rbl-tid="chart-highcharts" rbl-chartdata="LifeInsurance"></div>
+					</div>
+				</div>
+			</div>
+			<div role="tabpanel" class="tab-pane fade" id="tabFinancial_{id}">
+				<div rbl-tid="result-table" rbl-tablename="financial-table"></div>
+			</div>
+		</div>
+	</div>
+	<div class="ajaxloader"></div>
+</div>
+
+<div class="row">
+    <div class="col-xs-12">
+        <div rbl-tid="validation-summary"></div>
+    </div>
+</div>
+
+<div class="skipRBLe notRBLe">
+	<div class="modal fade modal-worksheet" tabindex="-1" role="dialog" id="finalexpense-worksheet-{id}" data-backdrop="static">
+		<div class="modal-dialog">
+			<div class="modal-content">
+				<div class="modal-header"><h4 class="modal-title">Final Expenses Worksheet</h4></div>
+				<div class="modal-body">
+					<div class="alert alert-warning hide validation-summary"></div>
+					<div class="row">
+						<div rbl-tid="input-textbox" data-css="col-sm-12" data-inputname="iFinalExpenseWorksheet1" data-inputcss="iFinalExpenseWorksheet" data-prefix="$"></div>
+						<div rbl-tid="input-textbox" data-css="col-sm-12" data-inputname="iFinalExpenseWorksheet2" data-inputcss="iFinalExpenseWorksheet" data-prefix="$"></div>
+						<div rbl-tid="input-textbox" data-css="col-sm-12" data-inputname="iFinalExpenseWorksheet3" data-inputcss="iFinalExpenseWorksheet" data-prefix="$"></div>
+					</div>
+					<div class="row">
+						<div class="col-sm-6">
+							<h3>Total Expenses</h3>
+						</div>
+						<div class="col-sm-6 text-right">
+							<h3 class="total"></h3>
+						</div>
+					</div>
+				</div>
+				<div class="modal-footer">
+					<button type="button" class="btn btn-primary btn-action btn-use" data-dismiss="modal">Use Result</button>
+					<button type="button" class="btn btn-primary btn-primary-inverse" data-dismiss="modal">Cancel</button>
+				</div>
+			</div>
+		</div>
+	</div>
+	<div class="modal fade modal-worksheet" tabindex="-1" role="dialog" id="existingdebt-worksheet-{id}" data-backdrop="static">
+		<div class="modal-dialog">
+			<div class="modal-content">
+				<div class="modal-header"><h4 class="modal-title">Existing Debt Worksheet</h4></div>
+				<div class="modal-body">
+					<div class="alert alert-warning hide validation-summary"></div>
+					<div class="row">
+						<div rbl-tid="input-textbox" data-css="col-sm-12" data-inputname="iExistingDebtWorksheet1" data-inputcss="iExistingDebtWorksheet" data-prefix="$"></div>
+						<div rbl-tid="input-textbox" data-css="col-sm-12" data-inputname="iExistingDebtWorksheet2" data-inputcss="iExistingDebtWorksheet" data-prefix="$"></div>
+						<div rbl-tid="input-textbox" data-css="col-sm-12" data-inputname="iExistingDebtWorksheet3" data-inputcss="iExistingDebtWorksheet" data-prefix="$"></div>
+						<div rbl-tid="input-textbox" data-css="col-sm-12" data-inputname="iExistingDebtWorksheet4" data-inputcss="iExistingDebtWorksheet" data-prefix="$"></div>
+						<div rbl-tid="input-textbox" data-css="col-sm-12" data-inputname="iExistingDebtWorksheet5" data-inputcss="iExistingDebtWorksheet" data-prefix="$"></div>
+					</div>
+					<div class="row">
+						<div class="col-sm-6">
+							<h3>Total Debt</h3>
+						</div>
+						<div class="col-sm-6 text-right">
+							<h3 class="total"></h3>
+						</div>
+					</div>
+				</div>
+				<div class="modal-footer">
+					<button type="button" class="btn btn-primary btn-action btn-use" data-dismiss="modal">Use Result</button>
+					<button type="button" class="btn btn-primary btn-primary-inverse" data-dismiss="modal">Cancel</button>
+				</div>
+			</div>
+		</div>
+	</div>
+	<div class="modal fade modal-worksheet" tabindex="-1" role="dialog" id="investments-worksheet-{id}" data-backdrop="static">
+		<div class="modal-dialog">
+			<div class="modal-content">
+				<div class="modal-header"><h4 class="modal-title">Current Investments Worksheet</h4></div>
+				<div class="modal-body">
+					<div class="alert alert-warning hide validation-summary"></div>
+					<div class="row">
+						<div rbl-tid="input-textbox" data-css="col-sm-12" data-inputname="iInvestmentWorksheet1" data-inputcss="iInvestmentWorksheet" data-prefix="$"></div>
+						<div rbl-tid="input-textbox" data-css="col-sm-12" data-inputname="iInvestmentWorksheet2" data-inputcss="iInvestmentWorksheet" data-prefix="$"></div>
+						<div rbl-tid="input-textbox" data-css="col-sm-12" data-inputname="iInvestmentWorksheet3" data-inputcss="iInvestmentWorksheet" data-prefix="$"></div>
+						<div rbl-tid="input-textbox" data-css="col-sm-12" data-inputname="iInvestmentWorksheet4" data-inputcss="iInvestmentWorksheet" data-prefix="$"></div>
+						<div rbl-tid="input-textbox" data-css="col-sm-12" data-inputname="iInvestmentWorksheet5" data-inputcss="iInvestmentWorksheet" data-prefix="$"></div>
+					</div>
+					<div class="row">
+						<div class="col-sm-6">
+							<h3>Total Investments</h3>
+						</div>
+						<div class="col-sm-6 text-right">
+							<h3 class="total"></h3>
+						</div>
+					</div>
+				</div>
+				<div class="modal-footer">
+					<button type="button" class="btn btn-primary btn-action btn-use" data-dismiss="modal">Use Result</button>
+					<button type="button" class="btn btn-primary btn-primary-inverse" data-dismiss="modal">Cancel</button>
+				</div>
+			</div>
+		</div>
+	</div>
+	<div class="modal fade modal-worksheet" tabindex="-1" role="dialog" id="college-worksheet-{id}" data-backdrop="static">
+		<div class="modal-dialog">
+			<div class="modal-content">
+				<div class="modal-header"><h4 class="modal-title">College Expenses Worksheet</h4></div>
+				<div class="modal-body">
+					<div class="alert alert-warning hide validation-summary"></div>
+					<div class="row">
+						<div rbl-tid="input-slider" data-css="col-sm-6" data-inputname="iChildAgeWorksheet1"></div>
+						<div rbl-tid="input-textbox" data-prefix="$" data-css="col-sm-6" data-inputname="iChildExpenseWorksheet1" data-inputcss="iChildExpenseWorksheet"></div>
+
+						<div rbl-tid="input-slider" data-css="col-sm-6" data-inputname="iChildAgeWorksheet2"></div>
+						<div rbl-tid="input-textbox" data-prefix="$" data-css="col-sm-6" data-inputname="iChildExpenseWorksheet2" data-inputcss="iChildExpenseWorksheet"></div>
+
+						<div rbl-tid="input-slider" data-css="col-sm-6" data-inputname="iChildAgeWorksheet3"></div>
+						<div rbl-tid="input-textbox" data-prefix="$" data-css="col-sm-6" data-inputname="iChildExpenseWorksheet3" data-inputcss="iChildExpenseWorksheet"></div>
+
+						<div rbl-tid="input-slider" data-css="col-sm-6" data-inputname="iChildAgeWorksheet4"></div>
+						<div rbl-tid="input-textbox" data-prefix="$" data-css="col-sm-6" data-inputname="iChildExpenseWorksheet4" data-inputcss="iChildExpenseWorksheet"></div>
+
+						<div rbl-tid="input-slider" data-css="col-sm-6" data-inputname="iChildAgeWorksheet5"></div>
+						<div rbl-tid="input-textbox" data-prefix="$" data-css="col-sm-6" data-inputname="iChildExpenseWorksheet5" data-inputcss="iChildExpenseWorksheet"></div>
+					</div>
+					<div class="row">
+						<div class="col-sm-6">
+							<h3>Total Expenses</h3>
+						</div>
+						<div class="col-sm-6 text-right">
+							<h3 class="total"></h3>
+						</div>
+					</div>
+				</div>
+				<div class="modal-footer">
+					<button type="button" class="btn btn-primary btn-action btn-use" data-dismiss="modal">Use Result</button>
+					<button type="button" class="btn btn-primary btn-primary-inverse" data-dismiss="modal">Cancel</button>
+				</div>
+			</div>
+		</div>
+	</div>
+</div>
+
+<script>
+	(function() {
+		const view = $("{thisView}");
+
+		if ( view.data("debugger" ) == true ) {
+			debugger;
+		}
+
+		view.on( "onInitialized.RBLe", function( event, application ) {
+			let ws = $("<a class='ws-info wsiTotalFinalExpense' role='button' tabindex='0' title='Click for Final Expense Worksheet' href='#' data-toggle='modal' data-target='#finalexpense-worksheet-{id}'><span class='glyphicon glyphicon glyphicon-list-alt'></span></a>");
+			ws.insertBefore($(".liTotalFinalExpense", view));
+			ws = $("<a class='ws-info wsiTotalExistingDebt' role='button' tabindex='0' title='Click for Existing Debug Worksheet' href='#' data-toggle='modal' data-target='#existingdebt-worksheet-{id}'><span class='glyphicon glyphicon glyphicon-list-alt'></span></a>");
+			ws.insertBefore($(".liTotalExistingDebt", view));
+			ws = $("<a class='ws-info wsiCollegeTotal' role='button' tabindex='0' title='Click for College Expenses Worksheet' href='#' data-toggle='modal' data-target='#college-worksheet-{id}'><span class='glyphicon glyphicon glyphicon-list-alt'></span></a>");
+			ws.insertBefore($(".liCollegeTotal", view));
+			ws = $("<a class='ws-info wsiCurrentInvestments' role='button' tabindex='0' title='Click for Current Investments Worksheet' href='#' data-toggle='modal' data-target='#investments-worksheet-{id}'><span class='glyphicon glyphicon glyphicon-list-alt'></span></a>");
+			ws.insertBefore($(".liCurrentInvestments", view));
+
+			$(".assumptionType_{id}", view).on('change', function () {
+				var nav = $(this).val();
+				$(".tabAssumption_{id}:not(" + nav + ")", view).hide();
+				$(nav).show();
+				if ( $.fn.matchHeight !== undefined ) {
+					$.fn.matchHeight._update();
+				}
+			}).trigger("change");
+
+			// Since KatApp is being shown in a 'modal/blocker' with position of absolute, I need to set this
+			// z-index so that it doesn't appear behind the blocker: 
+			$(".modal-worksheet", view).on("shown.bs.modal", function() {
+				$(".modal-backdrop.fade.in").css("z-index", "-1");
+				$(":input:eq(0)", $(this)).change();
+			}).on("show.bs.modal", function() {
+				$('.validation-summary', $(this)).addClass('hide');
+
+				if ( typeof noUiSlider === "object" ) {
+					$("#college-worksheet-{id} .slider-control", view).each(function () {
+						var slider = $(this)[0];
+						slider.noUiSlider.on('set.RBLe', function (values, handle) {
+							$("#college-worksheet-{id} .total").html(String.localeFormat("{0:c0}", GetTotal(".iChildExpenseWorksheet")));
+						});
+					});
+				}
+			});
+
+			$(".iFinalExpenseWorksheet", view).change(function () {
+				$("#finalexpense-worksheet-{id} .total", view).html(String.localeFormat("{0:c0}", GetTotal(".iFinalExpenseWorksheet")));
+			})
+			$(".iExistingDebtWorksheet", view).change(function () {
+				$("#existingdebt-worksheet-{id} .total", view).html(String.localeFormat("{0:c0}", GetTotal(".iExistingDebtWorksheet")));
+			})
+			$(".iInvestmentWorksheet", view).change(function () {
+				$("#investments-worksheet-{id} .total", view).html(String.localeFormat("{0:c0}", GetTotal(".iInvestmentWorksheet")));
+			})
+			$(".iChildExpenseWorksheet", view).change(function () {
+				$("#college-worksheet-{id} .total", view).html(String.localeFormat("{0:c0}", GetTotal(".iChildExpenseWorksheet")));
+			})
+			$('#finalexpense-worksheet-{id} .btn-use', view).on('click', function (e) {
+				ValidateAmounts(".iFinalExpenseWorksheet", "#finalexpense-worksheet-{id} .validation-summary", ".iTotalFinalExpense");
+			});
+			$('#existingdebt-worksheet-{id} .btn-use', view).on('click', function (e) {
+				ValidateAmounts(".iExistingDebtWorksheet", "#existingdebt-worksheet-{id} .validation-summary", ".iTotalExistingDebt");
+			});
+			$('#investments-worksheet-{id} .btn-use').on('click', function (e) {
+				ValidateAmounts(".iInvestmentWorksheet", "#investments-worksheet-{id} .validation-summary", ".iCurrentInvestments");
+			});
+			$('#college-worksheet-{id} .btn-use').on('click', function (e) {
+				ValidateCollegeAmounts(".iChildExpenseWorksheet", "#college-worksheet-{id} .validation-summary", ".iCollegeTotal");
+			});
+
+            const selectPickerAvailable = typeof $.fn.selectpicker === "function";
+
+            if ( selectPickerAvailable ) {
+				$(".assumptionType_{id}", view).selectpicker();
+            }
+			
+			if ( $.fn.matchHeight !== undefined ) {
+				$(".match-height", view).matchHeight({ property: 'height' });
+				$.fn.matchHeight._maintainScroll = true;
+			}
+
+			view.on( "onCalculation.RBLe", function( event, calculationResults, calcOptions, application ) {
+				if ($(".LifeInsurance", view).highcharts() != undefined) {
+					$(".LifeInsurance", view).highcharts().destroy();
+				}
+
+				$(calculationResults["survivor-income"]).each(function (index) {
+					if (this["visible"] == 1) {
+						$(".iSurvivorIncomeGoal option[value='" + this["key"] + "']", view).show();
+					}
+					else {
+						$(".iSurvivorIncomeGoal option[value='" + this["key"] + "']", view).hide();
+					}
+				});
+				if ( selectPickerAvailable ) {
+					$('.iSurvivorIncomeGoal', view).selectpicker('refresh');
+				}
+
+				if ( $.fn.matchHeight !== undefined ) {
+					// Doesn't look like I can only call 'update' to match height items within my view, so this will update
+					// all and any match heights applied on page, but my bindings were set scoped to my view, so it should
+					// not have adverse affects.  The project page mentioned that match heights can be achieved in modern
+					// browsers by using CSS Flexbox and CSS Grid instead.  So could look at that.
+					$.fn.matchHeight._update();
+				}
+			});
+
+
+		});
+
+		function ValidateAmounts(selector, summary, totalSelector) {
+			var hasErrors = false;
+			const summaryEl = $(summary, view);
+			summaryEl.html("");
+
+			$(selector).each(function () {
+				var value = Number($(this).val());
+				if (isNaN(value)) {
+					var label = $(this).parent().parent().children("label").text();
+					summaryEl.removeClass('hide').append('<p>' + label + ': Please provide blank or a valid numeric value.</p>');
+					hasErrors = true;
+				}
+			});
+
+			if (!hasErrors) {
+				var total = GetTotal(selector);
+				$(totalSelector, view).val(total).trigger("change");
+			}
+		}
+		function ValidateCollegeAmounts(amountSelector, summary, totalSelector) {
+			var hasErrors = false;
+			const summaryEl = $(summary, view);
+			summaryEl.html("");
+
+			$(amountSelector).each(function () {
+				var value = Number($(this).val());
+				var index = $(this).data("index");
+				var age = $(".iChildAgeWorksheet" + index).val();
+
+				if (isNaN(value) && age != 0) {
+					var label = $(this).parent().parent().children("label").text();
+					summaryEl.removeClass('hide').append('<p>' + label + ': Please provide blank or a valid numeric value.</p>');
+					hasErrors = true;
+				}
+			});
+
+			if (!hasErrors) {
+				var total = GetTotal(selector);
+				$(totalSelector, view).val(total).trigger("change");
+			}
+		}
+		function GetTotal(selector) {
+			var total = 0;
+
+			var investmentReturn = $(".iInvestmentReturn", view).val() * 1 / 100;
+			var isCollege = selector == ".iChildExpenseWorksheet";
+
+			$(selector, view).each(function () {
+				var value = Number($(this).val());
+				var age = isCollege
+					? $(".iChildAgeWorksheet" + $(this).data("index"), view).val() * 1
+					: 1;
+
+				if (!isNaN(value)) {
+					total += isCollege
+						? 4 * value * Math.pow(1 + investmentReturn, -(21 - age))
+						: value;
+				}
+			});
+
+			var increment = 1;
+			return Math.round(total / increment) * increment;
+		}
+	})();
+	//# sourceURL=Life.kaml
+</script>

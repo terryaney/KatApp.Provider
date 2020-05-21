@@ -1423,7 +1423,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
             var selector = this.ui.getJQuerySelector(id);
             if (selector !== undefined) {
                 value = value !== null && value !== void 0 ? value : "";
-                var input = $(selector, this.application.element);
+                var input = $(selector, this.application.element).not("div");
                 var isCheckboxList = input.hasClass("checkbox-list-horizontal");
                 var aspCheckbox = this.ui.getAspNetCheckboxInput(input);
                 var radioButton = input.find("input[value='" + value + "']");
@@ -1692,15 +1692,15 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
             });
         };
         RBLeUtilities.prototype.addValidationItem = function (summary, input, message) {
-            var ul = $("div:first ul", summary);
+            var ul = $("ul", summary);
             if (ul.length === 0) {
-                $("div:first", summary).append("<br/><ul></ul>");
-                ul = $("div:first ul", summary);
+                summary.append("<br/><ul></ul>");
+                ul = $("ul", summary);
             }
             // Backward compat to remove validation with same id as input, but have changed it to 
             // id + Error so that $(id) doesn't get confused picking the li item.
             var inputName = input !== undefined ? this.ui.getInputName(input) : "undefined";
-            $("div:first ul li." + inputName + ", div:first ul li." + inputName + "Error", summary).remove();
+            $("ul li." + inputName + ", ul li." + inputName + "Error", summary).remove();
             ul.append("<li class=\"rble " + inputName + "Error\">" + message + "</li>");
             if (input !== undefined) {
                 var isWarning = summary.hasClass("ModelerWarnings");
@@ -1719,14 +1719,14 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
         RBLeUtilities.prototype.processValidationRows = function (summary, errors) {
             var _this = this;
             // Remove all RBLe client side created errors since they would be added back
-            $(" div:first ul li.rble", summary).remove();
+            $("ul li.rble", summary).remove();
             if (errors.length > 0) {
                 errors.forEach(function (r) {
                     var selector = _this.ui.getJQuerySelector(r["@id"]);
                     var input = selector !== undefined ? $(selector, _this.application.element) : undefined;
                     _this.addValidationItem(summary, input, r.text);
                 });
-                if ($(" div:first ul li", summary).length === 0) {
+                if ($("ul li", summary).length === 0) {
                     summary.hide();
                 }
                 else {
@@ -1734,7 +1734,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                     $("div:first", summary).show();
                 }
             }
-            else if ($("div:first ul li:not(.rble)", summary).length === 0) {
+            else if ($("ul li:not(.rble)", summary).length === 0) {
                 // Some server side calcs add error messages..if only errors are those from client calcs, I can remove them here
                 summary.hide();
                 $("div:first", summary).hide();
@@ -1760,12 +1760,12 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
             if (((_a = this.application.calculationInputs) === null || _a === void 0 ? void 0 : _a.iConfigureUI) === 1) {
                 /*
                     // Scroll target will probably need some work
-                    if ($(".ModelerWarnings.alert div:first ul li", view).length > 0 && warnings.length > 0) {
+                    if ($(".ModelerWarnings.alert ul li", view).length > 0 && warnings.length > 0) {
                         $('html, body').animate({
                             scrollTop: $(".ModelerWarnings.alert", view).offset().top - 30
                         }, 1000);
                     }
-                    else if ($(".ModelerValidationTable.alert div:first ul li", view).length > 0 && errors.length > 0) {
+                    else if ($(".ModelerValidationTable.alert ul li", view).length > 0 && errors.length > 0) {
                         $('html, body').animate({
                             scrollTop: $(".ModelerValidationTable.alert", view).offset().top - 30
                         }, 1000);
@@ -2421,12 +2421,16 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                 var value = el.data("value");
                 var css = el.data("css");
                 var inputCss = el.data("inputcss");
+                var labelCss = el.data("labelcss");
                 var displayOnly = el.data("displayonly") === true;
                 if (css !== undefined) {
                     $(".v" + id, el).addClass(css);
                 }
                 if (label !== undefined) {
                     $("span.l" + id, el).html(label);
+                }
+                if (labelCss !== undefined) {
+                    $("span.l" + id, el).addClass(labelCss);
                 }
                 var input = $("input[name='" + id + "']", el);
                 var displayOnlyLabel = $("div." + id + "DisplayOnly", el);
@@ -2547,7 +2551,12 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
             });
         };
         StandardTemplateBuilder.prototype.buildDropdowns = function (view) {
-            $('[rbl-tid="input-dropdown"],[rbl-template-type="katapp-dropdown"]', view).not('[data-katapp-initialized="true"]').each(function () {
+            var dropdowns = $('[rbl-tid="input-dropdown"],[rbl-template-type="katapp-dropdown"]', view);
+            var selectPickerAvailable = typeof $.fn.selectpicker === "function";
+            if (selectPickerAvailable && dropdowns.length > 0) {
+                this.application.trace("bootstrap-select javascript is not present.", TraceVerbosity.None);
+            }
+            dropdowns.not('[data-katapp-initialized="true"]').each(function () {
                 var _a, _b;
                 var el = $(this);
                 // Do all data-* attributes that we support
@@ -2556,6 +2565,11 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                 var multiSelect = el.data("multiselect");
                 var liveSearch = (_a = el.data("livesearch")) !== null && _a !== void 0 ? _a : "true";
                 var size = (_b = el.data("size")) !== null && _b !== void 0 ? _b : "15";
+                var lookuptable = el.data("lookuptable");
+                var css = el.data("css");
+                if (css !== undefined) {
+                    $(".v" + id, el).addClass(css);
+                }
                 if (label !== undefined) {
                     $("span.l" + id, el).html(label);
                 }
@@ -2568,8 +2582,19 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                 if (liveSearch === "true") {
                     input.attr("data-live-search", "true");
                 }
+                if (lookuptable !== undefined) {
+                    var options = $("rbl-template[tid='lookup-tables'] DataTable[id='" + lookuptable + "'] TableItem")
+                        .map(function (index, ti) { return $("<option value='" + ti.getAttribute("key") + "'>" + ti.getAttribute("name") + "</option>"); });
+                    options[0].attr("selected", "true");
+                    options.each(function () {
+                        input.append($(this));
+                    });
+                }
                 // changed this from .selectpicker because selectpicker initialization removes it so can't launch it again
-                $(".bootstrap-select", el).selectpicker()
+                if (selectPickerAvailable) {
+                    $(".bootstrap-select", el).selectpicker();
+                }
+                $(".bootstrap-select", el)
                     .attr("data-kat-bootstrap-select-initialized", "true")
                     .next(".error-msg")
                     .addClass("selectpicker"); /* aid in css styling */ /* TODO: Don't think this is matching and adding class */

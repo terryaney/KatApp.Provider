@@ -55,7 +55,12 @@
                 <option value="DST:Disability">DST - Disability</option>
                 <option value="DST:DevROI">DST - Dependent Eligibility Verification Savings Estimator</option>
                 <option value="DST:FSA">DST - FSA Tax Savings Calculator</option>
+                <option value="DST:FWA">DST - Financial Wellness Modeler</option>
+                <option value="DST:HSAErSavings">DST - Employer Savings from Employee pre-tax HSA contributions</option>
+                <option value="DST:HSALimit">DST - HSA Contribution Limit Calculator</option>
+                <option value="DST:HSATax">DST - HSA Tax Savings</option>
                 <option value="DST:IRP">DST - Income Replacement Percentage (IRP) Calculator</option>
+                <option value="DST:LifeInputs">DST - Life Insurance Calculator</option>
             </select>
         </div>
         <div class="form-group vCustomView col-sm-6">
@@ -125,7 +130,7 @@
         </div>
         <div class="col-sm-12" style="padding-top: 10px;">
             <a class="btn btn-primary UpdateDebugOptions">Update</a>
-            <a class="btn btn-primary LogResults">Log Results</a>
+            <a class="btn btn-primary LogResults">Log Calculation Info</a>
             <a class="btn btn-primary ConfigureUI">ConfigureUI Calculation</a>
         </div>
     </div>
@@ -158,7 +163,9 @@
         }
 
         view.on( "onInitialized.RBLe", function( event, application ) {
-            if ( typeof $.fn.selectpicker === "function" ) {
+            const selectPickerAvailable = typeof $.fn.selectpicker === "function";
+
+            if ( selectPickerAvailable ) {
                 $(".bootstrap-select", view).selectpicker();
             }
 
@@ -214,6 +221,9 @@
                     console.group("Application " + application.displayId + " Results");
                     console.log(application.results);
                     console.groupEnd("Application " + application.displayId + " Results");
+                    console.group("Application " + application.displayId + " Inputs");
+                    console.log(application.calculationInputs);
+                    console.groupEnd("Application " + application.displayId + " Inputs");
                 });
             });
 

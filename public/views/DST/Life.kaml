@@ -1,7 +1,12 @@
 <rbl-config calcengine="Buck_DecisionSupportLI_SE" templates="Standard_Templates"></rbl-config>
 
 <style>
-    .kat-app-css .ws-info {
+    .kat-app-css div.chart { height: 600px; }
+    @media (max-width: 767px) {
+        .kat-app-css div.chart { height: 400px; }
+    }
+
+	.kat-app-css .ws-info {
         padding-right: 5px;
         text-decoration: none;
         outline: none;

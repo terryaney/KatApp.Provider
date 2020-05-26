@@ -479,11 +479,6 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
 
                     that.ui.bindCalculationInputs();
 
-                    if ( that.options.defaultInputs !== undefined ) {
-                        that.setInputs( that.options.defaultInputs, false );
-                        that.options.defaultInputs = undefined;
-                    }
-        
                     that.ui.triggerEvent( "onInitialized", that );
 
                     if ( that.options.runConfigureUICalculation ) {
@@ -756,7 +751,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                         that.element.removeData("katapp-save-calcengine");
                         that.element.removeData("katapp-trace-calcengine");
                         that.element.removeData("katapp-refresh-calcengine");
-
+                        that.options.defaultInputs = undefined;
                         that.rble.processResults();
 
                        if ( that.calculationInputs?.iConfigureUI === 1 ) {
@@ -821,6 +816,9 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
             this.options = KatApp.extend( {}, this.options, options )
             this.ui.unbindCalculationInputs();
 
+            // When calling this method, presummably all the inputs are available
+            // and caller wants the input (html element) to be updated.  When passed
+            // in on a rebuild/init I don't apply them until a calculation is ran.
             if ( this.options.defaultInputs !== undefined ) {
                 this.setInputs( this.options.defaultInputs );
                 this.options.defaultInputs = undefined;
@@ -1241,11 +1239,22 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
             const traceCalcEngine = application.element.data("katapp-trace-calcengine") === "1";
             const refreshCalcEngine = application.element.data("katapp-refresh-calcengine") === "1";
 
-            // Should make a helper that gets options (for both submit and register)
-            // TODO: COnfirm all these options are right
+            // TODO Should make a helper that gets options (for both submit and register)            
+
+            if ( currentOptions.defaultInputs !== undefined )
+            {
+                // Currently can't pass this in.  Not sure ever needed, but if so, multi page
+                // KatApps (i.e. LifeInputs and Life) sometimes pass all the inputs through to 
+                // a secondary load of KatApps based on proper conditions in onCalculation.  For
+                // the problem I saw, it was loading secondary app when iInputTrigger was a specific
+                // value.  But then it just turned into a recursive call because this input stayed
+                // in the inputs and it just called a load over and over
+                delete currentOptions.defaultInputs.iInputTrigger;
+            }
+
             const calculationOptions: SubmitCalculationOptions = {
                 Data: !( currentOptions.registerDataWithService ?? true ) ? currentOptions.data : undefined,
-                Inputs: application.calculationInputs = KatApp.extend( this.ui.getInputs( currentOptions ), currentOptions?.manualInputs ),
+                Inputs: application.calculationInputs = KatApp.extend( this.ui.getInputs( currentOptions ), currentOptions.defaultInputs, currentOptions?.manualInputs ),
                 InputTables: this.ui.getInputTables(), 
                 Configuration: {
                     CalcEngine: currentOptions.calcEngine,
@@ -1268,7 +1277,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                     Environment: "PITT.PROD"
                 }
             };
-    
+
             const that: RBLeUtilities = this;
 
             const submitDone: RBLeServiceCallback = function( payload ): void {
@@ -3072,7 +3081,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
             const dropdowns = $('[rbl-tid="input-dropdown"],[rbl-template-type="katapp-dropdown"]', view);
             const selectPickerAvailable = typeof $.fn.selectpicker === "function";
 
-            if ( selectPickerAvailable && dropdowns.length > 0 ) {
+            if ( !selectPickerAvailable && dropdowns.length > 0 ) {
                 this.application.trace("bootstrap-select javascript is not present.", TraceVerbosity.None);
             }
 

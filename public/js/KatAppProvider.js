@@ -395,10 +395,6 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                     // Process data-* attributes and bind events
                     templateBuilder.processUI();
                     that.ui.bindCalculationInputs();
-                    if (that.options.defaultInputs !== undefined) {
-                        that.setInputs(that.options.defaultInputs, false);
-                        that.options.defaultInputs = undefined;
-                    }
                     that.ui.triggerEvent("onInitialized", that);
                     if (that.options.runConfigureUICalculation) {
                         that.trace("Calling configureUI calculation...", TraceVerbosity.Detailed);
@@ -627,6 +623,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                         that.element.removeData("katapp-save-calcengine");
                         that.element.removeData("katapp-trace-calcengine");
                         that.element.removeData("katapp-refresh-calcengine");
+                        that.options.defaultInputs = undefined;
                         that.rble.processResults();
                         if (((_a = that.calculationInputs) === null || _a === void 0 ? void 0 : _a.iConfigureUI) === 1) {
                             that.ui.triggerEvent("onConfigureUICalculation", that.results, currentOptions, that);
@@ -671,6 +668,9 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
         KatAppPlugIn.prototype.updateOptions = function (options) {
             this.options = KatApp.extend({}, this.options, options);
             this.ui.unbindCalculationInputs();
+            // When calling this method, presummably all the inputs are available
+            // and caller wants the input (html element) to be updated.  When passed
+            // in on a rebuild/init I don't apply them until a calculation is ran.
             if (this.options.defaultInputs !== undefined) {
                 this.setInputs(this.options.defaultInputs);
                 this.options.defaultInputs = undefined;
@@ -1025,11 +1025,19 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
             var saveCalcEngineLocation = application.element.data("katapp-save-calcengine");
             var traceCalcEngine = application.element.data("katapp-trace-calcengine") === "1";
             var refreshCalcEngine = application.element.data("katapp-refresh-calcengine") === "1";
-            // Should make a helper that gets options (for both submit and register)
-            // TODO: COnfirm all these options are right
+            // TODO Should make a helper that gets options (for both submit and register)            
+            if (currentOptions.defaultInputs !== undefined) {
+                // Currently can't pass this in.  Not sure ever needed, but if so, multi page
+                // KatApps (i.e. LifeInputs and Life) sometimes pass all the inputs through to 
+                // a secondary load of KatApps based on proper conditions in onCalculation.  For
+                // the problem I saw, it was loading secondary app when iInputTrigger was a specific
+                // value.  But then it just turned into a recursive call because this input stayed
+                // in the inputs and it just called a load over and over
+                delete currentOptions.defaultInputs.iInputTrigger;
+            }
             var calculationOptions = {
                 Data: !((_a = currentOptions.registerDataWithService) !== null && _a !== void 0 ? _a : true) ? currentOptions.data : undefined,
-                Inputs: application.calculationInputs = KatApp.extend(this.ui.getInputs(currentOptions), currentOptions === null || currentOptions === void 0 ? void 0 : currentOptions.manualInputs),
+                Inputs: application.calculationInputs = KatApp.extend(this.ui.getInputs(currentOptions), currentOptions.defaultInputs, currentOptions === null || currentOptions === void 0 ? void 0 : currentOptions.manualInputs),
                 InputTables: this.ui.getInputTables(),
                 Configuration: {
                     CalcEngine: currentOptions.calcEngine,
@@ -2553,7 +2561,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
         StandardTemplateBuilder.prototype.buildDropdowns = function (view) {
             var dropdowns = $('[rbl-tid="input-dropdown"],[rbl-template-type="katapp-dropdown"]', view);
             var selectPickerAvailable = typeof $.fn.selectpicker === "function";
-            if (selectPickerAvailable && dropdowns.length > 0) {
+            if (!selectPickerAvailable && dropdowns.length > 0) {
                 this.application.trace("bootstrap-select javascript is not present.", TraceVerbosity.None);
             }
             dropdowns.not('[data-katapp-initialized="true"]').each(function () {

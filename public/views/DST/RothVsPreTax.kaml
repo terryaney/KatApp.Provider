@@ -1,0 +1,221 @@
+<rbl-config calcengine="Buck_DecisionSupport_RothvsPretax_SE" templates="Standard_Templates"></rbl-config>
+
+<style>
+	.kat-app-css .conversionCharts div.chart { height: 200px; }
+</style>
+
+<div class="col-xs-12 visible-xs no-padding navbar-fixed-bottom">
+	<a href="javascript: void(0);" class="btn-mobile-assumptions">
+		<div class="text-center">
+			<span class="glyphicon glyphicon-triangle-top"></span>
+			<p>Assumptions</p>
+		</div>
+	</a>
+</div>
+
+<div class="modeling ajaxContent">
+	<div class="col-sm-6 col-md-4">
+		<div class="modelingInputs navTabsCollapsible">
+			<div class="modelingInputsInner">
+				<div class="matchHeight panel panel-default text-sm">
+					<div class="panel-heading">Assumptions</div>
+					<div class="panel-body">
+						<div class="row RBLe">
+							<div rbl-tid="input-textbox" data-type="date" data-css="col-sm-12" data-inputname="iDateBirth"></div>
+							<div rbl-tid="input-textbox" data-type="date" data-css="col-sm-12" data-inputname="iDateParticipation"></div>
+							<div rbl-tid="input-dropdown" data-css="col-sm-12" data-inputname="iCompanyCode"></div>
+							<div rbl-tid="input-textbox" data-type="date" data-css="col-sm-12" data-inputname="iDateTerm"></div>
+							<div rbl-tid="input-textbox" data-type="date" data-css="col-sm-12" data-inputname="iDateBenComm"></div>
+							<div rbl-tid="input-textbox" data-prefix="$" data-css="col-sm-12" data-inputname="iSalary"></div>
+							<div rbl-tid="input-slider" data-css="col-sm-12" data-inputname="iSalScale"></div>
+							<div rbl-tid="input-textbox" data-prefix="$" data-css="col-sm-12" data-inputname="iTargetPrecentage"></div>
+							<div rbl-tid="input-slider" data-css="col-sm-12" data-inputname="iPretaxRothCont"></div>
+							<div rbl-tid="input-slider" data-css="col-sm-12" data-inputname="iAftertax"></div>
+							<div rbl-tid="input-slider" data-css="col-sm-12" data-inputname="iCatchupPre"></div>
+							<div rbl-tid="input-slider" data-css="col-sm-12" data-inputname="iCatchupPost"></div>
+							<div rbl-tid="input-slider" data-css="col-sm-12" data-inputname="iReturn"></div>
+							<div rbl-tid="input-textbox" data-prefix="$" data-css="col-sm-12" data-inputname="iCurBal"></div>
+							<div rbl-tid="input-textbox" data-prefix="$" data-css="col-sm-12" data-inputname="iCurBalRoth"></div>
+							<div rbl-tid="input-textbox" data-type="date" data-css="col-sm-12" data-inputname="iDateBalance"></div>
+							<div rbl-tid="input-slider" data-css="col-sm-12" data-inputname="iTaxNow"></div>
+							<div class="modal fade hiTaxNowModal" tabindex="-1" role="dialog">
+								<div class="modal-dialog modal-lg">
+									<div class="modal-content">
+										<div class="modal-header">
+											<button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+											<h4 class="modal-title hiTaxNowTitle"></h4>
+										</div>
+										<div class="modal-body hiTaxNow"></div>
+										<div class="modal-footer">
+											<button type="button" class="btn btn-default" data-dismiss="modal">OK</button>
+										</div>
+									</div>
+								</div>
+							</div>
+							<div rbl-tid="input-slider" data-css="col-sm-12" data-inputname="iTaxRet"></div>
+							<div class="modal fade hiTaxRetModal" tabindex="-1" role="dialog">
+								<div class="modal-dialog modal-lg">
+									<div class="modal-content">
+										<div class="modal-header">
+											<button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+											<h4 class="modal-title hiTaxRetTitle"></h4>
+										</div>
+										<div class="modal-body hiTaxRet"></div>
+										<div class="modal-footer">
+											<button type="button" class="btn btn-default" data-dismiss="modal">OK</button>
+										</div>
+									</div>
+								</div>
+							</div>
+							<div rbl-tid="input-slider" data-css="col-sm-12" data-inputname="iTaxGains"></div>
+							<div rbl-tid="input-dropdown" data-css="col-sm-12" data-inputname="iTaxSavingsInvestment"></div>
+							<div rbl-tid="input-textbox" data-prefix="$" data-css="col-sm-12" data-inputname="iYTDEarns"></div>
+							<div rbl-tid="input-textbox" data-prefix="$" data-css="col-sm-12" data-inputname="iYTDTrad"></div>
+							<div rbl-tid="input-textbox" data-prefix="$" data-css="col-sm-12" data-inputname="iYTDRoth"></div>
+							<div rbl-tid="input-textbox" data-prefix="$" data-css="col-sm-12" data-inputname="iYTDCatchUp"></div>
+							<div rbl-tid="input-textbox" data-prefix="$" data-css="col-sm-12" data-inputname="iYTDCatchUpRoth"></div>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
+	<div class="col-md-8">
+		<ul class="nav nav-tabs nav-mobile" role="tablist">
+			<li role="presentation" class="col-xs-4 active"><a href="#paneRothVsTraditional" role="tab" data-toggle="tab" class="text-center">Withdrawal at Retirement</a></li>
+			<li role="presentation" class="col-xs-4"><a href="#paneAffectOnTakeHomePay" role="tab" data-toggle="tab" class="text-center">Annual Take-Home Pay</a></li>
+			<li role="presentation" class="col-xs-4"><a href="#paneInServiceConversion" role="tab" data-toggle="tab" class="text-center">In-Service Conversion</a></li>
+		</ul>
+		<div class="tab-content">
+			<div role="tabpanel" class="tab-pane fade in active" id="paneRothVsTraditional">
+				<div class="row match-height">
+					<div class="col-sm-4"><div rbl-tid="chart-highcharts" rbl-chartdata="wPreTax"></div></div>
+					<div class="col-sm-4"><div rbl-tid="chart-highcharts" rbl-chartdata="wBlend"></div></div>
+					<div class="col-sm-4"><div rbl-tid="chart-highcharts" rbl-chartdata="wRoth"></div></div>
+					<div class="text-center">
+						<p><a href="#" class="toggleCompare"><b>Show Details</b></a></p>
+					</div>
+					<div class="toggleCompareTarget col-sm-12" style="display: none;">
+						<div rbl-tid="result-table" rbl-tablename="compare"></div>
+					</div>
+				</div>
+			</div>
+			<div role="tabpanel" class="tab-pane fade" id="paneAffectOnTakeHomePay">
+				<div class="row match-height">
+					<div class="col-sm-4"><div rbl-tid="chart-highcharts" rbl-chartdata="tPreTax"></div></div>
+					<div class="col-sm-4"><div rbl-tid="chart-highcharts" rbl-chartdata="tBlend"></div></div>
+					<div class="col-sm-4"><div rbl-tid="chart-highcharts" rbl-chartdata="tRoth"></div></div>
+					<div class="text-center">
+						<p><a href="#" class="toggleTakeHome"><b>Show Details</b></a></p>
+					</div>
+					<div class="toggleTakeHomeTarget col-sm-12" style="display: none;">
+						<div rbl-tid="result-table" rbl-tablename="take-home-pay"></div>
+					</div>
+				</div>
+			</div>
+			<div role="tabpanel" class="tab-pane fade" id="paneInServiceConversion">
+				<div class="">
+					<div class="row conversionCharts">
+						<div class="col-xs-6 col-sm-4">
+							<div rbl-tid="chart-highcharts" rbl-chartdata="Convert"></div>
+						</div>
+						<div class="col-xs-6 col-sm-4">
+							<div rbl-tid="chart-highcharts" rbl-chartdata="NoConvert"></div>
+						</div>
+						<div class="col-sm-4">
+							<div class="alert alert-warning conversionInfo" role="alert"></div>
+						</div>
+						<div class="col-sm-8">
+							<div rbl-tid="input-slider" data-inputname="iConversionAmount"></div>
+						</div>
+						<div class="col-sm-12">
+							<div rbl-tid="result-table" rbl-tablename="conversion"></div>
+						</div>
+					</div>
+				</div>
+			</div>
+			<div class="ajaxloader"></div>
+		</div>
+	</div>
+</div>
+
+<div class="row">
+    <div class="col-xs-12">
+        <div rbl-tid="validation-summary"></div>
+    </div>
+</div>
+
+<script>
+	(function() {
+		const view = $("{thisView}");
+
+		if ( view.data("debugger" ) == true ) {
+			debugger;
+		}
+
+		$("a.vhiTaxNow, a.vhiTaxRet", view).removeAttr("onclick data-toggle data-trigger data-placement data-content-selector").click(function () {
+			$($(this).hasClass("vhiTaxNow") ? ".hiTaxNowModal" : ".hiTaxRetModal").modal();
+		});
+
+
+		view.on( "onInitialized.RBLe", function( event, application ) {
+
+			// Since KatApp is being shown in a 'modal/blocker' with position of absolute, I need to set this
+			// z-index so that it doesn't appear behind the blocker: 
+			$(".hiTaxNowModal, .hiTaxRetModal", view).on("shown.bs.modal", function() {
+				$(".modal-backdrop.fade.in").css("z-index", "-1");
+			});
+
+			$(".toggleCompare, .toggleTakeHome", view).click(function () {
+				if ($(this).hasClass("toggleCompare")) {
+					$(".toggleCompareTarget").toggle();
+				} else {
+					$(".toggleTakeHomeTarget").toggle();
+				}
+
+				if ($(this).hasClass("details")) {
+					$(this).removeClass("details")
+						.html("<b>Show Details</b>");
+				}
+				else {
+					$(this).addClass("details")
+						.html("<b>Hide Details</b>");
+				}
+			});
+
+			$('.btn-mobile-assumptions', view).on('click', function () {
+				if ($(".btn-mobile-assumptions .glyphicon", view).hasClass("glyphicon-triangle-top")) {
+					$(".btn-mobile-assumptions .glyphicon", view)
+						.removeClass("glyphicon-triangle-top")
+						.addClass("glyphicon-triangle-bottom");
+					$('body').addClass('mobile-assumptions');
+				} else {
+					$(".btn-mobile-assumptions .glyphicon", view)
+						.removeClass("glyphicon-triangle-bottom")
+						.addClass("glyphicon-triangle-top");
+					$('body').removeClass('mobile-assumptions');
+				}
+			});
+
+			if ( $.fn.matchHeight !== undefined ) {
+				$(".match-height", view).matchHeight({ property: 'height' });
+				$.fn.matchHeight._maintainScroll = true;
+			}
+
+			view.on( "onCalculation.RBLe", function( event, calculationResults, calcOptions, application ) {
+				$(".compare, .take-home-pay, .conversion", view).empty(); // In case not returned from the CalcEngine, they want it blank
+
+				if ( $.fn.matchHeight !== undefined ) {
+					// Doesn't look like I can only call 'update' to match height items within my view, so this will update
+					// all and any match heights applied on page, but my bindings were set scoped to my view, so it should
+					// not have adverse affects.  The project page mentioned that match heights can be achieved in modern
+					// browsers by using CSS Flexbox and CSS Grid instead.  So could look at that.
+					$.fn.matchHeight._update();
+				}
+			});
+
+
+		});
+	})();
+	//# sourceURL=RothVsPreTax.kaml
+</script>

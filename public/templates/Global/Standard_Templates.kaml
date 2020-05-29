@@ -61,6 +61,10 @@
 <rbl-template tid="result-table">
 </rbl-template>
 
+<rbl-template tid="chart-highcharts" type="katapp-highcharts">
+  <div class="chart chart-responsive"></div>
+</rbl-template>
+
 <!-- Input templates -->
 <!--
   Should I process similiar 'data-*' items as Bootstrap* server controls?
@@ -153,10 +157,6 @@
     <div class="h{inputname}Title" style="display: none;"></div>
     <div class="h{inputname}" style="display: none;"></div>
   </div>
-</rbl-template>
-
-<rbl-template tid="chart-highcharts" type="katapp-highcharts">
-  <div class="chart chart-responsive"></div>
 </rbl-template>
 
 <script>

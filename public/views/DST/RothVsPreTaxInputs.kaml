@@ -1,0 +1,61 @@
+<rbl-config calcengine="Buck_DecisionSupport_RothvsPretax_SE" templates="Standard_Templates"></rbl-config>
+
+<div class="page-header"><h1>Initial Inputs</h1></div>
+<div class="row">
+	<div class="col-sm-12">
+		<div class="alert alert-warning" role="alert">
+			<p><b>We need a few pieces of information to start your analysis. You will be able to change these inputs, along with additional inputs to reflect your situation, once you enter the tool.</b></p>
+		</div>
+	</div>
+</div>
+
+<div class="hidden">
+	<input name="iInitialInputs" class="iInitialInputs" value="1"/>
+</div>
+
+<div class="ajaxContent rbl-nocalc">
+    <div class="row">
+	    <div class="col-sm-6">
+			<div rbl-tid="input-textbox" data-inputname="iDateBirth" data-type="date"></div>
+			<div rbl-tid="input-textbox" data-prefix="$" data-inputname="iSalary"></div>
+	    </div>
+	    <div class="col-sm-6">
+			<div rbl-tid="input-textbox" data-prefix="$" data-inputname="iTargetPercentage"></div>
+			<div rbl-tid="input-textbox" data-inputname="iSecurityPin"></div>
+	    </div>
+    </div>
+	<div class="ajaxloader"></div>
+</div>
+
+<div class="row">
+	<div class="col-xs-12 margin-bottom-md">
+		<div><a class="lnkContinue btn btn-primary">Continue</a></div>
+	</div>
+    <div class="col-xs-12">
+        <div rbl-tid="validation-summary"></div>
+    </div>
+</div>
+
+<script>
+	(function() {
+		const view = $("{thisView}");
+
+		if ( view.data("debugger" ) == true ) {
+			debugger;
+		}
+
+		view.on( "onInitialized.RBLe", function( event, application ) {
+			$(".lnkContinue", view).click(function() {
+				$(".iInitialInputs").trigger("change");
+			});
+		}).on( "onCalculation.RBLe", function( event, calculationResults, calcOptions, application ) {
+			if ( calculationResults[ "errors"] === undefined && application.calculationInputs.iInputTrigger === "iInitialInputs" ) {
+				application.element.KatApp({ 
+					view: "DST:RothVsPreTax",
+					defaultInputs: application.calculationInputs
+				});
+			}
+		});
+	})();
+	//# sourceURL=LifeInputs.kaml
+</script>

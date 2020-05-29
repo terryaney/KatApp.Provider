@@ -46,7 +46,7 @@
 
 		view.on( "onInitialized.RBLe", function( event, application ) {
 			$(".lnkContinue", view).click(function() {
-				$(".iInitialInputs").trigger("change");
+				$(".iInitialInputs", view).trigger("change");
 			});
 		}).on( "onCalculation.RBLe", function( event, calculationResults, calcOptions, application ) {
 			if ( calculationResults[ "errors"] === undefined && application.calculationInputs.iInputTrigger === "iInitialInputs" ) {

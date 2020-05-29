@@ -752,6 +752,9 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                         that.element.removeData("katapp-trace-calcengine");
                         that.element.removeData("katapp-refresh-calcengine");
                         that.options.defaultInputs = undefined;
+
+
+                        that.ui.triggerEvent( "onResultsProcessing", that.results, currentOptions, that );
                         that.rble.processResults();
 
                        if ( that.calculationInputs?.iConfigureUI === 1 ) {
@@ -768,7 +771,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                         that.ui.triggerEvent( "onCalculationErrors", "RunCalculation", pipelineError, that.exception, currentOptions, that );
                     }
                 } catch (error) {
-                    that.trace( "Error during result processing: " + error, TraceVerbosity.Quiet );
+                    that.trace( "Error during result processing: " + error, TraceVerbosity.None );
                     that.ui.triggerEvent( "onCalculationErrors", "RunCalculation", error, that.exception, currentOptions, that );
                 }
                 finally {
@@ -1876,7 +1879,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                 if ( tableName !== null ) {
                     const configRow = application.getResultTable<ContentsRow>( "contents" ).filter( r => r.section === "1" && KatApp.stringCompare( r.type, "table", true ) === 0 && r.item === tableName ).shift();
                     const configCss = configRow?.class;
-                    let tableCss = configCss !== undefined
+                    let tableCss = configCss === undefined
                         ? "table table-striped table-bordered table-condensed rbl " + tableName
                         : "rbl " + tableName + " " + configCss;
     

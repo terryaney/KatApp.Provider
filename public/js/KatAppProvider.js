@@ -624,6 +624,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                         that.element.removeData("katapp-trace-calcengine");
                         that.element.removeData("katapp-refresh-calcengine");
                         that.options.defaultInputs = undefined;
+                        that.ui.triggerEvent("onResultsProcessing", that.results, currentOptions, that);
                         that.rble.processResults();
                         if (((_a = that.calculationInputs) === null || _a === void 0 ? void 0 : _a.iConfigureUI) === 1) {
                             that.ui.triggerEvent("onConfigureUICalculation", that.results, currentOptions, that);
@@ -638,7 +639,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                     }
                 }
                 catch (error) {
-                    that.trace("Error during result processing: " + error, TraceVerbosity.Quiet);
+                    that.trace("Error during result processing: " + error, TraceVerbosity.None);
                     that.ui.triggerEvent("onCalculationErrors", "RunCalculation", error, that.exception, currentOptions, that);
                 }
                 finally {
@@ -1570,7 +1571,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                 if (tableName !== null) {
                     var configRow = application.getResultTable("contents").filter(function (r) { return r.section === "1" && KatApp.stringCompare(r.type, "table", true) === 0 && r.item === tableName; }).shift();
                     var configCss = configRow === null || configRow === void 0 ? void 0 : configRow.class;
-                    var tableCss = configCss !== undefined
+                    var tableCss = configCss === undefined
                         ? "table table-striped table-bordered table-condensed rbl " + tableName
                         : "rbl " + tableName + " " + configCss;
                     var tableRows = application.getResultTable(tableName);

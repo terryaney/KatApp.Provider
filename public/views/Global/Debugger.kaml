@@ -61,6 +61,7 @@
                 <option value="DST:HSATax">DST - HSA Tax Savings</option>
                 <option value="DST:IRP">DST - Income Replacement Percentage (IRP) Calculator</option>
                 <option value="DST:LifeInputs">DST - Life Insurance Calculator</option>
+                <option value="DST:RothVsPreTaxInputs">DST - Roth vs PreTax Calculator</option>
             </select>
         </div>
         <div class="form-group vCustomView col-sm-6">

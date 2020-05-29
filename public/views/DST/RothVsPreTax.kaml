@@ -28,7 +28,7 @@
 							<div rbl-tid="input-textbox" data-type="date" data-css="col-sm-12" data-inputname="iDateBenComm"></div>
 							<div rbl-tid="input-textbox" data-prefix="$" data-css="col-sm-12" data-inputname="iSalary"></div>
 							<div rbl-tid="input-slider" data-css="col-sm-12" data-inputname="iSalScale"></div>
-							<div rbl-tid="input-textbox" data-prefix="$" data-css="col-sm-12" data-inputname="iTargetPrecentage"></div>
+							<div rbl-tid="input-textbox" data-prefix="$" data-css="col-sm-12" data-inputname="iTargetPercentage"></div>
 							<div rbl-tid="input-slider" data-css="col-sm-12" data-inputname="iPretaxRothCont"></div>
 							<div rbl-tid="input-slider" data-css="col-sm-12" data-inputname="iAftertax"></div>
 							<div rbl-tid="input-slider" data-css="col-sm-12" data-inputname="iCatchupPre"></div>
@@ -89,9 +89,9 @@
 		<div class="tab-content">
 			<div role="tabpanel" class="tab-pane fade in active" id="paneRothVsTraditional">
 				<div class="row match-height">
-					<div class="col-sm-4"><div rbl-tid="chart-highcharts" rbl-chartdata="wPreTax"></div></div>
-					<div class="col-sm-4"><div rbl-tid="chart-highcharts" rbl-chartdata="wBlend"></div></div>
-					<div class="col-sm-4"><div rbl-tid="chart-highcharts" rbl-chartdata="wRoth"></div></div>
+					<div class="col-sm-4"><div rbl-tid="chart-highcharts" rbl-chartdata="wPreTax" rbl-chartoptions="NoConvert"></div></div>
+					<div class="col-sm-4"><div rbl-tid="chart-highcharts" rbl-chartdata="wBlend" rbl-chartoptions="NoConvert"></div></div>
+					<div class="col-sm-4"><div rbl-tid="chart-highcharts" rbl-chartdata="wRoth" rbl-chartoptions="NoConvert"></div></div>
 					<div class="text-center">
 						<p><a href="#" class="toggleCompare"><b>Show Details</b></a></p>
 					</div>
@@ -102,9 +102,9 @@
 			</div>
 			<div role="tabpanel" class="tab-pane fade" id="paneAffectOnTakeHomePay">
 				<div class="row match-height">
-					<div class="col-sm-4"><div rbl-tid="chart-highcharts" rbl-chartdata="tPreTax"></div></div>
-					<div class="col-sm-4"><div rbl-tid="chart-highcharts" rbl-chartdata="tBlend"></div></div>
-					<div class="col-sm-4"><div rbl-tid="chart-highcharts" rbl-chartdata="tRoth"></div></div>
+					<div class="col-sm-4"><div rbl-tid="chart-highcharts" rbl-chartdata="tPreTax" rbl-chartoptions="NoConvert"></div></div>
+					<div class="col-sm-4"><div rbl-tid="chart-highcharts" rbl-chartdata="tBlend" rbl-chartoptions="NoConvert"></div></div>
+					<div class="col-sm-4"><div rbl-tid="chart-highcharts" rbl-chartdata="tRoth" rbl-chartoptions="NoConvert"></div></div>
 					<div class="text-center">
 						<p><a href="#" class="toggleTakeHome"><b>Show Details</b></a></p>
 					</div>
@@ -117,7 +117,7 @@
 				<div class="">
 					<div class="row conversionCharts">
 						<div class="col-xs-6 col-sm-4">
-							<div rbl-tid="chart-highcharts" rbl-chartdata="Convert"></div>
+							<div rbl-tid="chart-highcharts" rbl-chartdata="Convert" rbl-chartoptions="NoConvert"></div>
 						</div>
 						<div class="col-xs-6 col-sm-4">
 							<div rbl-tid="chart-highcharts" rbl-chartdata="NoConvert"></div>
@@ -153,12 +153,18 @@
 			debugger;
 		}
 
-		$("a.vhiTaxNow, a.vhiTaxRet", view).removeAttr("onclick data-toggle data-trigger data-placement data-content-selector").click(function () {
-			$($(this).hasClass("vhiTaxNow") ? ".hiTaxNowModal" : ".hiTaxRetModal").modal();
-		});
-
 
 		view.on( "onInitialized.RBLe", function( event, application ) {
+			$("a.vhiTaxNow, a.vhiTaxRet", view)
+				.off(".RBLe")
+				.removeAttr("onclick data-toggle data-trigger data-placement data-content-selector data-katapp-initialized-tooltip")
+				.click(function () {
+					$($(this).hasClass("vhiTaxNow") ? ".hiTaxNowModal" : ".hiTaxRetModal").modal();
+				});
+
+			if ( typeof $.fn.popover === "function" ) {
+                $("a.vhiTaxNow, a.vhiTaxRet", view).popover("destroy");
+            }
 
 			// Since KatApp is being shown in a 'modal/blocker' with position of absolute, I need to set this
 			// z-index so that it doesn't appear behind the blocker: 
@@ -202,17 +208,19 @@
 				$.fn.matchHeight._maintainScroll = true;
 			}
 
-			view.on( "onCalculation.RBLe", function( event, calculationResults, calcOptions, application ) {
-				$(".compare, .take-home-pay, .conversion", view).empty(); // In case not returned from the CalcEngine, they want it blank
-
-				if ( $.fn.matchHeight !== undefined ) {
-					// Doesn't look like I can only call 'update' to match height items within my view, so this will update
-					// all and any match heights applied on page, but my bindings were set scoped to my view, so it should
-					// not have adverse affects.  The project page mentioned that match heights can be achieved in modern
-					// browsers by using CSS Flexbox and CSS Grid instead.  So could look at that.
-					$.fn.matchHeight._update();
-				}
-			});
+			view
+				.on( "onResultsProcessing.RBLe", function( event, calculationResults, calcOptions, application ) {
+					$(".compare, .take-home-pay, .conversion", view).empty(); // In case not returned from the CalcEngine, they want it blank
+				})
+				.on( "onCalculation.RBLe", function( event, calculationResults, calcOptions, application ) {
+					if ( $.fn.matchHeight !== undefined ) {
+						// Doesn't look like I can only call 'update' to match height items within my view, so this will update
+						// all and any match heights applied on page, but my bindings were set scoped to my view, so it should
+						// not have adverse affects.  The project page mentioned that match heights can be achieved in modern
+						// browsers by using CSS Flexbox and CSS Grid instead.  So could look at that.
+						$.fn.matchHeight._update();
+					}
+				});
 
 
 		});

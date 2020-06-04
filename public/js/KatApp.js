@@ -230,7 +230,7 @@ var KatApp = /** @class */ (function () {
         getResourcesPipeline();
     };
     KatApp.functionUrl = "https://btr.lifeatworkportal.com/services/evolution/CalculationFunction.ashx";
-    KatApp.corsUrl = "https://secure.conduentapplications.com/services/rbl/rbleproxy/RBLeCORS.ashx";
+    KatApp.sessionUrl = "https://btr.lifeatworkportal.com/services/evolution/Calculation.ashx";
     KatApp.pageParameters = KatApp.readPageParameters();
     // Default Options (shim, rest of the options/features added from server plugin)
     KatApp.defaultOptions = {
@@ -240,7 +240,7 @@ var KatApp = /** @class */ (function () {
             useTestView: KatApp.pageParameters["testview"] === "1",
             saveFirstCalculationLocation: KatApp.pageParameters["save"]
         },
-        functionUrl: KatApp.functionUrl,
+        functionUrl: KatApp.functionUrl
     };
     // https://stackoverflow.com/a/2117523
     KatApp.generateId = function () {

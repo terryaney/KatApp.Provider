@@ -34,7 +34,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
         },
         shareDataWithOtherApplications: true,
         functionUrl: KatApp.functionUrl,
-        corsUrl: KatApp.corsUrl,
+        sessionUrl: KatApp.sessionUrl,
         currentPage: "Unknown1",
         inputSelector: "input, textarea, select",
         inputTab: "RBLInput",
@@ -83,7 +83,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                 History: {}
             });
         }
-    }, KatApp.defaultOptions);
+    }, KatApp.defaultOptions /* default options already set */);
     var KatAppPlugIn /* implements KatAppPlugInInterface */ = /** @class */ (function () {
         function KatAppPlugIn(id, element, options) {
             var _a;
@@ -115,7 +115,10 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
             attributeOptions, // data attribute options have next precedence
             // If at time of constructor call the default options or options passed in has a registerData 
             // delegate assigned, then change the default value of this property
-            { registerDataWithService: KatApp.defaultOptions.registerData !== undefined || (options === null || options === void 0 ? void 0 : options.registerData) !== undefined }, options // finally js options override all
+            {
+                registerDataWithService: KatApp.defaultOptions.registerData !== undefined || (options === null || options === void 0 ? void 0 : options.registerData) !== undefined || ((options === null || options === void 0 ? void 0 : options.registeredToken) !== undefined),
+                shareDataWithOtherApplications: (options === null || options === void 0 ? void 0 : options.registeredToken) === undefined
+            }, options // finally js options override all
             );
             var saveFirstCalculationLocation = (_c = this.options.debug) === null || _c === void 0 ? void 0 : _c.saveFirstCalculationLocation;
             if (saveFirstCalculationLocation !== undefined && saveFirstCalculationLocation !== "1") {
@@ -984,7 +987,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                     TransactionPackage: JSON.stringify(calculationOptions)
                 };
                 var jsonParams = {
-                    url: KatApp.corsUrl,
+                    url: KatApp.sessionUrl,
                     type: "POST",
                     processData: false,
                     data: JSON.stringify(json),
@@ -1082,7 +1085,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
             };
             var submit = (_k = currentOptions.submitCalculation) !== null && _k !== void 0 ? _k : function (_app, o, done, fail) {
                 $.ajax({
-                    url: currentOptions.registerDataWithService ? currentOptions.corsUrl : currentOptions.functionUrl,
+                    url: currentOptions.registerDataWithService ? currentOptions.sessionUrl : currentOptions.functionUrl,
                     data: JSON.stringify(o),
                     method: "POST",
                     dataType: "json",

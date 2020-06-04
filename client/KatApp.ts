@@ -11,7 +11,7 @@ enum TraceVerbosity
 class KatApp
 {
     static functionUrl = "https://btr.lifeatworkportal.com/services/evolution/CalculationFunction.ashx";
-    static corsUrl = "https://secure.conduentapplications.com/services/rbl/rbleproxy/RBLeCORS.ashx";
+    static sessionUrl = "https://btr.lifeatworkportal.com/services/evolution/Calculation.ashx";
 
     static stringCompare(strA: string, strB: string, ignoreCase: boolean): number {
         if (strA === undefined && strB === undefined) {
@@ -60,7 +60,7 @@ class KatApp
             useTestView: KatApp.pageParameters[ "testview" ] === "1",
             saveFirstCalculationLocation: KatApp.pageParameters[ "save" ]
         },
-        functionUrl: KatApp.functionUrl,
+        functionUrl: KatApp.functionUrl
     };
     
     // https://blog.logrocket.com/4-different-techniques-for-copying-objects-in-javascript-511e422ceb1e/

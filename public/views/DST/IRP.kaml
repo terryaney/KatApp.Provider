@@ -232,8 +232,8 @@
 				}
 			}).trigger("change");
 
-			// Since IRP KatApp is being shown in a 'modal/blocker' with position of absolute, I need to set this z-index so
-			// that it doesn't appear behind the blocker: 
+			// Since IRP KatApp is being shown in a 'modal/blocker' with position of absolute, 
+			// I need to set this z-index so that it doesn't appear behind the blocker: 
 			$(".learnMoreModal, .modelingDefaultsModal, #iMedicalCostInflation-worksheet, #iAnnualFuturePayIncreaseRate-worksheet", view).on("shown.bs.modal", function() {
 				$(".modal-backdrop.fade.in").css("z-index", "-1");
 			});

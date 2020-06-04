@@ -39,14 +39,14 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
             },
             shareDataWithOtherApplications: true,
             functionUrl: KatApp.functionUrl,
-            corsUrl: KatApp.corsUrl,
+            sessionUrl: KatApp.sessionUrl,
             currentPage: "Unknown1",
             inputSelector: "input, textarea, select",
             inputTab: "RBLInput",
             resultTabs: ["RBLResult"],
             runConfigureUICalculation: true,
             ajaxLoaderSelector: ".ajaxloader",
-    
+                        
             onCalculateStart: function( application: KatAppPlugIn ) {
                 if ( application.options.ajaxLoaderSelector !== undefined ) {
                     $( application.options.ajaxLoaderSelector, application.element ).show();
@@ -93,7 +93,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                     History: {} as JSON
                 });
             }
-        } as KatAppOptions, KatApp.defaultOptions );
+        } as KatAppOptions, KatApp.defaultOptions /* default options already set */ );
 
 
     class KatAppPlugIn /* implements KatAppPlugInInterface */ {
@@ -145,7 +145,10 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
 
                 // If at time of constructor call the default options or options passed in has a registerData 
                 // delegate assigned, then change the default value of this property
-                { registerDataWithService: KatApp.defaultOptions.registerData !== undefined || options?.registerData !== undefined } as KatAppOptions,
+                { 
+                    registerDataWithService: KatApp.defaultOptions.registerData !== undefined || options?.registerData !== undefined || ( options?.registeredToken !== undefined ),
+                    shareDataWithOtherApplications: options?.registeredToken === undefined
+                } as KatAppOptions,
                 options // finally js options override all
             );
             
@@ -1191,7 +1194,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                     };
     
                     const jsonParams = {
-                        url: KatApp.corsUrl,
+                        url: KatApp.sessionUrl,
                         type: "POST",
                         processData: false,
                         data: JSON.stringify(json),
@@ -1308,7 +1311,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                 currentOptions.submitCalculation ??
                 function( _app, o, done, fail ): void {
                     $.ajax({
-                        url: currentOptions.registerDataWithService ? currentOptions.corsUrl : currentOptions.functionUrl,
+                        url: currentOptions.registerDataWithService ? currentOptions.sessionUrl : currentOptions.functionUrl,
                         data: JSON.stringify(o),
                         method: "POST",
                         dataType: "json",

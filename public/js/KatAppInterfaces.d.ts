@@ -9,7 +9,7 @@ interface KatAppOptions {
         useTestView?: boolean;
         useTestPlugin?: boolean;
     };
-    corsUrl?: string;
+    sessionUrl?: string;
     functionUrl?: string;
     registerDataWithService?: boolean;
     shareDataWithOtherApplications?: boolean;

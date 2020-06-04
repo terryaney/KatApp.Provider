@@ -18,7 +18,7 @@ interface KatAppOptions
         useTestPlugin?: boolean; // testPlugIn=1 querystring
     };
 
-    corsUrl?: string;
+    sessionUrl?: string;
     functionUrl?: string;
 
     registerDataWithService?: boolean;

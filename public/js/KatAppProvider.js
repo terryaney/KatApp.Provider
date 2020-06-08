@@ -420,6 +420,15 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
             this.ui.triggerEvent("onDestroyed", this);
             this.init(options);
         };
+        KatAppPlugIn.prototype.setRegisteredToken = function (token) {
+            var _a;
+            this.options.registeredToken = token;
+            if ((_a = this.options.shareDataWithOtherApplications) !== null && _a !== void 0 ? _a : false) {
+                var _sharedData = $.fn.KatApp.sharedData;
+                _sharedData.registeredToken = token;
+                this.options.sharedDataLastRequested = _sharedData.lastRequested = Date.now();
+            }
+        };
         KatAppPlugIn.prototype.calculate = function (customOptions) {
             var _a;
             var _sharedData = $.fn.KatApp.sharedData;
@@ -1881,7 +1890,9 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                         // If targetInput is present, then this is a 'wizard' slider so I need to see if 'main'
                         // input has been marked as a 'skip'.
                         var sliderCalcId = targetInput_1 || id;
-                        if ($("." + sliderCalcId + ".skipRBLe", application.element).length === 0 && $("." + sliderCalcId, application.element).parents(".skipRBLe").length === 0) {
+                        var processInput = $("." + sliderCalcId + ".skipRBLe, ." + sliderCalcId + ".rbl-nocalc", application.element).length === 0;
+                        var processParent = processInput && $("." + sliderCalcId, application.element).parents(".skipRBLe, .rbl-nocalc").length === 0;
+                        if (processParent) {
                             if (targetInput_1 === undefined /* never trigger run from wizard sliders */) {
                                 // Whenever 'regular' slider changes or is updated via set()...
                                 instance.on('set.RBLe', function () {
@@ -1994,9 +2005,16 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                 this.processRblValues();
                 // apply dynamic classes after all html updates (TOM: (this was your comment...) could this be done with 'non-template' build above)
                 markUpRows.forEach(function (r) {
+                    var _a;
                     if (r.selector !== undefined) {
                         if (r.addclass !== undefined && r.addclass.length > 0) {
-                            $(r.selector, application.element).addClass(r.addclass);
+                            var el = $(r.selector, application.element);
+                            el.addClass(r.addclass);
+                            if (r.addclass.indexOf("skipRBLe") > -1 || r.addclass.indexOf("rbl-nocalc") > -1) {
+                                el.off(".RBLe");
+                                $(":input", el).off(".RBLe");
+                                (_a = _this.ui.getNoUiSlider(r.selector.substring(1), application.element)) === null || _a === void 0 ? void 0 : _a.off('set.RBLe');
+                            }
                         }
                         if (r.removeclass !== undefined && r.removeclass.length > 0) {
                             $(r.selector, application.element).removeClass(r.addclass);

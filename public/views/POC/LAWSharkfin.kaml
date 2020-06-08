@@ -6,7 +6,7 @@
         <script>with debugger line as placeholder/sample</script>
 -->
 
-<rbl-config calcengine="Buck_CNDT_KA_SE" templates="Standard_Templates"></rbl-config>
+<rbl-config calcengine="Conduent_LAWSharkfin023_SE" templates="Standard_Templates"></rbl-config>
 
 <style>
     rbl-template,
@@ -16,6 +16,13 @@
     .saveSuccess, 
     .control-label > span:nth-of-type(2) 
         {display: none}
+    #alert-recalc {
+        position: relative; 
+        left: 50%;
+        top: 50%;
+        transform: translate(-50%, -50%);
+        z-index: 1000;
+    }
 
     .glyphicons-question-sign:before {
     content: "\E195";}
@@ -24,7 +31,11 @@
 
 </style>
 
-<div id="rblMarkup" class="container rblApplication rblMarkup" style="display: block;">
+<div class="progress">
+    <div class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" style="width: 100%"></div>
+</div>
+
+<div id="rblMarkup" class="container rblApplication rblMarkup" style="display: none;">
     <div class="row">
         <div class="col-md-6">
             <h4>Based upon your current inputs and assumptions:</h4>
@@ -66,7 +77,7 @@
                         <h4 class="alert-heading">Please Note</h4>
                         <p class="lRecalcNotice">Important! Your change will not be reflected until you click the Recalculate button</p>
                         <hr>
-                        <p><a class="recalcButton lRecalcButton btn btn-primary btn-sm" onclick="recalcDB()" data-action="recalc">Recalculate</a></p>
+                        <p><a class="recalcButton lRecalcButton btn btn-primary btn-sm" href="#" data-action="recalc">Recalculate</a></p>
                     </div>
                 </div>
             </div>
@@ -259,6 +270,7 @@
                 showRecalc();
                 return false;
             });
+
         });
 
         view.on( "onConfigureUICalculation.RBLe", function( event, results, options, application ) {
@@ -287,21 +299,34 @@
                 }
             });
 
+            debugger;
+            $(":input.rbl-nocalc", view).bind("change.RBLe", function() {
+                showRecalc();
+            });
+            $("input.rbl-nocalc").prev(".slider-control").each(function(index) {
+                var slider = $(this)[0];
+                slider.noUiSlider.on('set.RBLe', function() {
+                    showRecalc();
+                });
+            });
 
+            $(".progress", view).hide();
+            $(".rblMarkup", view).show();
         });
 
         function recalcDB() {
             var currentInputs = view.KatApp().getInputs();
+            $(".recalc-notice", view).hide();
             $.ajax({
                 url: pURL('/rks/benefits/services/sharkfin/db/reregister.htm'),
                 data: JSON.stringify(currentInputs),
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' }
             }).done( function( data ) {
-                view.KatApp("options").registeredToken = data.payload;
+                debugger;
+                view.KatApp().setRegisteredToken(data.payload);
                 view.KatApp("calculate");
-                $(".recalc-notice", view).hide(200);
-                $(".ajaxloader", view).hide(2000); //may not need this
+                $(".ajaxloader", view).hide(); //may not need this
             });
         };
 
@@ -319,7 +344,8 @@
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' }
                 }).done( function( data ) {
-                    if (data.payload.returnCode = 0) {
+                    debugger;
+                    if (data.payload.returnCode == 0) {
                         $(".saveSuccess", view).show(500).delay(7000).hide(500);
                     } else {
                         $(".saveError", view).show(500).delay(7000).hide(500);
@@ -330,8 +356,7 @@
         
         function showRecalc() {
             $(".ajaxloader", view).show();
-            $(".recalc-notice", view).show(200);
-            $("#alert-recalc", view).center();
+            $(".recalc-notice", view).show();
         };
     })();
 
@@ -343,7 +368,7 @@
 </script>
 
 <rbl-template tid="input-select"> <!--move some version of this 'simple' select to standard? -->
-    <div class="col-sm-12 v{inputname}" style="display: none;">
+    <div class="col-sm-12 v{inputname}" style="display_: none;">
         <div class="form-group">
             <div class="col-sm-8">
                 <label for="{inputname}" class="control-label l{inputname}">{inputname} Label</label>

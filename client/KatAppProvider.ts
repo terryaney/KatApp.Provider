@@ -144,8 +144,14 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                 attributeOptions, // data attribute options have next precedence
 
                 // If at time of constructor call the default options or options passed in has a registerData 
-                // delegate assigned, then change the default value of this property
+                // delegate assigned, then change the default value of this property (Not sure of my logic
+                // to set shareDataWithOtherApplications to false if there is a registeredToken, but maybe ok
+                // to require caller to explicitly set that option if they are passing in an already
+                // registered token)
                 { 
+                    // Set this property so that provider knows which URL to call to RBLe service (session/function)
+                    // and whether to pass in token/data appropriately.  Could probably eliminate this property and
+                    // have logic that figured out when needed, but this just made it easier
                     registerDataWithService: KatApp.defaultOptions.registerData !== undefined || options?.registerData !== undefined || ( options?.registeredToken !== undefined ),
                     shareDataWithOtherApplications: options?.registeredToken === undefined
                 } as KatAppOptions,
@@ -519,6 +525,16 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
             this.ui.unbindCalculationInputs();
             this.ui.triggerEvent( "onDestroyed", this );
             this.init( options );
+        }
+
+        setRegisteredToken( token: string ): void {
+            this.options.registeredToken = token;
+
+            if ( this.options.shareDataWithOtherApplications ?? false ) {
+                const _sharedData = $.fn.KatApp.sharedData;
+                _sharedData.registeredToken = token;
+                this.options.sharedDataLastRequested = _sharedData.lastRequested = Date.now();                
+            }
         }
 
         calculate( customOptions?: KatAppOptions ): void {
@@ -2269,8 +2285,10 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                         // input has been marked as a 'skip'.
                         const sliderCalcId = targetInput || id;
 
-                        if ($("." + sliderCalcId + ".skipRBLe", application.element).length === 0 && $("." + sliderCalcId, application.element).parents(".skipRBLe").length === 0) {
-        
+                        const processInput = $("." + sliderCalcId + ".skipRBLe, ." + sliderCalcId + ".rbl-nocalc", application.element).length === 0;
+                        const processParent = processInput && $("." + sliderCalcId, application.element).parents(".skipRBLe, .rbl-nocalc").length === 0
+
+                        if ( processParent ) {
                             if (targetInput === undefined /* never trigger run from wizard sliders */) {
         
                                 // Whenever 'regular' slider changes or is updated via set()...
@@ -2403,7 +2421,14 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                 markUpRows.forEach( r => {
                     if ( r.selector !== undefined ) {
                         if ( r.addclass !== undefined && r.addclass.length > 0 ) {
-                            $(r.selector, application.element).addClass(r.addclass);
+                            const el = $(r.selector, application.element);
+                            el.addClass(r.addclass);
+
+                            if ( r.addclass.indexOf("skipRBLe") > -1 || r.addclass.indexOf("rbl-nocalc") > -1 ) {
+                                el.off(".RBLe");
+                                $(":input", el).off(".RBLe");
+                                this.ui.getNoUiSlider(r.selector.substring(1), application.element)?.off('set.RBLe');
+                            }
                         }
     
                         if ( r.removeclass !== undefined && r.removeclass.length > 0 ) {

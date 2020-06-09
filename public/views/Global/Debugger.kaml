@@ -128,6 +128,12 @@
                     <label for="UseLocalFiles">Use local View/Template files</label>
                 </span>
             </div>
+            <div class="validator-container checkbox-container vUseLocalProvider">
+                <span class="checkbox abc-checkbox UseLocalProvider lUseLocalProvider">
+                    <input id="UseLocalProvider" type="checkbox" name="UseLocalProvider">
+                    <label for="UseLocalProvider">Use local KatAppProvider file</label>
+                </span>
+            </div>
         </div>
         <div class="col-sm-12" style="padding-top: 10px;">
             <a class="btn btn-primary UpdateDebugOptions">Update</a>
@@ -206,7 +212,7 @@
 
                     $(".toast", view).html("<p><b>Save Next CalcEngine...</b></p><p>Next calculation will be saved to " + location + " secure file location.</p>").slideDown();
                     window.setTimeout(function() {
-                        $(".toast").slideUp();
+                        $(".toast", view).slideUp();
                     }, 2500);
                 }
             })
@@ -249,11 +255,12 @@
                 const debugOptions = { 
                     saveFirstCalculationLocation: initialSaveLocation !== "" ? initialSaveLocation : undefined,
                     refreshCalcEngine: true,
-                    traceVerbosity: Number($("#traceLevel").val()),
-                    useTestView: $("#UseTestView").prop("checked"),
-                    useTestPlugin: $("#UseTestPlugin").prop("checked"),
-                    useTestCalcEngine: $("#UseTestCalcEngine").prop("checked"),
-                    debugResourcesDomain: $("#UseLocalFiles").prop("checked") ? "http://localhost:8887/" /* start at root of site */ : undefined,
+                    traceVerbosity: Number($("#traceLevel", view).val()),
+                    useTestView: $("#UseTestView", view).prop("checked"),
+                    useTestPlugin: $("#UseTestPlugin", view).prop("checked"),
+                    useTestCalcEngine: $("#UseTestCalcEngine", view).prop("checked"),
+                    debugResourcesDomain: $("#UseLocalFiles", view).prop("checked") ? "http://localhost:8887/" /* start at root of site */ : undefined,
+                    debugProviderDomain: $("#UseLocalProvider", view).prop("checked") ? "http://localhost:8887/" /* start at root of site */ : undefined,                    
                 };
                 KatApp.defaultOptions = KatApp.extend( KatApp.defaultOptions, { debug: debugOptions, functionUrl: KatApp.functionUrl } );
 
@@ -313,7 +320,7 @@
                 }
             });
 
-            $("#UseLocalFiles", view).prop("checked", KatApp.pageParameters[ "localdebugger"] === "1")
+            $("#UseLocalFiles, #UseLocalProvider", view).prop("checked", KatApp.pageParameters[ "localdebugger"] === "1")
             $("#UseTestView", view).prop("checked", KatApp.pageParameters[ "testview"] === "1")
             $("#UseTestPlugin", view).prop("checked", KatApp.pageParameters[ "testplugin"] === "1")
             $("#UseTestCalcEngine", view).prop("checked", KatApp.pageParameters[ "test"] === "1")
@@ -324,6 +331,9 @@
             if ( $("#UseLocalFiles", view).prop("checked") ) {
                 KatApp.defaultOptions.debug.debugResourcesDomain = "http://localhost:8887/";
             }
+            if ( $("#UseLocalProvider", view).prop("checked") ) {
+                KatApp.defaultOptions.debug.debugProviderDomain = "http://localhost:8887/";
+            }            
         });
     })();
     //# sourceURL=Debugger.kaml

@@ -11,6 +11,7 @@ interface KatAppOptions
     debug?: {
         traceVerbosity?: TraceVerbosity;
         debugResourcesDomain?: string;
+        debugProviderDomain?: string;
         saveFirstCalculationLocation?: string;        
         refreshCalcEngine?: boolean; // expireCE=1 querystring
         useTestCalcEngine?: boolean; // test=1 querystring

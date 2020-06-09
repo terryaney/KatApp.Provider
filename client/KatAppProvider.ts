@@ -22,7 +22,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
 (function($, window, document, undefined?: undefined): void {
     const tableInputsAndBootstrapButtons = ", .RBLe-input-table :input, .dropdown-toggle, button";
     const validInputSelector = ".notRBLe, .rbl-exclude" + tableInputsAndBootstrapButtons;
-    const skipBindingInputSelector = ".notRBLe, .rbl-exclude, .skipRBLe, .skipRBLe :input, .rbl-nocalc, .rbl-nocalc :input, [type='search']" + tableInputsAndBootstrapButtons;
+    const skipBindingInputSelector = ".notRBLe, .rbl-exclude, .skipRBLe, .skipRBLe :input, .rbl-nocalc, .rbl-nocalc :input, rbl-template :input, [type='search']" + tableInputsAndBootstrapButtons;
 
     // Reassign options here (extending with what client/host might have already set) allows
     // options (specifically events) to be managed by CMS - adding features when needed.
@@ -850,7 +850,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
             this.ui.triggerEvent( "onOptionsUpdated", this );
         }
 
-        setInputs( inputs: JSON | CalculationInputs, calculate: boolean = true ): void {
+        setInputs( inputs: JSON | CalculationInputs, calculate = true ): void {
             // When called publicly, want to trigger a calculation, when called from init() we don't
             Object.keys( inputs ).forEach( i => {
                 this.rble.setDefaultValue( i, inputs[ i ]);
@@ -1233,7 +1233,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                 }
     
                 if ( payload.Exception === undefined ) {
-                    application.options.registeredToken = currentOptions.registeredToken = payload.RegisteredToken;
+                    application.options.registeredToken = currentOptions.registeredToken = payload.registeredToken;
                     application.options.data = currentOptions.data = undefined;
 
                     that.ui.triggerEvent( "onRegistration", currentOptions, application );
@@ -2280,15 +2280,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                             $("." + id + "Label, .sv" + id, application.element).html( String.localeFormat("{0:" + format + decimals + "}", v) );
                         });
         
-                        // Check to see that the input isn't marked as a skip input and if so, run a calc when the value is 'set'.
-                        // If targetInput is present, then this is a 'wizard' slider so I need to see if 'main'
-                        // input has been marked as a 'skip'.
-                        const sliderCalcId = targetInput || id;
-
-                        const processInput = $("." + sliderCalcId + ".skipRBLe, ." + sliderCalcId + ".rbl-nocalc", application.element).length === 0;
-                        const processParent = processInput && $("." + sliderCalcId, application.element).parents(".skipRBLe, .rbl-nocalc").length === 0
-
-                        if ( processParent ) {
+                        if ( !input.is(".skipRBLe, .skipRBLe :input, .rbl-nocalc, .rbl-nocalc :input") ) {
                             if (targetInput === undefined /* never trigger run from wizard sliders */) {
         
                                 // Whenever 'regular' slider changes or is updated via set()...

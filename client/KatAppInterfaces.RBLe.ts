@@ -119,7 +119,7 @@ interface RBLeServiceResults {
     };
 
     // RegisteredToken is only present after successful registration
-    RegisteredToken?: string;
+    registeredToken?: string;
 }
 interface RBLeServiceCallback {
     ( data: RBLeServiceResults ): void;

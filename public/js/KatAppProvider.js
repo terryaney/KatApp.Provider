@@ -19,7 +19,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
 (function ($, window, document, undefined) {
     var tableInputsAndBootstrapButtons = ", .RBLe-input-table :input, .dropdown-toggle, button";
     var validInputSelector = ".notRBLe, .rbl-exclude" + tableInputsAndBootstrapButtons;
-    var skipBindingInputSelector = ".notRBLe, .rbl-exclude, .skipRBLe, .skipRBLe :input, .rbl-nocalc, .rbl-nocalc :input, [type='search']" + tableInputsAndBootstrapButtons;
+    var skipBindingInputSelector = ".notRBLe, .rbl-exclude, .skipRBLe, .skipRBLe :input, .rbl-nocalc, .rbl-nocalc :input, rbl-template :input, [type='search']" + tableInputsAndBootstrapButtons;
     // Reassign options here (extending with what client/host might have already set) allows
     // options (specifically events) to be managed by CMS - adding features when needed.
     KatApp.defaultOptions = KatApp.extend({
@@ -114,8 +114,14 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
             KatApp.defaultOptions, // start with default options
             attributeOptions, // data attribute options have next precedence
             // If at time of constructor call the default options or options passed in has a registerData 
-            // delegate assigned, then change the default value of this property
+            // delegate assigned, then change the default value of this property (Not sure of my logic
+            // to set shareDataWithOtherApplications to false if there is a registeredToken, but maybe ok
+            // to require caller to explicitly set that option if they are passing in an already
+            // registered token)
             {
+                // Set this property so that provider knows which URL to call to RBLe service (session/function)
+                // and whether to pass in token/data appropriately.  Could probably eliminate this property and
+                // have logic that figured out when needed, but this just made it easier
                 registerDataWithService: KatApp.defaultOptions.registerData !== undefined || (options === null || options === void 0 ? void 0 : options.registerData) !== undefined || ((options === null || options === void 0 ? void 0 : options.registeredToken) !== undefined),
                 shareDataWithOtherApplications: (options === null || options === void 0 ? void 0 : options.registeredToken) === undefined
             }, options // finally js options override all
@@ -1015,7 +1021,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                     payload = JSON.parse(payload.payload);
                 }
                 if (payload.Exception === undefined) {
-                    application.options.registeredToken = currentOptions.registeredToken = payload.RegisteredToken;
+                    application.options.registeredToken = currentOptions.registeredToken = payload.registeredToken;
                     application.options.data = currentOptions.data = undefined;
                     that.ui.triggerEvent("onRegistration", currentOptions, application);
                     registerDataHandler();
@@ -1886,13 +1892,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                             var v = format_1 == "p" ? value / 100 : value;
                             $("." + id + "Label, .sv" + id, application.element).html(String.localeFormat("{0:" + format_1 + decimals_1 + "}", v));
                         });
-                        // Check to see that the input isn't marked as a skip input and if so, run a calc when the value is 'set'.
-                        // If targetInput is present, then this is a 'wizard' slider so I need to see if 'main'
-                        // input has been marked as a 'skip'.
-                        var sliderCalcId = targetInput_1 || id;
-                        var processInput = $("." + sliderCalcId + ".skipRBLe, ." + sliderCalcId + ".rbl-nocalc", application.element).length === 0;
-                        var processParent = processInput && $("." + sliderCalcId, application.element).parents(".skipRBLe, .rbl-nocalc").length === 0;
-                        if (processParent) {
+                        if (!input_1.is(".skipRBLe, .skipRBLe :input, .rbl-nocalc, .rbl-nocalc :input")) {
                             if (targetInput_1 === undefined /* never trigger run from wizard sliders */) {
                                 // Whenever 'regular' slider changes or is updated via set()...
                                 instance.on('set.RBLe', function () {

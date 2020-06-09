@@ -106,7 +106,7 @@ interface RBLeServiceResults {
             };
         };
     };
-    RegisteredToken?: string;
+    registeredToken?: string;
 }
 interface RBLeServiceCallback {
     (data: RBLeServiceResults): void;

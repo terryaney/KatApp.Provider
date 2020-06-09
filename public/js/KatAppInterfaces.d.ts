@@ -3,6 +3,7 @@ interface KatAppOptions {
     debug?: {
         traceVerbosity?: TraceVerbosity;
         debugResourcesDomain?: string;
+        debugProviderDomain?: string;
         saveFirstCalculationLocation?: string;
         refreshCalcEngine?: boolean;
         useTestCalcEngine?: boolean;

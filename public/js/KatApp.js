@@ -378,7 +378,7 @@ var KatApp = /** @class */ (function () {
     // the CMS to properly register the applications
     $.fn.KatApp.plugInShims = [];
     $.fn.KatApp.applicationFactory = $.fn.KatApp.debugApplicationFactory = function (id, element, options) {
-        var _a, _b, _c, _d, _e, _f, _g;
+        var _a, _b, _c, _d, _e, _f;
         var shim = new KatAppPlugInShim(id, element, options);
         shim.trace("Starting factory", TraceVerbosity.Diagnostic);
         var applications = $.fn.KatApp.plugInShims;
@@ -386,12 +386,12 @@ var KatApp = /** @class */ (function () {
         // First time anyone has been called with .KatApp()
         if (applications.length === 1) {
             shim.trace("Loading KatAppProvider library...", TraceVerbosity.Detailed);
-            var debugResourcesDomain = (_a = shim.options.debug) === null || _a === void 0 ? void 0 : _a.debugResourcesDomain;
+            var debugResourcesDomain = (_a = shim.options.debug) === null || _a === void 0 ? void 0 : _a.debugProviderDomain;
             if (debugResourcesDomain !== undefined) {
                 debugResourcesDomain += "js/";
             }
-            shim.trace((_b = "Downloading KatAppProvider.js from " + debugResourcesDomain) !== null && _b !== void 0 ? _b : shim.options.functionUrl, TraceVerbosity.Diagnostic);
-            var useTestService = (_g = (_e = (_d = (_c = shim.options) === null || _c === void 0 ? void 0 : _c.debug) === null || _d === void 0 ? void 0 : _d.useTestPlugin) !== null && _e !== void 0 ? _e : (_f = KatApp.defaultOptions.debug) === null || _f === void 0 ? void 0 : _f.useTestPlugin) !== null && _g !== void 0 ? _g : false;
+            shim.trace("Downloading KatAppProvider.js from " + (debugResourcesDomain !== null && debugResourcesDomain !== void 0 ? debugResourcesDomain : shim.options.functionUrl), TraceVerbosity.Diagnostic);
+            var useTestService = (_f = (_d = (_c = (_b = shim.options) === null || _b === void 0 ? void 0 : _b.debug) === null || _c === void 0 ? void 0 : _c.useTestPlugin) !== null && _d !== void 0 ? _d : (_e = KatApp.defaultOptions.debug) === null || _e === void 0 ? void 0 : _e.useTestPlugin) !== null && _f !== void 0 ? _f : false;
             KatApp.getResources(shim, "Global:KatAppProvider.js", useTestService, true, debugResourcesDomain, function (errorMessage) {
                 if (errorMessage !== undefined) {
                     shim.trace("KatAppProvider library could not be loaded.", TraceVerbosity.Quiet);

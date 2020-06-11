@@ -839,12 +839,22 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
             }
             var _a;
             var application = this.application;
-            application.trace("Calling " + eventName + " delegate: Starting...", TraceVerbosity.Diagnostic);
-            (_a = application.options[eventName]) === null || _a === void 0 ? void 0 : _a.apply(application.element[0], args);
-            application.trace("Calling " + eventName + " delegate: Complete", TraceVerbosity.Diagnostic);
-            application.trace("Triggering " + eventName + ": Starting...", TraceVerbosity.Diagnostic);
-            application.element.trigger(eventName + ".RBLe", args);
-            application.trace("Triggering " + eventName + ": Complete", TraceVerbosity.Diagnostic);
+            try {
+                application.trace("Calling " + eventName + " delegate: Starting...", TraceVerbosity.Diagnostic);
+                (_a = application.options[eventName]) === null || _a === void 0 ? void 0 : _a.apply(application.element[0], args);
+                application.trace("Calling " + eventName + " delegate: Complete", TraceVerbosity.Diagnostic);
+            }
+            catch (error) {
+                application.trace("Error calling " + eventName + ": " + error, TraceVerbosity.None);
+            }
+            try {
+                application.trace("Triggering " + eventName + ": Starting...", TraceVerbosity.Diagnostic);
+                application.element.trigger(eventName + ".RBLe", args);
+                application.trace("Triggering " + eventName + ": Complete", TraceVerbosity.Diagnostic);
+            }
+            catch (error) {
+                application.trace("Error triggering " + eventName + ": " + error, TraceVerbosity.None);
+            }
         };
         UIUtilities.prototype.changeRBLe = function (element) {
             var wizardInputSelector = element.data("input");

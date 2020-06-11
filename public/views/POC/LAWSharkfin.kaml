@@ -30,6 +30,27 @@
     }
     .glyphicons-question-sign:before, .glyphicon-info-sign:before { content: "\E195";}
 
+    /* KatApp modals */
+    .KatApp-Modal {
+        display: none; /* Hidden by default */
+        position: fixed; /* Stay in place */
+        z-index: 5; /* Sit on top */
+        left: 0;
+        top: 0;
+        width: 100%; /* Full width */
+        height: 100%; /* Full height */
+        overflow: auto; /* Enable scroll if needed */
+        background-color: rgb(0,0,0); /* Fallback color */
+        background-color: rgba(0,0,0,0.4); /* Black w/ opacity */
+    }
+
+        .KatApp-Modal .KatApp-Content {
+            background-color: #fefefe;
+            margin: 20px auto; /* 'top' and centered */
+            padding: 20px;
+            border: 1px solid #888;
+            width: 80%; /* Could be more or less, depending on screen size */
+        }
 </style>
 
 <div class="loader">
@@ -240,9 +261,12 @@
 
 <script>
     if ( $("{thisView}").data("debugger" ) == true ) debugger;
+
     (function() {
         var view = $("{thisView}");
-        console.log(view.KatApp("options").registeredToken);
+        var application = view.KatApp();
+
+        console.log(application.options.registeredToken);
         
         /* KatApp events/order:
             [templates built, templateBuilder.ProcessUI runs]
@@ -291,22 +315,23 @@
             console.log("onCalculation");
         });
 
-
         view.on( "onConfigureUICalculation.RBLe", function( event, results, options, application ) {
 
             //wire up slider controls to show values under
-            $(".RBLe .slider-control", view).each(function(index) {
-                var slider = $(this)[0];
-                var formGroup = $(this).closest(".form-group");
-                var svLabel = $("[class*=svi]", formGroup);
-                slider.noUiSlider.on('set', function() {
-                    $(".noUi-handle", slider).html("<div>" + svLabel.html().replace(" ", "") + "</div>");
+            $(".slider-control", view)
+                .filter(":not(rbl-template .slider-control)")
+                .each(function(index) {
+                    var slider = $(this)[0];
+                    var formGroup = $(this).closest(".form-group");
+                    var svLabel = $("[class*=svi]", formGroup);
+                    slider.noUiSlider.on('set', function() {
+                        $(".noUi-handle", slider).html("<div>" + svLabel.html().replace(" ", "") + "</div>");
+                    });
+                    slider.noUiSlider.on('slide', function() {
+                        $(".noUi-handle", slider).html("<div>" + svLabel.html().replace(" ", "") + "</div>");
+                    });
+                    $(".noUi-handle", slider).html("<div>" + svLabel.html().replace(" ", "") + "</div>");                
                 });
-                slider.noUiSlider.on('slide', function() {
-                    $(".noUi-handle", slider).html("<div>" + svLabel.html().replace(" ", "") + "</div>");
-                });
-                $(".noUi-handle", slider).html("<div>" + svLabel.html().replace(" ", "") + "</div>");                
-            });
 
             $(":input.rbl-nocalc", view).bind("change", function() {
                 showRecalc();
@@ -365,6 +390,76 @@
             $(".ajaxloader", view).show();
             $(".recalc-notice", view).show();
         };
+
+		$(".changeLifestyle", view).click(function () {
+            if ( $(".IRPModal").length === 0 ) {
+                // Search for /* KatApp modals */, might want to inject that too?
+                view.after($(`<div class="IRPModal KatApp-Modal">
+                    <div class="KatApp-Content">
+                        <h4>Income Replacement Percentage (IRP) Calculator</h4>
+                        <div class="row">
+                            <div class="IRPKatApp"></div>
+                        </div>
+                        <div class="row">
+                            <button type="button" class="btn btn-default closeIRP">Close</button>
+                            <button type="button" class="btn btn-primary useIRP mr-1">Use IRP Value</button>
+                        </div>
+                    </div>
+                </div>
+                `));
+
+                $(".IRPModal button.useIRP").click(function () {
+                    $(".IRPModal").css("display", "none");
+                    
+                    var inputs = $(".IRPModal .IRPKatApp").KatApp().calculationInputs;
+                    
+                    application.setInputs({
+                        "iRetAge": inputs["iRetirementAge"],
+                        "iSalScale": inputs["iAnnualFuturePayIncreaseRate"],
+                        "iReplaceRatio": Math.round(Number(inputs["iReplaceRatio"]) * 100 / 5) * 5
+                    });
+                });
+                $(".IRPModal button.closeIRP").click(function () {
+                    $(".IRPModal").css("display", "none");
+                });
+            }
+
+            var options = 
+                $.extend( {}, 
+                application.options, 
+				{
+                    view: "DST:IRP",
+                    debug: {
+                        saveFirstCalculationLocation: "terry.aney"
+                    },
+					defaultInputs: {
+						iInputsFromModeler: 1,
+						iCurrentAge: application.getResultValue("variable", "iCurrentAge", "value") * 1,
+						iAnnualFuturePayIncreaseRate: $(".iSalScale").val(),
+						iAnnualPay: $(".iSalary").val(),
+						iRetirementAge: $(".iRetAge").val(),
+						iRetirementSavingsPct: application.getResultValue("variable", "iRetirementSavingsPct", "value") * 1
+                    },
+                    onConfigureUICalculation: function( results, options, application ) {
+                        //wire up slider controls to show values under
+                        $(".slider-control", application.element).each(function(index) {
+                            var slider = $(this)[0];
+                            var formGroup = $(this).closest(".form-group");
+                            var svLabel = $("[class*=svi]", formGroup);
+                            slider.noUiSlider.on('set', function() {
+                                $(".noUi-handle", slider).html("<div>" + svLabel.html().replace(" ", "") + "</div>");
+                            });
+                            slider.noUiSlider.on('slide', function() {
+                                $(".noUi-handle", slider).html("<div>" + svLabel.html().replace(" ", "") + "</div>");
+                            });
+                            $(".noUi-handle", slider).html("<div>" + svLabel.html().replace(" ", "") + "</div>");                
+                        });
+                    }
+                } );
+            delete options.calcEngine; // So it doesn't use parent CE
+			$(".IRPModal .IRPKatApp").KatApp( "ensure", options );
+			$(".IRPModal").css("display", "block");
+		});
     })();
 
     //# sourceURL=lawsharkfin.js
@@ -439,8 +534,6 @@
         <div class="h{inputname}" style="display: none;"></div>
     </div>
 </rbl-template>
-  
-
 
 <!--
 lawApp.controller('RKSSharkFinController', function($scope, $http, $timeout, sharkfinService) {

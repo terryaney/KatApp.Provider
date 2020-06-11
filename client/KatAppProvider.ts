@@ -1017,12 +1017,20 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
 
         triggerEvent(eventName: string, ...args: ( object | string | undefined )[]): void {
             const application = this.application;
-            application.trace("Calling " + eventName + " delegate: Starting...", TraceVerbosity.Diagnostic);
-            application.options[ eventName ]?.apply(application.element[0], args );
-            application.trace("Calling " + eventName + " delegate: Complete", TraceVerbosity.Diagnostic);
-            application.trace("Triggering " + eventName + ": Starting...", TraceVerbosity.Diagnostic);
-            application.element.trigger( eventName + ".RBLe", args);
-            application.trace("Triggering " + eventName + ": Complete", TraceVerbosity.Diagnostic);
+            try {
+                application.trace("Calling " + eventName + " delegate: Starting...", TraceVerbosity.Diagnostic);
+                application.options[ eventName ]?.apply(application.element[0], args );
+                application.trace("Calling " + eventName + " delegate: Complete", TraceVerbosity.Diagnostic);
+            } catch (error) {
+                application.trace("Error calling " + eventName + ": " + error, TraceVerbosity.None);
+            }
+            try {
+                application.trace("Triggering " + eventName + ": Starting...", TraceVerbosity.Diagnostic);
+                application.element.trigger( eventName + ".RBLe", args);
+                application.trace("Triggering " + eventName + ": Complete", TraceVerbosity.Diagnostic);
+            } catch (error) {
+                application.trace("Error triggering " + eventName + ": " + error, TraceVerbosity.None);
+            }
         }
 
         changeRBLe(element: JQuery<HTMLElement>): void {

@@ -49,6 +49,7 @@ interface KatAppPlugInShimInterface {
     destroy: () => void;
     rebuild: (options: KatAppOptions) => void;
     updateOptions: (options: KatAppOptions) => void;
+    calculate: (options?: KatAppOptions) => void;
     trace: (message: string, verbosity?: TraceVerbosity) => void;
 }
 interface KatAppPlugInInterface extends KatAppPlugInShimInterface {

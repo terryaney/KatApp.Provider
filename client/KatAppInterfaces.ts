@@ -100,6 +100,7 @@ interface KatAppPlugInShimInterface {
     // NOTE: updateOptions (along with init()) *will* apply options.defaultInputs every time it is called
     //      as if setInputs() was called.
     updateOptions: ( options: KatAppOptions )=> void;
+    calculate: ( options?: KatAppOptions )=> void;
     trace: ( message: string, verbosity?: TraceVerbosity )=> void;
 }
 

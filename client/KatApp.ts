@@ -311,6 +311,10 @@ class KatApp
             this.element[ 0 ].KatApp = this;
         }
     
+        calculate( options?: KatAppOptions ): void {
+            // do nothing, only 'provider' does a calculate
+        }
+
         updateOptions( options: KatAppOptions ): void {
             this.options = KatApp.extend( this.options, options );
         }
@@ -429,6 +433,7 @@ class KatApp
                         }
                         else if ( appOptions !== undefined ) {
                             instance.updateOptions( appOptions );
+                            instance.calculate();
                         }
                     }
                     else if (instance !== undefined && typeof instance[options] === 'function') {

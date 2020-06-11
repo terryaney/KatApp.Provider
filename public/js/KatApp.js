@@ -261,6 +261,9 @@ var KatApp = /** @class */ (function () {
             this.element = element;
             this.element[0].KatApp = this;
         }
+        KatAppPlugInShim.prototype.calculate = function (options) {
+            // do nothing, only 'provider' does a calculate
+        };
         KatAppPlugInShim.prototype.updateOptions = function (options) {
             this.options = KatApp.extend(this.options, options);
         };
@@ -365,6 +368,7 @@ var KatApp = /** @class */ (function () {
                         }
                         else if (appOptions !== undefined) {
                             instance.updateOptions(appOptions);
+                            instance.calculate();
                         }
                     }
                     else if (instance !== undefined && typeof instance[options] === 'function') {

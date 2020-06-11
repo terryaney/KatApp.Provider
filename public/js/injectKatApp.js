@@ -1,7 +1,7 @@
 const targetApplication = "#ControlHost, .KatApp, div.page-content.home";
 const target = $(targetApplication + ":eq(0)");
 const appJs = "http://localhost:8887/js/KatApp.js";
-const serviceJs = "http://localhost:8887/js/KatApp.service.developer.js";
+const serviceJs = "http://localhost:8887/js/KatApp.Service.LAW.js";
 
 $('head').append('<link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-select/1.13.12/css/bootstrap-select.min.css">')
 $.getScript("https://cdnjs.cloudflare.com/ajax/libs/bootstrap-select/1.13.12/js/bootstrap-select.min.js", function() {

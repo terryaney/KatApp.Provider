@@ -16,6 +16,7 @@
     .saveSuccess, 
     .control-label > span:nth-of-type(2) 
         {display: none}
+    .loader .progress-bar { width: 25%; }
     #alert-recalc {
         position: relative; 
         left: 50%;
@@ -23,16 +24,19 @@
         transform: translate(-50%, -50%);
         z-index: 1000;
     }
-
-    .glyphicons-question-sign:before {
-    content: "\E195";}
-    .glyphicons-question-sign:before {
-    content: "\E195";}
+    .chart {padding: 0;}
+    .glyphicons, .glyphicon  {
+        font-family: "Glyphicons Regular";
+    }
+    .glyphicons-question-sign:before, .glyphicon-info-sign:before { content: "\E195";}
 
 </style>
 
-<div class="progress">
-    <div class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" style="width: 100%"></div>
+<div class="loader">
+    <p>Loading Retirement Analysis</p>
+    <div class="progress">
+        <div class="progress-bar " role="progressbar"></div>
+    </div>    
 </div>
 
 <div id="rblMarkup" class="container rblApplication rblMarkup" style="display: none;">
@@ -68,7 +72,6 @@
                         </div>
                     </div>
                 </div>
-                <p><a class="testRecalc" href="#">Test recalc flow</a></p>
 
                 <!-- overlays -->
                 <div class="ajaxloader"></div>
@@ -271,7 +274,23 @@
                 return false;
             });
 
+            $("[rbl-tablename=Assumptions]", view).hide();
+            $("#toggleAssumptions1", view).on('click', function (e) {
+                $("[rbl-tablename=Assumptions]", view).toggle();
+                return false;
+            });
+
+            var p;
+            for ( p = 50; p <= 100; p = p + 25 ) { 
+                $(".loader .progress-bar", view).delay( p * 10 ).css( "width", p + "%")
+            };
+
         });
+
+        view.on( "onCalculation.RBLe", function( event, results, options, application ) {
+            console.log("onCalculation");
+        });
+
 
         view.on( "onConfigureUICalculation.RBLe", function( event, results, options, application ) {
 
@@ -286,31 +305,20 @@
                 slider.noUiSlider.on('slide', function() {
                     $(".noUi-handle", slider).html("<div>" + svLabel.html().replace(" ", "") + "</div>");
                 });
-                $(".noUi-handle", slider).html("<div>" + svLabel.html().replace(" ", "") + "</div>");
-                
-                if (!$(this).next().hasClass("skipRBLe") && !$(this).next().hasClass("showRecalc")) {
-                    /* figure out..
-                    if (!$scope.refreshSharkfin) {
-                        slider.noUiSlider.on('set.reCalc', function() {
-                            $(".RBLe .slider-control, .RBLe input").attr("disabled", "true");
-                        });
-                    }
-                    */
-                }
+                $(".noUi-handle", slider).html("<div>" + svLabel.html().replace(" ", "") + "</div>");                
             });
 
-            debugger;
-            $(":input.rbl-nocalc", view).bind("change.RBLe", function() {
+            $(":input.rbl-nocalc", view).bind("change", function() {
                 showRecalc();
             });
             $("input.rbl-nocalc").prev(".slider-control").each(function(index) {
                 var slider = $(this)[0];
-                slider.noUiSlider.on('set.RBLe', function() {
+                slider.noUiSlider.on('set', function() {
                     showRecalc();
                 });
             });
 
-            $(".progress", view).hide();
+            $(".loader", view).hide();
             $(".rblMarkup", view).show();
         });
 
@@ -323,10 +331,9 @@
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' }
             }).done( function( data ) {
-                debugger;
                 view.KatApp().setRegisteredToken(data.payload);
                 view.KatApp("calculate");
-                $(".ajaxloader", view).hide(); //may not need this
+                //$(".ajaxloader", view).hide(); //may not need this
             });
         };
 
@@ -360,15 +367,11 @@
         };
     })();
 
-    $.fn.center = function() {
-        this.css("position", "absolute").css("z-index", "1000").css("top", "50%").css("left", "50%").css("margin", (-(this.height() / 2)) + "px 0 0 " + (-(this.width() / 2)) + "px");
-        return this;
-    }
     //# sourceURL=lawsharkfin.js
 </script>
 
 <rbl-template tid="input-select"> <!--move some version of this 'simple' select to standard? -->
-    <div class="col-sm-12 v{inputname}" style="display_: none;">
+    <div class="v{inputname}" style="display_: none;">
         <div class="form-group">
             <div class="col-sm-8">
                 <label for="{inputname}" class="control-label l{inputname}">{inputname} Label</label>

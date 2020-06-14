@@ -1733,7 +1733,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
             const application = this.application;
 
             skipRows.forEach( row => {
-                const selector = this.ui.getJQuerySelector( row["@id"] );
+                const selector = this.ui.getJQuerySelector( row["key"] || row["@id"] );
                 if ( selector !== undefined ) {
                     const el = $(selector, application.element);
                     

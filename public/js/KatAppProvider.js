@@ -1446,7 +1446,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
             var application = this.application;
             skipRows.forEach(function (row) {
                 var _a;
-                var selector = _this.ui.getJQuerySelector(row["@id"]);
+                var selector = _this.ui.getJQuerySelector(row["key"] || row["@id"]);
                 if (selector !== undefined) {
                     var el = $(selector, application.element);
                     el.addClass("skipRBLe").off(".RBLe");

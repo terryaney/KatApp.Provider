@@ -245,7 +245,7 @@
 
                 if ( currentView === "Custom" ) {
                     currentView = $(".CustomView", view).val() || "";
-                    const viewParts = currentView.split("|");
+                    const viewParts = currentView.split(">");
                     if ( viewParts.length === 2 ) {
                         currentView = viewParts[ 0 ];
                         calcEngine = viewParts[ 1 ];

@@ -1481,12 +1481,12 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
             }
         }
     
-        createHtmlFromResultRow( resultRow: HtmlContentRow ): void {
+        createHtmlFromResultRow( resultRow: HtmlContentRow, processBlank: boolean ): void {
             const view = this.application.element;
             let content = resultRow.content ?? resultRow.html ?? resultRow.value ?? "";
             const selector = this.ui.getJQuerySelector( resultRow.selector ) ?? this.ui.getJQuerySelector( resultRow["@id"] ) ?? "";
 
-            if (content.length > 0 && selector.length > 0) {
+            if (( processBlank || content.length > 0 ) && selector.length > 0) {
 
                 let target = $(selector, view);
 
@@ -1525,9 +1525,21 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
         }
 
         getRblSelectorValue( tableName: string, selectorParts: string[] ): string | undefined {
-            if ( selectorParts.length === 1 ) return this.getResultValue( tableName, selectorParts[0], "value");
-            else if (selectorParts.length === 3) return this.getResultValue( selectorParts[0], selectorParts[1], selectorParts[2]);
-            else if (selectorParts.length === 4) return this.getResultValueByColumn( selectorParts[0], selectorParts[1], selectorParts[2], selectorParts[3]);
+            if ( selectorParts.length === 1 ) 
+            {
+                return this.getResultValue( tableName, selectorParts[0], "value") ??
+                    ( this.getResultRow<JSON>( tableName, selectorParts[0] ) !== undefined ? "" : undefined );
+            }
+            else if (selectorParts.length === 3) 
+            {
+                return this.getResultValue( selectorParts[0], selectorParts[1], selectorParts[2]) ??
+                    ( this.getResultRow<JSON>( selectorParts[0], selectorParts[1] ) !== undefined ? "" : undefined );
+            }
+            else if (selectorParts.length === 4) 
+            {
+                return this.getResultValueByColumn( selectorParts[0], selectorParts[1], selectorParts[2], selectorParts[3]) ??
+                    ( this.getResultRow<JSON>( selectorParts[0], selectorParts[2], selectorParts[1] ) !== undefined ? "" : undefined );
+            }
             else {
                 this.application.trace( "Invalid selector length for [" + selectorParts.join(".") + "].", TraceVerbosity.Quiet );
                 return undefined;
@@ -1665,14 +1677,14 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                 const expressionParts = rblDisplayParts[ rblDisplayParts.length - 1].split('=');
                 rblDisplayParts[ rblDisplayParts.length - 1] = expressionParts[0];
                 
-                let visibilityValue: string | boolean | undefined = that.getRblSelectorValue( "ejs-output", rblDisplayParts );
+                let visibilityValue: string | undefined = that.getRblSelectorValue( "ejs-output", rblDisplayParts );
 
                 if (visibilityValue != undefined) {
                     if ( expressionParts.length > 1) {
-                        visibilityValue = ( visibilityValue == expressionParts[1] ); //allows table.row.value=10
+                        visibilityValue = ( visibilityValue == expressionParts[1] ) ? "1" : "0"; //allows table.row.value=10
                     }
 
-                    if (visibilityValue === "0" || visibilityValue === false || ( visibilityValue as string )?.toLowerCase() === "false" || visibilityValue === "") {
+                    if (visibilityValue === "0" || visibilityValue.toLowerCase() === "false" || visibilityValue === "") {
                         el.hide();
                     }
                     else {
@@ -1680,7 +1692,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                     }
                 }
                 else {
-                    application.trace("<b style='color: Red;'>RBL WARNING</b>: no data returned for rbl-display=" + el.attr('rbl-display'), TraceVerbosity.Normal);
+                    application.trace("<b style='color: Red;'>RBL WARNING</b>: no data returned for rbl-display=" + el.attr('rbl-display'), TraceVerbosity.Diagnostic);
                 }
             });
 
@@ -2409,10 +2421,10 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                 // Need two passes to support "ejs-markup" because the markup might render something that is then
                 // processed by subsequent flow controls (ouput, sources, or values)
                 const markUpRows = this.getResultTable<HtmlContentRow>( "ejs-markup" )
-                markUpRows.forEach( r => { this.createHtmlFromResultRow( r ); });
+                markUpRows.forEach( r => { this.createHtmlFromResultRow( r, false ); });
                 
                 const outputRows = this.getResultTable<HtmlContentRow>( "ejs-output" )
-                outputRows.forEach( r => { this.createHtmlFromResultRow( r ); });
+                outputRows.forEach( r => { this.createHtmlFromResultRow( r, true ); });
 
                 this.processRblSources();
                 this.processRblValues();

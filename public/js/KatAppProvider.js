@@ -1234,12 +1234,12 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                 };
             }
         };
-        RBLeUtilities.prototype.createHtmlFromResultRow = function (resultRow) {
+        RBLeUtilities.prototype.createHtmlFromResultRow = function (resultRow, processBlank) {
             var _a, _b, _c, _d, _e, _f;
             var view = this.application.element;
             var content = (_c = (_b = (_a = resultRow.content) !== null && _a !== void 0 ? _a : resultRow.html) !== null && _b !== void 0 ? _b : resultRow.value) !== null && _c !== void 0 ? _c : "";
             var selector = (_e = (_d = this.ui.getJQuerySelector(resultRow.selector)) !== null && _d !== void 0 ? _d : this.ui.getJQuerySelector(resultRow["@id"])) !== null && _e !== void 0 ? _e : "";
-            if (content.length > 0 && selector.length > 0) {
+            if ((processBlank || content.length > 0) && selector.length > 0) {
                 var target = $(selector, view);
                 if (target.length > 0) {
                     if (target.length === 1) {
@@ -1270,12 +1270,16 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
             }
         };
         RBLeUtilities.prototype.getRblSelectorValue = function (tableName, selectorParts) {
-            if (selectorParts.length === 1)
-                return this.getResultValue(tableName, selectorParts[0], "value");
-            else if (selectorParts.length === 3)
-                return this.getResultValue(selectorParts[0], selectorParts[1], selectorParts[2]);
-            else if (selectorParts.length === 4)
-                return this.getResultValueByColumn(selectorParts[0], selectorParts[1], selectorParts[2], selectorParts[3]);
+            var _a, _b, _c;
+            if (selectorParts.length === 1) {
+                return (_a = this.getResultValue(tableName, selectorParts[0], "value")) !== null && _a !== void 0 ? _a : (this.getResultRow(tableName, selectorParts[0]) !== undefined ? "" : undefined);
+            }
+            else if (selectorParts.length === 3) {
+                return (_b = this.getResultValue(selectorParts[0], selectorParts[1], selectorParts[2])) !== null && _b !== void 0 ? _b : (this.getResultRow(selectorParts[0], selectorParts[1]) !== undefined ? "" : undefined);
+            }
+            else if (selectorParts.length === 4) {
+                return (_c = this.getResultValueByColumn(selectorParts[0], selectorParts[1], selectorParts[2], selectorParts[3])) !== null && _c !== void 0 ? _c : (this.getResultRow(selectorParts[0], selectorParts[2], selectorParts[1]) !== undefined ? "" : undefined);
+            }
             else {
                 this.application.trace("Invalid selector length for [" + selectorParts.join(".") + "].", TraceVerbosity.Quiet);
                 return undefined;
@@ -1378,7 +1382,6 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
             //[rbl-display] controls display = none|block(flex?).  
             //Should this be rbl-state ? i.e. other states visibility, disabled, delete
             $("[rbl-display]", application.element).each(function () {
-                var _a;
                 var el = $(this);
                 //legacy table is ejs-visibility but might work a little differently
                 var rblDisplayParts = el.attr('rbl-display').split('.'); // eslint-disable-line @typescript-eslint/no-non-null-assertion
@@ -1388,9 +1391,9 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                 var visibilityValue = that.getRblSelectorValue("ejs-output", rblDisplayParts);
                 if (visibilityValue != undefined) {
                     if (expressionParts.length > 1) {
-                        visibilityValue = (visibilityValue == expressionParts[1]); //allows table.row.value=10
+                        visibilityValue = (visibilityValue == expressionParts[1]) ? "1" : "0"; //allows table.row.value=10
                     }
-                    if (visibilityValue === "0" || visibilityValue === false || ((_a = visibilityValue) === null || _a === void 0 ? void 0 : _a.toLowerCase()) === "false" || visibilityValue === "") {
+                    if (visibilityValue === "0" || visibilityValue.toLowerCase() === "false" || visibilityValue === "") {
                         el.hide();
                     }
                     else {
@@ -1398,7 +1401,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                     }
                 }
                 else {
-                    application.trace("<b style='color: Red;'>RBL WARNING</b>: no data returned for rbl-display=" + el.attr('rbl-display'), TraceVerbosity.Normal);
+                    application.trace("<b style='color: Red;'>RBL WARNING</b>: no data returned for rbl-display=" + el.attr('rbl-display'), TraceVerbosity.Diagnostic);
                 }
             });
             // Legacy, might not be needed
@@ -2008,9 +2011,9 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                 // Need two passes to support "ejs-markup" because the markup might render something that is then
                 // processed by subsequent flow controls (ouput, sources, or values)
                 var markUpRows = this.getResultTable("ejs-markup");
-                markUpRows.forEach(function (r) { _this.createHtmlFromResultRow(r); });
+                markUpRows.forEach(function (r) { _this.createHtmlFromResultRow(r, false); });
                 var outputRows = this.getResultTable("ejs-output");
-                outputRows.forEach(function (r) { _this.createHtmlFromResultRow(r); });
+                outputRows.forEach(function (r) { _this.createHtmlFromResultRow(r, true); });
                 this.processRblSources();
                 this.processRblValues();
                 // apply dynamic classes after all html updates (TOM: (this was your comment...) could this be done with 'non-template' build above)

@@ -140,6 +140,7 @@ class KatApp
         const currentOptions = application.options;
         const url = currentOptions.functionUrl ?? KatApp.defaultOptions.functionUrl ?? KatApp.functionUrl;
         const resourceArray = resources.split(",");
+        const useLocalResources = debugResourcesDomain !== undefined;
 
         // viewParts[ 0 ], viewParts[ 1 ]
         // folder: string, resource: string, optional Version
@@ -176,6 +177,8 @@ class KatApp
                     const resourceParts = r.split(":");
                     let resource = resourceParts[ 1 ];
                     const folder = resourceParts[ 0 ];
+                    let currentFolder = 0;
+                    const folders = folder.split("|");
                     const version = resourceParts.length > 2 ? resourceParts[ 2 ] : ( useTestVersion ? "Test" : "Live" ); // can provide a version as third part of name if you want
     
                     // Template names often don't use .xhtml syntax
@@ -194,17 +197,17 @@ class KatApp
                         ]
                     };
 
-                    const localFolder = !isScript ? folder + "/" : "";
+                    let localFolder = !isScript ? folders[ currentFolder ] + "/" : "";
 
                     const submit =
-                        ( debugResourcesDomain === undefined ? currentOptions.submitCalculation : undefined ) ??
+                        ( !useLocalResources ? currentOptions.submitCalculation : undefined ) ??
                         function( _app, o, done, fail ): void {
                             const ajaxConfig = 
                             { 
-                                url: debugResourcesDomain !== undefined ? debugResourcesDomain + localFolder + resource : url, // + JSON.stringify( params )
-                                data: debugResourcesDomain === undefined ? JSON.stringify( o ) : undefined,
-                                method: debugResourcesDomain === undefined ? "POST" : undefined,
-                                dataType: debugResourcesDomain === undefined ? "json" : undefined,
+                                url: useLocalResources ? debugResourcesDomain + localFolder + resource : url, // + JSON.stringify( params )
+                                data: !useLocalResources ? JSON.stringify( o ) : undefined,
+                                method: !useLocalResources ? "POST" : undefined,
+                                dataType: !useLocalResources ? "json" : undefined,
                                 cache: false
                             };
     
@@ -213,12 +216,6 @@ class KatApp
                             $.ajax( ajaxConfig ).done( done ).fail(  fail );
                         };
                             
-                    const submitFailed: JQueryFailCallback = function( _jqXHR, textStatus, _errorThrown ): void {
-                        pipelineError = "getResources failed requesting " + r + ":" + textStatus;
-                        console.log( _errorThrown );
-                        getResourcesPipeline();
-                    };
-
                     const submitDone: RBLeServiceCallback = function( data ): void {
                         if ( data == null ) {
                             // Bad return from L@W
@@ -260,6 +257,21 @@ class KatApp
                                 resourceResults[ r ] = resourceContent;
                             }
                             getResourcesPipeline(); 
+                        }
+                    };
+
+                    const submitFailed: JQueryFailCallback = function( _jqXHR, textStatus, _errorThrown ): void {
+                        // If local resources, syntax like LAW.CLIENT|LAW:sharkfin needs to try client first, then
+                        // if not found, try generic.
+                        if ( useLocalResources && currentFolder < folders.length - 1 ) {
+                            currentFolder++;
+                            localFolder = !isScript ? folders[ currentFolder ] + "/" : "";
+                            submit( application as KatAppPlugInInterface, params, submitDone, submitFailed );
+                        }
+                        else {
+                            pipelineError = "getResources failed requesting " + r + ":" + textStatus;
+                            console.log( _errorThrown );
+                            getResourcesPipeline();
                         }
                     };
 
@@ -311,7 +323,7 @@ class KatApp
             this.element[ 0 ].KatApp = this;
         }
     
-        calculate( options?: KatAppOptions ): void {
+        calculate( /* options?: KatAppOptions */ ): void {
             // do nothing, only 'provider' does a calculate
         }
 

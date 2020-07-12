@@ -106,6 +106,7 @@ var KatApp = /** @class */ (function () {
         var currentOptions = application.options;
         var url = (_b = (_a = currentOptions.functionUrl) !== null && _a !== void 0 ? _a : KatApp.defaultOptions.functionUrl) !== null && _b !== void 0 ? _b : KatApp.functionUrl;
         var resourceArray = resources.split(",");
+        var useLocalResources = debugResourcesDomain !== undefined;
         // viewParts[ 0 ], viewParts[ 1 ]
         // folder: string, resource: string, optional Version
         var pipeline = [];
@@ -135,12 +136,14 @@ var KatApp = /** @class */ (function () {
                     var resourceParts = r.split(":");
                     var resource_1 = resourceParts[1];
                     var folder = resourceParts[0];
+                    var currentFolder_1 = 0;
+                    var folders_1 = folder.split("|");
                     var version = resourceParts.length > 2 ? resourceParts[2] : (useTestVersion ? "Test" : "Live"); // can provide a version as third part of name if you want
                     // Template names often don't use .xhtml syntax
                     if (!resource_1.endsWith(".kaml") && !isScript) {
                         resource_1 += ".kaml";
                     }
-                    var params = {
+                    var params_1 = {
                         Command: 'KatAppResource',
                         Resources: [
                             {
@@ -150,25 +153,20 @@ var KatApp = /** @class */ (function () {
                             }
                         ]
                     };
-                    var localFolder_1 = !isScript ? folder + "/" : "";
-                    var submit = (_a = (debugResourcesDomain === undefined ? currentOptions.submitCalculation : undefined)) !== null && _a !== void 0 ? _a : function (_app, o, done, fail) {
+                    var localFolder_1 = !isScript ? folders_1[currentFolder_1] + "/" : "";
+                    var submit_1 = (_a = (!useLocalResources ? currentOptions.submitCalculation : undefined)) !== null && _a !== void 0 ? _a : function (_app, o, done, fail) {
                         var ajaxConfig = {
-                            url: debugResourcesDomain !== undefined ? debugResourcesDomain + localFolder_1 + resource_1 : url,
-                            data: debugResourcesDomain === undefined ? JSON.stringify(o) : undefined,
-                            method: debugResourcesDomain === undefined ? "POST" : undefined,
-                            dataType: debugResourcesDomain === undefined ? "json" : undefined,
+                            url: useLocalResources ? debugResourcesDomain + localFolder_1 + resource_1 : url,
+                            data: !useLocalResources ? JSON.stringify(o) : undefined,
+                            method: !useLocalResources ? "POST" : undefined,
+                            dataType: !useLocalResources ? "json" : undefined,
                             cache: false
                         };
                         // Need to use .ajax isntead of .getScript/.get to get around CORS problem
                         // and to also conform to using the submitCalculation wrapper by L@W.
                         $.ajax(ajaxConfig).done(done).fail(fail);
                     };
-                    var submitFailed = function (_jqXHR, textStatus, _errorThrown) {
-                        pipelineError = "getResources failed requesting " + r + ":" + textStatus;
-                        console.log(_errorThrown);
-                        getResourcesPipeline();
-                    };
-                    var submitDone = function (data) {
+                    var submitDone_1 = function (data) {
                         var _a, _b;
                         if (data == null) {
                             // Bad return from L@W
@@ -207,7 +205,21 @@ var KatApp = /** @class */ (function () {
                             getResourcesPipeline();
                         }
                     };
-                    submit(application, params, submitDone, submitFailed);
+                    var submitFailed_1 = function (_jqXHR, textStatus, _errorThrown) {
+                        // If local resources, syntax like LAW.CLIENT|LAW:sharkfin needs to try client first, then
+                        // if not found, try generic.
+                        if (useLocalResources && currentFolder_1 < folders_1.length - 1) {
+                            currentFolder_1++;
+                            localFolder_1 = !isScript ? folders_1[currentFolder_1] + "/" : "";
+                            submit_1(application, params_1, submitDone_1, submitFailed_1);
+                        }
+                        else {
+                            pipelineError = "getResources failed requesting " + r + ":" + textStatus;
+                            console.log(_errorThrown);
+                            getResourcesPipeline();
+                        }
+                    };
+                    submit_1(application, params_1, submitDone_1, submitFailed_1);
                 }
                 catch (error) {
                     pipelineError = "getResources failed trying to request " + r + ":" + error;
@@ -261,7 +273,7 @@ var KatApp = /** @class */ (function () {
             this.element = element;
             this.element[0].KatApp = this;
         }
-        KatAppPlugInShim.prototype.calculate = function (options) {
+        KatAppPlugInShim.prototype.calculate = function ( /* options?: KatAppOptions */) {
             // do nothing, only 'provider' does a calculate
         };
         KatAppPlugInShim.prototype.updateOptions = function (options) {

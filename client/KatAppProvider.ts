@@ -410,7 +410,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                         // and this attribute used for checking(?)
                         
                         const rblKatApps = $("rbl-katapps");
-                        const t = $("<rbl-templates style='display:none;' rbl-t='" + r.toLowerCase() + "'>" + data.replace( /{thisTemplate}/g, r ) + "</rbl-templates>");
+                        const t = $("<rbl-templates rbl-t='" + r.toLowerCase() + "'>" + data.replace( /{thisTemplate}/g, r ) + "</rbl-templates>");
 
                         t.appendTo(rblKatApps);
 
@@ -3422,7 +3422,11 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
     // needed since when script is ran for 'first time' (which could be the 'only' time) obviously tempaltesUsedByAllApps
     // is undefined.
     if ( $.fn.KatApp.templatesUsedByAllApps == undefined ) {
-        $("<rbl-katapps />").appendTo("body");
+        $('<rbl-katapps style="display: none;">\
+            <style>\
+                rbl-katapps, rbl-templates, rbl-template { display: none; }\
+            </style>\
+        </rbl-katapps>').appendTo("body");
         
         $.fn.KatApp.templatesUsedByAllApps = {};
         $.fn.KatApp.templateDelegates = [];

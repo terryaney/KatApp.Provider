@@ -8,7 +8,7 @@ var TraceVerbosity;
     TraceVerbosity[TraceVerbosity["Detailed"] = 4] = "Detailed";
     TraceVerbosity[TraceVerbosity["Diagnostic"] = 5] = "Diagnostic";
 })(TraceVerbosity || (TraceVerbosity = {}));
-var KatApp = /** @class */ (function () {
+var KatApp = (function () {
     function KatApp() {
     }
     KatApp.stringCompare = function (strA, strB, ignoreCase) {
@@ -41,8 +41,6 @@ var KatApp = /** @class */ (function () {
         }
         return params;
     };
-    // https://blog.logrocket.com/4-different-techniques-for-copying-objects-in-javascript-511e422ceb1e/
-    // Wanted explicitly 'undefined' properties set to undefined and jquery .Extend() didn't do that
     KatApp.extend = function (target) {
         var sources = [];
         for (var _i = 1; _i < arguments.length; _i++) {
@@ -52,7 +50,6 @@ var KatApp = /** @class */ (function () {
             if (source === undefined)
                 return;
             Object.keys(source).forEach(function (key) {
-                // Always do deep copy
                 if (typeof source[key] === "object" && target[key] != undefined) {
                     KatApp.extend(target[key], source[key]);
                 }
@@ -94,7 +91,7 @@ var KatApp = /** @class */ (function () {
             else {
                 item = $("<div>" + displayDate + ": " + message + "</div>");
             }
-            console.log(item.text() /* remove any html formatting from message */);
+            console.log(item.text());
             $(".rbl-logclass").append(item);
             $('.rbl-logclass:not(.rbl-do-not-scroll)').each(function () {
                 this.scrollTop = this.scrollHeight;
@@ -107,8 +104,6 @@ var KatApp = /** @class */ (function () {
         var url = (_b = (_a = currentOptions.functionUrl) !== null && _a !== void 0 ? _a : KatApp.defaultOptions.functionUrl) !== null && _b !== void 0 ? _b : KatApp.functionUrl;
         var resourceArray = resources.split(",");
         var useLocalResources = debugResourcesDomain !== undefined;
-        // viewParts[ 0 ], viewParts[ 1 ]
-        // folder: string, resource: string, optional Version
         var pipeline = [];
         var pipelineNames = [];
         var pipelineIndex = 0;
@@ -123,8 +118,6 @@ var KatApp = /** @class */ (function () {
         };
         var pipelineError = undefined;
         var resourceResults = {};
-        // Build a pipeline of functions for each resource requested.
-        // TODO: Figure out how to make this asynchronous
         pipeline = resourceArray.map(function (r) {
             return function () {
                 var _a;
@@ -138,8 +131,7 @@ var KatApp = /** @class */ (function () {
                     var folder = resourceParts[0];
                     var currentFolder_1 = 0;
                     var folders_1 = folder.split("|");
-                    var version = resourceParts.length > 2 ? resourceParts[2] : (useTestVersion ? "Test" : "Live"); // can provide a version as third part of name if you want
-                    // Template names often don't use .xhtml syntax
+                    var version = resourceParts.length > 2 ? resourceParts[2] : (useTestVersion ? "Test" : "Live");
                     if (!resource_1.endsWith(".kaml") && !isScript) {
                         resource_1 += ".kaml";
                     }
@@ -162,14 +154,11 @@ var KatApp = /** @class */ (function () {
                             dataType: !useLocalResources ? "json" : undefined,
                             cache: false
                         };
-                        // Need to use .ajax isntead of .getScript/.get to get around CORS problem
-                        // and to also conform to using the submitCalculation wrapper by L@W.
                         $.ajax(ajaxConfig).done(done).fail(fail);
                     };
                     var submitDone_1 = function (data) {
                         var _a, _b;
                         if (data == null) {
-                            // Bad return from L@W
                             pipelineError = "getResources failed requesting " + r + " from L@W.";
                             getResourcesPipeline();
                         }
@@ -177,21 +166,11 @@ var KatApp = /** @class */ (function () {
                             if (data.payload !== undefined) {
                                 data = JSON.parse(data.payload);
                             }
-                            // data.Content when request from service, just data when local files
                             var resourceContent = (_b = (_a = data.Resources) === null || _a === void 0 ? void 0 : _a[0].Content) !== null && _b !== void 0 ? _b : data;
                             if (isScript) {
-                                // If local script location is provided, doing the $.ajax code automatically 
-                                // injects/executes the javascript, no need to do it again
                                 var body = document.querySelector('body');
-                                // Still trying to figure out how to best determine if I inject or not, might have to make a variable
-                                // at top of code in KatAppProvider, but if it 'ran', then $.fn.KatApp.plugInShims should be undefined.
-                                // Originally, I just looked to see if debugResourcesDomain was undefined...but if that is set and the domain
-                                // does NOT match domain of site running (i.e. debugging site in asp.net that uses KatApps and I want it to
-                                // hit development KatApp resources) then it doesn't inject it.  So can't just check undefined or not.
                                 if (body !== undefined && body !== null && $.fn.KatApp.plugInShims !== undefined && resourceContent !== undefined) {
-                                    // Just keeping the markup a bit cleaner by only having one copy of the code
                                     $("script[rbl-script='true']").remove();
-                                    // https://stackoverflow.com/a/56509649/166231
                                     var script = document.createElement('script');
                                     script.setAttribute("rbl-script", "true");
                                     var content = resourceContent;
@@ -206,8 +185,6 @@ var KatApp = /** @class */ (function () {
                         }
                     };
                     var submitFailed_1 = function (_jqXHR, textStatus, _errorThrown) {
-                        // If local resources, syntax like LAW.CLIENT|LAW:sharkfin needs to try client first, then
-                        // if not found, try generic.
                         if (useLocalResources && currentFolder_1 < folders_1.length - 1) {
                             currentFolder_1++;
                             localFolder_1 = !isScript ? folders_1[currentFolder_1] + "/" : "";
@@ -227,7 +204,6 @@ var KatApp = /** @class */ (function () {
                 }
             };
         }).concat([
-            // Last function
             function () {
                 if (pipelineError !== undefined) {
                     getResourcesHandler(pipelineError);
@@ -238,13 +214,11 @@ var KatApp = /** @class */ (function () {
             }
         ]);
         pipelineNames = resourceArray.map(function (r) { return "getResourcesPipeline." + r; }).concat(["getResourcesPipeline.finalize"]);
-        // Start the pipeline
         getResourcesPipeline();
     };
     KatApp.functionUrl = "https://btr.lifeatworkportal.com/services/evolution/CalculationFunction.ashx";
     KatApp.sessionUrl = "https://btr.lifeatworkportal.com/services/evolution/Calculation.ashx";
     KatApp.pageParameters = KatApp.readPageParameters();
-    // Default Options (shim, rest of the options/features added from server plugin)
     KatApp.defaultOptions = {
         debug: {
             traceVerbosity: TraceVerbosity.None,
@@ -254,7 +228,6 @@ var KatApp = /** @class */ (function () {
         },
         functionUrl: KatApp.functionUrl
     };
-    // https://stackoverflow.com/a/2117523
     KatApp.generateId = function () {
         return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) {
             var r = Math.random() * 16 | 0, v = c === 'x' ? r : (r & 0x3 | 0x8);
@@ -264,17 +237,14 @@ var KatApp = /** @class */ (function () {
     return KatApp;
 }());
 (function ($, window, document, undefined) {
-    var KatAppPlugInShim = /** @class */ (function () {
+    var KatAppPlugInShim = (function () {
         function KatAppPlugInShim(id, element, options) {
             this.id = id;
-            // Take a copy of the options they pass in so same options aren't used in all plugin targets
-            // due to a 'reference' to the object.
             this.options = KatApp.extend({}, KatApp.defaultOptions, options);
             this.element = element;
             this.element[0].KatApp = this;
         }
-        KatAppPlugInShim.prototype.calculate = function ( /* options?: KatAppOptions */) {
-            // do nothing, only 'provider' does a calculate
+        KatAppPlugInShim.prototype.calculate = function () {
         };
         KatAppPlugInShim.prototype.updateOptions = function (options) {
             this.options = KatApp.extend(this.options, options);
@@ -283,12 +253,9 @@ var KatApp = /** @class */ (function () {
             this.options = KatApp.extend(this.options, options);
         };
         KatAppPlugInShim.prototype.destroy = function () {
-            // Remove from memory cache in case they call delete before the
-            // real provider is loaded
             var shimIndex = -1;
             var applications = $.fn.KatApp.plugInShims;
             var id = this.id;
-            // Wanted to use applications.findIndex( f() ) but ie doesn't support
             applications.forEach(function (a, index) {
                 if (shimIndex === -1 && a.id == id) {
                     shimIndex = index;
@@ -305,36 +272,7 @@ var KatApp = /** @class */ (function () {
         };
         return KatAppPlugInShim;
     }());
-    /*
-    const privateMethod = function(this: KatAppPlugIn): void
-    {
-        // Private method not accessible outside plug in, however, if you want to call it from plug in implementation,
-        // need to call via privateMethod.apply(this); so that the PlugIn is the 'this context'
-    }
-    */
     var allowedPropertyGetters = ['options', 'id'];
-    // const autoInitMethods = ['calculate', 'updateOptions'];
-    // Not a fan of these 'magic' strings to call methods:
-    //
-    //      $("selector").KatApp("destroy")
-    //
-    // But other libraries (selectpicker, datepicker) seem to do same.
-    //
-    // Highcharts - they always seem to want you to grab an element and work with object from there:
-    //
-    //      $("select").each( function() { $(this).highcharts().destroy() } );
-    //
-    //      This mechanism would work for ours too.  But I feel ours is better, you just have this.KatApp property
-    //      not calling the 'plugin' again (which theirs only assumes to work with one element, in code they do this[0])
-    //
-    // noUiSlider - They aren't even a plugin, just a javascript library.
-    //
-    // MatchHeight - they allow you to register items correctly, but then allow you to hit methods via directly hitting prototype 
-    //               global options.  So they are 'almost' just a javascript library.  You can 'initalize' it with jQuery plugin 
-    //               style code, but then you have free reign to all their state and methods.
-    //
-    //      $.fn.matchHeight._beforeUpdate = function() { };
-    //      $.fn.matchHeight._apply(elements, options); // manually apply options
     $.fn.KatApp = function (options) {
         var args = [];
         for (var _i = 1; _i < arguments.length; _i++) {
@@ -344,8 +282,6 @@ var KatApp = /** @class */ (function () {
             if (options == undefined && this.length > 0 && this.first()[0].KatApp !== undefined) {
                 return this.first()[0].KatApp;
             }
-            // Creates a new plugin instance, for each selected element, and
-            // stores a reference within the element's data
             return this.each(function () {
                 if (!this.KatApp) {
                     $.fn.KatApp.applicationFactory(KatApp.generateId(), $(this), options);
@@ -356,21 +292,15 @@ var KatApp = /** @class */ (function () {
             });
         }
         else if (typeof options === 'string' && options[0] !== '_' && options !== 'init') {
-            // Call a public pluguin method (not starting with an underscore) for each 
-            // selected element.
             if (args.length == 0 && $.inArray(options, allowedPropertyGetters) != -1) {
-                // If the user does not pass any arguments and the method allows to
-                // work as a getter then break the chainability so we can return a value
-                // instead the element reference.  this[0] should be the only item in selector and grab getter from it.
                 var instance = this[0].KatApp;
                 if (instance === undefined)
                     return undefined;
                 return typeof instance[options] === 'function'
-                    ? instance[options].apply(instance) // eslint-disable-line prefer-spread
+                    ? instance[options].apply(instance)
                     : instance[options];
             }
             else {
-                // Invoke the speficied method on each selected element
                 return this.each(function () {
                     var instance = this.KatApp;
                     if (options == "ensure") {
@@ -384,14 +314,12 @@ var KatApp = /** @class */ (function () {
                         }
                     }
                     else if (instance !== undefined && typeof instance[options] === 'function') {
-                        instance[options].apply(instance, args); // eslint-disable-line prefer-spread
+                        instance[options].apply(instance, args);
                     }
                 });
             }
         }
     };
-    // 'In memory' application list until the real KatAppProvider.js script can be loaded from 
-    // the CMS to properly register the applications
     $.fn.KatApp.plugInShims = [];
     $.fn.KatApp.applicationFactory = $.fn.KatApp.debugApplicationFactory = function (id, element, options) {
         var _a, _b, _c, _d, _e, _f;
@@ -399,7 +327,6 @@ var KatApp = /** @class */ (function () {
         shim.trace("Starting factory", TraceVerbosity.Diagnostic);
         var applications = $.fn.KatApp.plugInShims;
         applications.push(shim);
-        // First time anyone has been called with .KatApp()
         if (applications.length === 1) {
             shim.trace("Loading KatAppProvider library...", TraceVerbosity.Detailed);
             var debugResourcesDomain = (_a = shim.options.debug) === null || _a === void 0 ? void 0 : _a.debugProviderDomain;

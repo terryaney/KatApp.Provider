@@ -522,9 +522,10 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
         }
 
         rebuild( options: KatAppOptions ): void {
+            const o = KatApp.extend({}, this.options, options);
             this.ui.unbindCalculationInputs();
             this.ui.triggerEvent( "onDestroyed", this );
-            this.init( options );
+            this.init( o );
         }
 
         setRegisteredToken( token: string ): void {
@@ -3422,7 +3423,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
     // needed since when script is ran for 'first time' (which could be the 'only' time) obviously tempaltesUsedByAllApps
     // is undefined.
     if ( $.fn.KatApp.templatesUsedByAllApps == undefined ) {
-        $('<rbl-katapps style="display: none;">\
+        $('<rbl-katapps>\
             <style>\
                 rbl-katapps, rbl-templates, rbl-template { display: none; }\
             </style>\

@@ -288,9 +288,10 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
             initPipeline(0);
         };
         KatAppPlugIn.prototype.rebuild = function (options) {
+            var o = KatApp.extend({}, this.options, options);
             this.ui.unbindCalculationInputs();
             this.ui.triggerEvent("onDestroyed", this);
-            this.init(options);
+            this.init(o);
         };
         KatAppPlugIn.prototype.setRegisteredToken = function (token) {
             var _a;
@@ -2453,7 +2454,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
         };
     }
     if ($.fn.KatApp.templatesUsedByAllApps == undefined) {
-        $('<rbl-katapps style="display: none;">\
+        $('<rbl-katapps>\
             <style>\
                 rbl-katapps, rbl-templates, rbl-template { display: none; }\
             </style>\

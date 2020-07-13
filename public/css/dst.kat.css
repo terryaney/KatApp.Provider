@@ -1,37 +1,37 @@
 @media (min-width: 1280px) {
-	.kat-app-css .container {
+	.katapp-css .container {
 		width: 1270px;
 	}
 }
-body.borderless .kat-app-css div.page-content {
+body.borderless .katapp-css div.page-content {
 	padding-top: 20px;
 	padding-bottom: 20px;
 }
-.kat-app-css .page-content .container {
+.katapp-css .page-content .container {
 	background-color: #fff;
 }
 @media (min-width: 768px) {
-	body.borderless .kat-app-css div.page-content .container {
+	body.borderless .katapp-css div.page-content .container {
 		padding-left: 0;
 		padding-right: 0;
 	}
 }
-.kat-app-css .btn-primary,
-.kat-app-css .btn-danger,
-.kat-app-css .btn-default,
-.kat-app-css .btn-success,
-.kat-app-css .btn-info,
-.kat-app-css .btn-warning {
+.katapp-css .btn-primary,
+.katapp-css .btn-danger,
+.katapp-css .btn-default,
+.katapp-css .btn-success,
+.katapp-css .btn-info,
+.katapp-css .btn-warning {
 	-webkit-border-radius: 6px;
 	-moz-border-radius: 6px;
 	border-radius: 6px;
 }
-.kat-app-css .btn-xs {
+.katapp-css .btn-xs {
 	-webkit-border-radius: 4px;
 	-moz-border-radius: 4px;
 	border-radius: 4px;
 }
-.kat-app-css .btn-primary {
+.katapp-css .btn-primary {
 	background: #333;
 	background: -webkit-linear-gradient(#333, #333);
 	background: -o-linear-gradient(#333, #333);
@@ -39,137 +39,137 @@ body.borderless .kat-app-css div.page-content {
 	background: linear-gradient(#333, #333);
 	color: #fff;
 }
-.kat-app-css .btn-primary.disabled {
+.katapp-css .btn-primary.disabled {
 	opacity: 0.3;
 }
-.kat-app-css .btn-primary:focus,
-.kat-app-css .btn-primary:hover {
+.katapp-css .btn-primary:focus,
+.katapp-css .btn-primary:hover {
 	background: #F6871E;
 	background: -webkit-linear-gradient(#F6871E, #F6871E);
 	background: -o-linear-gradient(#F6871E, #F6871E);
 	background: -moz-linear-gradient(#F6871E, #F6871E);
 	background: linear-gradient(#F6871E, #F6871E);
 }
-.kat-app-css .btn-primary-inverse {
+.katapp-css .btn-primary-inverse {
 	background: #F6871E;
 	color: #fff;
 }
-.kat-app-css header .container {
+.katapp-css header .container {
 	background-color: #fff;
 }
-.kat-app-css .top-links > ul > li,
-.kat-app-css .top-links > ul > li > a {
+.katapp-css .top-links > ul > li,
+.katapp-css .top-links > ul > li > a {
 	color: #333;
 }
-.kat-app-css .topnav-toggle {
+.katapp-css .topnav-toggle {
 	background: #333;
 }
-.kat-app-css .topnav-toggle .icon-bar {
+.katapp-css .topnav-toggle .icon-bar {
 	background-color: #333;
 }
-.kat-app-css .topnav {
+.katapp-css .topnav {
 	background-color: #333;
 }
-.kat-app-css .topnav > ul > li > a {
+.katapp-css .topnav > ul > li > a {
 	color: #fff;
 	background-color: #333;
 	border-right: 1px solid #333;
 	border-left: 1px solid #333;
 }
-.kat-app-css .topnav > ul > li > a:hover,
-.kat-app-css .topnav > ul > li > a:focus,
-.kat-app-css .topnav > ul > .active > a {
+.katapp-css .topnav > ul > li > a:hover,
+.katapp-css .topnav > ul > li > a:focus,
+.katapp-css .topnav > ul > .active > a {
 	background-color: #808080;
 	border-right: 1px solid #fff;
 	border-left: 1px solid #fff;
 }
-.kat-app-css .topnav > ul > li > .dropdown-menu {
+.katapp-css .topnav > ul > li > .dropdown-menu {
 	background-color: #333;
 	color: #333;
 }
-.kat-app-css .topnav > ul > li > .dropdown-menu > li > a,
-.kat-app-css .topnav > ul > li > .dropdown-menu > li > a:visited {
+.katapp-css .topnav > ul > li > .dropdown-menu > li > a,
+.katapp-css .topnav > ul > li > .dropdown-menu > li > a:visited {
 	color: #333;
 }
-.kat-app-css .topnav > ul > li > .dropdown-menu > li.active > a,
-.kat-app-css .topnav > ul > li > .dropdown-menu > li > a:hover {
+.katapp-css .topnav > ul > li > .dropdown-menu > li.active > a,
+.katapp-css .topnav > ul > li > .dropdown-menu > li > a:hover {
 	color: #333;
 	background-color: #808080;
 }
-.kat-app-css .page-header {
+.katapp-css .page-header {
 	color: #333;
 }
-.kat-app-css .footer-links {
+.katapp-css .footer-links {
 	background-color: #333;
 	color: #fff;
 }
-.kat-app-css footer .footer-links > ul > li > a {
+.katapp-css footer .footer-links > ul > li > a {
 	color: #333;
 }
-body.borderless .kat-app-css .nav-tabs > li > a {
+body.borderless .katapp-css .nav-tabs > li > a {
 	color: #333 !important;
 }
-body.borderless .kat-app-css .nav-tabs > li.active > a,
-body.borderless .kat-app-css .nav-tabs > li.active > a:focus,
-body.borderless .kat-app-css .nav-tabs > li.active > a:hover {
+body.borderless .katapp-css .nav-tabs > li.active > a,
+body.borderless .katapp-css .nav-tabs > li.active > a:focus,
+body.borderless .katapp-css .nav-tabs > li.active > a:hover {
 	color: #333 !important;
 }
-body:not(.borderless) .kat-app-css .nav-tabs > li.active > a,
-body:not(.borderless) .kat-app-css .nav-tabs > li.active > a:focus,
-body:not(.borderless) .kat-app-css .nav-tabs > li.active > a:hover {
+body:not(.borderless) .katapp-css .nav-tabs > li.active > a,
+body:not(.borderless) .katapp-css .nav-tabs > li.active > a:focus,
+body:not(.borderless) .katapp-css .nav-tabs > li.active > a:hover {
 	color: #fff !important;
 	background-color: #333;
 	border: 1px solid #333;
 }
-body:not(.borderless) .kat-app-css .nav-tabs > li.active {
+body:not(.borderless) .katapp-css .nav-tabs > li.active {
 	border-color: #333;
 }
-body:not(.borderless) .kat-app-css .nav-tabs > li.active a:after {
+body:not(.borderless) .katapp-css .nav-tabs > li.active a:after {
 	border-color: #333 transparent;
 }
-.kat-app-css .panel-default .panel-heading {
+.katapp-css .panel-default .panel-heading {
 	color: #fff;
 	background-color: #F6871E;
 }
-.kat-app-css .btn-mobile-assumptions div {
+.katapp-css .btn-mobile-assumptions div {
 	background-color: #333;
 }
-.kat-app-css .btn-mobile-assumptions p {
+.katapp-css .btn-mobile-assumptions p {
 	color: #333;
 }
-.kat-app-css .mobile-toggle-collapse {
+.katapp-css .mobile-toggle-collapse {
 	color: #333;
 }
-.kat-app-css .mobile-toggle-collapse:hover,
-.kat-app-css .mobile-toggle-collapse:focus {
+.katapp-css .mobile-toggle-collapse:hover,
+.katapp-css .mobile-toggle-collapse:focus {
 	color: #333;
 }
-.kat-app-css .noUi-handle div {
+.katapp-css .noUi-handle div {
 	color: #F6871E;
 }
-.kat-app-css .noUi-handle,
-.kat-app-css .noUi-horizontal .noUi-handle {
+.katapp-css .noUi-handle,
+.katapp-css .noUi-horizontal .noUi-handle {
 	background: #F6871E;
 }
-.kat-app-css .table.table-bordered > thead > tr > th,
-.kat-app-css .table.table-bordered > tbody > tr.header > th,
-.kat-app-css .table.table-bordered > tbody > tr.header > td {
+.katapp-css .table.table-bordered > thead > tr > th,
+.katapp-css .table.table-bordered > tbody > tr.header > th,
+.katapp-css .table.table-bordered > tbody > tr.header > td {
 	background-color: #F6871E;
 	color: #fff;
 	border-color: #F6871E;
 }
-.kat-app-css .radio input[type="radio"]:checked + label::before {
+.katapp-css .radio input[type="radio"]:checked + label::before {
 	border-color: #333;
 }
-.kat-app-css .radio input[type="radio"] + label::after,
-.kat-app-css .radio input[type="radio"]:checked + label::after {
+.katapp-css .radio input[type="radio"] + label::after,
+.katapp-css .radio input[type="radio"]:checked + label::after {
 	background-color: #333;
 }
 @media (max-width: 767px) {
-	body .kat-app-css  {
+	body .katapp-css  {
 		padding-bottom: 50px;
 	}
-	.kat-app-css .modelingInputs {
+	.katapp-css .modelingInputs {
 		position: fixed;
 		top: 100%;
 		left: 0;
@@ -186,59 +186,59 @@ body:not(.borderless) .kat-app-css .nav-tabs > li.active a:after {
 		-moz-transition: top 0.5s ease-out 0s;
 		transition: top 0.5s ease-out 0s;
 	}
-	.kat-app-css .modelingInputs .btn-primary {
+	.katapp-css .modelingInputs .btn-primary {
 		padding: 0;
 	}
-	.kat-app-css .modelingInputs .modelingInputsInner {
+	.katapp-css .modelingInputs .modelingInputsInner {
 		position: relative;
 		padding-top: 15px;
 	}
-	body.mobile-assumptions .kat-app-css  {
+	body.mobile-assumptions .katapp-css  {
 		overflow: hidden;
 	}
-	body.mobile-assumptions .kat-app-css .modelingInputs {
+	body.mobile-assumptions .katapp-css .modelingInputs {
 		display: block;
 		top: 0;
 	}
-	body.mobile-assumptions .kat-app-css .modelingInputs .modelingInputsInner {
+	body.mobile-assumptions .katapp-css .modelingInputs .modelingInputsInner {
 		top: 0;
 	}
-	.kat-app-css .btn-mobile-assumptions div {
+	.katapp-css .btn-mobile-assumptions div {
 		padding: 5px 0;
 	}
-	.kat-app-css .modelerTab p {
+	.katapp-css .modelerTab p {
 		font-weight: bold;
 		font-size: 15px;
 	}
 }
-.kat-app-css .logo-left {
+.katapp-css .logo-left {
 	font-size: 2em;
 	color: #333;
 }
-.kat-app-css .logo-left span {
+.katapp-css .logo-left span {
 	font-size: 0.8em;
 	font-weight: bold;
 	color: #333;
 }
-.kat-app-css .summary-table table thead tr th.value {
+.katapp-css .summary-table table thead tr th.value {
 	text-align: right;
 }
-.kat-app-css .summary-table table tbody tr.take-home td {
+.katapp-css .summary-table table tbody tr.take-home td {
 	background-color: #fcf8e3;
 	font-weight: bold;
 	color: #118e04;
 }
-.kat-app-css .result-table table {
+.katapp-css .result-table table {
 	margin-right: auto;
 	margin-left: auto;
 }
-.kat-app-css .result-table table tbody tr td {
+.katapp-css .result-table table tbody tr td {
 	border-width: 0;
 }
-.kat-app-css div.row > div.label-only > label {
+.katapp-css div.row > div.label-only > label {
 	padding-top: 8px;
 }
-.kat-app-css .row.pull-bottom > div {
+.katapp-css .row.pull-bottom > div {
 	float: none;
 	vertical-align: bottom;
 	display: inline-block;

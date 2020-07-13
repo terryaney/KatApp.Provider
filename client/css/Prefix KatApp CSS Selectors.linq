@@ -72,10 +72,10 @@ foreach( var file in new DirectoryInfo( @"C:\BTR\KATApp\client\css" ).GetFiles( 
 					string.Join(
 						"," + Environment.NewLine, 
 						s.Selectors.Select(i => i.Value.StartsWith( "body" )
-							? i.Value.Split( ' ' )[ 0 ] + " .kat-app-css " + string.Join( " ", i.Value.Split( ' ' ).Skip( 1 ) ) 
-							: i.Value.StartsWith( ".kat-app-css." ) // Anything that can be 'nested' but I want to scope my css, add this prefix (i.e. tooltips are only 'one at a time' and appended to the 'body' so I can't wrap inside kat-app-css)
+							? i.Value.Split( ' ' )[ 0 ] + " .katapp-css " + string.Join( " ", i.Value.Split( ' ' ).Skip( 1 ) ) 
+							: i.Value.StartsWith( ".katapp-css." ) // Anything that can be 'nested' but I want to scope my css, add this prefix (i.e. tooltips are only 'one at a time' and appended to the 'body' so I can't wrap inside katapp-css)
 								? i.Value
-								: $".kat-app-css {i.Value}" 
+								: $".katapp-css {i.Value}" 
 						)
 					);
 				var styles = getStyles( s.ChildFragments );
@@ -94,8 +94,8 @@ foreach( var file in new DirectoryInfo( @"C:\BTR\KATApp\client\css" ).GetFiles( 
 					var selectors =
 						string.Join("," + Environment.NewLine + "\t",
 							cf.Selectors.Select(i => i.Value.StartsWith("body")
-								? i.Value.Split(' ')[0] + " .kat-app-css " + string.Join(" ", i.Value.Split(' ').Skip(1))
-								: $".kat-app-css {i.Value}"
+								? i.Value.Split(' ')[0] + " .katapp-css " + string.Join(" ", i.Value.Split(' ').Skip(1))
+								: $".katapp-css {i.Value}"
 							)
 						);
 					var styles = getStyles(cf.ChildFragments);

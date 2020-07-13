@@ -1,31 +1,31 @@
 <rbl-config calcengine="Buck_DecisionSupportFSA_SE" templates="Standard_Templates"></rbl-config>
 
 <style>
-    .kat-app-css div.chart { height: 350px; }
+    .katapp-css div.chart { height: 350px; }
     @media (max-width: 767px) {
-        .kat-app-css div.chart { height: 250px; }
+        .katapp-css div.chart { height: 250px; }
     }
-    .kat-app-css .summary-table.table thead tr th.value {
+    .katapp-css .summary-table.table thead tr th.value {
         text-align: right;
     }
-    .kat-app-css .summary-table.table tbody tr.take-home td {
+    .katapp-css .summary-table.table tbody tr.take-home td {
         background-color: #fcf8e3;
         font-weight: bold;
         color: #118e04;
     }
-    .kat-app-css .result-table.table {
+    .katapp-css .result-table.table {
         margin-right: auto;
         margin-left: auto;
     }
-    .kat-app-css .result-table.table tbody tr td {
+    .katapp-css .result-table.table tbody tr td {
         border-width: 0;
     }
-    .kat-app-css .ws-info {
+    .katapp-css .ws-info {
         padding-right: 5px;
         text-decoration: none;
         outline: none;
     }
-    .kat-app-css a.ws-info:focus {
+    .katapp-css a.ws-info:focus {
         border: 0;
         outline: none;
     }

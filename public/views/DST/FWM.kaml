@@ -1,9 +1,9 @@
 <rbl-config calcengine="Buck_DecisionSupportFWM_SE" templates="Standard_Templates"></rbl-config>
 
 <style>
-	.kat-app-css div.chart { height: 350px; }
+	.katapp-css div.chart { height: 350px; }
 	@media (max-width: 767px) {
-		.kat-app-css div.chart { height: 250px; }
+		.katapp-css div.chart { height: 250px; }
 	}
 </style>
 

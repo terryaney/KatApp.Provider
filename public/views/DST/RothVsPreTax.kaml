@@ -1,7 +1,7 @@
 <rbl-config calcengine="Buck_DecisionSupport_RothvsPretax_SE" templates="Standard_Templates"></rbl-config>
 
 <style>
-	.kat-app-css .conversionCharts div.chart { height: 200px; }
+	.katapp-css .conversionCharts div.chart { height: 200px; }
 </style>
 
 <div class="col-xs-12 visible-xs no-padding navbar-fixed-bottom">

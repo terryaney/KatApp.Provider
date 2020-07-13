@@ -1,82 +1,82 @@
-.kat-app-css .debug {
+.katapp-css .debug {
 	border: solid red 1px;
 }
-.kat-app-css .container {
+.katapp-css .container {
 	background-color: white;
 	width: auto;
 	margin-left: 50px;
 }
-.kat-app-css .sharkfin {
+.katapp-css .sharkfin {
 	min-height: 450px;
 }
-.kat-app-css .padding-20 {
+.katapp-css .padding-20 {
 	padding: 20px;
 }
-.kat-app-css .savings,
-.kat-app-css .hsa {
+.katapp-css .savings,
+.katapp-css .hsa {
 	min-height_: 300px;
 }
-.kat-app-css .allocation {
+.katapp-css .allocation {
 	min-height: 600px;
 }
-.kat-app-css .myactions {
+.katapp-css .myactions {
 	min-height: 150px;
 	background-color: #f8ecec;
 }
-.kat-app-css .considerations {
+.katapp-css .considerations {
 	min-height: 150px;
 	background-color: #e8f5ee;
 }
-.kat-app-css .rounded-lg {
+.katapp-css .rounded-lg {
 	border-radius: 10px !important;
 }
-.kat-app-css .rounded-pill {
+.katapp-css .rounded-pill {
 	border-radius: 50rem!important;
 }
-.kat-app-css .align-items-center {
+.katapp-css .align-items-center {
 	-ms-flex-align: center!important;
 	align-items: center!important;
 	vertical-align: middle;
 }
-.kat-app-css .vertical-center_ {
+.katapp-css .vertical-center_ {
 	display: table-cell;
 	vertical-align: middle;
 }
-.kat-app-css .status-pill {
+.katapp-css .status-pill {
 	min-height: 40px;
 	padding-left: 20px;
 	color: white;
 }
-.kat-app-css .status-pill div {
+.katapp-css .status-pill div {
 	text-align: center;
 }
-.kat-app-css .noUi-handle {
+.katapp-css .noUi-handle {
 	background: #013d79;
 }
-body .kat-app-css  {
+body .katapp-css  {
 	background-color: white;
 	font-size_: 16px;
 }
-.kat-app-css .highcharts-title {
+.katapp-css .highcharts-title {
 	font-family: "Helvetica Neue",Helvetica,Arial,sans-serif;
 	font-weight: bold;
 }
-.kat-app-css .highcharts-legend-item,
-.kat-app-css .highcharts-axis-labels,
-.kat-app-css .highcharts-axis-title {
+.katapp-css .highcharts-legend-item,
+.katapp-css .highcharts-axis-labels,
+.katapp-css .highcharts-axis-title {
 	font-family: "Helvetica Neue",Helvetica,Arial,sans-serif;
 }
-.kat-app-css h4 {
+.katapp-css h4 {
 	letter-spacing_: .1em;
 	text-transform: uppercase;
 }
-.kat-app-css h5 {
+.katapp-css h5 {
 	font-weight: bold;
 }
-.kat-app-css h6 {
+.katapp-css h6 {
 	color: grey;
 }
-.kat-app-css .slider-iReturn .noUi-connect,
-.kat-app-css .redtail .noUi-connect {
+.katapp-css .slider-iReturn .noUi-connect,
+.katapp-css .redtail .noUi-connect {
 	background-image: url("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAAECAIAAADAusJtAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAJcEhZcwAADsMAAA7DAcdvqGQAAAAUSURBVBhXY/i/cjETAwMDBDMwAAAgtgJSYMCo9QAAAABJRU5ErkJggg==");
 }

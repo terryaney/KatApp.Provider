@@ -1,7 +1,7 @@
 <rbl-config calcengine="Buck_DecisionSupportLI_SE" templates="Standard_Templates"></rbl-config>
 
 <style>
-.kat-app-css .row.pull-bottom > div > div {
+.katapp-css .row.pull-bottom > div > div {
   float: none;
   vertical-align: bottom;
   display: inline-block;

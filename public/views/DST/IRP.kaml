@@ -1,16 +1,16 @@
 <rbl-config calcengine="Buck_DecisionSupportIRP_SE" templates="Standard_Templates"></rbl-config>
 
 <style>
-    .kat-app-css div.chart { height: 350px; }
+    .katapp-css div.chart { height: 350px; }
     @media (max-width: 767px) {
-        .kat-app-css div.chart { height: 250px; }
+        .katapp-css div.chart { height: 250px; }
     }
-    .kat-app-css .ws-info {
+    .katapp-css .ws-info {
         padding-right: 5px;
         text-decoration: none;
         outline: none;
     }
-    .kat-app-css a.ws-info:focus {
+    .katapp-css a.ws-info:focus {
         border: 0;
         outline: none;
     }

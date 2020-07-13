@@ -216,7 +216,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                             that.trace(viewId + " returned from CMS.", TraceVerbosity.Normal);
                             var data = results[viewId]; // eslint-disable-line @typescript-eslint/no-non-null-assertion
                             // Process as view - get info from rbl-config and inject markup
-                            var view = $("<div class='kat-app-css'>" + data.format({ thisView: "[rbl-application-id='" + that.id + "']", id: that.id, thisClass: ".katapp-" + that.id }) + "</div>");
+                            var view = $("<div class='katapp-css'>" + data.format({ thisView: "[rbl-application-id='" + that.id + "']", id: that.id, thisClass: ".katapp-" + that.id }) + "</div>");
                             var rblConfig = $("rbl-config", view).first();
                             if (rblConfig.length !== 1) {
                                 that.trace("View " + viewId + " is missing rbl-config element.", TraceVerbosity.Quiet);
@@ -2696,8 +2696,8 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                     trigger: trigger,
                     container: container,
                     template: isErrorValidator
-                        ? '<div class="tooltip error kat-app-css" role="tooltip"><div class="tooltip-arrow"></div><div class="tooltip-inner"></div></div>'
-                        : '<div class="popover kat-app-css" role="tooltip"><div class="arrow"></div><h3 class="popover-title"></h3><div class="popover-content"></div></div>',
+                        ? '<div class="tooltip error katapp-css" role="tooltip"><div class="tooltip-arrow"></div><div class="tooltip-inner"></div></div>'
+                        : '<div class="popover katapp-css" role="tooltip"><div class="arrow"></div><h3 class="popover-title"></h3><div class="popover-content"></div></div>',
                     placement: function (tooltip, trigger) {
                         // Add a class to the .popover element
                         // http://stackoverflow.com/a/19875813/166231

@@ -699,17 +699,17 @@ body:not(.borderless) .nav-tabs+.tab-content.has-nav-mobile {
 }
 
 .validator-container .tooltip, .tooltip.error,
-.kat-app-css.tooltip.error {
+.katapp-css.tooltip.error {
   min-width: 140px;
 }
 
 .validator-container .tooltip.in, .tooltip.error.in,
-.kat-app-css.tooltip.error.in {
+.katapp-css.tooltip.error.in {
   opacity: 1;
 }
 
 .validator-container.error .tooltip-inner, .validator-container.warning .tooltip-inner, .tooltip.error .tooltip-inner, .tooltip.warning .tooltip-inner,
-.kat-app-css.tooltip.error .tooltip-inner, .kat-app-css.tooltip.warning .tooltip-inner {
+.katapp-css.tooltip.error .tooltip-inner, .katapp-css.tooltip.warning .tooltip-inner {
   padding: 8px;
   background-color: red;
   color: #fff;
@@ -717,18 +717,18 @@ body:not(.borderless) .nav-tabs+.tab-content.has-nav-mobile {
 }
 
 .validator-container.warning .tooltip-inner, .tooltip.warning .tooltip-inner,
-.kat-app-css.tooltip.warning .tooltip-inner {
+.katapp-css.tooltip.warning .tooltip-inner {
   background-color: #FCF8E3;
   color: #8A6D3B;
 }
 
 .validator-container.error .tooltip.top .tooltip-arrow, .validator-container.error .tooltip.bottom .tooltip-arrow, .validator-container.error .tooltip.left .tooltip-arrow, .validator-container.error .tooltip.right .tooltip-arrow, .tooltip.top.error .tooltip-arrow, .tooltip.bottom.error .tooltip-arrow, .tooltip.left.error .tooltip-arrow, .tooltip.right.error .tooltip-arrow,
-.kat-app-css.tooltip.top.error .tooltip-arrow, .kat-app-css.tooltip.bottom.error .tooltip-arrow, .kat-app-css.tooltip.left.error .tooltip-arrow, .kat-app-css.tooltip.right.error .tooltip-arrow {
+.katapp-css.tooltip.top.error .tooltip-arrow, .katapp-css.tooltip.bottom.error .tooltip-arrow, .katapp-css.tooltip.left.error .tooltip-arrow, .katapp-css.tooltip.right.error .tooltip-arrow {
   border-top-color: red;
 }
 
 .validator-container.warning .tooltip.top .tooltip-arrow, .validator-container.warning .tooltip.bottom .tooltip-arrow, .validator-container.warning .tooltip.left .tooltip-arrow, .validator-container.warning .tooltip.right .tooltip-arrow, .tooltip.top.warning .tooltip-arrow, .tooltip.bottom.warning .tooltip-arrow, .tooltip.left.warning .tooltip-arrow, .tooltip.right.warning .tooltip-arrow,
-.kat-app-css.tooltip.top.warning .tooltip-arrow, .kat-app-css.tooltip.bottom.warning .tooltip-arrow, .kat-app-css.tooltip.left.warning .tooltip-arrow, .kat-app-css.tooltip.right.warning .tooltip-arrow {
+.katapp-css.tooltip.top.warning .tooltip-arrow, .katapp-css.tooltip.bottom.warning .tooltip-arrow, .katapp-css.tooltip.left.warning .tooltip-arrow, .katapp-css.tooltip.right.warning .tooltip-arrow {
   border-top-color: #FCF8E3;
 }
 

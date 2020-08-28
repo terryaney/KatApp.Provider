@@ -1,19 +1,30 @@
 <rbl-config calcengine="Buck_DecisionSupportIRP_SE" templates="Standard_Templates"></rbl-config>
 
 <style>
-    .katapp-css div.chart { height: 350px; }
+    {thisView} div.chart { height: 350px; }
     @media (max-width: 767px) {
-        .katapp-css div.chart { height: 250px; }
+        .irp-modal div.chart { height: 250px; }
     }
-    .katapp-css .ws-info {
+    {thisView} .ws-info {
         padding-right: 5px;
         text-decoration: none;
         outline: none;
     }
-    .katapp-css a.ws-info:focus {
+    {thisView} a.ws-info:focus {
         border: 0;
         outline: none;
     }
+	{thisView} .IRPResults {
+        margin-top: 100px;
+    }
+	{thisView} .irp-buttons button {
+		width: 200px;
+	}
+	{thisView} .wsiAnnualFuturePayIncreaseRate, {thisView} .wsiMedicalCostInflation {
+		display: none;
+	}
+	{thisView} .noUi-handle div {display: none;}
+
 </style>
 
 <div class="hidden">
@@ -73,25 +84,20 @@
 		</div>
 	</div>
 	<div class="col-md-8">
-		<ul class="nav nav-tabs" role="tablist">
-			<li role="presentation" class="col-xs-12 active"><a href="#tabResults" role="tab" data-toggle="tab" class="text-center">Results</a></li>
-		</ul>
-		<div class="tab-content match-height">
-			<div role="tabpanel" class="tab-pane fade in active" id="tabResults">
-				<p><a class="vhiLearnMore" role="button" tabindex="0" data-toggle="modal" data-target=".learnMoreModal">Learn more about the IRP Calculation.</a></p>
-				<div class="row">
-					<div class="col-md-6">
-						<div class="text-center">
-							<div rbl-tid="chart-highcharts" rbl-chartdata="IRPChart"></div>
-						</div>
+		<div class="IRPResults">
+			<p><a class="vhiLearnMore" role="button" tabindex="0" data-toggle="modal" data-target=".learnMoreModal">Learn more about the IRP Calculation.</a></p>
+			<div class="row">
+				<div class="col-md-6">
+					<div class="text-center">
+						<div rbl-tid="chart-highcharts" rbl-chartdata="IRPChart"></div>
 					</div>
-					<div class="col-md-6">
-						<div class="alert alert-success" role="alert"><h2 class="irpHeading"></h2></div>
-						<div rbl-tid="result-table" rbl-tablename="summary-table"></div>
-					</div>
-					<div class="col-md-12">
-						<div class="alert alert-warning" role="alert"><p class="irpFootnote">* Initially takes into account a decrease in expenses at retirement due to no payroll taxes and no savings plan contributions</p></div>
-					</div>
+				</div>
+				<div class="col-md-6">
+					<div class="alert alert-success" role="alert"><h2 class="irpHeading"></h2></div>
+					<div rbl-tid="result-table" rbl-tablename="summary-table"></div>
+				</div>
+				<div class="col-md-12">
+					<div class="alert alert-warning" role="alert"><p class="irpFootnote">* Initially takes into account a decrease in expenses at retirement due to no payroll taxes and no savings plan contributions</p></div>
 				</div>
 			</div>
 		</div>
@@ -192,15 +198,15 @@
 					<ul>
 						<li>Social Security payroll taxes</li><li>Your retirement savings contributions (we assume you will be saving at the current rate that appears in the modeler up until you retire)</li>
 					</ul>
-					<li>The 80% default used in the retirement modeler is a “rule of thumb” average. This tool will help you develop your own personal IRP.</li>
+					<li>The 80% default used in the retirement modeler is a &quot;rule of thumb&quot; average. This tool will help you develop your own personal IRP.</li>
 				</ul>
 				<p><b>For each variable read the help (?) to understand what it means and how it may affect your outcome; adjust each one according to your expectations of how your spending will change once you retire.</b></p>
 				<p><b>Other notes about the calculations:</b></p>
 				<ul>
 					<li><b>Federal, State, and Local Taxes:</b> Federal and State Income taxes are dependent on what you actually have as income at retirement and the tax code at that time. This estimator assumes your tax bracket remains the same, the tax code remains the same, and your taxes the same percentage of pay now as when you retire.</li>
 					<li><b>Payroll Taxes:</b> You will no longer have to pay FICA taxes once you are retired unless you have some form of earned income. This payroll tax reduction is taken into account in this estimator.</li>
-					<li class="irp-inflation"><b>Inflation:</b> Inflation is assumed to be equal to the lesser of 2 percent or the Pay increase rate.</li>
-				</ul>
+					<li><b>Inflation:</b> Inflation is assumed to be equal to the lesser of 2 percent or the Pay increase rate.</li>
+					</ul>
 			</div>
 			<div class="modal-footer">
 				<button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
@@ -262,7 +268,8 @@
 			}
 
 			view.on( "onCalculation.RBLe", function( event, calculationResults, calcOptions, application ) {
-				application.calculationInputs["iReplaceRatio"] = Number($(".irpValue", view).html().replace(" %", "").replace("%", "")) / 100;
+				const irpValue = $(".irpValue", view).html() || "0";
+				application.calculationInputs["iReplaceRatio"] = Number(irpValue.replace(" %", "").replace("%", "")) / 100;
 				if ( $.fn.matchHeight !== undefined ) {
 					// Doesn't look like I can only call 'update' to match height items within my view, so this will update
 					// all and any match heights applied on page, but my bindings were set scoped to my view, so it should

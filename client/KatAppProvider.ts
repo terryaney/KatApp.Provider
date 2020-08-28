@@ -16,6 +16,24 @@
 // 5. Added rbl-input-tab and rbl-result-tabs to 'kat app data attributes'
 // 6. <div rbl-tid="chart-highcharts" data-name="BalanceChart" rbl-data="BalanceChart" rbl-options="BalanceChart"></div>
 
+/*
+Debug Issues
+1. If I set tsconfig-base.json removeComments: true, it removes my //# sourceURL=KatAppProvider.js at the bottom of the file
+   and debugging/finding the file in Chrome is not possible.  Need to figure out how to get that in there or manually put in
+   after I build.
+
+2. Trouble debugging KatAppProvider with breakpoints. The only way it seemed I could put breakpoints into KatAppProvider.ts 
+   was to modify the sourceMappingURL declaration in the generated file (KatAppProvider.js) to sourceMappingURL=js/KatAppProvider.js.map.
+   If it didn't have the js/ folder, Chrome said it couldn't find the file and breakpoints were never hit.
+
+   If I did change to js/, breakpoints hit, but then Chrome would display an error (in the Source file view, not the console) like:
+   
+   Could not load content for http://localhost:8887/client/KatAppProvider.ts (HTTP error: status code 404, net::ERR_HTTP_RESPONSE_CODE_FAILURE)
+
+   Maybe that is expected, but just documenting.
+
+*/
+
 KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosity.Detailed);
 
 // Need this function format to allow for me to reload script over and over (during debugging/rebuilding)
@@ -541,7 +559,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
         calculate( customOptions?: KatAppOptions ): void {
             const _sharedData = $.fn.KatApp.sharedData;
 
-            // Shouldn't change 'share' option with a customOptions object
+            // Shouldn't change 'share' option with a customOptions object, so just use original options to check
             const shareDataWithOtherApplications = this.options.shareDataWithOtherApplications ?? false;
             if ( shareDataWithOtherApplications ) {
                 this.options.registeredToken = _sharedData.registeredToken;

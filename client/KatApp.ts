@@ -471,15 +471,15 @@ class KatApp
         if ( applications.length === 1 ) {
             shim.trace("Loading KatAppProvider library...", TraceVerbosity.Detailed);
 
-            let debugResourcesDomain = shim.options.debug?.debugProviderDomain;
-            if ( debugResourcesDomain !== undefined ) {
-                debugResourcesDomain += "js/";
+            let debugProviderDomain = shim.options.debug?.debugProviderDomain;
+            if ( debugProviderDomain !== undefined ) {
+                debugProviderDomain += "js/";
             }
-            shim.trace("Downloading KatAppProvider.js from " + ( debugResourcesDomain ?? shim.options.functionUrl ), TraceVerbosity.Diagnostic );
+            shim.trace("Downloading KatAppProvider.js from " + ( debugProviderDomain ?? shim.options.functionUrl ), TraceVerbosity.Diagnostic );
 
             const useTestService = shim.options?.debug?.useTestPlugin ?? KatApp.defaultOptions.debug?.useTestPlugin ?? false;
 
-            KatApp.getResources( shim, "Global:KatAppProvider.js", useTestService, true, debugResourcesDomain,
+            KatApp.getResources( shim, "Global:KatAppProvider.js", useTestService, true, debugProviderDomain,
                 function( errorMessage ) {
                     if ( errorMessage !== undefined ) {
                         shim.trace("KatAppProvider library could not be loaded.", TraceVerbosity.Quiet);

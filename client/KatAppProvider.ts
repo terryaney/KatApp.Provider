@@ -34,6 +34,8 @@ Debug Issues
 
 */
 
+const providerVersion = 8.31; // eslint-disable-line @typescript-eslint/no-unused-vars
+
 KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosity.Detailed);
 
 // Need this function format to allow for me to reload script over and over (during debugging/rebuilding)
@@ -894,6 +896,12 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
         getResultValue( table: string, id: string, column: string, defautlValue?: string ): string | undefined { 
             return this.rble.getResultValue( table, id, column, defautlValue ); 
         }
+        getResultValueByColumn( table: string, keyColumn: string, key: string, column: string, defautlValue?: string ): string | undefined { 
+            return this.rble.getResultValueByColumn( table, keyColumn, key, column, defautlValue ); 
+        }
+        setDefaultValue( id: string, value: string | undefined): void {
+            this.rble.setDefaultValue(id, value);
+        }
         saveCalcEngine( location: string ): void {
             this.element.data("katapp-save-calcengine", location);
         }
@@ -954,6 +962,11 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
 
         getInputValue(input: JQuery): string {
             let value = input.val();
+
+            if ( Array.isArray( value ) ) {
+                value = ( value as Array<unknown> ).join("^");
+            }
+
             let skipAssignment = false;
 
             if (input.attr("type") === "radio") {
@@ -1825,8 +1838,8 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                 else if ( aspCheckbox !== undefined ) {
                     aspCheckbox.prop("checked", value === "1");
                 }
-                else {
-                    input.val( value );
+                else if ( input.length > 0 ) {
+                    input.val( input[ 0 ].hasAttribute( "multiple" ) ? value.split("^") : value );
 
                     // In case it is bootstrap-select
                     const isSelectPicker = input.attr("data-kat-bootstrap-select-initialized") !== undefined;
@@ -2863,15 +2876,15 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                 }
                 
                 const firstDataRow = this.highchartsData.filter(r => !(r.category || "").startsWith("config-")).shift();
+                const highchartKey = container.attr('data-highcharts-chart');
+                const highchart = Highcharts.charts[ highchartKey ?? -1 ] as unknown as HighchartsChartObject;
+
+                if ( highchart !== undefined ) {
+                    highchart.destroy();                    
+                }
 
                 if ( firstDataRow !== undefined ) {
                     const chartOptions = this.getHighchartsOptions( firstDataRow );
-
-                    const highchart = Highcharts.charts[ container.data('highchartsChart') ] as unknown as HighchartsChartObject;
-
-                    if ( highchart !== undefined ) {
-                        highchart.destroy();                    
-                    }
 
                     try {
                         container.highcharts(chartOptions);
@@ -3153,8 +3166,8 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                 // Do all data-* attributes that we support
                 const id = el.data("inputname");
                 const label = el.data("label");
-                const multiSelect = el.data("multiselect");
-                const liveSearch = el.data("livesearch") ?? "true";
+                const multiSelect = el.data("multiselect") ?? false;
+                const liveSearch = el.data("livesearch") ?? true;
                 const size = el.data("size") ?? "15";
                 const lookuptable = el.data("lookuptable");
                 const css = el.data("css");
@@ -3171,12 +3184,13 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
 
                 input.attr("data-size", size);
 
-                if ( multiSelect === "true" ) {
+                if ( multiSelect ) {
                     input.addClass("select-all");
+                    input.attr("multiple", "multiple");
                     input.attr("data-selected-text-format", "count > 2");
                 }
                 
-                if ( liveSearch === "true" ) {
+                if ( liveSearch ) {
                     input.attr("data-live-search", "true");
                 }
 

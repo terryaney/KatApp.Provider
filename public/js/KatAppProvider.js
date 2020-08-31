@@ -31,6 +31,7 @@ Debug Issues
    Maybe that is expected, but just documenting.
 
 */
+var providerVersion = 8.31; // eslint-disable-line @typescript-eslint/no-unused-vars
 KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosity.Detailed);
 // Need this function format to allow for me to reload script over and over (during debugging/rebuilding)
 (function ($, window, document, undefined) {
@@ -740,6 +741,12 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
         KatAppPlugIn.prototype.getResultValue = function (table, id, column, defautlValue) {
             return this.rble.getResultValue(table, id, column, defautlValue);
         };
+        KatAppPlugIn.prototype.getResultValueByColumn = function (table, keyColumn, key, column, defautlValue) {
+            return this.rble.getResultValueByColumn(table, keyColumn, key, column, defautlValue);
+        };
+        KatAppPlugIn.prototype.setDefaultValue = function (id, value) {
+            this.rble.setDefaultValue(id, value);
+        };
         KatAppPlugIn.prototype.saveCalcEngine = function (location) {
             this.element.data("katapp-save-calcengine", location);
         };
@@ -790,6 +797,9 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
         };
         UIUtilities.prototype.getInputValue = function (input) {
             var value = input.val();
+            if (Array.isArray(value)) {
+                value = value.join("^");
+            }
             var skipAssignment = false;
             if (input.attr("type") === "radio") {
                 if (!input.is(':checked')) {
@@ -1521,8 +1531,8 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                 else if (aspCheckbox !== undefined) {
                     aspCheckbox.prop("checked", value === "1");
                 }
-                else {
-                    input.val(value);
+                else if (input.length > 0) {
+                    input.val(input[0].hasAttribute("multiple") ? value.split("^") : value);
                     // In case it is bootstrap-select
                     var isSelectPicker = input.attr("data-kat-bootstrap-select-initialized") !== undefined;
                     if (isSelectPicker) {
@@ -2380,12 +2390,13 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                     container.attr("style", renderStyle + configStyle);
                 }
                 var firstDataRow = this.highchartsData.filter(function (r) { return !(r.category || "").startsWith("config-"); }).shift();
+                var highchartKey = container.attr('data-highcharts-chart');
+                var highchart = Highcharts.charts[highchartKey !== null && highchartKey !== void 0 ? highchartKey : -1];
+                if (highchart !== undefined) {
+                    highchart.destroy();
+                }
                 if (firstDataRow !== undefined) {
                     var chartOptions = this.getHighchartsOptions(firstDataRow);
-                    var highchart = Highcharts.charts[container.data('highchartsChart')];
-                    if (highchart !== undefined) {
-                        highchart.destroy();
-                    }
                     try {
                         container.highcharts(chartOptions);
                     }
@@ -2618,14 +2629,14 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                 this.application.trace("bootstrap-select javascript is not present.", TraceVerbosity.None);
             }
             dropdowns.not('[data-katapp-initialized="true"]').each(function () {
-                var _a, _b;
+                var _a, _b, _c;
                 var el = $(this);
                 // Do all data-* attributes that we support
                 var id = el.data("inputname");
                 var label = el.data("label");
-                var multiSelect = el.data("multiselect");
-                var liveSearch = (_a = el.data("livesearch")) !== null && _a !== void 0 ? _a : "true";
-                var size = (_b = el.data("size")) !== null && _b !== void 0 ? _b : "15";
+                var multiSelect = (_a = el.data("multiselect")) !== null && _a !== void 0 ? _a : false;
+                var liveSearch = (_b = el.data("livesearch")) !== null && _b !== void 0 ? _b : true;
+                var size = (_c = el.data("size")) !== null && _c !== void 0 ? _c : "15";
                 var lookuptable = el.data("lookuptable");
                 var css = el.data("css");
                 if (css !== undefined) {
@@ -2636,11 +2647,12 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                 }
                 var input = $(".form-control", el);
                 input.attr("data-size", size);
-                if (multiSelect === "true") {
+                if (multiSelect) {
                     input.addClass("select-all");
+                    input.attr("multiple", "multiple");
                     input.attr("data-selected-text-format", "count > 2");
                 }
-                if (liveSearch === "true") {
+                if (liveSearch) {
                     input.attr("data-live-search", "true");
                 }
                 if (lookuptable !== undefined) {

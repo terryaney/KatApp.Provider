@@ -127,6 +127,8 @@ interface KatAppPlugInInterface extends KatAppPlugInShimInterface {
     getResultTable<T>( tableName: string): Array<T>;
     getResultRow<T>( table: string, id: string, columnToSearch?: string ): T | undefined;
     getResultValue( table: string, id: string, column: string, defaultValue?: string ): string | undefined;
+    getResultValueByColumn( table: string, keyColumn: string, key: string, column: string, defaultValue?: string ): string | undefined;
+    setDefaultValue: ( id: string, value: string | undefined )=> void;
     
     calculationInputs?: CalculationInputs;
 

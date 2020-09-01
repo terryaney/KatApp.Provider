@@ -31,7 +31,7 @@ Debug Issues
    Maybe that is expected, but just documenting.
 
 */
-var providerVersion = 8.32; // eslint-disable-line @typescript-eslint/no-unused-vars
+var providerVersion = 8.33; // eslint-disable-line @typescript-eslint/no-unused-vars
 KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosity.Detailed);
 // Need this function format to allow for me to reload script over and over (during debugging/rebuilding)
 (function ($, window, document, undefined) {
@@ -2650,7 +2650,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                 if (multiSelect) {
                     input.addClass("select-all");
                     input.attr("multiple", "multiple");
-                    input.attr("data-actionsBox", "true");
+                    input.attr("data-actions-box", "true");
                     input.attr("data-selected-text-format", "count > 2");
                 }
                 if (liveSearch) {
@@ -2664,6 +2664,13 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                         input.append($(this));
                     });
                 }
+                // Merge all other data-* attributes they might want to pass through
+                $.each(this.attributes, function (i, attrib) {
+                    var name = attrib.name;
+                    if (name.startsWith("data-")) {
+                        input.attr(name, attrib.value);
+                    }
+                });
                 // changed this from .selectpicker because selectpicker initialization removes it so can't launch it again
                 if (selectPickerAvailable) {
                     $(".bootstrap-select", el).selectpicker();

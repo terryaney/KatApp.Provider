@@ -34,7 +34,7 @@ Debug Issues
 
 */
 
-const providerVersion = 8.32; // eslint-disable-line @typescript-eslint/no-unused-vars
+const providerVersion = 8.33; // eslint-disable-line @typescript-eslint/no-unused-vars
 
 KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosity.Detailed);
 
@@ -3187,7 +3187,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                 if ( multiSelect ) {
                     input.addClass("select-all");
                     input.attr("multiple", "multiple");
-                    input.attr("data-actionsBox", "true");
+                    input.attr("data-actions-box", "true");
                     input.attr("data-selected-text-format", "count > 2");
                 }
                 
@@ -3206,6 +3206,14 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                         input.append( $(this) );
                     });
                 }
+
+                // Merge all other data-* attributes they might want to pass through
+                $.each(this.attributes, function(i, attrib){
+                    var name = attrib.name;
+                    if ( name.startsWith( "data-") ) {
+                        input.attr(name, attrib.value);
+                    }
+                 });
 
                 // changed this from .selectpicker because selectpicker initialization removes it so can't launch it again
                 if ( selectPickerAvailable ) {

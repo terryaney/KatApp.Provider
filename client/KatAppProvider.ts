@@ -34,7 +34,7 @@ Debug Issues
 
 */
 
-const providerVersion = 8.31; // eslint-disable-line @typescript-eslint/no-unused-vars
+const providerVersion = 8.32; // eslint-disable-line @typescript-eslint/no-unused-vars
 
 KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosity.Detailed);
 
@@ -3187,6 +3187,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                 if ( multiSelect ) {
                     input.addClass("select-all");
                     input.attr("multiple", "multiple");
+                    input.attr("data-actionsBox", "true");
                     input.attr("data-selected-text-format", "count > 2");
                 }
                 

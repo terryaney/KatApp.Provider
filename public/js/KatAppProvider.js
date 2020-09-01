@@ -31,7 +31,7 @@ Debug Issues
    Maybe that is expected, but just documenting.
 
 */
-var providerVersion = 8.31; // eslint-disable-line @typescript-eslint/no-unused-vars
+var providerVersion = 8.32; // eslint-disable-line @typescript-eslint/no-unused-vars
 KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosity.Detailed);
 // Need this function format to allow for me to reload script over and over (during debugging/rebuilding)
 (function ($, window, document, undefined) {
@@ -2650,6 +2650,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                 if (multiSelect) {
                     input.addClass("select-all");
                     input.attr("multiple", "multiple");
+                    input.attr("data-actionsBox", "true");
                     input.attr("data-selected-text-format", "count > 2");
                 }
                 if (liveSearch) {

@@ -1,1 +1,1 @@
-declare const providerVersion = 8.31;
+declare const providerVersion = 8.32;

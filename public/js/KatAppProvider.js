@@ -31,7 +31,7 @@ Debug Issues
    Maybe that is expected, but just documenting.
 
 */
-var providerVersion = 8.33; // eslint-disable-line @typescript-eslint/no-unused-vars
+var providerVersion = 8.34; // eslint-disable-line @typescript-eslint/no-unused-vars
 KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosity.Detailed);
 // Need this function format to allow for me to reload script over and over (during debugging/rebuilding)
 (function ($, window, document, undefined) {
@@ -2058,7 +2058,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                             }
                         }
                         if (r.removeclass !== undefined && r.removeclass.length > 0) {
-                            $(r.selector, application.element).removeClass(r.addclass);
+                            $(r.selector, application.element).removeClass(r.removeclass);
                         }
                     }
                 });

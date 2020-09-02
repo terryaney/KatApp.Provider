@@ -34,7 +34,7 @@ Debug Issues
 
 */
 
-const providerVersion = 8.33; // eslint-disable-line @typescript-eslint/no-unused-vars
+const providerVersion = 8.34; // eslint-disable-line @typescript-eslint/no-unused-vars
 
 KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosity.Detailed);
 
@@ -2476,7 +2476,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                         }
     
                         if ( r.removeclass !== undefined && r.removeclass.length > 0 ) {
-                            $(r.selector, application.element).removeClass(r.addclass);
+                            $(r.selector, application.element).removeClass(r.removeclass);
                         }
                     }
                 });

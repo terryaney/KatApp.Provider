@@ -31,7 +31,7 @@ Debug Issues
    Maybe that is expected, but just documenting.
 
 */
-var providerVersion = 8.34; // eslint-disable-line @typescript-eslint/no-unused-vars
+var providerVersion = 8.35; // eslint-disable-line @typescript-eslint/no-unused-vars
 KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosity.Detailed);
 // Need this function format to allow for me to reload script over and over (during debugging/rebuilding)
 (function ($, window, document, undefined) {
@@ -2008,10 +2008,20 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                             // we added items only during client side.  I followed this post but as the comment says, the input will
                             // then have no value when posted back to server. So leaving it in, but only supports 'client side only' UIs
                             // https://stackoverflow.com/a/5144268/166231
-                            listControl.append($("<option/>", {
+                            var option = $("<option/>", {
                                 value: ls.key,
                                 text: ls.text
-                            }));
+                            });
+                            if ((ls.class || "") != "") {
+                                option.attr("class", ls.class || "");
+                            }
+                            if ((ls.subtext || "") != "") {
+                                option.attr("data-subtext", ls.subtext || "");
+                            }
+                            if ((ls.html || "") != "") {
+                                option.attr("data-content", ls.html || "");
+                            }
+                            listControl.append(option);
                         }
                     }
                 });

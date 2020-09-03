@@ -73,6 +73,9 @@ interface ListControlRow {
 interface ListRow {
     key: string;
     text: string;
+    class?: string;
+    subtext?: string;
+    html?: string;
     visible?: string;
 }
 interface SliderConfigurationRow {

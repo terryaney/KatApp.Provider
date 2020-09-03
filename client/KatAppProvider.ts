@@ -34,7 +34,7 @@ Debug Issues
 
 */
 
-const providerVersion = 8.34; // eslint-disable-line @typescript-eslint/no-unused-vars
+const providerVersion = 8.35; // eslint-disable-line @typescript-eslint/no-unused-vars
 
 KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosity.Detailed);
 
@@ -2417,10 +2417,22 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                             // we added items only during client side.  I followed this post but as the comment says, the input will
                             // then have no value when posted back to server. So leaving it in, but only supports 'client side only' UIs
                             // https://stackoverflow.com/a/5144268/166231
-                            listControl.append($("<option/>", {
+                            const option = $("<option/>", {
                                 value: ls.key,
                                 text: ls.text
-                            }));
+                            });
+                            
+                            if ( ( ls.class || "" ) != "" ) {
+                                option.attr("class", ls.class || "");
+                            }
+                            if ( ( ls.subtext || "" ) != "" ) {
+                                option.attr("data-subtext", ls.subtext || "");
+                            }
+                            if ( ( ls.html || "" ) != "" ) {
+                                option.attr("data-content", ls.html || "");
+                            }
+
+                            listControl.append(option);
                         }
                     }
                 });

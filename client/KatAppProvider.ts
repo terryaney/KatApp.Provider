@@ -283,10 +283,13 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                             if ( pipelineError === undefined ) {
                                 that.trace(viewId + " returned from CMS.", TraceVerbosity.Normal);
 
-                                const data = results![ viewId! ]; // eslint-disable-line @typescript-eslint/no-non-null-assertion
+                                const thisClassCss = ".katapp-" + that.id;
+                                const data = 
+                                    results![ viewId! ] // eslint-disable-line @typescript-eslint/no-non-null-assertion
+                                        .format( { thisView: "[rbl-application-id='" + that.id + "']", id: that.id, thisClass: thisClassCss });
 
-                                // Process as view - get info from rbl-config and inject markup
-                                const view = $("<div class='katapp-css'>" + data.format( { thisView: "[rbl-application-id='" + that.id + "']", id: that.id, thisClass: ".katapp-" + that.id }) + "</div>");
+                                        // Process as view - get info from rbl-config and inject markup
+                                const view = $("<div class='katapp-css'>" + data.replace( /thisClass/g, thisClassCss )  + "</div>");
                                 const rblConfig = $("rbl-config", view).first();
         
                                 if ( rblConfig.length !== 1 ) {
@@ -3221,7 +3224,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
 
                 // Merge all other data-* attributes they might want to pass through
                 $.each(this.attributes, function(i, attrib){
-                    var name = attrib.name;
+                    const name = attrib.name;
                     if ( name.startsWith( "data-") ) {
                         input.attr(name, attrib.value);
                     }

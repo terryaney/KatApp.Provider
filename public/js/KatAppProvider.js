@@ -232,9 +232,11 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                         pipelineError = errorMessage;
                         if (pipelineError === undefined) {
                             that.trace(viewId + " returned from CMS.", TraceVerbosity.Normal);
-                            var data = results[viewId]; // eslint-disable-line @typescript-eslint/no-non-null-assertion
+                            var thisClassCss = ".katapp-" + that.id;
+                            var data = results[viewId] // eslint-disable-line @typescript-eslint/no-non-null-assertion
+                                .format({ thisView: "[rbl-application-id='" + that.id + "']", id: that.id, thisClass: thisClassCss });
                             // Process as view - get info from rbl-config and inject markup
-                            var view = $("<div class='katapp-css'>" + data.format({ thisView: "[rbl-application-id='" + that.id + "']", id: that.id, thisClass: ".katapp-" + that.id }) + "</div>");
+                            var view = $("<div class='katapp-css'>" + data.replace(/thisClass/g, thisClassCss) + "</div>");
                             var rblConfig = $("rbl-config", view).first();
                             if (rblConfig.length !== 1) {
                                 that.trace("View " + viewId + " is missing rbl-config element.", TraceVerbosity.Quiet);

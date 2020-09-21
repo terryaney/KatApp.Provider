@@ -18,7 +18,7 @@ interface JQuery {
     datepicker( options: any ): JQuery; // eslint-disable-line @typescript-eslint/no-explicit-any
 }
 interface Function {
-    plugInShims: KatAppPlugInShimInterface[];
+    plugInShims?: KatAppPlugInShimInterface[];
     applicationFactory( id: string, element: JQuery, options: KatAppOptions): KatAppPlugInShimInterface;
     // Debugging...let's me restore the original shim factory if I'm going to rebuild UI or script locations
     debugApplicationFactory( id: string, element: JQuery, options: KatAppOptions): KatAppPlugInShimInterface;    

@@ -21,6 +21,7 @@ interface KatAppOptions {
     calcEngine?: string;
     inputTab?: string;
     resultTabs?: string[];
+    preCalcs?: string;
     inputSelector?: string;
     manualInputs?: CalculationInputs;
     defaultInputs?: CalculationInputs;

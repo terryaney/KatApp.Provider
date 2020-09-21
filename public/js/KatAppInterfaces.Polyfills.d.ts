@@ -16,7 +16,7 @@ interface JQuery {
     datepicker(options: any): JQuery;
 }
 interface Function {
-    plugInShims: KatAppPlugInShimInterface[];
+    plugInShims?: KatAppPlugInShimInterface[];
     applicationFactory(id: string, element: JQuery, options: KatAppOptions): KatAppPlugInShimInterface;
     debugApplicationFactory(id: string, element: JQuery, options: KatAppOptions): KatAppPlugInShimInterface;
     templateOn(templateName: string, events: string, fn: TemplateOnDelegate): void;

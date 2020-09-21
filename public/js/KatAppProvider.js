@@ -1075,7 +1075,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
             register(application, currentOptions, registerDone, registerFailed);
         };
         RBLeUtilities.prototype.submitCalculation = function (currentOptions, submitCalculationHandler) {
-            var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k;
+            var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k, _l;
             if (currentOptions.registeredToken === undefined && currentOptions.data === undefined) {
                 submitCalculationHandler("submitCalculation no registered token.");
                 return;
@@ -1094,25 +1094,32 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                 // in the inputs and it just called a load over and over
                 delete currentOptions.defaultInputs.iInputTrigger;
             }
+            var inputs = application.calculationInputs = KatApp.extend(this.ui.getInputs(currentOptions), currentOptions.defaultInputs, currentOptions === null || currentOptions === void 0 ? void 0 : currentOptions.manualInputs);
+            var preCalcs = currentOptions.preCalcs;
+            if (inputs.iInputTrigger !== undefined) {
+                var rblOnChange = (_a = $("." + inputs.iInputTrigger).data("rbl-on-change")) !== null && _a !== void 0 ? _a : "";
+                var triggerPreCalc = rblOnChange.indexOf("update-tp") > -1;
+                preCalcs = triggerPreCalc ? $("." + inputs.iInputTrigger).data("rbl-update-tp-params") || preCalcs : preCalcs;
+            }
             var calculationOptions = {
-                Data: !((_a = currentOptions.registerDataWithService) !== null && _a !== void 0 ? _a : true) ? currentOptions.data : undefined,
-                Inputs: application.calculationInputs = KatApp.extend(this.ui.getInputs(currentOptions), currentOptions.defaultInputs, currentOptions === null || currentOptions === void 0 ? void 0 : currentOptions.manualInputs),
+                Data: !((_b = currentOptions.registerDataWithService) !== null && _b !== void 0 ? _b : true) ? currentOptions.data : undefined,
+                Inputs: inputs,
                 InputTables: this.ui.getInputTables(),
                 Configuration: {
                     CalcEngine: currentOptions.calcEngine,
-                    Token: ((_b = currentOptions.registerDataWithService) !== null && _b !== void 0 ? _b : true) ? currentOptions.registeredToken : undefined,
+                    Token: ((_c = currentOptions.registerDataWithService) !== null && _c !== void 0 ? _c : true) ? currentOptions.registeredToken : undefined,
                     TraceEnabled: traceCalcEngine ? 1 : 0,
                     InputTab: currentOptions.inputTab,
                     ResultTabs: currentOptions.resultTabs,
                     SaveCE: saveCalcEngineLocation,
-                    RefreshCalcEngine: refreshCalcEngine || ((_d = (_c = currentOptions.debug) === null || _c === void 0 ? void 0 : _c.refreshCalcEngine) !== null && _d !== void 0 ? _d : false),
-                    PreCalcs: undefined,
+                    RefreshCalcEngine: refreshCalcEngine || ((_e = (_d = currentOptions.debug) === null || _d === void 0 ? void 0 : _d.refreshCalcEngine) !== null && _e !== void 0 ? _e : false),
+                    PreCalcs: preCalcs,
                     // Non-session submission
-                    AuthID: (_e = currentOptions.data) === null || _e === void 0 ? void 0 : _e.AuthID,
+                    AuthID: (_f = currentOptions.data) === null || _f === void 0 ? void 0 : _f.AuthID,
                     AdminAuthID: undefined,
-                    Client: (_f = currentOptions.data) === null || _f === void 0 ? void 0 : _f.Client,
-                    TestCE: (_h = (_g = currentOptions.debug) === null || _g === void 0 ? void 0 : _g.useTestCalcEngine) !== null && _h !== void 0 ? _h : false,
-                    CurrentPage: (_j = currentOptions.currentPage) !== null && _j !== void 0 ? _j : "Unknown",
+                    Client: (_g = currentOptions.data) === null || _g === void 0 ? void 0 : _g.Client,
+                    TestCE: (_j = (_h = currentOptions.debug) === null || _h === void 0 ? void 0 : _h.useTestCalcEngine) !== null && _j !== void 0 ? _j : false,
+                    CurrentPage: (_k = currentOptions.currentPage) !== null && _k !== void 0 ? _k : "Unknown",
                     RequestIP: "1.1.1.1",
                     CurrentUICulture: "en-US",
                     Environment: "PITT.PROD"
@@ -1138,7 +1145,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                 application.trace("submitCalculation AJAX Error Status: " + textStatus, TraceVerbosity.Quiet);
                 submitCalculationHandler("submitCalculation AJAX Error Status: " + textStatus);
             };
-            var submit = (_k = currentOptions.submitCalculation) !== null && _k !== void 0 ? _k : function (_app, o, done, fail) {
+            var submit = (_l = currentOptions.submitCalculation) !== null && _l !== void 0 ? _l : function (_app, o, done, fail) {
                 $.ajax({
                     url: currentOptions.registerDataWithService ? currentOptions.sessionUrl : currentOptions.functionUrl,
                     data: JSON.stringify(o),

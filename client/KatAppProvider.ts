@@ -1317,9 +1317,18 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                 delete currentOptions.defaultInputs.iInputTrigger;
             }
 
+            const inputs: CalculationInputs = application.calculationInputs = KatApp.extend( this.ui.getInputs( currentOptions ), currentOptions.defaultInputs, currentOptions?.manualInputs );
+			let preCalcs = currentOptions.preCalcs;
+
+			if (inputs.iInputTrigger !== undefined) {
+				const rblOnChange = $("." + inputs.iInputTrigger).data("rbl-on-change") as string ?? "";
+				const triggerPreCalc = rblOnChange.indexOf("update-tp") > -1;
+				preCalcs = triggerPreCalc ? $("." + inputs.iInputTrigger).data("rbl-update-tp-params") || preCalcs : preCalcs;
+			}
+
             const calculationOptions: SubmitCalculationOptions = {
                 Data: !( currentOptions.registerDataWithService ?? true ) ? currentOptions.data : undefined,
-                Inputs: application.calculationInputs = KatApp.extend( this.ui.getInputs( currentOptions ), currentOptions.defaultInputs, currentOptions?.manualInputs ),
+                Inputs: inputs,
                 InputTables: this.ui.getInputTables(), 
                 Configuration: {
                     CalcEngine: currentOptions.calcEngine,
@@ -1329,7 +1338,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                     ResultTabs: currentOptions.resultTabs as string[],
                     SaveCE: saveCalcEngineLocation,
                     RefreshCalcEngine: refreshCalcEngine || ( currentOptions.debug?.refreshCalcEngine ?? false ),
-                    PreCalcs: undefined, // TODO: search service for update-tp, need to get that logic in there
+                    PreCalcs: preCalcs,
                     
                     // Non-session submission
                     AuthID: currentOptions.data?.AuthID,

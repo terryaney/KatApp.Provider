@@ -2223,12 +2223,30 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                     ? optionValue
                     : {};
                 // If doesn't exist, set it to new object or array
-                if (optionJson[optionName] === undefined || onPropertyValue) {
-                    optionJson[optionName] = optionIndex > -1 ? [] : newValue;
+                if (optionJson[optionName] === undefined) {
+                    optionJson[optionName] = optionIndex > -1 ? [newValue] : newValue;
                 }
-                // If property is an array and index isn't there yet, push a new element
-                if (optionIndex > -1 && optionJson[optionName].length - 1 < optionIndex) { // eslint-disable-line @typescript-eslint/no-explicit-any
-                    optionJson[optionName].push(newValue); // eslint-disable-line @typescript-eslint/no-explicit-any
+                else if (onPropertyValue) {
+                    if (optionIndex > -1) {
+                        var propertyArray = optionJson[optionName];
+                        // If property is an array and index isn't there yet, push a new element
+                        while (propertyArray.length - 1 < optionIndex) {
+                            propertyArray.push(undefined);
+                        }
+                        propertyArray[optionIndex] = newValue;
+                    }
+                    else {
+                        // If on property value and exists, this is an override, so just replace the value
+                        optionJson[optionName] = newValue;
+                    }
+                }
+                else if (optionIndex > -1 && optionJson[optionName].length - 1 < optionIndex) {
+                    var propertyArray = optionJson[optionName];
+                    // If property is an array and index isn't there yet, push a new element
+                    while (propertyArray.length - 1 < optionIndex) {
+                        propertyArray.push(undefined);
+                    }
+                    propertyArray[optionIndex] = newValue;
                 }
                 // Reset my local variable to the most recently added/created object
                 optionJson = optionIndex > -1

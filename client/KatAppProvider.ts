@@ -1317,7 +1317,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                 delete currentOptions.defaultInputs.iInputTrigger;
             }
 
-            const inputs: CalculationInputs = application.calculationInputs = KatApp.extend( this.ui.getInputs( currentOptions ), currentOptions.defaultInputs, currentOptions?.manualInputs );
+            const inputs: CalculationInputs = application.calculationInputs = KatApp.extend( this.ui.getInputs( currentOptions ), currentOptions.defaultInputs, currentOptions.manualInputs );
 			let preCalcs = currentOptions.preCalcs;
 
 			if (inputs.iInputTrigger !== undefined) {

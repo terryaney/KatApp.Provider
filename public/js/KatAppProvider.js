@@ -1094,7 +1094,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                 // in the inputs and it just called a load over and over
                 delete currentOptions.defaultInputs.iInputTrigger;
             }
-            var inputs = application.calculationInputs = KatApp.extend(this.ui.getInputs(currentOptions), currentOptions.defaultInputs, currentOptions === null || currentOptions === void 0 ? void 0 : currentOptions.manualInputs);
+            var inputs = application.calculationInputs = KatApp.extend(this.ui.getInputs(currentOptions), currentOptions.defaultInputs, currentOptions.manualInputs);
             var preCalcs = currentOptions.preCalcs;
             if (inputs.iInputTrigger !== undefined) {
                 var rblOnChange = (_a = $("." + inputs.iInputTrigger).data("rbl-on-change")) !== null && _a !== void 0 ? _a : "";
@@ -2017,20 +2017,28 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                             // we added items only during client side.  I followed this post but as the comment says, the input will
                             // then have no value when posted back to server. So leaving it in, but only supports 'client side only' UIs
                             // https://stackoverflow.com/a/5144268/166231
-                            var option = $("<option/>", {
-                                value: ls.key,
-                                text: ls.text
-                            });
-                            if ((ls.class || "") != "") {
-                                option.attr("class", ls.class || "");
+                            if (ls.text == "/data-divider") {
+                                var divider = $("<option/>", {
+                                    "data-divider": true
+                                });
+                                listControl.append(divider);
                             }
-                            if ((ls.subtext || "") != "") {
-                                option.attr("data-subtext", ls.subtext || "");
+                            else {
+                                var option = $("<option/>", {
+                                    value: ls.key,
+                                    text: ls.text
+                                });
+                                if ((ls.class || "") != "") {
+                                    option.attr("class", ls.class || "");
+                                }
+                                if ((ls.subtext || "") != "") {
+                                    option.attr("data-subtext", ls.subtext || "");
+                                }
+                                if ((ls.html || "") != "") {
+                                    option.attr("data-content", ls.html || "");
+                                }
+                                listControl.append(option);
                             }
-                            if ((ls.html || "") != "") {
-                                option.attr("data-content", ls.html || "");
-                            }
-                            listControl.append(option);
                         }
                     }
                 });

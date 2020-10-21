@@ -77,6 +77,7 @@ interface ListRow {
     subtext?: string;
     html?: string;
     visible?: string;
+    "start-group"?: string;
 }
 interface SliderConfigurationRow {
     "@id": string;

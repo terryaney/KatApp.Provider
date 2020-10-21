@@ -2405,7 +2405,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
 					const listItem = isCheckboxList
 						? $(".v" + controlName + "_" + ls.key, application.element).parent()
                         : $("." + controlName + " option[value='" + ls.key + "']", application.element);
-                        
+                                        
                     if (ls.visible === "0") {
                         listItem.hide();
 
@@ -2429,22 +2429,31 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                             // we added items only during client side.  I followed this post but as the comment says, the input will
                             // then have no value when posted back to server. So leaving it in, but only supports 'client side only' UIs
                             // https://stackoverflow.com/a/5144268/166231
-                            const option = $("<option/>", {
-                                value: ls.key,
-                                text: ls.text
-                            });
                             
-                            if ( ( ls.class || "" ) != "" ) {
-                                option.attr("class", ls.class || "");
+                            if ( ls.text == "/data-divider" ) {
+                                const divider = $("<option/>", {
+                                    "data-divider": true
+                                });
+                                listControl.append(divider);
                             }
-                            if ( ( ls.subtext || "" ) != "" ) {
-                                option.attr("data-subtext", ls.subtext || "");
+                            else {
+                                const option = $("<option/>", {
+                                    value: ls.key,
+                                    text: ls.text
+                                });
+                                
+                                if ( ( ls.class || "" ) != "" ) {
+                                    option.attr("class", ls.class || "");
+                                }
+                                if ( ( ls.subtext || "" ) != "" ) {
+                                    option.attr("data-subtext", ls.subtext || "");
+                                }
+                                if ( ( ls.html || "" ) != "" ) {
+                                    option.attr("data-content", ls.html || "");
+                                }
+    
+                                listControl.append(option);
                             }
-                            if ( ( ls.html || "" ) != "" ) {
-                                option.attr("data-content", ls.html || "");
-                            }
-
-                            listControl.append(option);
                         }
                     }
                 });

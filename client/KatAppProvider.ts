@@ -95,6 +95,8 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                 */
             },
             onCalculateEnd: function( application: KatAppPlugIn ) {
+                $(".needsRBLeConfig", application.element).removeClass("needsRBLeConfig");
+
                 if ( application.options.ajaxLoaderSelector !== undefined ) {
                     $( application.options.ajaxLoaderSelector, application.element ).fadeOut();
                 }
@@ -578,7 +580,12 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
 
             this.exception = undefined; // Should I set results to undefined too?
 
-            this.ui.triggerEvent( "onCalculateStart", this );
+            const cancelCalculation = !this.ui.triggerEvent( "onCalculateStart", this );
+
+            if ( cancelCalculation ) {
+                this.ui.triggerEvent( "onCalculateEnd", this );
+                return;
+            }
 
             const that: KatAppPlugIn = this;
 
@@ -805,8 +812,6 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                         }
 
                         that.ui.triggerEvent( "onCalculation", that.results, currentOptions, that );
-        
-                        $(".needsRBLeConfig", that.element).removeClass("needsRBLeConfig");
                     }
                     else {
                         that.rble.setResults( undefined );
@@ -1050,22 +1055,40 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
             return hasTables ? tables : undefined;
         }
 
-        triggerEvent(eventName: string, ...args: ( object | string | undefined )[]): void {
+        triggerEvent(eventName: string, ...args: ( object | string | undefined )[]): boolean {
             const application = this.application;
+            let eventCancelled = false;
             try {
                 application.trace("Calling " + eventName + " delegate: Starting...", TraceVerbosity.Diagnostic);
-                application.options[ eventName ]?.apply(application.element[0], args );
+                
+                const handlerResult = application.options[ eventName ]?.apply(application.element[0], args );
+
+                if ( handlerResult != undefined && !handlerResult ) {
+                    eventCancelled = true;
+                }
+
                 application.trace("Calling " + eventName + " delegate: Complete", TraceVerbosity.Diagnostic);
             } catch (error) {
                 application.trace("Error calling " + eventName + ": " + error, TraceVerbosity.None);
             }
-            try {
-                application.trace("Triggering " + eventName + ": Starting...", TraceVerbosity.Diagnostic);
-                application.element.trigger( eventName + ".RBLe", args);
-                application.trace("Triggering " + eventName + ": Complete", TraceVerbosity.Diagnostic);
-            } catch (error) {
-                application.trace("Error triggering " + eventName + ": " + error, TraceVerbosity.None);
+
+            if ( !eventCancelled ) {
+                try {
+                    application.trace("Triggering " + eventName + ": Starting...", TraceVerbosity.Diagnostic);
+                    const event = jQuery.Event( eventName + ".RBLe" );
+                    application.element.trigger( event, args);                    
+                    application.trace("Triggering " + eventName + ": Complete", TraceVerbosity.Diagnostic);
+
+                    if ( event.isDefaultPrevented() ) {
+                        eventCancelled = false;
+                    }
+
+                } catch (error) {
+                    application.trace("Error triggering " + eventName + ": " + error, TraceVerbosity.None);
+                }
             }
+
+            return !eventCancelled;
         }
 
         changeRBLe(element: JQuery<HTMLElement>): void {

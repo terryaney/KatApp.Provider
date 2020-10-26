@@ -84,6 +84,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
             */
         },
         onCalculateEnd: function (application) {
+            $(".needsRBLeConfig", application.element).removeClass("needsRBLeConfig");
             if (application.options.ajaxLoaderSelector !== undefined) {
                 $(application.options.ajaxLoaderSelector, application.element).fadeOut();
             }
@@ -470,7 +471,11 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                 return;
             }
             this.exception = undefined; // Should I set results to undefined too?
-            this.ui.triggerEvent("onCalculateStart", this);
+            var cancelCalculation = !this.ui.triggerEvent("onCalculateStart", this);
+            if (cancelCalculation) {
+                this.ui.triggerEvent("onCalculateEnd", this);
+                return;
+            }
             var that = this;
             // Build up complete set of options to use for this calculation call
             var currentOptions = KatApp.extend({}, // make a clone of the options
@@ -669,7 +674,6 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                             that.ui.triggerEvent("onConfigureUICalculation", that.results, currentOptions, that);
                         }
                         that.ui.triggerEvent("onCalculation", that.results, currentOptions, that);
-                        $(".needsRBLeConfig", that.element).removeClass("needsRBLeConfig");
                     }
                     else {
                         that.rble.setResults(undefined);
@@ -869,22 +873,33 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
             }
             var _a;
             var application = this.application;
+            var eventCancelled = false;
             try {
                 application.trace("Calling " + eventName + " delegate: Starting...", TraceVerbosity.Diagnostic);
-                (_a = application.options[eventName]) === null || _a === void 0 ? void 0 : _a.apply(application.element[0], args);
+                var handlerResult = (_a = application.options[eventName]) === null || _a === void 0 ? void 0 : _a.apply(application.element[0], args);
+                if (handlerResult != undefined && !handlerResult) {
+                    eventCancelled = true;
+                }
                 application.trace("Calling " + eventName + " delegate: Complete", TraceVerbosity.Diagnostic);
             }
             catch (error) {
                 application.trace("Error calling " + eventName + ": " + error, TraceVerbosity.None);
             }
-            try {
-                application.trace("Triggering " + eventName + ": Starting...", TraceVerbosity.Diagnostic);
-                application.element.trigger(eventName + ".RBLe", args);
-                application.trace("Triggering " + eventName + ": Complete", TraceVerbosity.Diagnostic);
+            if (!eventCancelled) {
+                try {
+                    application.trace("Triggering " + eventName + ": Starting...", TraceVerbosity.Diagnostic);
+                    var event_1 = jQuery.Event(eventName + ".RBLe");
+                    application.element.trigger(event_1, args);
+                    application.trace("Triggering " + eventName + ": Complete", TraceVerbosity.Diagnostic);
+                    if (event_1.isDefaultPrevented()) {
+                        eventCancelled = false;
+                    }
+                }
+                catch (error) {
+                    application.trace("Error triggering " + eventName + ": " + error, TraceVerbosity.None);
+                }
             }
-            catch (error) {
-                application.trace("Error triggering " + eventName + ": " + error, TraceVerbosity.None);
-            }
+            return !eventCancelled;
         };
         UIUtilities.prototype.changeRBLe = function (element) {
             var wizardInputSelector = element.data("input");
@@ -2954,4 +2969,4 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
 // Needed this line to make sure that I could debug in VS Code since this was dynamically loaded 
 // with $.getScript() - https://stackoverflow.com/questions/9092125/how-to-debug-dynamically-loaded-javascript-with-jquery-in-the-browsers-debugg
 //# sourceURL=KatAppProvider.js
-//# sourceMappingURL=js/KatAppProvider.js.map
+//# sourceMappingURL=KatAppProvider.js.map

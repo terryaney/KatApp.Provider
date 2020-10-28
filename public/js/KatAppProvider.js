@@ -867,11 +867,11 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
             return hasTables ? tables : undefined;
         };
         UIUtilities.prototype.triggerEvent = function (eventName) {
+            var _a;
             var args = [];
             for (var _i = 1; _i < arguments.length; _i++) {
                 args[_i - 1] = arguments[_i];
             }
-            var _a;
             var application = this.application;
             var eventCancelled = false;
             try {
@@ -2969,4 +2969,4 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
 // Needed this line to make sure that I could debug in VS Code since this was dynamically loaded 
 // with $.getScript() - https://stackoverflow.com/questions/9092125/how-to-debug-dynamically-loaded-javascript-with-jquery-in-the-browsers-debugg
 //# sourceURL=KatAppProvider.js
-//# sourceMappingURL=KatAppProvider.js.map
+//# sourceMappingURL=js/KatAppProvider.js.map

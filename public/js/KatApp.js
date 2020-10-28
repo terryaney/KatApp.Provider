@@ -65,8 +65,8 @@ var KatApp = /** @class */ (function () {
     };
     ;
     KatApp.trace = function (application, message, verbosity) {
-        if (verbosity === void 0) { verbosity = TraceVerbosity.Normal; }
         var _a, _b, _c, _d, _e, _f, _g;
+        if (verbosity === void 0) { verbosity = TraceVerbosity.Normal; }
         var verbosityOption = (_e = (_c = (_b = (_a = application === null || application === void 0 ? void 0 : application.options) === null || _a === void 0 ? void 0 : _a.debug) === null || _b === void 0 ? void 0 : _b.traceVerbosity) !== null && _c !== void 0 ? _c : (_d = KatApp.defaultOptions.debug) === null || _d === void 0 ? void 0 : _d.traceVerbosity) !== null && _e !== void 0 ? _e : TraceVerbosity.None;
         if (verbosityOption >= verbosity) {
             var item = undefined;

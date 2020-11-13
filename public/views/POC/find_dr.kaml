@@ -1,0 +1,1071 @@
+<rbl-config calcengine="Conduent_FindDr_SE" templates="Standard_TemplatesBS4"></rbl-config>
+
+<style>
+    @media (max-width: 767px) {
+		.irp-modal div.chart { height: 250px; }
+	}
+
+	rbl-template_off, [rbl-tid=inline] { display: none;}
+
+    thisClass .katapp-loader span {
+        width: 10px;
+        height: 10px;
+        left: 28px;
+        border-radius: 50%;
+        display: inline-block;
+        margin:0px;
+        position: relative;
+        background: #FFF;
+        box-shadow: -20px 0 #FFF, 20px 0 #FFF;
+        box-sizing: border-box;
+        animation: shadowPulse 2s linear infinite;
+    }
+
+    @keyframes shadowPulse {
+        33% {
+            background: #FFF;
+            box-shadow: -20px 0 rgb(160, 113, 168), 20px 0 #FFF;
+        }
+        66% {
+            background: rgb(160, 113, 168);
+            box-shadow: -20px 0 #FFF, 20px 0 #FFF;
+        }
+        100% {
+            background: #FFF;
+            box-shadow: -20px 0 #FFF, 20px 0 rgb(160, 113, 168);
+        }
+    }
+
+	thisClass div.chart {
+		 height: 350px; 
+	}
+    thisClass .ws-info {
+        padding-right: 5px;
+        text-decoration: none;
+        outline: none;
+    }
+    thisClass a.ws-info:focus {
+        border: 0;
+        outline: none;
+    }
+	thisClass .noUi-handle div {display: none;}
+
+	thisClass .specialty-groups-selected .fa {
+		color: white;
+		top: 2px;
+	}
+	thisClass #map {
+		height: 400px;
+		width: 100%;
+	}
+
+	thisClass .suggested-provider-searches button {
+		width_: 70%;
+		margin: 10px;
+		padding: 10px;
+		-webkit-border-radius: 30px;
+		-moz-border-radius: 30px;
+		border-radius: 30px;
+	}
+	thisClass button.search, button.reset {
+		background-image: none;
+		background-repeat: repeat-x;
+		filter: none;
+		text-shadow: none;
+		box-shadow: none;padding:10px 30px;
+		border-radius:30px;
+	}
+	thisClass button.search {
+		color_: white;
+	}
+	thisClass button.reset:hover {
+		background-color: #b7babe;
+	}
+	thisClass .suggested-provider-searches p {
+		margin-right: 20%;
+		margin-left: 20%;
+		color: slategrey;
+	}
+	thisClass .specialties-selected button, .plans-selected button {
+		padding: 0px 20px 0px 20px;
+		margin: 3px 3px 3px 3px;
+		border-radius: 20px;
+		font-size: smaller;
+	}
+	thisClass .search-header {
+		border: 1px solid steelblue;
+		background-color: #eee;
+		border-radius: 30px;
+		height:50px;
+		margin-bottom: 20px;
+	}
+	thisClass .search-header h4 {
+		top:4px;
+	}
+	thisClass .search-header .viproviderName {
+		top:8px;
+	}
+	thisClass .docfind_logo {
+		margin: 5px 2px 20px 2px;
+		font-size:25px;
+		color:rgb(246, 135, 30);
+	}
+	thisClass .toggle-view {
+		padding-left: 0px;
+	}
+
+	thisClass .toggle-view button {
+		font-size_:larger;
+		margin-top: 7px;
+		border: 1px solid slategrey;
+		border-radius: 3px;
+	}
+	thisClass .toggle-view button .active {
+		background-color:snow;
+	}
+	thisClass .validation-summary {
+		margin-top: 40px;
+	}
+	thisClass .form-group {
+		margin-top: 15px;
+		margin-bottom: 0px;
+	}
+	thisClass .vispecialtyIds_groups .bs-select-all {
+		visibility:hidden;
+	}
+	thisClass .results-toolbar {
+		border-top: 1px solid #ddd;
+		border-bottom: 1px solid #ddd;
+		background-color: rgb(245, 245, 245);
+	}
+	thisClass .results-toolbar .form-group {
+		margin: 3px 3px 0px 3px;
+	}
+	thisClass .results-toolbar .form-group label, .vilanguageIds label {
+		display: none;
+	}
+	thisClass .form-group.vilanguageIds {
+		margin-top: 5px;
+	}
+	thisClass .results-toolbar .form-group button {
+		padding: 2px 4px 0px 4px;
+	}
+	thisClass .results-toolbar p {
+		margin: 0px 0px 0px 0px;
+		padding: 6px 2px 6px 2px;
+	}
+	thisClass .form-group.visortSelection {
+		margin-top: 3px;
+		margin-bottom: 3px;
+	}
+	thisClass .badge-light {
+		font-weight: normal;
+		color: black;
+		background-color:rgb(238, 238, 238);
+	}
+	thisClass .vinetworkIds .text-muted {
+		color: brown !important;
+	}
+	thisClass [data-suffix] .input-group-addon {
+		border-top-left-radius: 0!important;
+		border-bottom-left-radius: 0!important;
+		border-left-width: 0!important;
+	}
+	thisClass label {
+		font-weight: bold;
+	}
+	thisClass .checkbox{
+		 padding-left: 5px;
+	}
+	thisClass .form-check-label {
+		 font-weight: normal;
+		 margin-left: 20px; 
+	}
+
+	thisClass input[type=checkbox] {
+		margin: 6px 0 0;
+	} 
+
+	thisClass button.quick-search {
+		border-radius: 30px;
+	}
+
+	thisClass .alert-secondary {
+		background-color: rgb(245, 245, 245);
+	}
+	thisClass div.form-group.vinetworkIds {
+		margin-top: 0;
+	}
+	thisClass div.row.header {
+		border-bottom: gray solid 1px;
+	}
+	thisClass .nav {
+		height: 100%;
+		color:gray;
+	}
+	thisClass .nav-link.active {
+		border-bottom: orange solid 3px;
+	}
+	thisClass .nav:hover .nav-link.active {
+		border-bottom: orange solid 0px;
+	}
+	thisClass .nav:hover {
+		color:lightgray;
+	}
+	thisClass .nav-link {
+		padding-top: 15px;
+		height: 100%;
+		color:inherit;
+	}
+	thisClass .nav-link.active:hover, 
+	thisClass .nav-link:hover {
+		color:gray;
+		border-bottom: orange solid 3px !important;
+		font-weight_:500;
+	}
+	thisClass span.error-msg.selectpicker {
+		display:none;
+	} 
+	thisClass button.btn-default.selected {
+		background-color: lightblue;
+	}
+	thisClass .liSelectedProviders_cb .fa-check-square {
+		color:#0075ff;
+	}
+	thisClass .SearchKey {
+		width: 16px;
+	}
+	thisClass .linetworkIds .SearchKey, 
+	thisClass .plans-selected .btn-secondary {
+		background-color: #545b62 !important;
+		border-width: 0;
+	}
+	thisClass .plans-selected .btn-secondary:hover {
+		background-color: #484d53 !important;
+	}
+	thisClass .liproviderTypeIds .SearchKey, 
+	thisClass .specialties-selected .btn-success  {
+		background-color: #00B4A4 !important;
+		border-width: 0;
+	}
+	thisClass .specialties-selected .btn-success:hover  {
+		background-color:#039b8d !important;
+	}
+	thisClass .liproviderName .SearchKey, 
+	thisClass .specialties-selected .btn-primary  {
+		background-color: #468cff !important;
+		border-width: 0;
+	}
+	thisClass .specialties-selected .btn-primary:hover  {
+		background-color: #3c80ef !important;
+	}
+	thisClass .lispecialtyIds_groups .SearchKey, 
+	thisClass .specialties-selected .btn-info  {
+		background-color: #0047BA !important;
+		border-width: 0;
+	}
+	thisClass .specialties-selected .btn-info:hover  {
+		background-color: #0240a5 !important;
+	}
+	thisClass [rbl-value="text-filters"] .SearchKey, 
+	thisClass .specialties-selected .btn-warning  {
+		background-color: #663Ab6 !important;
+		border-width: 0;
+		color: white;
+	}
+	thisClass .specialties-selected .btn-warning:hover  {
+		background-color: #8150b6 !important;
+	}
+	thisClass .ilanguageIds button {
+		padding-top: 3px;
+		padding-bottom: 3px;
+	}
+	thisClass .label-language {
+		margin-top: 8px;
+	}
+	thisClass input.iproviderName {
+		font-size: 1rem;
+		color_: #999;
+	}
+</style>
+
+
+<!-- #templates start -->
+<rbl-template tid="provider-list-item">
+	<div class="row provider-item" data-id="1465342">
+		<div class="col-1 nopadding" style="padding-top: 3px"><span class="check"><input class="favorite" data-id={providerId} type="checkbox"></span></div>
+		<div class="col-10 col-md-5 pl-2 pr-1">
+
+			<span rbl-if="lname">
+				<a class='doctor' role='button' data-id={providerId} data-toggle='modal' data-target='.modal-doctor'><span class="full-name">{lname}, {fname}, {degree}&nbsp;</span></a>
+				<!-- <i class="heart fa fa-heart-o" data-id={providerId}></i> -->
+				<span class="NPI">NPI#: {npi}</span>
+			</span>
+			<span class="doctor" rbl-if="facility">
+				{facility} 
+				<!-- <i class="heart fa fa-heart-o" data-id={providerId}></i> -->
+			</span>			
+
+			<span class="address">{address1}<br/>{city}, {state} {zip}</span>
+			<span class="phone">
+				<a class="" href="tel:+{phone}"><span><span class="fa fa-phone" aria-hidden="true"></span> {phone_format} </span></a><br/>
+			</span>
+			<span rbl-if="city2"><a class='otherlocations' role='button' data-id={providerId} data-toggle='modal' data-target='.modal-doctor'>More Locations</a></span>			
+		</div>
+		<div class="col-12 col-md-5  pl-1 pr-1 pull-left small">    
+			<span rbl-if="specialty0">
+				<span class="specialists">{specialties}</span>
+			</span>
+			<span class="plans">{networks}</span>
+			<span rbl-if="hospitalaffiliation0">
+				<span class="hospital">
+					<span class="hospitalheading" rbl-value="text-hospital-affiliations">[Hospital Affiliations]</span>
+					<span>{hospitals}</span>
+				</span>			
+			</span>
+		</div>
+		<div class="col-12 col-md-1 pl-1 pr-1">
+			<span class="distance">
+				<a href="https://www.google.com/maps/search/?api=1&amp;query={lat},{long}" target="newmap">{distance} miles</a>
+			</span>
+		</div>
+		<hr class="w-100">
+	</div>
+</rbl-template>
+
+<!-- templates end -->
+
+<!-- #header start -->
+<div class="row header">
+	<div class="col-12 col-md-6">
+		<div class="docfind_logo"><span style="font-stretch:condensed; font-weight: bold;color:darkslategrey">Health Provider </span><b>Finder</b></div>
+	</div>
+	<div class="col-12 col-md-6">
+		<ul class="nav justify-content-end provider-view-buttons" style="display: none;">
+			<li class="nav-item">
+				<a class="nav-link provider-search active" href="#"><span class="fa fa-list"></span>&nbsp;<span rbl-value="text-provider-search">[Provider Search]</span></a>
+			</li>
+			<li class="nav-item">
+				<a class="nav-link provider-compare" href="#"><span class="fa fa-bar-chart"></span>&nbsp;<span rbl-value="text-specialist-count">[Specialist Compare]</span></a>
+			</li>
+			</ul>			
+	</div>
+</div>
+
+<div class="katapp-loader init">Loading Health Provider Finder<span></span></div>
+<div style="display:none">
+	<!-- #katapp markup start-->
+	<div class="hidden d-none">
+		<input name="iInputsFromModeler" class="iInputsFromModeler" value="">
+		<input name="iChartClick" class="iChartClick rbl-nocalc" value="">
+		<input name="iproviderIds" class="iproviderIds rbl-nocalc" value="">
+		<input name="ihospitalAffiliationIds" class="ihospitalAffiliationIds" value="">
+		<input name="iSelectedProviders" class="iSelectedProviders" value="">
+		<input name="iSearchMethod" class="iSearchMethod" value_="groupedByProvider">
+		<input name="iApiPath" class="iApiPath" value="">
+	</div>
+
+	<div class="row ajaxContent">
+		<!-- #inputs start -->
+		<div class="col-12 col-md-4 mt-4">
+			<div class="row alert alert-secondary">			
+				<div rbl-tid="input-dropdown" class="col-sm-12 rbl-nocalc" 
+					data-inputname="inetworkIds" 
+					data-dropup-auto="false" 
+					data-none-selected-text="Select at least one plan" 
+					data-live-search-placeholder="Type name of plans" 
+					data-multiselect="true" 
+					data-header_off="Plans available to you:"
+					data-selected-text-format_off="static"
+					data-livesearch="false">
+				</div>
+				<div class="col-12 ml-3 small show-missingplans">
+					<div><a href="#null"  data-toggle='modal' data-target='.modal-missingplans' rbl-value="text-missing-plans">[Why aren't all my plans listed?]</a> </div>
+				</div>
+				<div rbl-tid="input-dropdown" class="col-sm-12" data-inputname="iproviderTypeIds" data-dropup-auto="false" data-livesearch="false"></div>
+				<div rbl-tid="input-textbox" class="col-sm-12" data-inputname="iproviderName" data-placeholder="Name or partial name" data-suffix="<span class='fa fa-search' aria-hidden='true'></span>"></div>
+				<div rbl-tid="input-dropdown" class="col-sm-12 rbl-nocalc"  
+					data-inputname="ispecialtyIds_groups" 
+					data-dropup-auto="false"
+					data-display="static" 
+					data-none-selected-text="Make a selection" 
+					data-live-search-placeholder="Type and select specialist or condition" 
+					data-max-options="5" 
+					data-max-options-text="Select 5 or less" 
+					data-selected-text-format_off="static"
+					data-multiselect="true" 
+					data-livesearch="true">
+				</div>
+				<div rbl-tid="input-slider" class="col-sm-12" data-inputname="iradiusInMiles"></div>
+				<div rbl-tid="input-textbox" class="col-sm-12" data-inputname="izipCode"></div>
+
+				<div class="col-12 filters-secondary">
+					<hr/>
+					<div class="font-weight-bold" rbl-value="text-filters">[Filter]</div>
+					<div class="filter-hospital-group" style="display:none">
+						<!-- disabled for now -->
+						<div>
+							<span class="small" style="color:grey">You limited search to providers at:</span>
+							<div class="form-group mt-0">
+								<input class="form-check-input ihospital-cb" checked type="checkbox" name="ihospital-cb">
+								<label class="form-check-label lihospital-cb" for="ihospital-cb">Adventhealth Shawnee Mission</label>
+							</div>  
+							<hr/>
+						</div>
+						
+					</div>
+					<div rbl-tid="input-checkbox-simple" class="col-sm-12_" data-inputname="iSelectedProviders_cb"></div>
+					<div rbl-tid="input-checkbox-simple" class="d-none col-sm-12_" data-inputname="iacceptingNewPatients"></div>
+					<div rbl-tid="input-checkbox-simple" class="col-sm-12_" data-inputname="iMale"></div>
+					<div rbl-tid="input-checkbox-simple" class="col-sm-12_" data-inputname="iFemale"></div>
+					<div class="row pt-2">
+						<div class="p-0 mr-2 label-language">
+							<div>Language</div>
+						</div>
+						<div class="p-0 m-0">
+							<div rbl-tid="input-dropdown" class="" data-inputname="ilanguageIds" data-dropup-auto="false" data-livesearch="false"></div>
+						</div>
+					</div>
+				</div>
+
+				<div class="col-sm-12">
+					<hr/>
+					<div class="text-center">
+							<button class="btn btn-default reset" rbl-value="text-button-reset" style="display:none">[Reset]</button>	
+							<button class="btn btn-primary search" rbl-value="text-button-start">[Start]</button>
+					</div>
+				</div>
+			</div>
+		</div>
+		<!-- inputs end -->
+		<div class="col-12 col-md-8 mt-4">
+			<!-- #content start -->
+			<!-- #results start-->
+			<div class="row provider-results card pt-2" style="display:none">
+				<div class="provider-results_" >								
+					<div class="provider-list col-12">
+						<label class="mb-0" rbl-value="text-results-list">[Search Results]</label>
+					</div>
+					<div class="provider-chart col-12">
+						<label class="mb-0" rbl-value="text-results-chart">[Specialist Counts by Plan]</label>
+					</div>
+					<div class="row_ plans-selected">
+						<div class="col-12 list-group_" rbl-source="networks">
+							<button class="btn btn-secondary" data-selectid={key} rbl-tid="inline"><span class="fa fa-remove" aria-hidden="true"></span> {text}</button>						
+						</div>
+					</div>
+					<div class="row_ specialties-selected">
+						<div class="col-12" rbl-source="specialties.filter-row.2">
+							<button class="btn {style}" data-selectid={key} data-selectvalue={text} rbl-tid="inline"><span class="fa fa-remove" aria-hidden="true"></span> {text}</button>
+						</div>
+					</div>
+					<div class="row_ specialties-selected">
+						<div class="col-12" rbl-source="specialties.filter-row.3">
+							<button class="btn {style}" data-selectid={key} data-selectvalue={text} rbl-tid="inline"><span class="fa fa-remove" aria-hidden="true"></span> {text}</button>
+						</div>
+					</div>
+
+					<div class=" col-12 provider-chart">
+						<div rbl-tid="chart-highcharts" rbl-chartdata="NetworkProvidersSpecialties" rbl-chartoptions="Default"></div>
+						<label rbl-value="text-providerchart-header">[Information About this Chart]</label>
+						<!-- <div rbl-tid="result-table" rbl-tablename="providerchart-info"></div> -->
+						<div>
+							<ul rbl-source="providerchart-info">
+								<li rbl-tid="inline">{text1}</li>
+							</ul>
+						</div>
+					</div>
+
+					<div class="results-toolbar provider-list p-1">
+						<div class="col-12 ">
+							<div class="row">
+								<div class="col-12 col-md-2 align-self-center text-right">
+									<div rbl-value="text-sortby">[Sort by]</div>	
+								</div>
+								<div class="col-12 col-md-3 align-self-center">
+									<div rbl-tid="input-dropdown" data_-width="130px" data-inputname="isortSelection" data-dropup-auto="false" data-livesearch="false"></div>
+								</div>
+								<div class="col-12 col-md-7 d-flex justify-content-end align-self-center">
+									<div class="pr-5" rbl-value="searchResultMessage"></div>
+									<span class="d-flex justify-content-end smaller">&nbsp;
+										<a class="provider-view-toggle map" href><span class="fa fa-map-marker" aria-hidden="true"></span>&nbsp;<span rbl-value="text-view-map">[Map View]</span></a>
+										<a class="provider-view-toggle list" href style="display:none"><span class="fa fa-list-alt" aria-hidden="true"></span>&nbsp;<span rbl-value="text-view-list">[Show List]</span></a>
+									</span>
+								</div>
+							</div>
+						</div>
+					</div>
+
+					<div class="col-12 provider-list">
+						<!-- toolbar for provider listing -->
+
+						<div class="provider-table provider-view-toggle" rbl-tid_="provider-list-item" rbl-source_="zelis-groupedByProvider" rbl-item-callback="providerItem"></div>
+						<div class="result-pagenav provider-view-toggle pull-right" aria-label="...">
+							<ul class="pagination">
+							<li class="page-item prevpage disabled"><a class="page-link" href="#"><span aria-hidden="true">&larr;</span> Previous</a></li>
+							<li class="page-item nextpage"><a class="page-link" href="#">Next <span aria-hidden="true">&rarr;</span></a></li>
+							</ul>
+						</div>
+						<div class="provider-map provider-view-toggle" style="display:none">
+							<p>&nbsp;</p>
+							<div id="map"></div>
+							<div class="map-footnote" style="display:none">&nbsp;</div>
+						</div>
+						<div class="text-center pt-3 pb-2" rbl-display="totalReturned=0" rbl-value="text-noresults"></div>
+					</div>
+					<!-- results end -->
+				</div>
+			</div>
+			<!-- validation messages -->
+			<div class="col-12 ModelerValidationTable alert alert-error" role="alert" title="Please review the following issues:" style="">
+				<p rbl-value="text-error-header">[Please review the following issues:]</p>
+			 	<ul rbl-source="errors">
+					 <li class="rble" rbl-tid="inline">{text}</li>
+				</ul>
+			</div>
+
+			<div class="row welcome-content mt-5_">
+				<!-- #welcome start -->
+				<div class="justify-content-center_">
+					<div class="col-12">
+						<div class="alert alert-warning d-none" role="alert">
+							<div class="text-center docfind_logo"><span style="font-stretch:condensed; font-weight: bold;color:darkslategrey">Health Provider </span><b>Finder</b></div>
+							<div rbl-value="text-welcome">Welcome...</div>
+						</div>
+						<!-- <div class="text-center docfind_logo"><span style="font-stretch:condensed; font-weight: bold;color:darkslategrey">Health Provider </span><b>Finder</b></div> -->
+						<div class="alert alert-warning" role="alert">
+							<div rbl-value="text-welcome-1">
+								<b>Reminder</b><br/>
+								<span>[Message 1]</span>
+							</div>
+						</div>
+						<div class="alert alert-info" role="alert" style="display:none">
+							<div rbl-value="text-welcome-2">
+								<span>[Message 2]</span>
+							</div>
+						</div>
+					</div>
+				</div>
+			</div>	
+		</div>
+		<div class="ajaxloader"></div>
+	</div>
+
+	<div class="modal fade modal-doctor" tabindex="-1" role="dialog" data-backdrop="static">
+		<div class="modal-dialog modal-lg">
+			<div class="modal-content">
+				<div class="modal-header">
+					<h4 class="modal-title"><i class="fa fa-user-md"></i> Details</h4>
+					<button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+				</div>
+				<div class="modal-body">
+					<div class="katapp-loader doctor">Loading information <span></span></div>
+					<div class="doctor-detail" style="display:none">
+						<div class="doctor-general">
+						</div>
+						<div rbl-source="doctor-extradetails">
+							<div rbl-tid="inline">
+								<div class="row">
+									<div class="col-1 nopadding"></div>
+									<div class="col-11 pl-2">
+										<div>{label}<b> {value}</b></div>
+									</div>
+								</div>
+							</div>
+						</div>	
+						<div class="show-morelocations">
+							<hr/>
+							<div class="row">
+								<div class="col-1 nopadding"></div>
+								<div class="col-11 pl-2">
+									<b>More Locations</b>
+								</div>
+							</div>
+							<div rbl-source="zelis-groupedByProviderLocations">
+								<div class="item-location" rbl-tid="inline">
+									<hr/>
+									<div class="row">
+										<div class="col-1 nopadding"></div>
+										<div class="col-9 pl-2 pr-1">
+											<div>{address}<br/>{city}, {state} {zip}</div>
+											<div class="phone mt-2">
+												<a class="" href="tel:+{phone}"><span class="fa fa-phone" aria-hidden="true"></span><span class="phonenumber">{phone}</span></a><br/>
+											</div>
+										</div>
+										<div class="col-2 text-right">
+											<div class="small">
+												<a href="https://www.google.com/maps/search/?api=1&query={lat},{long}" target="newmap">{distance}&nbsp;miles</a>
+											</div>		
+										</div>
+									</div>
+								</div>
+							</div>	
+						</div>
+					</div>
+				</div>
+				<div class="modal-footer text-center">
+					<button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+				</div>
+			</div>
+		</div>
+	</div>
+	<div class="modal fade modal-missingplans" tabindex="-1" role="dialog" data-backdrop="static">
+		<div class="modal-dialog modal-lg">
+			<div class="modal-content">
+				<div class="modal-header">
+					<h4 class="modal-title" rbl-value="text-missing-plans">[Why aren't my plans listed?]</h4>
+					<button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+				</div>
+				<div class="modal-body">
+					<div class="m-3">We may not have information on all your plans, but you can use these links to visit these provider sites directly.</div>
+					<ul class="m-1" rbl-source="unavailable-plans">
+						<li class="m-2" rbl-tid="inline"><a href="{info}" target="_new">{desc}</a></li>
+					</ul>	
+				</div>
+				<div class="modal-footer text-center">
+					<button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+				</div>
+			</div>
+		</div>
+	</div>
+</div>
+
+
+<script>
+	(function() {
+		var view = $("thisClass");
+
+		if ( view.data("debugger" ) === true ) {
+			debugger;
+		}
+
+		$(window).bind("resize", function () {
+			if ($(this).width() < 500) {
+				$('.inetworkIds .dropdown-menu, .ispecialtyIds_groups .dropdown-menu', view).addClass('w-100')
+			} else {
+				$('.inetworkIds .dropdown-menu, .ispecialtyIds_groups .dropdown-menu', view).removeClass('w-100')
+			}
+		});
+
+
+		var favs = {}; //track 'favorite' providers
+		var doctor = {}; //selected doctor
+		var pingURL = "https://qa6.lifeatworkportal.com/portal60/benefits/rks/keepalive/keepalive.htm";
+
+		//send initial keepalive
+		try {
+				top.opener.postMessage("LAW_PTNR_BTR", "*");
+				$.get(pingURL); 
+				console.log('law keepalive sent');
+			}
+		catch(e){
+			console.log('law keepalive failed');
+		}			
+
+		//keepalive to law every 4 mins
+		setInterval(function(){ 
+			try {
+				top.opener.postMessage("LAW_PTNR_BTR", "*");
+				$.get(pingURL); 
+				console.log('law keepalive sent');
+			}
+			catch(e){
+				console.log('law keepalive failed');
+			}			
+		}, 4 * 60 * 1000);
+
+		function mapProviders(application) {
+			if ( ( application.results["zelis-groupedByProvider"] || [] ).length > 0 ) {
+				if ( typeof application.map === "undefined") {
+					application.map = new google.maps.Map( document.getElementById('map'), {zoom: 15} );
+					application.mapmarkers = [];
+				} 
+				var map = application.map;
+				
+				//deleting markers from last instance
+				for(i=0; i< application.mapmarkers.length; i++){
+					application.mapmarkers[i].setMap(null);
+				}
+				application.mapmarkers = [];
+				map.setZoom(15);
+				
+				var totalLat = 0.0;
+				var totalLong = 0.0;
+				n = 0;
+				//var markers = [];
+				var bounds = new google.maps.LatLngBounds();
+
+				application.results["zelis-groupedByProvider"].forEach( function( item) {
+					var sName = item.fname === null ?  item.facility || "Location" : item.fname + " " + item.lname + " " + item.degree;
+					var mOptions = 	{
+						position: {lng: item.long * 1.0, lat: item.lat * 1.0}, 
+						map: application.map, 
+						title: sName
+					};
+					totalLat = totalLat + item.lat * 1.0;
+					totalLong = totalLong + item.long * 1.0;
+					n = n + 1;
+					if (mOptions.title != null ) {
+						var marker = new google.maps.Marker( mOptions );
+						application.mapmarkers.push( marker );
+						bounds.extend( marker.position );
+						var infowindow = new google.maps.InfoWindow({
+							content: "<span style='color:brown'>{name}</span><br/><a href='{url}' target='newmap'>View on Google Maps</a>".format({
+								name: sName,
+								url: "https://www.google.com/maps/search/?api=1&query={lat},{long}".format({lat: item.lat * 1.0, long: item.long * 1.0})
+							})
+						});
+						google.maps.event.addListener(marker, 'click', function() {
+							infowindow.open(map,marker);
+						});
+					} 
+				});
+				map.setCenter({lng: totalLong / n, lat: totalLat / n });
+				
+				//visiblity hack so google maps would update 
+				var isVisible = $(".provider-map").is(":visible");
+				if (!isVisible) {
+					$(".provider-list").show();
+					$(".provider-map").show();
+				} 
+				map.fitBounds(bounds);
+				$(".map-footnote").show();
+				if (!isVisible) $(".provider-map").hide();
+			}
+		}
+
+		view.on( "onInitialized.RBLe", function( event, application ) {
+
+			//check to see if need to get script for google maps
+			if ( (typeof google != "object") ) $.getScript("https://maps.googleapis.com/maps/api/js?key=AIzaSyAuLtIyhTCKqoM4fw_yaM7ECu6SnvE9ZHc&callback_off=initMap");
+			// load external styles
+			$('<link rel="stylesheet" href="css/basic.conduent.css" type="text/css" />').appendTo('head');
+
+			//controls map vs list view
+			$("a.provider-view-toggle", view).on('click', function(e){
+				$(".provider-view-toggle", view).toggle();
+				if ( $(".provider-map").is(":visible") && $(".map-footnote").is(":visible") === false  ) mapProviders(application);
+				return false;
+			});
+
+			//search button
+			$("button.search", view).on('click', function(e){
+				$(".iSearchMethod", view).val( "groupedByProvider" ).trigger('change');
+			});
+			$("button.reset", view).on('click', function(e){
+				$(".iSearchMethod", view).val( "" );
+				$(".iproviderName", view).val( "" );
+				$(".inetworkIds", view).selectpicker('val', [] );
+				$(".ispecialtyIds_groups", view).selectpicker('val', [] );
+				$(".iproviderTypeIds", view).selectpicker('val', "6,3,13,4,5,10,2,14,16");
+				$(".ilanguageIds", view).selectpicker('val', "0" );
+				$(".iFemale", view).removeAttr( "checked" );
+				$(".iMale", view).removeAttr( "checked" );
+				$(".iSelectedProviders_cb", view).removeAttr( "checked" );
+				$(".iacceptingNewPatients", view).removeAttr( "checked" );
+				$("a.provider-compare, a.provider-search", view).removeClass('active');
+				$("a.provider-search", view).addClass('active').blur();
+				application.setDefaultValue("iradiusInMiles","10");
+				application.calculate();
+			});
+
+			//page nav buttons
+			$(".result-pagenav a", view).on('click', function(e){
+				$(".iApiPath", view).val( $(this).data("path") ).trigger('change');
+				$(this).blur();
+			});
+
+			$("a.provider-compare ", view).on('click', function(e){
+				$("a.provider-compare, a.provider-search", view).removeClass('active');
+				$(this).addClass('active').blur();
+				$(".iSearchMethod", view).val( "networkPulse.specialties" ).trigger('change');
+			});
+			$("a.provider-search ", view).on('click', function(e){
+				$("a.provider-compare, a.provider-search", view).removeClass('active');
+				$(this).addClass('active').blur();
+				$(".iSearchMethod", view).val( "groupedByProvider" ).trigger('change');
+			});
+
+			//hidden control used for chart drilldown - highchart bar click puts data into this hidden input
+			$(".iChartClick", view).on('change', function() {
+				var p = $(".iChartClick", view).val().split('.');
+				var specialtyId = application.getResultValueByColumn("HighCharts-NetworkProvidersSpecialties-Data", "category", p[1], "config-specialtyId_group", 0);
+				var networkId = application.getResultValueByColumn("HighCharts-NetworkProvidersSpecialties-Data", "category", "config-networkId", p[0], 0);
+				$(".ispecialtyIds_groups", view).selectpicker('val', specialtyId );
+				$(".inetworkIds", view).selectpicker('val', networkId );
+				var r = application.getResultValue("ejs-output", "searchRadius", "value", 15);
+				//$(".iradiusInMiles", view).val( r );
+				$(".iSearchMethod", view).val( "groupedByProvider" );
+				$("a.nav-link.provider-search").trigger('click');
+			});
+
+			//doctor detail popup
+			$(".modal-doctor", view).on("shown.bs.modal", function() {
+				$(".modal-backdrop.fade.in").css("z-index", "-1");
+			});
+			$(".modal-doctor", view).on("hidden.bs.modal", function() {
+				$(".katapp-loader.doctor", view).show();
+				$(".doctor-detail", view).hide();
+				application.calculate();
+			});
+
+			//selectpicker init?
+			var selectPickerAvailable = typeof $.fn.selectpicker === "function";
+            if ( selectPickerAvailable ) {
+				$(".assumptionType_{id}", view).selectpicker();
+            }			
+		});
+		//katapp event wireups
+		view.on( "onCalculateStart.RBLe", function( event, calculationResults, calcOptions, application ) {
+			if ( $("input.iSelectedProviders_cb", view).prop("checked") ) {
+				for (var key in favs) {
+					if ( !favs[key] ) delete( favs[key] );
+				}
+				if ( Object.keys(favs).length > 0 ) $("input.iSelectedProviders", view).val( Object.keys(favs).join(",") );
+				else $("input.iSelectedProviders", view).val( "nil" );
+			}
+			else $("input.iSelectedProviders", view).val("");
+			$("li.dropdown-divider:not(:first), option[data-divider=true]:not(:first)", view).remove();
+		});
+		//katapp event wireups
+		view.on( "onCalculation.RBLe", function( event, calculationResults, calcOptions, application ) {
+			
+			//set up filter dismiss events
+			$(".specialties-selected .btn", view).on('click', function(){
+				var el = $(this);
+				if ( el.hasClass("btn-info") ) {
+					var vals = $("select.ispecialtyIds_groups", view).selectpicker('val');
+					$("select.ispecialtyIds_groups", view).selectpicker('val', vals.filter( function(i) {return (i != el.data("selectid"));})).trigger('change');
+					application.calculate();
+				}
+				else if (el.hasClass("language") && el.hasClass("btn-warning")) {
+					$(".ilanguageIds", view).val("0");
+					application.calculate();
+				}
+				else if (el.hasClass("selected") && el.hasClass("btn-warning")) {
+					$(".iSelectedProviders_cb", view).removeAttr("checked");
+					application.calculate();
+				}
+				else if ( el.hasClass("btn-default") ) {
+					$("select.ispecialtyIds_groups", view).selectpicker('val', []).trigger('change');
+				}
+				else if ( el.hasClass("btn-primary") ) {
+					$("input.iproviderName", view).val("");
+					application.calculate();
+				}
+				else if ( el.hasClass("btn-success") ) {
+					$("select.iproviderTypeIds", view).selectpicker('val',"6,3,13,4,5,10,2,14,16").trigger('change');
+				}
+				else if (el.data("selectvalue") == "Male" && el.hasClass("btn-warning")) {
+					$(".iMale", view).removeAttr("checked");
+					application.calculate();
+				}
+				else if (el.data("selectvalue") == "Female" && el.hasClass("btn-warning")) {
+					$(".iFemale", view).removeAttr("checked");
+					application.calculate();
+				}
+				el.remove();
+			});
+			$(".plans-selected button", view).on('click', function(){
+				var el = $(this);
+				var vals = $("select.inetworkIds", view).selectpicker('val');
+				$("select.inetworkIds", view).selectpicker('val', vals.filter( function(i) {return (i != el.data("selectid"));}));
+				el.remove();
+				application.calculate();
+			});
+
+			//setup events on input labels (why not on configureui? didn't work)
+			$(".liradiusInMiles a", view).attr("href","#").on('click', function(e){
+				$(".vizipCode", view).slideDown();
+				$(".izipCode", view).focus().select();
+			});
+
+			//setup page nav path values
+			$(".result-pagenav .prevpage a", view).data("path", application.getResultValue("ejs-output", "groupedByProviderPrevious", "value", "") );
+			$(".result-pagenav .nextpage a", view).data("path", application.getResultValue("ejs-output", "groupedByProviderNext", "value", "") );
+			$(".iApiPath", view).val("");
+
+			//dumping data to modal view
+
+			//custom items: discuss with Terry
+			// use .map?
+			//<div class="doctor-list" rbl-tid_="doctor-list" rbl-source_="zelis-groupedByProvider" rbl-item-callback="doctor"></div>
+
+			//this function transforms a row from groupedByProvider, config'd in [rbl-item-callback]
+			//move to?
+			function providerItem(item) {
+				var phone = ( item.phone || "" ).length > 10 ? item.phone.substr( item.phone.length - 10 ) : ( item.phone || "" );
+				return $.extend( {}, item, {
+					"specialties": [item.specialty0,item.specialty1,item.specialty2].filter( function(item){ return item != undefined && item != "";}).join("<br/>"),
+					"networks": $( "<span>" + [item.network0,item.network1,item.network2,item.network3,item.network4,item.network5,item.network6,item.network7].filter( function(item){ return item != undefined && item != "";}).join("<br/>") + "</span>" ).html().replace(/&nbsp;/g, " "),
+					"hospitalaffiliation0": item.hospitalaffiliation0 || "",
+					"hospitals": [item.hospitalaffiliation0,item.hospitalaffiliation1,item.hospitalaffiliation2].filter( function(item){ return item != undefined && item != "";}).join("<br/>"),
+					"phone_format": ( phone || "" ).replace(/(\d\d\d)(\d\d\d)(\d\d\d\d)/, "($1) $2-$3")
+				});
+			}
+			
+			//transforms row data and applies template.  part of core provider?  
+			$("[rbl-item-callback]", view).each(function () {
+				var sel = $(this);
+				sel.empty();
+				var rows = application.results[ sel.attr("rbl-source_") ];
+				if ( rows != undefined) {
+					
+					//show terry (clever, but might need more control?)
+					// sel.append( 
+					// 	rows.map( function(row) {return $("rbl-template[tid=" + sel.attr("rbl-tid_") + "]").html().format( eval( sel.attr("rbl-item-callback") + "( row )") );} ).join("") 
+					// );
+
+					rows.forEach( function( item ){
+						var d = eval( sel.attr("rbl-item-callback") + "( item )");
+						var el =$( $("rbl-template[tid=" + sel.attr("rbl-tid_") + "]").html().format( d ) );
+
+						el.find("[rbl-if]").each( function( index, e ){
+							var s = $(e).attr("rbl-if");
+							if( (d[s] || "").length == 0  ) $(e).remove();
+						});
+						sel.append( el );
+					});
+
+				}
+				else {
+					//need to move this to calcengine
+					//sel.html("<div class='font-italic text-center' rbl-value='text-noresults'>[No results returned for your current search. Try expanding your search.]</div>");
+				}
+			});
+
+			$("a.otherlocations, a.doctor", view).on('click', function(){
+				var providerId = $(this).data("id");
+				//weird hack: must assign it twice.
+				doctor = application.getResultRow("zelis-groupedByProvider", providerId, "providerId");
+				doctor = application.getResultRow("zelis-groupedByProvider", providerId, "providerId");
+				doctor = providerItem(doctor);
+				doctor.morelocations = doctor.city2;
+				delete( doctor.city2 );
+				var el =$( $("rbl-template[tid=provider-list-item]").html().format( doctor ) )
+				el.find("[rbl-if]").each( function( index, e ){
+					var s = $(e).attr("rbl-if");
+					if( (doctor[s] || "").length == 0 ) $(e).remove();
+				});
+				//el.find(".address").remove();
+
+				$("div.doctor-general").html(el);
+				$("div.doctor-general").data( {doctor: doctor});
+
+				$("input.iproviderIds", view).val($(this).data("id"));
+				application.calculate();
+				$("input.iproviderIds", view).val("");
+			});
+
+			//data issues; disabled for now
+			$("a.show-hospitalproviders", view).on('click', function(){
+				$(".iproviderName", view).val("");
+				$(".iproviderTypeIds", view).selectpicker('val','6,3,13,4,5,10,2,14,16');
+				$(".ihospitalAffiliationIds", view).val( $(this).data("id") );
+				application.calculate();
+				return false;
+			});
+
+			//favorites
+			// add toggle to each doctor
+			$("input.favorite", view).click(function() {
+				if ( $(this).prop("checked") ) {
+					favs[ $(this).data("id") ] = true;
+				}
+				else {
+					delete( favs[ $(this).data("id") ] );
+				}	
+				if ( $("input.iSelectedProviders_cb", view).prop("checked") && ( $("div.modal-doctor .modal-title", view).is(":visible") == false) ) 
+					application.calculate();
+			});
+
+			//restore favorite status (after page nav)
+			for (var key in favs) {
+				if ( favs[key] ) $("input.favorite[data-id=" + key + "]", view).attr("checked", "");
+			}
+
+			//Setup google map
+			//run mapProviders if visible
+			$(".map-footnote", view).hide();
+			if ( $(".provider-map", view).is(":visible") ) mapProviders(application);
+
+			if ( $(".katapp-loader.init", view).length > 0 ) {
+				$(".katapp-loader.init", view).hide();
+				$(".katapp-loader.init", view).next("div").fadeIn();
+			}
+
+			//setup provider details
+			if ( $("div.modal-doctor .modal-title", view).is(":visible") ) {
+				if ( $(".katapp-loader.doctor", view).length > 0 ) {
+					var el = $("");
+					el.find("[rbl-if]").each( function( index, e ){
+						var s = $(e).attr("rbl-if");
+						if( (doctor[s] || "").length == 0 ) $(e).remove();
+					});
+
+					//format phone numbers
+					$("div.show-morelocations span.phonenumber", view).each( function(index, e) {
+						var phone = $(this).text();
+						phone = ( phone || "" ).length > 10 ? phone.substr( phone.length - 10 ) : ( phone || "" );
+						phone = ( phone || "" ).replace(/(\d\d\d)(\d\d\d)(\d\d\d\d)/, "($1) $2-$3");
+						$(this).text( " " + phone );
+					});
+					//remove link and replace w div for doc name
+					var el = $("<div class='doctor'></div>");
+					el.text( $("div.doctor-general a.doctor").text() )
+					$("div.doctor-general a.doctor").after( el );
+					$("div.doctor-general a.doctor").remove();
+					//remove first location since that's shown in top
+					$(".item-location:not([rbl-tid]):first", view).remove()
+
+					$(".katapp-loader.doctor", view).hide();
+					$(".katapp-loader.doctor", view).next("div").fadeIn();
+				}
+			}
+
+			//$(".provider-results.card").animate({ scrollTop: 0 }, "slow");
+			$("li.dropdown-divider:not(:first), option[data-divider=true]:not(:first)", view).remove();
+			$(".provider-results.card")[0].scrollIntoView( { behavior: "smooth"});
+			
+		});
+
+		view.on( "onConfigureUICalculation.RBLe", function( event, calculationResults, calcOptions, application ) {
+			//done once when katapp initialized to set up input controls and other init reqmts
+			$("select.ispecialtyIds_groups_off, select.inetworkIds_off", view).on('changed.bs.select', function (e, clickedIndex, isSelected, previousValue) {
+				$(this).selectpicker('toggle');
+			});
+			$("select.inetworkIds", view).on('hidden.bs.select', function () {
+				application.calculate();
+			});
+			$("select.ispecialtyIds_groups", view).on('hidden.bs.select', function () {
+				application.calculate();
+			});
+			//change standard close button to ">" for network
+			$(".ispecialtyIds_groups").selectpicker('val', []);
+
+			//set up common searches - capture data from results
+			$(".suggested-provider-searches").data("search", application.results["quick-search"]);
+			$("button.quick-search", view).on('click', function (e) {
+				var searchid = $(this).data("search");
+				var row = $(".suggested-provider-searches").data("search").filter( function(r) {return r['@id'] == searchid;})[0];
+				[row.p1, row.p2, row.p3, row.p4, row.p5, row.p6, row.p7].filter( function(r) {return r != undefined;}).forEach(function( item ) {
+					var p = item.split('|');
+					$( p[0] , view).val( (p[1] || "").includes("^") ? p[1].split("^") : p[1] );
+				});
+				$(".iSearchMethod", view).val( row.searchMethod ).trigger('change');
+			});
+			$("span.katloader", view).remove();
+
+			//cleanup dropdown width
+			if ($(this).width() < 500) {
+				$('.inetworkIds .dropdown-menu, .ispecialtyIds_groups .dropdown-menu', view).addClass('w-100')
+			} else {
+				$('.inetworkIds .dropdown-menu, .ispecialtyIds_groups .dropdown-menu', view).removeClass('w-100')
+			}
+
+			$(".provider-view-buttons", view).fadeIn();			
+		});
+	})();
+
+	//# sourceURL=find_dr.kaml
+</script>

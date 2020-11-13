@@ -1,0 +1,57 @@
+<rbl-config calcengine="Buck_DecisionSupportHSA_SE" templates="Standard_Templates"/>
+
+<rbl-template tid="lookup-tables">
+	<DataTable id="TableTaxStatus">
+        <TableItem key="1" name="Single Standard Deduction"/>
+        <TableItem key="2" name="Married File Jointly Std. Ded"/>
+        <TableItem key="3" name="Married File Sep Std. Ded"/>
+        <TableItem key="4" name="Head of Household Std. Ded"/>
+	</DataTable>
+</rbl-template>
+  
+<style>
+    .katapp-css div.chart { height: 350px; }
+    @media (max-width: 767px) {
+        .katapp-css div.chart { height: 250px; }
+    }
+</style>
+
+<div class="row ajaxContent">
+    <div class="hidden">
+        <input name="iHSAType" value="2"/>
+    </div>
+    <div class="col-md-6">
+        <ul class="nav nav-tabs" role="tablist">
+            <li role="presentation" class="col-xs-12 active"><a href="#tabAssumptions" role="tab" data-toggle="tab" class="text-center">Assumptions</a></li>
+        </ul>
+        <div class="tab-content">
+            <div role="tabpanel" class="tab-pane fade in active" id="tabAssumptions">
+                <div class="row">
+                    <div rbl-tid="input-dropdown" data-inputname="iYear" data-css="col-md-6" data-lookuptable="TableTaxStatus"></div>
+                    <div rbl-tid="input-dropdown" data-inputname="i55orOlder" data-css="col-md-6" data-lookuptable="TableTaxStatus"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <ul class="nav nav-tabs" role="tablist">
+            <li role="presentation" class="col-xs-12 active"><a href="#tabResults" role="tab" data-toggle="tab" class="text-center">Results</a></li>
+        </ul>
+        <div class="tab-content">
+            <div role="tabpanel" class="tab-pane fade in active" id="tabResults">
+                <div class="row">
+                    <div class="col-md-12">
+						<div rbl-tid="result-table" rbl-tablename="results"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="ajaxloader"></div>
+</div>            
+
+<div class="row">
+    <div class="col-xs-12">
+        <div rbl-tid="validation-summary"></div>
+    </div>
+</div>

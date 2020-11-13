@@ -140,7 +140,7 @@ class KatApp
         const currentOptions = application.options;
         const url = currentOptions.functionUrl ?? KatApp.defaultOptions.functionUrl ?? KatApp.functionUrl;
         const resourceArray = resources.split(",");
-        const useLocalResources = debugResourcesDomain !== undefined;
+        let useLocalResources = debugResourcesDomain !== undefined;
 
         // viewParts[ 0 ], viewParts[ 1 ]
         // folder: string, resource: string, optional Version
@@ -266,6 +266,10 @@ class KatApp
                         if ( useLocalResources && currentFolder < folders.length - 1 ) {
                             currentFolder++;
                             localFolder = !isScript ? folders[ currentFolder ] + "/" : "";
+                            submit( application as KatAppPlugInInterface, params, submitDone, submitFailed );
+                        }
+                        else if ( useLocalResources && currentFolder >= folders.length -1 ) {
+                            useLocalResources = false; // If I had useLocalResources but it couldn't find it, try real site
                             submit( application as KatAppPlugInInterface, params, submitDone, submitFailed );
                         }
                         else {

@@ -1,0 +1,264 @@
+<rbl-config calcengine="Buck_DecisionSupportFSA_SE" templates="Standard_Templates"></rbl-config>
+
+<style>
+    .katapp-css div.chart { height: 350px; }
+    @media (max-width: 767px) {
+        .katapp-css div.chart { height: 250px; }
+    }
+    .katapp-css .summary-table.table thead tr th.value {
+        text-align: right;
+    }
+    .katapp-css .summary-table.table tbody tr.take-home td {
+        background-color: #fcf8e3;
+        font-weight: bold;
+        color: #118e04;
+    }
+    .katapp-css .result-table.table {
+        margin-right: auto;
+        margin-left: auto;
+    }
+    .katapp-css .result-table.table tbody tr td {
+        border-width: 0;
+    }
+    .katapp-css .ws-info {
+        padding-right: 5px;
+        text-decoration: none;
+        outline: none;
+    }
+    .katapp-css a.ws-info:focus {
+        border: 0;
+        outline: none;
+    }
+</style>
+
+<div class="hidden">
+    <input name="iFSAFlag" class="iFSAFlag" value="">
+    <input name="iPlanID" class="iPlanID" value="">
+</div>
+
+<div class="row ajaxContent">
+    <div class="col-md-4">
+        <ul class="nav nav-tabs" role="tablist">
+            <li role="presentation" class="col-xs-12 active"><a href="#tabAssumptions" role="tab" data-toggle="tab" class="text-center">Assumptions</a></li>
+        </ul>
+        <div class="tab-content">
+            <div role="tabpanel" class="tab-pane fade in active match-height" id="tabAssumptions">
+				<p><b>Please enter your personal information below.</b></p>
+                <div class="row">
+                    <div class="col-md-12">
+                        <div rbl-tid="input-dropdown" data-inputname="iYear"></div>
+                        <div rbl-tid="input-dropdown" data-inputname="iTaxStatus"></div>
+                        <div rbl-tid="input-slider" data-inputname="iTotalFamilyMembers"></div>
+                        <div rbl-tid="input-textbox" data-inputname="iAnnualIncome" data-prefix="$"></div>
+                        <div rbl-tid="input-slider" data-inputname="iHCE"></div>
+                        <div rbl-tid="input-slider" data-inputname="iDCE"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-8">
+        <ul class="nav nav-tabs" role="tablist">
+            <li role="presentation" class="col-xs-12 active"><a href="#tabResults" role="tab" data-toggle="tab" class="text-center">Results</a></li>
+        </ul>
+        <div class="tab-content">
+			<div role="tabpanel" class="tab-pane fade in active" id="tabResults">
+				<div class="row">
+					<div class="col-md-5">
+						<div class="text-center">
+                            <div rbl-tid="chart-highcharts" rbl-chartdata="TaxCalculator"></div>
+                        </div>
+					</div>
+					<div class="col-md-7">
+                        <div rbl-tid="result-table" rbl-tablename="summary-table"></div>
+					</div>
+				</div>
+			</div>
+        </div>
+    </div>
+    <div class="ajaxloader"></div>
+</div>            
+
+<div class="row">
+    <div class="col-xs-12">
+        <div rbl-tid="validation-summary"></div>
+    </div>
+</div>
+
+<div class="modal fade skipRBLe" tabindex="-1" role="dialog" id="modal-worksheet" data-backdrop="static">
+	<div class="modal-dialog">
+		<div class="modal-content">
+			<div class="modal-header"><h4 class="modal-title">Health Care Worksheet</h4></div>
+			<div class="modal-body">
+				<div class="alert alert-warning hide" id="hcwAlert"></div>
+				<div class="row">
+					<div class="hidden lDC liWorksheet1DC"></div>
+					<div class="hidden lHC liWorksheet1HC"></div>
+                    <div rbl-tid="input-textbox" data-inputname="iWorksheet1" data-inputcss="iWorksheet" data-css="col-sm-6" data-prefix="$"></div>
+					<div class="hidden lDC liWorksheet4DC"></div>
+					<div class="hidden lHC liWorksheet4HC"></div>
+                    <div rbl-tid="input-textbox" data-inputname="iWorksheet4" data-inputcss="iWorksheet" data-css="col-sm-6" data-prefix="$"></div>
+					<div class="hidden lDC liWorksheet2DC"></div>
+					<div class="hidden lHC liWorksheet2HC"></div>
+                    <div rbl-tid="input-textbox" data-inputname="iWorksheet2" data-inputcss="iWorksheet" data-css="col-sm-6" data-prefix="$"></div>
+					<div class="hidden lDC liWorksheet5DC"></div>
+					<div class="hidden lHC liWorksheet5HC"></div>
+                    <div rbl-tid="input-textbox" data-inputname="iWorksheet5" data-inputcss="iWorksheet" data-css="col-sm-6" data-prefix="$"></div>
+					<div class="hidden lDC liWorksheet3DC"></div>
+					<div class="hidden lHC liWorksheet3HC"></div>
+                    <div rbl-tid="input-textbox" data-inputname="iWorksheet3" data-inputcss="iWorksheet" data-css="col-sm-6" data-prefix="$"></div>
+					<div class="hidden lDC liWorksheet6DC"></div>
+					<div class="hidden lHC liWorksheet6HC"></div>
+                    <div rbl-tid="input-textbox" data-inputname="iWorksheet6" data-inputcss="iWorksheet" data-css="col-sm-6" data-prefix="$"></div>
+					<div class="hidden lDC liWorksheet7DC"></div>
+					<div class="hidden lHC liWorksheet7HC"></div>
+                    <div rbl-tid="input-textbox" data-inputname="iWorksheet7" data-inputcss="iWorksheet" data-css="col-sm-6" data-prefix="$"></div>
+				</div>
+				<div class="row">
+					<div class="col-sm-6">
+						<h3>Total Eligible Expenses</h3>
+					</div>
+					<div class="col-sm-6 text-right">
+						<h3 class="total"></h3>
+					</div>
+					<div class="col-sm-12 text-right">
+						<b>Total rounded to nearest $50.  Not to exceed annual plan limit of <span class="plan-limit"></span>.</b>
+					</div>
+				</div>
+			</div>
+			<div class="modal-footer">
+				<button type="button" class="btn btn-primary btn-action btn-use" data-dismiss="modal">Use Result</button>
+				<button type="button" class="btn btn-primary btn-primary-inverse" data-dismiss="modal">Cancel</button>
+			</div>
+		</div>
+	</div>
+</div>
+
+<script>
+	(function(){
+		var view = $("{thisView}");
+
+		if ( view.data("debugger" ) == true ) {
+			debugger;
+		}
+
+		$(".iFSAFlag", view).val(view.data("fsa"));
+		$(".iPlanID", view).val(view.data("planid"));
+
+		view.on( "onInitialized.RBLe", function( event, application ) {
+			let ws = $("<a style='display: none;' class='ws-info wsiHCE vShowWorksheet' role='button' tabindex='0' title='Click for Health Care Expense Worksheet' href='#' data-toggle='modal' data-target='#modal-worksheet'><span class='glyphicon glyphicon glyphicon-list-alt'></span></a>");
+			ws.insertBefore($(".liHCE", view));
+			ws = $("<a style='display: none;' class='ws-info wsiDCE vShowWorksheet' role='button' tabindex='0' title='Click for Dependent Care Expense Worksheet' href='#' data-toggle='modal' data-target='#modal-worksheet'><span class='glyphicon glyphicon glyphicon-list-alt'></span></a>");
+			ws.insertBefore($(".liDCE", view));
+
+			$(".iWorksheet", view).change(function () {
+				$("#modal-worksheet .total", view).html(String.localeFormat("{0:c0}", Math.min(worksheetMax, GetTotal())));
+			})
+			$(".iWorksheet:eq(0)", view).trigger("change");
+		});
+
+		if ( $.fn.matchHeight !== undefined ) {
+			$(".match-height", view).matchHeight({ property: 'height' });
+			$.fn.matchHeight._maintainScroll = true;
+
+			view.on( "onCalculation.RBLe", function( event, calculationResults, calcOptions, application ) {
+				// Doesn't look like I can only call 'update' to match height items within my view, so this will update
+				// all and any match heights applied on page, but my bindings were set scoped to my view, so it should
+				// not have adverse affects.  The project page mentioned that match heights can be achieved in modern
+				// browsers by using CSS Flexbox and CSS Grid instead.  So could look at that.
+				$.fn.matchHeight._update();
+			});
+		}
+
+		var worksheetMax = 0;
+		var worksheetIsHC = false;
+		var hcValues = Array.apply(null, Array(6)).map(function () { return 0; });
+		var dcValues = Array.apply(null, Array(7)).map(function () { return 0; });
+
+		$("#modal-worksheet", view).on('show.bs.modal', function (e) {
+			worksheetIsHC = $(e.relatedTarget, view).hasClass("wsiHCE");
+
+			$("#modal-worksheet .modal-title", view).html(worksheetIsHC ? "Health Care Worksheet" : "Dependent Care Worksheet");
+
+			$("#hcwAlert", view).addClass('hide');
+
+			worksheetMax = worksheetIsHC
+				? $(".slider-iHCE", view).data("max") * 1
+				: $(".slider-iDCE", view).data("max") * 1;
+
+			$("#modal-worksheet .plan-limit", view).html(String.localeFormat("{0:c0}", worksheetMax));
+
+			if (worksheetIsHC) {
+				$(".viWorksheet7", view).hide();
+			}
+			else {
+				$(".viWorksheet7", view).show();
+			}
+
+			var values = worksheetIsHC ? hcValues : dcValues;
+
+			for (var i = 0; i < values.length; i++) {
+				$(".iWorksheet" + (i + 1), view).val(values[i]);
+			}
+
+			$("#modal-worksheet label.control-label", view).each(function () {
+				var id = $(this).parent().parent().data("inputname");
+				$(this).html($(".l" + id + (worksheetIsHC ? "HC" : "DC" ), view).html());
+			});
+		})
+		.on('shown.bs.modal', function (e) {
+			$(".iWorksheet:eq(0)").trigger("change");
+		})
+		.on("shown.bs.modal", function() {
+			// Since FSA KatApp is being shown in a 'modal/blocker' with position of absolute, I need to set this z-index so
+			// that it doesn't appear behind the blocker: 
+			$(".modal-backdrop.fade.in").css("z-index", "-1");
+		});
+
+		$("#modal-worksheet .btn-use", view).on('click', function (e) {
+			var hasErrors = false;
+			$("#hcwAlert", view).html("");
+
+			$(".iWorksheet:visible", view).each(function () {
+				var value = Number($(this).val());
+				if (isNaN(value)) {
+					var label = $(this).parent().parent().children("label").text();
+					$("#hcwAlert", view).removeClass('hide').append('<p>' + label + ': Please provide blank or a valid numeric value.</p>');
+					hasErrors = true;
+				}
+			});
+
+			if (hasErrors) {
+				return false;
+			}
+			else {
+				var values = worksheetIsHC ? hcValues : dcValues;
+
+				for (var i = 0; i < values.length; i++) {
+					var val = $(".iWorksheet" + (i + 1), view).val() * 1;
+					values[i] = val != undefined ? val : 0;
+				}
+
+				var total = GetTotal();
+
+				var noUiSlider = worksheetIsHC
+					? $(".slider-iHCE", view)
+					: $(".slider-iDCE", view)
+				noUiSlider[0].noUiSlider.set(total);
+			}
+		});
+
+		function GetTotal() {
+			var total = 0;
+
+			$(".iWorksheet:visible", view).each(function () {
+				var value = Number($(this).val());
+				if (!isNaN(value)) total += value;
+			});
+
+			var increment = 50;
+			return Math.round(total / increment) * increment;
+		}
+	})();
+	//# sourceURL=FSA.kaml
+</script>

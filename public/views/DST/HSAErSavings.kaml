@@ -1,0 +1,79 @@
+<rbl-config calcengine="Buck_DecisionSupportHSAErSavings_SE" templates="Standard_Templates"></rbl-config>
+
+<style>
+    .katapp-css div.chart { height: 450px; }
+    @media (max-width: 767px) {
+        .katapp-css div.chart { height: 250px; }
+    }
+</style>
+
+<div class="row ajaxContent RBLe">
+	<div class="col-md-4">
+		<ul class="nav nav-tabs" role="tablist">
+			<li role="presentation" class="col-xs-12 active"><a href="#tabAssumptions" role="tab" data-toggle="tab" class="text-center">Assumptions</a></li>
+		</ul>
+		<div class="tab-content match-height">
+			<div role="tabpanel" class="tab-pane fade in active" id="tabAssumptions">
+				<div class="row">
+					<div class="col-xs-12">
+                        <div rbl-tid="input-textbox" data-inputname="iEePreTaxContributions" data-prefix="$"></div>
+                        <div rbl-tid="input-textbox" data-inputname="iFICARate" data-suffix="%"></div>
+                        <div rbl-tid="input-textbox" data-inputname="iNationalAverage" data-suffix="%"></div>
+                        <div rbl-tid="input-dropdown" data-inputname="iState"></div>
+						<div class="row">
+                            <div rbl-tid="input-textbox" data-css="col-sm-6" data-inputname="iStateMin" data-label="Min Rate" data-displayonly="true" data-value="0.04%"></div>
+                            <div rbl-tid="input-textbox" data-css="col-sm-6" data-inputname="iStateMax" data-label="Min Rate" data-displayonly="true" data-value="0.04%"></div>
+						</div>
+                        <div rbl-tid="input-textbox" data-inputname="iUnemploymentRate" data-suffix="%"></div>
+                        <div rbl-tid="input-textbox" data-inputname="iCompensationInsurance" data-prefix="$"></div>
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
+	<div class="col-md-8">
+		<ul class="nav nav-tabs" role="tablist">
+			<li role="presentation" class="col-xs-12 active"><a href="#tabResults" role="tab" data-toggle="tab" class="text-center">Results</a></li>
+		</ul>
+		<div class="tab-content match-height">
+			<div role="tabpanel" class="tab-pane fade in active" id="tabResults">
+				<div class="row">
+					<div class="col-md-12">
+                        <div rbl-tid="chart-highcharts" rbl-chartdata="SummaryChart"></div>
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
+	<div class="ajaxloader"></div>
+</div>
+
+<div class="row">
+    <div class="col-xs-12">
+        <div rbl-tid="validation-summary"></div>
+    </div>
+</div>
+
+<script>
+    (function() {
+        const view = $("{thisView}");
+
+        if ( view.data("debugger" ) == true ) {
+            debugger;
+        }
+
+        if ( $.fn.matchHeight !== undefined ) {
+            $(".match-height", view).matchHeight({ property: 'height' });
+            $.fn.matchHeight._maintainScroll = true;
+
+            view.on( "onCalculation.RBLe", function( event, calculationResults, calcOptions, application ) {
+                // Doesn't look like I can only call 'update' to match height items within my view, so this will update
+                // all and any match heights applied on page, but my bindings were set scoped to my view, so it should
+                // not have adverse affects.  The project page mentioned that match heights can be achieved in modern
+                // browsers by using CSS Flexbox and CSS Grid instead.  So could look at that.
+                $.fn.matchHeight._update();
+            });
+        }
+    })();
+    //# sourceURL=HSAErSavings.kaml
+</script>

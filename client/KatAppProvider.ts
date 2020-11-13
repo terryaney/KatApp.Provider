@@ -1502,6 +1502,10 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
 		}
 
         injectTemplate( target: JQuery<HTMLElement>, template: { Content: string; Type: string | undefined } | undefined ): void {
+            // rbl-template-type is to enable the creation of templates with different ids/names but still
+            // fall in a category of type.  For example, you may want to make a certain style/template of
+            // sliders (while still keeping main slider template usable) that is then capable of applying
+            // all the KatApp programming (data-* attributes applying ranges, and configurations).
             target.removeAttr("rbl-template-type");
 
             if ( template === undefined ) {
@@ -3065,6 +3069,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
         }
 
         buildTextBoxes( view: JQuery<HTMLElement> ): void {
+            const isBootstrap3 = $("rbl-config",view).attr("bootstrap") == "3";
             $('[rbl-tid="input-textbox"],[rbl-template-type="katapp-textbox"]', view).not('[data-katapp-initialized="true"]').each(function () {
                 const el = $(this);
                 
@@ -3130,9 +3135,20 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
 
                 if ( !displayOnly ) {
                     displayOnlyLabel.remove();
+
                     if ( inputType === "date" ) {
                         validatorContainer.addClass("input-group date");
-                        validatorContainer.append($("<span class='input-group-addon'><i class='glyphicon glyphicon-calendar'></i></span>"));
+
+                        let addOnContainer = validatorContainer;
+                        
+                        if ( !isBootstrap3 ) {
+                            addOnContainer = $("<div class='input-group-append'></div>");
+                            addOnContainer.append($("<i class='input-group-text fal fa-calendar-day'></i>"));
+                            validatorContainer.append( addOnContainer );
+                        }
+                        else {
+                            addOnContainer.append($("<span class='input-group-addon'><i class='glyphicon glyphicon-calendar'></i></span>"));
+                        }
     
                         $('.input-group.date', el)
                             .datepicker({
@@ -3210,11 +3226,28 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                     }
                     else if ( prefix !== undefined ) {
                         validatorContainer.addClass("input-group");
-                        validatorContainer.prepend($("<span class='input-group-addon input-group-text'>" + prefix + "</span>"));
+
+                        let addOnContainer = validatorContainer;
+                        
+                        if ( !isBootstrap3 ) {
+                            addOnContainer = $("<div class='input-group-prepend'></div>");
+                            validatorContainer.prepend( addOnContainer );
+                        }
+                        
+                        addOnContainer.prepend($("<span class='input-group-addon input-group-text'>" + prefix + "</span>"));
                     }
                     else if ( suffix !== undefined ) {
+
                         validatorContainer.addClass("input-group");
-                        validatorContainer.append($("<span class='input-group-addon input-group-text'>" + suffix + "</span>"));
+
+                        let addOnContainer = validatorContainer;
+                        
+                        if ( !isBootstrap3 ) {
+                            addOnContainer = $("<div class='input-group-append'></div>");
+                            validatorContainer.append( addOnContainer );
+                        }
+                        
+                        addOnContainer.append($("<span class='input-group-addon input-group-text'>" + suffix + "</span>"));
                     }
                 }
                 else {

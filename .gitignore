@@ -4,6 +4,4 @@ node_modules
 *.map
 
 public/legacy
-public/templates
-public/views
 public/js

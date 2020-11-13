@@ -1,0 +1,106 @@
+<rbl-config calcengine="Buck_DecisionSupportFWM_SE" templates="Standard_Templates"></rbl-config>
+
+<style>
+	.katapp-css div.chart { height: 350px; }
+	@media (max-width: 767px) {
+		.katapp-css div.chart { height: 250px; }
+	}
+</style>
+
+<div class="row ajaxContent">
+	<div class="col-md-12">
+		<ul class="nav nav-tabs" role="tablist">
+			<li role="presentation" class="col-xs-12 active"><a href="#tabAssumptions" role="tab" data-toggle="tab" class="text-center">Assumptions</a></li>
+		</ul>
+		<div class="tab-content">
+			<div role="tabpanel" class="tab-pane fade in active" id="tabAssumptions">
+				<div class="row">
+					<div rbl-tid="input-checkbox" data-inputname="iShowEmployerInputs" data-css="col-sm-12" data-label="Show/Edit Employer Assumptions?"></div>
+				</div>
+				<div class="row">
+					<div class="col-md-6 vEmployerInputs">
+
+						<div class="col-xs-12 hidden-xs" style="border-bottom: solid 2px black; margin-bottom: 5px;">
+							<div class="col-xs-4"></div>
+							<div class="col-xs-4"><label class="control-label lCurrent">Current</label></div>
+							<div class="col-xs-4"><label class="control-label lOptimum">Optimum</label></div>
+						</div>
+
+						<div class="col-sm-4"><label class="control-label liNumEeCurr"></label></div>
+						<div rbl-tid="input-textbox" data-inputname="iNumEeCurr" data-css="col-sm-4" data-label="Current" data-labelcss="visible-xs"></div>
+						<div rbl-tid="input-textbox" data-inputname="iNumEeOpt" data-css="col-sm-4" data-label="Optimum" data-labelcss="visible-xs"></div>
+
+						<div class="col-sm-4"><label class="control-label liAveragePayCurr"></label></div>
+						<div rbl-tid="input-textbox" data-inputname="iAveragePayCurr" data-prefix="$" data-css="col-sm-4" data-label="Current" data-labelcss="visible-xs"></div>
+						<div rbl-tid="input-textbox" data-inputname="iAveragePayOpt" data-prefix="$" data-css="col-sm-4" data-label="Optimum" data-labelcss="visible-xs"></div>
+
+						<div class="col-sm-4"><label class="control-label liAverage401kMatchCurr"></label></div>
+						<div rbl-tid="input-textbox" data-inputname="iAverage401kMatchCurr" data-suffix="%" data-css="col-sm-4" data-label="Current" data-labelcss="visible-xs"></div>
+						<div rbl-tid="input-textbox" data-inputname="iAverage401kMatchOpt" data-suffix="%" data-css="col-sm-4" data-label="Optimum" data-labelcss="visible-xs"></div>
+
+						<div class="col-xs-12" style="border-bottom: solid 2px black; margin-bottom: 5px;"><label class="control-label">Type of Workforce</label></div>
+
+						<div class="col-sm-4"><label class="control-label liPctEarlyCareerCurr"></label></div>
+						<div rbl-tid="input-textbox" data-inputname="iPctEarlyCareerCurr" data-suffix="%" data-css="col-sm-4" data-label="Current" data-labelcss="visible-xs"></div>
+						<div rbl-tid="input-textbox" data-inputname="iPctEarlyCareerOpt" data-suffix="%" data-css="col-sm-4" data-label="Optimum" data-labelcss="visible-xs"></div>
+
+						<div class="col-sm-4"><label class="control-label liPctMidCareerCurr"></label></div>
+						<div rbl-tid="input-textbox" data-inputname="iPctMidCareerCurr" data-suffix="%" data-css="col-sm-4" data-label="Current" data-labelcss="visible-xs"></div>
+						<div rbl-tid="input-textbox" data-inputname="iPctMidCareerOpt" data-suffix="%" data-css="col-sm-4" data-label="Optimum" data-labelcss="visible-xs"></div>
+
+						<div class="col-sm-4"><label class="control-label liPctLateCareerCurr"></label></div>
+						<div rbl-tid="input-textbox" data-inputname="iPctLateCareerCurr" data-suffix="%" data-css="col-sm-4" data-label="Current" data-labelcss="visible-xs"></div>
+						<div rbl-tid="input-textbox" data-inputname="iPctLateCareerOpt" data-suffix="%" data-css="col-sm-4" data-label="Optimum" data-labelcss="visible-xs"></div>
+
+						<div class="col-xs-12 margin-bottom-sm" style="border-top: solid 2px black; margin-top: 5px;">
+							<div class="hidden-xs">
+								<div class="col-xs-4"><label class="control-label lWorkforceTotal">Total</label></div>
+								<div class="col-xs-4"><label class="control-label iWorkforceCurrentTotal"></label></div>
+								<div class="col-xs-4"><label class="control-label iWorkforceOptimumTotal"></label></div>
+							</div>
+							<div class="visible-xs">
+								<div class="col-xs-6"><label class="control-label lCurrentWorkforceTotal">Current Total</label></div>
+								<div class="col-xs-6"><label class="control-label iWorkforceCurrentTotal"></label></div>
+								<div class="col-xs-6"><label class="control-label lOptimumWorkforceTotal">Optimum Total</label></div>
+								<div class="col-xs-6"><label class="control-label iWorkforceOptimumTotal"></label></div>
+							</div>
+						</div>
+					</div>
+
+					<div class="col-md-6 vEmployerInputs">
+						<div rbl-tid="input-textbox" data-inputname="iAverageTurnoverCostNewHire" data-prefix="$" data-css="col-sm-12"></div>
+						<div rbl-tid="input-textbox" data-inputname="iAverageTurnoverPct" data-suffix="%" data-css="col-sm-12"></div>
+						<div rbl-tid="input-textbox" data-inputname="iTurnoverReductionPct" data-suffix="%" data-css="col-sm-12"></div>
+						<div rbl-tid="input-textbox" data-inputname="iProductivityLossHrs" data-css="col-sm-12"></div>
+						<div rbl-tid="input-textbox" data-inputname="iProductivityImprovementPct" data-suffix="%" data-css="col-sm-12"></div>
+						<div rbl-tid="input-textbox" data-inputname="iHealthCareCostPct" data-suffix="%" data-css="col-sm-12"></div>
+						<div rbl-tid="input-textbox" data-inputname="iAverageHCCost" data-prefix="$" data-css="col-sm-12"></div>
+					</div>
+				</div>
+				<div class="row">
+					<div rbl-tid="input-slider" data-inputname="iFinanciallyStressPct" data-css="col-md-6"></div>
+					<div rbl-tid="input-slider" data-inputname="iFinancialWellnessPptPct" data-css="col-md-6"></div>
+					<div rbl-tid="input-checkbox" data-inputname="iIncludeWFResults" data-css="col-sm-12" data-label="Include Optimum Workforce Results?"></div>
+				</div>
+			</div>
+		</div>
+	</div>
+	<div class="col-xs-12">
+		<div rbl-tid="validation-summary"></div>
+	</div>
+	<div class="col-md-12">
+		<ul class="nav nav-tabs" role="tablist">
+			<li role="presentation" class="col-xs-12 active"><a href="#tabResults" role="tab" data-toggle="tab" class="text-center">Results</a></li>
+		</ul>
+		<div class="tab-content">
+			<div role="tabpanel" class="tab-pane fade in active" id="tabResults">
+				<div class="row">
+					<div class="col-md-12">
+						<div rbl-tid="result-table" rbl-tablename="output"></div>
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
+	<div class="ajaxloader"></div>
+</div>

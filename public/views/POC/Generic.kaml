@@ -1,7 +1,0 @@
-<rbl-config templates="Standard_Templates"></rbl-config>
-
-<div class="row border-0 RBLe">
-  <div class="ajaxloader"></div>
-  <div class="rbl-inputclass"></div>
-  <div class="rbl-resultclass"></div>
-</div>

@@ -310,7 +310,7 @@
                     // This is deleted each time the 'real' Provider js runs, so rebuild it and reset factory to shim factory
                     $.fn.KatApp.plugInShims = [];
                     $.fn.KatApp.applicationFactory = $.fn.KatApp.debugApplicationFactory;
-                    $("rbl-katapps > rbl-templates").empty(); // remove templates
+                    $("rbl-katapps > rbl-templates").remove(); // remove templates
                     $.fn.KatApp.templatesUsedByAllApps = {};
                     $.fn.KatApp.templateDelegates = [];
 

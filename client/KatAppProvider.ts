@@ -2241,14 +2241,16 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
 
             $("[rbl-tid='result-table']", view).each(function ( i, r ) {
                 const tableName = r.getAttribute( "rbl-tablename" ) ?? r.getAttribute( "rbl-source" );
+                const templateCss = r.getAttribute( "data-css" );
 
                 if ( tableName !== null ) {
                     const configRow = application.getResultTable<ContentsRow>( "contents" ).filter( r => r.section === "1" && KatApp.stringCompare( r.type, "table", true ) === 0 && r.item === tableName ).shift();
                     const configCss = configRow?.class;
-                    let tableCss = configCss === undefined
-                        ? "table table-striped table-bordered table-condensed rbl " + tableName
-                        : "rbl " + tableName + " " + configCss;
-    
+                    let tableCss = 
+                        configCss != undefined ? "rbl " + tableName + " " + configCss :
+                        templateCss != undefined ? "rbl " + tableName + " " + templateCss :
+                        "table table-striped table-bordered table-condensed rbl " + tableName;
+                        
                     const tableRows = application.getResultTable<ResultTableRow>( tableName );
 
                     if ( tableRows.length === 0 ) {

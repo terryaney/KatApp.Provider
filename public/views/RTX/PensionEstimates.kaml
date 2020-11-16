@@ -1,0 +1,229 @@
+<rbl-config calcengine="Conduent_NexgenDBDemo_RTX_SE" bootstrap="4" templates="Standard_TemplatesBS4"></rbl-config>
+
+<!--
+    http://oneportal.uxgroup.com/LW60/NexGen/0_Product/channel_DB.html?local=1
+-->
+
+<style>
+    div.scenario {
+        font-style: italic;
+        color: #525151e0;
+        padding-bottom: 10px;
+    }
+
+    .resultsRecalcWrapper {
+        position: relative;
+        border: 1px solid #ccc;
+        margin: 10px 0px;
+        padding: 5px;
+    }
+    .recalcWrapper, .recalcLogoText {
+        display: none;
+    }
+    .recalcWrapper.active {
+        display: block;
+        background-color: #ffffff;
+        opacity: .7;
+        z-index: 100;
+        text-align: center;
+        position: absolute;
+        top: 0px;
+        left: 0px;
+        width: 100%;
+        height: 100%;
+    }
+    .recalcLogoText.active {
+        display: block;
+        position: absolute;
+        top: 20%;
+        left: 32%;
+        z-index: 100;
+        text-align: center;
+    }
+    .recalcLogoText .glyphicons-refresh {
+        color: #000000;
+        font-size: 2em;
+    }
+    .recalcText p {
+        color: #000000;
+        font-weight: bold;
+        font-size: .75em;
+    }
+
+</style>
+
+<div id="rblMarkup" class="rblApplication rblMarkup container mb-5" style="display: none;">
+    <div class="d-none">
+    </div>
+    
+    <div class="row ajaxContent">
+        <div class="col-md-6 recalcInputs">
+            <ul class="nav nav-tabs" role="tablist">
+                <li class="nav-item active" role=="presentation"><a href="#tabAssumptions" role="tab" data-toggle="tab" class="nav-link active">Assumptions</a></li>
+            </ul>
+            <div class="tab-content">
+                <div role="tabpanel" class="tab-pane fade show active" id="tabAssumptions">
+                    <div class="row">
+                        <div class="col-md-12">
+                            <div rbl-tid="input-checkbox" data-inputcss="rbl-exclude" data-inputname="iAdditionalDates"></div>
+                            <div rbl-tid="input-textbox-2col" data-inputname="iDateTerm" data-inputname2="iDateTerm2" data-type="date"></div>
+                            <div rbl-tid="input-textbox-2col" data-inputname="iDateBenComm" data-inputname2="iDateBenComm2" data-type="date"></div>
+                            <div rbl-tid="input-textbox-2col" data-inputname="iDateBirthBen" data-inputname2="iDateBirthBen2" data-type="date"></div>
+                            <div rbl-tid="input-slider-2col" data-inputname="iSalScale" data-inputname2="iSalScale2"></div>
+                            <button class="btn btn-primary" id="calculateButton1">Calculate</button>
+                        </div>
+                        <div class="col-xs-12">
+                            <div rbl-tid="validation-summary"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <ul class="nav nav-tabs" role="tablist">
+                <li role="presentation" class="nav-item active"><a href="#tabResults" role="tab" data-toggle="tab" class="nav-link active">Results</a></li>
+            </ul>
+            <div class="tab-content resultsRecalcWrapper">
+                <div role="tabpanel" class="tab-pane fade show active" id="tabResults">
+                    <div class="row">
+                        <div class="col-md-12">
+                            <div class="text-center">
+                                <div rbl-tid="chart-highcharts" rbl-chartdata="RetirementIncomeChart"></div>
+                            </div>
+                        </div>
+                        <div class="col-md-12">
+                            <div rbl-tid="input-dropdown" data-liveSearch="false" data-inputname="iPaymentForm"></div>
+                            <div class="ml-3 small">
+                                <a href="#" data-toggle='modal' data-target='.all-forms-payment'>See all forms of payment</a>
+                            </div>        
+                        </div>
+                        <div class="recalcNeeded recalcWrapper"></div>
+                        <div class="recalcNeeded recalcLogoText">
+                            <span class="glyphicons glyphicons-refresh"></span>
+                            <div class="recalcText" id="recalcText1"><p>Click calculate to refresh</p></div>
+                        </div>                    
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="ajaxloader"></div>
+    </div>            
+    
+    <div class="modal fade all-forms-payment" tabindex="-1" role="dialog" data-backdrop="static">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h4 class="modal-title" rbl-value="all-forms-payment-header">All Forms of Payment - Starting at age 65</h4>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                </div>
+                <div class="modal-body">
+                    <div rbl-tid="result-table" rbl-tablename="ret-estimate"></div>
+                </div>
+                <div class="modal-footer text-center">
+                    <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+	(function(){
+		var view = $("{thisView}");
+
+		if ( view.data("debugger" ) == true ) {
+			debugger;
+		}
+
+        view.on( "onCalculation.RBLe", function( event, results, options, application ) {
+            $(".recalcNeeded").removeClass("active");
+        });
+        view.on("onConfigureUICalculation.RBLe", function(event, results, options, application) {
+            $(".recalcInputs .slider-control", application.element).each(function () {
+                var slider = this.noUiSlider;
+                slider.on('set', function() {
+                    $(".recalcNeeded").addClass("active");
+                });
+            });
+            $(".rblMarkup", view).show();
+        });
+		view.on( "onInitialized.RBLe", function( event, application ) {
+            $('.iAdditionalDates').click(function (e) {
+                if (e.target.tagName.toUpperCase() === "LABEL") {
+                    return;
+                }
+                
+                var enabled = $('.iAdditionalDates :input').is(':checked');
+                $(".both-scenarios-v").fadeToggle();
+            });
+
+            $(".recalcInputs " + application.options.inputSelector, application.element).on("change", function() {
+                $(".recalcNeeded").addClass("active");
+            })
+
+            $("#calculateButton1").on("click", function() {
+                application.calculate();
+            });
+		});
+	})();
+	//# sourceURL=PensionEstimates.kaml
+</script>
+
+<rbl-template tid="input-textbox-2col" type="katapp-textbox">
+    <div class="form-group v{inputname}">
+        <label for="katapp_{id}_{inputname}" class="col-form-label">
+            <span class="l{inputname}"></span> <span class="slider-value sv{inputname}"></span>
+            <a style="display: none;" onclick="return false;" class="vh{inputname} help-icon-anchor" role="button" tabindex="0" data-toggle="popover" data-trigger="click" data-content-selector=".h{inputname}" data-placement="top"><span class="fa fa-question-circle help-icon"></span></a>
+            <a style="display: none;" onclick="return false;" class="vs{inputname} help-icon-anchor" role="button" tabindex="0"><span class="fa fa-volume-up"></span></a>
+        </label>
+        <div class="row">
+            <div class="col-md-6">
+                <div class="scenario both-scenarios-v" style="display: none;">Scenario 1</div>
+                <div class="validator-container">
+                    <input name="{inputname}" _id="katapp_{id}_{inputname}" type="text" class="form-control {inputname}" />
+                    <div class="{inputname}DisplayOnly"></div>
+                    <span class="error-msg" data-toggle="tooltip" data-placement="top auto"></span>
+                </div>
+            </div>
+            <div class="both-scenarios-v col-md-6" style="display: none;">
+                <div class="scenario">Scenario 2</div>
+                <div class="validator-container">
+                    <input name="{inputname2}" _id="katapp_{id}_{inputname2}" type="text" class="form-control {inputname2}" />
+                    <div class="{inputname2}DisplayOnly"></div>
+                    <span class="error-msg" data-toggle="tooltip" data-placement="top auto"></span>
+                </div>
+            </div>
+        </div>
+        <div class="h{inputname}Title" style="display: none;"></div>
+        <div class="h{inputname}" style="display: none;"></div>
+    </div>
+</rbl-template>
+<rbl-template tid="input-slider-2col" type="katapp-slider">
+    <div class="form-group v{inputname}">
+        <label class="col-form-label" for="katapp_{id}_{inputname}">
+            <span class="l{inputname}"></span> <span class="slider-value sv{inputname} both-scenarios-v"></span>
+            <a style="display: none;" onclick="return false;" class="vh{inputname} help-icon-anchor" role="button" tabindex="0" data-toggle="popover" data-trigger="click" data-content-selector=".h{inputname}" data-placement="top"><span class="fa fa-question-circle help-icon"></span></a>
+            <a style="display: none;" onclick="return false;" class="vs{inputname} help-icon-anchor" role="button" tabindex="0"><span class="fa fa-volume-up"></span></a>
+        </label>
+        <div class="row">
+            <div class="col-md-6">
+                <div class="scenario both-scenarios-v" style="display: none;">Scenario 1: <span class="slider-value sv{inputname}"></span></div>
+                <div class="validator-container">
+                    <div class="slider-control slider-{inputname}" data-slider-type="nouislider"></div>
+                    <input name="{inputname}" type="text" _id="katapp_{id}_{inputname}" class="form-control {inputname}" style="display: none" />
+                    <span class="error-msg" data-toggle="tooltip" data-placement="top auto"></span>
+                </div>
+            </div>
+            <div class="both-scenarios-v col-md-6" style="display: none;">
+                <div class="scenario">Scenario 2: <span class="slider-value sv{inputname2}"></span></div>
+                <div class="validator-container">
+                    <div class="slider-control slider-{inputname2}" data-slider-type="nouislider"></div>
+                    <input name="{inputname2}" type="text" _id="katapp_{id}_{inputname2}" class="form-control {inputname2}" style="display: none" />
+                    <span class="error-msg" data-toggle="tooltip" data-placement="top auto"></span>
+                </div>
+            </div>
+        </div>
+        <div class="h{inputname}Title" style="display: none;"></div>
+        <div class="h{inputname}" style="display: none;"></div>
+    </div>
+</rbl-template>

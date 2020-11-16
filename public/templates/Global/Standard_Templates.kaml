@@ -69,13 +69,9 @@
 <rbl-template tid="input-textbox" type="katapp-textbox">
   <div class="form-group v{inputname}">
     <label for="katapp_{id}_{inputname}" class="control-label">
-      <span class="l{inputname}"></span> <span class="sv{inputname}"></span>
-      <a style="display: none;" onclick="return false;" class="vh{inputname} help-icon-anchor" role="button" tabindex="0" data-toggle="popover" data-trigger="click" data-content-selector=".h{inputname}" data-placement="top">
-        <span class="glyphicon glyphicon-info-sign help-icon"></span>
-      </a>
-      <a style="display: none;" onclick="return false;" class="vs{inputname} help-icon-anchor" role="button" tabindex="0">
-        <span class="glyphicon glyphicon-volume-up"></span>
-      </a>
+      <span class="l{inputname}"></span>
+      <a style="display: none;" onclick="return false;" class="vh{inputname} help-icon-anchor" role="button" tabindex="0" data-toggle="popover" data-trigger="click" data-content-selector=".h{inputname}" data-placement="top"><span class="glyphicon glyphicon-info-sign help-icon"></span></a>
+      <a style="display: none;" onclick="return false;" class="vs{inputname} help-icon-anchor" role="button" tabindex="0"><span class="glyphicon glyphicon-volume-up"></span></a>
     </label>
     <div class="validator-container"> 
       <input name="{inputname}" _id="katapp_{id}_{inputname}" type="text" class="form-control {inputname}">
@@ -90,13 +86,9 @@
 <rbl-template tid="input-dropdown" type="katapp-dropdown">
   <div class="form-group v{inputname}">
     <label class="control-label" for="katapp_{id}_{inputname}">
-      <span class="l{inputname}"></span> <span class="sv{inputname}"></span>
-      <a style="display: none;" onclick="return false;" class="vh{inputname} help-icon-anchor" role="button" tabindex="0" data-toggle="popover" data-trigger="click" data-content-selector=".h{inputname}" data-placement="top">
-        <span class="glyphicon glyphicon-info-sign help-icon"></span>
-      </a>
-      <a style="display: none;" onclick="return false;" class="vs{inputname} help-icon-anchor" role="button" tabindex="0">
-        <span class="glyphicon glyphicon-volume-up"></span>
-      </a>
+      <span class="l{inputname}"></span>
+      <a style="display: none;" onclick="return false;" class="vh{inputname} help-icon-anchor" role="button" tabindex="0" data-toggle="popover" data-trigger="click" data-content-selector=".h{inputname}" data-placement="top"><span class="glyphicon glyphicon-info-sign help-icon"></span></a>
+      <a style="display: none;" onclick="return false;" class="vs{inputname} help-icon-anchor" role="button" tabindex="0"><span class="glyphicon glyphicon-volume-up"></span></a>
     </label>
     <div class="validator-container"> 
       <select name="{inputname}" _id="katapp_{id}_{inputname}" class="form-control bootstrap-select show-tick {inputname}" tabindex="-98">
@@ -111,13 +103,9 @@
 <rbl-template tid="input-slider" type="katapp-slider">
   <div class="form-group v{inputname}">
     <label class="control-label" for="katapp_{id}_{inputname}">
-      <span class="l{inputname}"></span> <span class="sv{inputname}"></span>
-      <a style="display: none;" onclick="return false;" class="vh{inputname} help-icon-anchor" role="button" tabindex="0" data-toggle="popover" data-trigger="click" data-content-selector=".h{inputname}" data-placement="top">
-        <span class="glyphicon glyphicon-info-sign help-icon"></span>
-      </a>
-      <a style="display: none;" onclick="return false;" class="vs{inputname} help-icon-anchor" role="button" tabindex="0">
-        <span class="glyphicon glyphicon-volume-up"></span>
-      </a>
+      <span class="l{inputname}"></span> <span class="slider-value sv{inputname}"></span>
+      <a style="display: none;" onclick="return false;" class="vh{inputname} help-icon-anchor" role="button" tabindex="0" data-toggle="popover" data-trigger="click" data-content-selector=".h{inputname}" data-placement="top"><span class="glyphicon glyphicon-info-sign help-icon"></span></a>
+      <a style="display: none;" onclick="return false;" class="vs{inputname} help-icon-anchor" role="button" tabindex="0"><span class="glyphicon glyphicon-volume-up"></span></a>
     </label>
     <div class="validator-container"> 
       <div class="slider-control slider-{inputname}" data-slider-type="nouislider"></div>
@@ -129,18 +117,50 @@
   </div>
 </rbl-template>
 
+<rbl-template tid="input-radiobuttonlist" type="katapp-radiobuttonlist">
+  <div class="form-group v{inputname}">
+    <label class="col-form-label" for="katapp_{id}_{inputname}">
+      <span class="l{inputname}"></span> <span class="sv{inputname}"></span>
+      <a style="display: none;" onclick="return false;" class="vh{inputname} help-icon-anchor" role="button" tabindex="0" data-toggle="popover" data-trigger="click" data-content-selector=".h{inputname}" data-placement="top"><span class="glyphicon glyphicon-info-sign help-icon"></span></a>
+      <a style="display: none;" onclick="return false;" class="vs{inputname} help-icon-anchor" role="button" tabindex="0"><span class="glyphicon glyphicon-volume-up"></span></a>
+    </label>
+    <div class="validator-container list-container"> 
+      <!-- Radio list injected here -->
+      <div class="{inputname}" data-inputname="{inputname}" data-id="{id}" data-itemtype="radio"></div>
+      <span class="error-msg" data-toggle="tooltip" data-placement="top auto"></span>      
+    </div>
+    <div class="h{inputname}Title" style="display: none;"></div>
+    <div class="h{inputname}" style="display: none;"></div>
+  </div>
+</rbl-template>
+
+<rbl-template tid="input-checkboxlist" type="katapp-checkboxlist">
+  <div class="form-group v{inputname}">
+    <label class="col-form-label" for="katapp_{id}_{inputname}">
+      <span class="l{inputname}"></span> <span class="sv{inputname}"></span>
+      <a style="display: none;" onclick="return false;" class="vh{inputname} help-icon-anchor" role="button" tabindex="0" data-toggle="popover" data-trigger="click" data-content-selector=".h{inputname}" data-placement="top"><span class="glyphicon glyphicon-info-sign help-icon"></span></a>
+      <a style="display: none;" onclick="return false;" class="vs{inputname} help-icon-anchor" role="button" tabindex="0"><span class="glyphicon glyphicon-volume-up"></span></a>
+    </label>
+    <div class="validator-container list-container"> 
+      <!-- Checkbox list injected here -->
+      <div class="{inputname}" data-inputname="{inputname}" data-id="{id}" data-itemtype="checkbox"></div>
+      <span class="error-msg" data-toggle="tooltip" data-placement="top auto"></span>      
+    </div>
+    <div class="h{inputname}Title" style="display: none;"></div>
+    <div class="h{inputname}" style="display: none;"></div>
+  </div>
+</rbl-template>
+
 <rbl-template tid="input-checkbox" type="katapp-checkbox">
   <div class="form-group validator-container checkbox-container v{inputname}">
     <span class="checkbox abc-checkbox {inputname} l{inputname}">
       <input _id="katapp_{id}_{inputname}" type="checkbox" name="{inputname}">
-      <label for="katapp_{id}_{inputname}"></label>
+      <label for="katapp_{id}_{inputname}">
+        <span class="checkbox-label"></span>
+        <a style="display: none;" onclick="return false;" class="vh{inputname} help-icon-anchor" role="button" tabindex="0" data-toggle="popover" data-trigger="click" data-content-selector=".h{inputname}" data-placement="top"><span class="glyphicon glyphicon-info-sign help-icon"></span></a>
+        <a style="display: none;" onclick="return false;" class="vs{inputname} help-icon-anchor" role="button" tabindex="0"><span class="glyphicon glyphicon-volume-up"></span></a>
+      </label>
     </span>
-    <a style="display: none;" onclick="return false;" class="vh{inputname} help-icon-anchor" role="button" tabindex="0" data-toggle="popover" data-trigger="click" data-content-selector=".h{inputname}" data-placement="top">
-      <span class="glyphicon glyphicon-info-sign help-icon"></span>
-    </a>
-    <a style="display: none;" onclick="return false;" class="vs{inputname} help-icon-anchor" role="button" tabindex="0">
-      <span class="glyphicon glyphicon-volume-up"></span>
-    </a>
     <span class="error-msg" data-toggle="tooltip" data-placement="top auto"></span>      
     <div class="h{inputname}Title" style="display: none;"></div>
     <div class="h{inputname}" style="display: none;"></div>

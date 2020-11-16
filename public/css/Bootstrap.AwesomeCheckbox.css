@@ -70,7 +70,7 @@
 
         .abc-checkbox input[type="checkbox"]:checked + label::after,
         .abc-checkbox input[type="radio"]:checked + label::after {
-            font-family: "FontAwesome";
+            font-family: "Font Awesome 5 Free";
             content: "";
             font-weight: 900;
         }

@@ -1,4 +1,4 @@
-<rbl-config calcengine="Buck_DecisionSupportFSA_SE" templates="Standard_Templates"></rbl-config>
+<rbl-config calcengine="Buck_DecisionSupportFSA_SE" templates="Standard_TemplatesBS4"></rbl-config>
 
 <style>
     .katapp-css div.chart { height: 350px; }
@@ -31,7 +31,7 @@
     }
 </style>
 
-<div class="hidden">
+<div class="d-none">
     <input name="iFSAFlag" class="iFSAFlag" value="">
     <input name="iPlanID" class="iPlanID" value="">
 </div>
@@ -39,10 +39,10 @@
 <div class="row ajaxContent">
     <div class="col-md-4">
         <ul class="nav nav-tabs" role="tablist">
-            <li role="presentation" class="col-xs-12 active"><a href="#tabAssumptions" role="tab" data-toggle="tab" class="text-center">Assumptions</a></li>
+            <li class="nav-item active" role=="presentation"><a href="#tabAssumptions" role="tab" data-toggle="tab" class="nav-link active">Assumptions</a></li>
         </ul>
         <div class="tab-content">
-            <div role="tabpanel" class="tab-pane fade in active match-height" id="tabAssumptions">
+            <div role="tabpanel" class="tab-pane fade show active" id="tabAssumptions">
 				<p><b>Please enter your personal information below.</b></p>
                 <div class="row">
                     <div class="col-md-12">
@@ -59,10 +59,10 @@
     </div>
     <div class="col-md-8">
         <ul class="nav nav-tabs" role="tablist">
-            <li role="presentation" class="col-xs-12 active"><a href="#tabResults" role="tab" data-toggle="tab" class="text-center">Results</a></li>
+            <li role="presentation" class="nav-item active"><a href="#tabResults" role="tab" data-toggle="tab" class="nav-link active">Results</a></li>
         </ul>
         <div class="tab-content">
-			<div role="tabpanel" class="tab-pane fade in active" id="tabResults">
+			<div role="tabpanel" class="tab-pane fade show active" id="tabResults">
 				<div class="row">
 					<div class="col-md-5">
 						<div class="text-center">
@@ -156,19 +156,6 @@
 			})
 			$(".iWorksheet:eq(0)", view).trigger("change");
 		});
-
-		if ( $.fn.matchHeight !== undefined ) {
-			$(".match-height", view).matchHeight({ property: 'height' });
-			$.fn.matchHeight._maintainScroll = true;
-
-			view.on( "onCalculation.RBLe", function( event, calculationResults, calcOptions, application ) {
-				// Doesn't look like I can only call 'update' to match height items within my view, so this will update
-				// all and any match heights applied on page, but my bindings were set scoped to my view, so it should
-				// not have adverse affects.  The project page mentioned that match heights can be achieved in modern
-				// browsers by using CSS Flexbox and CSS Grid instead.  So could look at that.
-				$.fn.matchHeight._update();
-			});
-		}
 
 		var worksheetMax = 0;
 		var worksheetIsHC = false;

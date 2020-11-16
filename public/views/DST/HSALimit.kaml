@@ -27,8 +27,8 @@
         <div class="tab-content">
             <div role="tabpanel" class="tab-pane fade in active" id="tabAssumptions">
                 <div class="row">
-                    <div rbl-tid="input-dropdown" data-inputname="iYear" data-css="col-md-6" data-lookuptable="TableTaxStatus"></div>
-                    <div rbl-tid="input-dropdown" data-inputname="i55orOlder" data-css="col-md-6" data-lookuptable="TableTaxStatus"></div>
+                    <div rbl-tid="input-dropdown" data-inputname="iYear" data-css="col-md-6"></div>
+                    <div rbl-tid="input-dropdown" data-inputname="i55orOlder" data-css="col-md-6"></div>
                 </div>
             </div>
         </div>

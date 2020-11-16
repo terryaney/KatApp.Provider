@@ -78,6 +78,7 @@ interface ListRow {
     text: string;
     class?: string;
     subtext?: string;
+    help?: string;
     html?: string;
     visible?: string;
     "start-group"?: string;

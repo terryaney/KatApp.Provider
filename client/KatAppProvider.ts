@@ -62,8 +62,6 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
             sessionUrl: KatApp.sessionUrl,
             currentPage: "Unknown1",
             inputSelector: "input, textarea, select",
-            inputTab: "RBLInput",
-            resultTabs: ["RBLResult"],
             runConfigureUICalculation: true,
             ajaxLoaderSelector: ".ajaxloader",
                         
@@ -299,6 +297,9 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                                 }
 
                                 that.options.calcEngine = that.options.calcEngine ?? rblConfig?.attr("calcengine");
+                                that.options.inputTab = that.options.inputTab ?? rblConfig?.attr("input-tab") ?? "RBLInput";
+                                that.options.resultTabs = that.options.resultTabs ?? rblConfig?.attr("result-tabs")?.split(",") ?? ["RBLResult"];
+                    
                                 const toFetch = rblConfig?.attr("templates");
                                 if ( toFetch !== undefined ) {
                                     requiredTemplates = 
@@ -513,6 +514,8 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
 
                     that.ui.bindCalculationInputs();
 
+                    that.ui.initializeConfirmLinks();
+                    
                     that.ui.triggerEvent( "onInitialized", that );
 
                     if ( that.options.runConfigureUICalculation ) {
@@ -938,6 +941,256 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
             this.application = application;    
         }
 
+        initializeConfirmLinks() {
+            const that = this;
+            
+            this.application.element.on('onConfirmCancelled.RBLe', function (e) {
+                $(".SubmitButton", that.application.element).removeClass("disabled");
+                $(".ajaxloader", that.application.element).css("display", "none");
+            });
+        
+            $("a[data-confirm], a[data-confirm-selector]", this.application.element)
+                .not(".confirm-bound, .jquery-validate, .skip-confirm")
+                .addClass("confirm-bound")
+                .on("click", function () {
+                    var link = $(this);
+
+                    if (link.data("confirmed") == "true") {
+                        return true;
+                    }
+                    
+                    that.createConfirmDialog(
+                        link,
+
+                        // onConfirm
+                        function () {
+                            link.data("confirmed", "true");
+                            var submitKey = link.data("submit-key");
+        
+                            if (submitKey != undefined) {
+                                $("." + submitKey)[0].click();
+                            }
+                            else {
+                                link[0].click();
+                            }
+                        },
+                        
+                        // onCancel
+                        function () {
+                            link.data("confirmed", "false");
+                            that.triggerEvent( "onConfirmCancelled", link );
+                        });
+        
+                    return false;
+                });
+        }
+
+        createConfirmDialog(link: JQuery<HTMLElement> | string, onConfirm: () => void, onCancel: () => void | undefined) {
+            var confirm = typeof (link) == 'string'
+                ? link
+                : link.data("confirm") || $("." + link.data("confirm-selector")).html() || "";
+
+            if (confirm == "") {
+                onConfirm(); // If no confirm on link (called from validation modules), just call onConfirm
+                return;
+            }
+
+            if (!$('.linkConfirmModal', this.application.element).length) {
+                var sCancel = "Cancel";
+                var sContinue = "Continue";
+
+                this.application.element.append(
+                    '<div class="modal fade linkConfirmModal" tabindex="-1" role="dialog" data-keyboard="false" data-backdrop="static">' +
+                        '<div class="modal-dialog">' +
+                            '<div class="modal-content">' +
+                                '<div class="modal-body"></div>' +
+                                '<div class="modal-footer">' +
+                                    '<button class="btn btn-default cancelButton" data-dismiss="modal" aria-hidden="true">' + sCancel + '</button>' +
+                                    '<button type="button" class="btn btn-primary continueButton" data-dismiss="modal">' + sContinue + '</button>' +
+                                '</div>' +
+                            '</div>' +
+                        '</div>' +
+                    '</div>');
+
+                $('.linkConfirmModal .modal-body', this.application.element).html(confirm);
+
+                $('.linkConfirmModal .continueButton', this.application.element).off("click").on("click", function () {
+                    onConfirm();
+                });
+            
+                $('.linkConfirmModal .cancelButton', this.application.element).off("click").on("click", function () {
+                    if (onCancel != undefined) {
+                        onCancel();
+                    }
+                });            
+            }
+            $('.linkConfirmModal', this.application.element).modal({ show: true });
+        }
+
+        processDropdownItems(dropdown: JQuery<HTMLElement>, dropdownItems: { Value: string | null; Text: string | null; Class: string | undefined; Subtext: string | undefined; Html: string | undefined; Selected: boolean; Visible: boolean; }[]) {
+            if ( dropdown.length === 0 ) return;
+
+            const controlName = this.getInputName(dropdown);
+            const selectPicker = dropdown.attr("data-kat-bootstrap-select-initialized") !== undefined
+                ? dropdown
+                : undefined;
+
+            const currentValue = selectPicker?.selectpicker('val') ?? dropdown.val();
+            const that = this;
+
+            dropdownItems.forEach( ls => {
+                // checkbox list
+                // $(".v" + controlName + "_" + ls.key, application.element).parent()
+                let currentItem = $("." + controlName + " option[value='" + ls.Value + "']", that.application.element);
+
+                // Always add so it is in order of CE even if visible is false...
+                if ( currentItem.length === 0) {
+                    if ( ls.Text == "/data-divider" ) {
+                        currentItem = $("<option/>", {
+                            "data-divider": true
+                        });
+                        dropdown.append(currentItem);
+                    }
+                    else {
+                        currentItem = $("<option/>", {
+                            value: ls.Value,
+                            text: ls.Text
+                        });
+                        
+                        if ( ( ls.Class || "" ) != "" ) {
+                            currentItem.attr("class", ls.Class || "");
+                        }
+
+                        // selectpicker specific features
+                        if ( ( ls.Subtext || "" ) != "" ) {
+                            currentItem.attr("data-subtext", ls.Subtext || "");
+                        }
+                        if ( ( ls.Html || "" ) != "" ) {
+                            currentItem.attr("data-content", ls.Html || "");
+                        }
+
+                        dropdown.append(currentItem);
+                    }
+                }
+
+                if (!ls.Visible) {
+                    // Hide the item...
+                    currentItem.hide();
+
+                    // If selected item from dropdown was hidden, need to clear the value
+                    if (currentValue === ls.Value) {
+                        if (selectPicker !== undefined) {
+                            selectPicker.selectpicker("val", "");
+                        }
+                        else {
+                            dropdown.val("");
+                        }
+                    }
+                }
+                else {
+                    currentItem.show();
+                }
+            });
+
+            if (selectPicker !== undefined) {
+                selectPicker.selectpicker('refresh');
+                
+                // Need to re-bind the event handler for some reason.  Only had to bind once in .NET, but
+                // could be some side affect of .net loading list control on the server and everything is 'ready'
+                // before calling original bind.
+                dropdown.not(skipBindingInputSelector).off(".RBLe").on("change.RBLe", function () {
+                    that.changeRBLe($(this));
+                });
+            }
+        }
+
+        processListItems(container: JQuery<HTMLElement>, listItems: { Value: string | null | undefined; Text: string | null | undefined; Help: string | undefined; Class: string | undefined; Selected: boolean; Visible: boolean; }[] ) {
+            const isBootstrap3 = $("rbl-config", this.application.element).attr("bootstrap") == "3";
+            const inputName: string = container.data("inputname" );
+            const id: string = container.data("id" );
+            const horizontal = container.data("horizontal") ?? false;
+            const itemType: string = container.data("itemtype" );
+            const itemTypeClass: string = itemType === "radio" ? "radio abc-radio" : "checkbox abc-checkbox";
+
+            if ( itemType == "checkbox" ) {
+                /*                
+                Find checkboxlist in ess for example rendering.
+                Current code in KatApps seems to assume checkbox list if has checkbox-list-horizontal class
+                    - if ess version is NOT horizontal, don't think defaults would be working in here because it is
+                        not flagged as a isCheckboxList?
+                    - Search for isCheck, checkbox, checkbox-list to see how I'm using it
+                        Make sure I can support CheckboxList items when needed
+                    - Make sure templates are right
+                */
+                throw new Error("CheckboxList is not supported yet.");
+            }
+
+            let itemsContainer = horizontal
+                ? container
+                : $("> table > tbody", container);
+
+            const that = this;
+            const helpIconClass = isBootstrap3 ? "glyphicon glyphicon-info-sign" : "fa fa-question-circle";
+            let configureHelp = false;
+
+            listItems.forEach( li => {
+                const currentItemSelector = "v" + inputName + "_" + li.Value;
+                const currentHelpSelector = "h" + inputName + "_" + li.Value;
+                const currentHelpIconSelector = currentHelpSelector + "Icon";
+                const currentItemId = id + "_" + inputName + "_" + li.Value;
+                let currentItem = $("." + currentItemSelector, itemsContainer);
+                let currentInput = $("input", currentItem);
+                const text = li.Text || "";
+                const help = li.Help || "";
+
+                // Always add so it is in order of CE even if visible is false...
+                if ( currentItem.length === 0) {
+                    var inputHtml = "<input id='" + currentItemId +"' type='" + itemType +"' name='" + id + ":" + inputName + "' value='" + li.Value + "'" + ( li.Selected ? " checked='checked'" : "" ) + "/>";
+                    var labelHtml = "<label for='" + currentItemId +"'>" + text + "</label>";
+                    var helpHmtl = 
+                        "\r\n<a class='" + currentHelpIconSelector + "' style='display: none;' role='button' tabindex='0' data-toggle='popover' data-trigger='click' data-content-selector='." + currentHelpSelector + "' data-placement='top'><span class='" + helpIconClass + " help-icon'></span></a>" + 
+                        "<div class='" + currentHelpSelector + "' style='display: none;'>" + help + "</div>" +
+                        "<div class='" + currentHelpSelector + "Title' style='display: none;'></div>";
+                        
+                    if ( horizontal ) {
+                        itemsContainer.append($("<div class='form-group " + itemTypeClass + " " + currentItemSelector + "'>" + inputHtml + labelHtml + helpHmtl + "</div>"));
+                    }
+                    else {
+                        itemsContainer.append($("<tr class='" + currentItemSelector + "'><td><span class='" + itemTypeClass + "'>" + inputHtml + labelHtml + helpHmtl + "</span></td></tr>"));
+                    }
+
+                    currentItem = $("." + currentItemSelector, itemsContainer);
+                    currentInput = $("input", currentItem);
+
+                    currentInput.not(skipBindingInputSelector).on("change.RBLe", function () {
+                        that.changeRBLe(currentInput);
+                    });
+                }
+
+                if ( !li.Visible ){
+                    currentItem.hide();
+                    currentInput.prop("checked", false);
+                }
+                else {
+                    if ( text != "" ) {
+                        $("label", currentItem).html(text);
+                    }
+                    if ( help != "" ) {
+                        $("." + currentHelpSelector, currentItem).html(help);
+                        $("." + currentHelpIconSelector, currentItem).show();
+                        configureHelp = true;
+                    }
+                    currentItem.show();
+                }
+            });
+
+            if ( configureHelp ) {
+                // Run one more time to catch any help items
+                const templateBuilder: StandardTemplateBuilder = $.fn.KatApp.standardTemplateBuilderFactory( this.application );
+                templateBuilder.processHelpTips();
+            }
+        }
+
         getInputName(input: JQuery): string {
             // Need to support : and $.  'Legacy' is : which is default mode a convert process has for VS, but Gu says to never use that, but it caused other issues that are documented in
             // 4.1 Validators.cs file so allowing both.
@@ -1113,8 +1366,8 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                 
                 const that: UIUtilities = this;
 
-                $(application.options.inputSelector, application.element).not(skipBindingInputSelector).each(function () {        
-                    $(this).bind("change.RBLe", function () {
+                $(application.options.inputSelector, application.element).not(skipBindingInputSelector).each(function () {
+                    $(this).on("change.RBLe", function () {
                         that.changeRBLe($(this));
                     });
                 });
@@ -1149,9 +1402,12 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
 			return (input.length === 1 && $("label", input).length === 1 && $("input[type=checkbox]", input).length === 1);
 		}
         getAspNetCheckboxLabel(input: JQuery<HTMLElement>): JQuery<HTMLElement> | undefined {
-			return this.isAspNetCheckbox(input)
-				? $("label", input)
-				: undefined;
+			if ( this.isAspNetCheckbox(input) ) {
+			// Moved the help icons inside the label so if label is ever too long and wraps, the icon stays at the end of the text.
+            let label = $("label > span.checkbox-label", input);
+                return label.length ? label : $("label", input);
+            }
+            return undefined;
         }
         getAspNetCheckboxInput(input: JQuery<HTMLElement>): JQuery<HTMLElement> | undefined {
 			return this.isAspNetCheckbox(input)
@@ -1907,7 +2163,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
 
                 if ( selector !== undefined ) {
                     // @id - regular input
-                    // @id input - checkbox
+                    // @id input - checkbox and list controls
                     // slider-@id - noUiSlider
                     const value = row.value ?? "";
                     const input = $(selector + ", " + selector + " input", application.element);
@@ -1984,7 +2240,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
             const that: RBLeUtilities = this;
 
             $("[rbl-tid='result-table']", view).each(function ( i, r ) {
-                const tableName = r.getAttribute( "rbl-tablename" );
+                const tableName = r.getAttribute( "rbl-tablename" ) ?? r.getAttribute( "rbl-source" );
 
                 if ( tableName !== null ) {
                     const configRow = application.getResultTable<ContentsRow>( "contents" ).filter( r => r.section === "1" && KatApp.stringCompare( r.type, "table", true ) === 0 && r.item === tableName ).shift();
@@ -2417,84 +2673,24 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
 
             configRows.forEach( row => {
 				const tableName = row.table;
-				const controlName = row["@id"];
-				const listControl = $("." + controlName + ":not(div)", application.element);
-				const isCheckboxList = $("." + controlName, application.element).hasClass("checkbox-list-horizontal");
-				const isSelectPicker = !isCheckboxList && listControl.attr("data-kat-bootstrap-select-initialized") !== undefined;
-				const selectPicker = isSelectPicker ? listControl : undefined;
-				const currentValue = isCheckboxList
-					? undefined
-					: selectPicker?.selectpicker('val') ?? listControl.val();
-
+                const controlName = row["@id"];
+                
+				const dropdown = $("." + controlName + ":not(div)", application.element);
+                const listControl = $("div." + controlName + "[data-itemtype]", application.element);
                 const listRows = this.getResultTable<ListRow>( tableName );
 
-                listRows.forEach( ls => {
-					const listItem = isCheckboxList
-						? $(".v" + controlName + "_" + ls.key, application.element).parent()
-                        : $("." + controlName + " option[value='" + ls.key + "']", application.element);
-                                        
-                    if (ls.visible === "0") {
-                        listItem.hide();
-
-                        if (!isCheckboxList /* leave in same state */) {
-                            if (currentValue === ls.key) {
-                                if (selectPicker !== undefined) {
-                                    selectPicker.selectpicker("val", "");
-                                }
-                                else {
-                                    listControl.val("");
-                                }
-                            }
-                        }
-                    }
-                    else {
-                        if (listItem.length !== 0) {
-                            listItem.show();
-                        }
-                        else if (!isCheckboxList /* for now they have to add all during iDataBind if checkbox list */) {
-                            // This doesn't work in our normal asp: server controls b/c we get a invalid postback error since
-                            // we added items only during client side.  I followed this post but as the comment says, the input will
-                            // then have no value when posted back to server. So leaving it in, but only supports 'client side only' UIs
-                            // https://stackoverflow.com/a/5144268/166231
-                            
-                            if ( ls.text == "/data-divider" ) {
-                                const divider = $("<option/>", {
-                                    "data-divider": true
-                                });
-                                listControl.append(divider);
-                            }
-                            else {
-                                const option = $("<option/>", {
-                                    value: ls.key,
-                                    text: ls.text
-                                });
-                                
-                                if ( ( ls.class || "" ) != "" ) {
-                                    option.attr("class", ls.class || "");
-                                }
-                                if ( ( ls.subtext || "" ) != "" ) {
-                                    option.attr("data-subtext", ls.subtext || "");
-                                }
-                                if ( ( ls.html || "" ) != "" ) {
-                                    option.attr("data-content", ls.html || "");
-                                }
-    
-                                listControl.append(option);
-                            }
-                        }
-                    }
-                });
-
-				if (selectPicker !== undefined) {
-                    selectPicker.selectpicker('refresh');
-                    
-                    // Need to re-bind the event handler for some reason.  Only had to bind once in .NET, but
-                    // could be some side affect of .net loading list control on the server and everything is 'ready'
-                    // before calling original bind.
-                    listControl.not(skipBindingInputSelector).off(".RBLe").bind("change.RBLe", function () {
-                        ui.changeRBLe($(this));
-                    });
-				}
+                if ( listControl.length === 1 ) {
+                    ui.processListItems(
+                        listControl, 
+                        listRows.map( r => ({ Value:  r.key, Text: r.text, Class: r.class, Help: r.html, Selected: false, Visible: r.visible != "0" }))
+                    );
+                }
+                else {
+                    ui.processDropdownItems(
+                        dropdown, 
+                        listRows.map( r => ({ Value:  r.key, Text: r.text, Class: r.class, Subtext: r.subtext, Html: r.html, Selected: false, Visible: r.visible != "0" }))
+                    );
+                }
             });
         }
 
@@ -2982,12 +3178,14 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
     class StandardTemplateBuilder /* implements StandardTemplateBuilderInterface*/
     {
         application: KatAppPlugIn;
+        ui: UIUtilities;
 
         constructor( application: KatAppPlugIn ) {
-            this.application = application;    
+            this.application = application;   
+            this.ui = $.fn.KatApp.ui( application );
         }
         
-        buildCarousel(el: JQuery): JQuery {
+        private buildCarousel(el: JQuery): JQuery {
             const carouselName = el.attr("rbl-name");
 
             if (carouselName !== undefined && !carouselName.includes("{")) {
@@ -3044,7 +3242,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
             });
         }
 
-        buildCheckboxes( view: JQuery<HTMLElement> ): void {
+        private buildCheckboxes( view: JQuery<HTMLElement> ): void {
             $('[rbl-tid="input-checkbox"],[rbl-template-type="katapp-checkbox"]', view).not('[data-katapp-initialized="true"]').each(function () {
                 const el = $(this);
                 
@@ -3052,6 +3250,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                 const label = el.data("label");
                 const checked = el.data("checked");
                 const css = el.data("css");
+                const inputCss = el.data("inputcss");
 
                 if ( css !== undefined ) {
                     $(".v" + id, el).addClass(css);
@@ -3063,12 +3262,15 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                 if ( checked ) {
                     $("span." + id + " input", el).prop("checked", true);
                 }
+                if ( inputCss !== undefined ) {
+                    $("span." + id + " input", el).addClass(inputCss);
+                }
 
                 el.attr("data-katapp-initialized", "true");
             });
         }
 
-        buildTextBoxes( view: JQuery<HTMLElement> ): void {
+        private buildTextBoxes( view: JQuery<HTMLElement> ): void {
             const isBootstrap3 = $("rbl-config",view).attr("bootstrap") == "3";
             $('[rbl-tid="input-textbox"],[rbl-template-type="katapp-textbox"]', view).not('[data-katapp-initialized="true"]').each(function () {
                 const el = $(this);
@@ -3083,19 +3285,29 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                 const autoComplete = el.data("autocomplete") !== false;
                 const value = el.data("value");
                 const css = el.data("css");
+                const formCss = el.data("formcss");
                 const inputCss = el.data("inputcss");
                 const labelCss = el.data("labelcss");
                 const displayOnly = el.data("displayonly") === true;
+                const hideLabel = el.data("hidelabel") ?? false;
 
                 if ( css !== undefined ) {
                     $(".v" + id, el).addClass(css);
                 }
-
-                if ( label !== undefined ) {
-                    $("span.l" + id, el).html(label);
+                if ( formCss !== undefined ) {
+                    $(".v" + id, el).removeClass("form-group").addClass(formCss);
                 }
-                if ( labelCss !== undefined ) {
-                    $("span.l" + id, el).addClass(labelCss);
+
+                if ( hideLabel ) {
+                    $("label", el).remove();                    
+                }
+                else {
+                    if ( label !== undefined ) {
+                        $("span.l" + id, el).html(label);
+                    }
+                    if ( labelCss !== undefined ) {
+                        $("span.l" + id, el).addClass(labelCss);
+                    }
                 }
 
                 let input = $("input[name='" + id + "']", el);
@@ -3136,14 +3348,16 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                 if ( !displayOnly ) {
                     displayOnlyLabel.remove();
 
-                    if ( inputType === "date" ) {
+                    const datePickerAvailable = typeof $.fn.datepicker === "function";
+
+                    if ( inputType === "date" && datePickerAvailable ) {
                         validatorContainer.addClass("input-group date");
 
                         let addOnContainer = validatorContainer;
                         
                         if ( !isBootstrap3 ) {
                             addOnContainer = $("<div class='input-group-append'></div>");
-                            addOnContainer.append($("<i class='input-group-text fal fa-calendar-day'></i>"));
+                            addOnContainer.append($("<i class='input-group-text fa fa-calendar-day'></i>"));
                             validatorContainer.append( addOnContainer );
                         }
                         else {
@@ -3184,7 +3398,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                                     // So now I attach click on clear button as well and call change still
                                     // so that works, but problem is that input isn't cleared before change event happens
                                     // so I also clear the input myself.
-                                    $(".datepicker-days .clear", view).bind("click", function () {
+                                    $(".datepicker-days .clear", view).on("click", function () {
                                         dateInput.val("");
                                         dateInput.change();
                                     });
@@ -3194,7 +3408,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                                 const dp = $(this);
                                 dp.removeData("datepicker-show");
     
-                                $(".datepicker-days .clear", view).unbind("click");
+                                $(".datepicker-days .clear", view).off("click");
                             })
                             .on('show.bs.modal', function (event) {
                                 // https://stackoverflow.com/questions/30113228/why-does-bootstrap-datepicker-trigger-show-bs-modal-when-it-is-displayed/31199817
@@ -3259,9 +3473,68 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
             });
         }
 
-        buildDropdowns( view: JQuery<HTMLElement> ): void {
+        private buildListControls( view: JQuery<HTMLElement> ): void {
+            const listControls = $('[rbl-tid="input-radiobuttonlist"],[rbl-template-type="radiobuttonlist"]', view);
+            const that = this;
+
+            listControls.not('[data-katapp-initialized="true"]').each( function() {
+                const el = $(this);
+
+                // Do all data-* attributes that we support
+                const id = el.data("inputname");
+                const label = el.data("label");
+                const horizontal = el.data("horizontal") ?? false;
+                const hideLabel = el.data("hidelabel") ?? false;
+                const lookuptable = el.data("lookuptable");
+                const css = el.data("css");
+                const formCss = el.data("formcss");
+
+                if ( css !== undefined ) {
+                    $(".v" + id, el).addClass(css);
+                }
+                if ( formCss !== undefined ) {
+                    $(".v" + id, el).removeClass("form-group").addClass(formCss);
+                }
+
+                if ( hideLabel ) {
+                    $("label", el).remove();                    
+                }
+                else if ( label !== undefined ) {
+                    $("span.l" + id, el).html(label);
+                }
+                
+                const container = $("." + id, el);
+                const validatorContainer = container.parent();
+                                
+                // To make it easier during RBL processing to determine what to do
+                container.attr("data-horizontal", horizontal);
+
+                if ( horizontal ) {
+                    validatorContainer.addClass( "bs-listcontrol form-inline form-inline-vtop" );
+                }
+                else {
+                    const itemType: string = container.data("itemtype" );
+                    const itemTypeClass: string = itemType === "radio" ? "radio abc-radio" : "checkbox abc-checkbox";
+                    container.append($("<table class='" + itemTypeClass + " bs-listcontrol' border='0'><tbody></tbody></table>"));
+                }
+
+                if ( lookuptable !== undefined ) {
+                    // Need to fix this
+                    const options =
+                        $("rbl-template[tid='lookup-tables'] DataTable[id='" + lookuptable + "'] TableItem")
+                            .map( ( index, ti ) => ({ Value: ti.getAttribute("key"), Text: ti.getAttribute( "name"), Class: undefined, Help: undefined, Selected: index == 0, Visible: true }));
+
+                    that.ui.processListItems(container, options.toArray());
+                }
+        
+                el.attr("data-katapp-initialized", "true");
+            });
+        }
+
+        private buildDropdowns( view: JQuery<HTMLElement> ): void {
             const dropdowns = $('[rbl-tid="input-dropdown"],[rbl-template-type="katapp-dropdown"]', view);
             const selectPickerAvailable = typeof $.fn.selectpicker === "function";
+            const that = this;
 
             if ( !selectPickerAvailable && dropdowns.length > 0 ) {
                 this.application.trace("bootstrap-select javascript is not present.", TraceVerbosity.None);
@@ -3303,15 +3576,12 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                 }
 
                 if ( lookuptable !== undefined ) {
-                    const options =
+                    that.ui.processDropdownItems(
+                        input, 
                         $("rbl-template[tid='lookup-tables'] DataTable[id='" + lookuptable + "'] TableItem")
-                            .map( ( index, ti ) => $("<option value='" + ti.getAttribute("key") + "'>" + ti.getAttribute( "name") + "</option>"));
-
-                    options[ 0 ].attr("selected", "true");
-                    
-                    options.each( function() {
-                        input.append( $(this) );
-                    });
+                            .map( ( index, r ) => ({ Value:  r.getAttribute("key"), Text: r.getAttribute( "name"), Class: undefined, Subtext: undefined, Html: undefined, Selected: index === 0, Visible: true }))
+                            .toArray()
+                    );
                 }
 
                 // Merge all other data-* attributes they might want to pass through
@@ -3322,21 +3592,20 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                     }
                  });
 
-                // changed this from .selectpicker because selectpicker initialization removes it so can't launch it again
                 if ( selectPickerAvailable ) {
                     $(".bootstrap-select", el).selectpicker();
-                }
 
-                $(".bootstrap-select", el)
-                    .attr("data-kat-bootstrap-select-initialized", "true")
-                    .next(".error-msg")
-                    .addClass("selectpicker"); /* aid in css styling */ /* TODO: Don't think this is matching and adding class */
+                    $(".bootstrap-select", el)
+                        .attr("data-kat-bootstrap-select-initialized", "true")
+                        .next(".error-msg")
+                        .addClass("selectpicker"); /* aid in css styling */ /* TODO: Don't think this is matching and adding class */
+                }
         
                 el.attr("data-katapp-initialized", "true");
             });
         }
 
-        buildSliders( view: JQuery<HTMLElement> ): void {
+        private buildSliders( view: JQuery<HTMLElement> ): void {
             // Only need to process data-* attributes here because RBLeUtilities.processResults will push out 'configuration' changes
             $('[rbl-tid="input-slider"],[rbl-template-type="katapp-slider"]', view).not('[data-katapp-initialized="true"]').each( function() {
                 const el = $(this);
@@ -3351,7 +3620,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                     if ( css !== undefined ) {
                         $(".v" + id, el).addClass(css);
                     }
-        
+            
                     if ( label !== undefined ) {
                         $("span.l" + id, el).html(label);
                     }
@@ -3377,10 +3646,11 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
             this.processHelpTips();
         }
 
-        private processHelpTips(): void {
+        processHelpTips(): void {
             // Couldn't include the Bootstrap.Tooltips.js file b/c it's selector hits entire page, and we want to be localized to our view.
             const selector = "[data-toggle='tooltip'], [data-toggle='popover'], .tooltip-trigger, .tooltip-text-trigger, .error-trigger";
             const application = this.application;
+            const isBootstrap3 = $("rbl-config", this.application.element).attr("bootstrap") == "3";
 
             if ( typeof $.fn.popover !== "function" && $(selector, application.element).length > 0 ) {
                 this.application.trace("Bootstrap popover/tooltip javascript is not present.", TraceVerbosity.None);
@@ -3391,18 +3661,24 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                 .not(".rbl-help, [data-katapp-initialized='true']")
                 .each( function() {
                     const isErrorValidator = $(this).hasClass('error-msg');
-                    const placement = $(this).data('placement') || "top";
+                    let placement = $(this).data('placement') || "top";
                     const trigger = $(this).data('trigger') || "hover";
                     const container = $(this).data('container') || "body";
 
                     const options: Bootstrap.PopoverOptions = {
                         html: true,
+                        sanitize: false,
                         trigger: trigger,
                         container: container,
-                        template:
-                            isErrorValidator
-                                ? '<div class="tooltip error katapp-css" role="tooltip"><div class="tooltip-arrow"></div><div class="tooltip-inner"></div></div>'
-                                : '<div class="popover katapp-css" role="tooltip"><div class="arrow"></div><h3 class="popover-title"></h3><div class="popover-content"></div></div>',
+                        template: 
+                            isErrorValidator && isBootstrap3 
+                                ? '<div class="tooltip error katapp-css" role="tooltip"><div class="tooltip-arrow"></div><div class="tooltip-inner"></div></div>' :
+                            isBootstrap3 
+                                ? '<div class="popover katapp-css" role="tooltip"><div class="arrow"></div><h3 class="popover-title"></h3><div class="popover-content"></div></div>' :
+                            isErrorValidator 
+                                ? '<div class="tooltip error katapp-css" role="tooltip"><div class="arrow"></div><div class="tooltip-inner"></div></div>'
+                                : '<div class="popover katapp-css" role="tooltip"><div class="arrow"></div><h3 class="popover-header"></h3><div class="popover-body"></div></div>',
+                
                         placement: function (tooltip, trigger) {
                             // Add a class to the .popover element
             
@@ -3422,13 +3698,25 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
             
                             }
             
+                            if ( !isBootstrap3 ) {
+                                // Bootstrap 4 no longer supports 'left auto' (two placements) so just in case any markup has that still
+                                // remove it (unless it is only thing specified - which 'popper' supports.)
+                                const autoToken = /\s?auto?\s?/i
+                                const autoPlace = autoToken.test(placement)
+                                if (autoPlace) placement = placement.replace(autoToken, '') || 'auto';
+                            }
+
                             return placement;
                         },
                         title: function () {
-                            const titleSelector = $(this).data('content-selector');
-                            return titleSelector != undefined
-                                ? $(titleSelector + "Title").text()
-                                : "";
+                            const  titleSelector = $(this).data('content-selector');
+                            if (titleSelector != undefined) {
+                                var title = $(titleSelector + "Title").text();
+                                if (title != undefined) {
+                                    return title;
+                                }
+                            }                    
+                            return "";            
                         },
                         content: function () {
                             // See if they specified data-content directly on trigger element.
@@ -3450,6 +3738,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                     };   
 
                     if (isErrorValidator) {
+                        // Hover for this one...
                         $(this).tooltip(options)
                             .on('inserted.bs.tooltip', function (e) {
                                 const isWarning = $("label.warning", $(e.target)).length == 1;
@@ -3466,6 +3755,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                 })
                 .attr("data-katapp-initialized", "true");
 
+            // Code to hide tooltips if you click anywhere outside the tooltip
             if ( application.element.attr("data-katapp-initialized-tooltip") != "true" ) {
                 // Combo of http://stackoverflow.com/a/17375353/166231 and https://stackoverflow.com/a/21007629/166231 (and 3rd comment)
                 // This one looked interesting too: https://stackoverflow.com/a/24289767/166231 but I didn't test this one yet
@@ -3476,7 +3766,9 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                     if ( visiblePopover === undefined || $(visiblePopover).data("bs.popover") === undefined ) return;
 
                     // Call this first b/c popover 'hide' event sets visiblePopover = undefined
-                    $(visiblePopover).data("bs.popover").inState.click = false
+                    if ( isBootstrap3 ) {
+                        $(visiblePopover).data("bs.popover").inState.click = false
+                    }
                     $(visiblePopover).popover("hide");
                 };
 
@@ -3491,11 +3783,22 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                         e.preventDefault();
                     })
                     .on("click.RBLe", function( e ) {
-                        if ($(e.target).is(".popover-title, .popover-content")) return;
+                        if ($(e.target).is(".popover-title, .popover-content")) return; // BS3
+                        if ($(e.target).is(".popover-header, .popover-body")) return; // BS4                        
                         hideVisiblePopover();
                     })
                     .attr("data-katapp-initialized-tooltip", "true");
             }
+
+            // When helptip <a/> for checkboxes were  moved inside <label/>, attempting to click the help icon simply toggled
+            // the radio/check.  This stops that toggle and lets the help icon simply trigger it's own click to show or hide the help.
+            $('label a[data-toggle]', application.element)
+                .not("[data-katapp-checkbox-tips-initialized='true']")
+                .on('click', function (e) {
+                    e.stopPropagation();
+                    return false;
+                })
+                .attr("data-katapp-checkbox-tips-initialized", "true");
         }
 
         private processInputs(): void {
@@ -3503,6 +3806,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
 
             this.buildDropdowns( view );
             this.buildTextBoxes( view );
+            this.buildListControls( view );
             this.buildCheckboxes( view );
             this.buildSliders( view );
         }

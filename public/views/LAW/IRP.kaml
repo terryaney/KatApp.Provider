@@ -1,4 +1,4 @@
-<rbl-config calcengine="Buck_DecisionSupportIRP_SE" templates="Standard_Templates"></rbl-config>
+<rbl-config calcengine="Buck_DecisionSupportIRP_SE" templates="Standard_Templates" bootstrap="3"></rbl-config>
 
 <style>
     {thisView} div.chart { height: 350px; }

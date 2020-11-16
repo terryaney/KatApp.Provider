@@ -6,7 +6,7 @@
         <script>with debugger line as placeholder/sample</script>
 -->
 
-<rbl-config calcengine="Conduent_LAWSharkfin023_SE" templates="Standard_Templates"></rbl-config>
+<rbl-config calcengine="Conduent_LAWSharkfin023_SE" templates="Standard_Templates" bootstrap="3"></rbl-config>
 
 <style>
     rbl-template,

@@ -288,8 +288,8 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                                     results![ viewId! ] // eslint-disable-line @typescript-eslint/no-non-null-assertion
                                         .format( { thisView: "[rbl-application-id='" + that.id + "']", id: that.id, thisClass: thisClassCss });
 
-                                        // Process as view - get info from rbl-config and inject markup
-                                const view = $("<div class='katapp-css'>" + data.replace( /thisClass/g, thisClassCss )  + "</div>");
+                                // Process as view - get info from rbl-config and inject markup
+                                const view = $("<div class='katapp-css'>" + data.replace( /.thisClass/g, thisClassCss ).replace( /thisClass/g, thisClassCss )  + "</div>");
                                 const rblConfig = $("rbl-config", view).first();
         
                                 if ( rblConfig.length !== 1 ) {
@@ -941,10 +941,10 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
             this.application = application;    
         }
 
-        initializeConfirmLinks() {
+        initializeConfirmLinks(): void {
             const that = this;
             
-            this.application.element.on('onConfirmCancelled.RBLe', function (e) {
+            this.application.element.on('onConfirmCancelled.RBLe', function () {
                 $(".SubmitButton", that.application.element).removeClass("disabled");
                 $(".ajaxloader", that.application.element).css("display", "none");
             });
@@ -953,7 +953,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                 .not(".confirm-bound, .jquery-validate, .skip-confirm")
                 .addClass("confirm-bound")
                 .on("click", function () {
-                    var link = $(this);
+                    const link = $(this);
 
                     if (link.data("confirmed") == "true") {
                         return true;
@@ -965,7 +965,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                         // onConfirm
                         function () {
                             link.data("confirmed", "true");
-                            var submitKey = link.data("submit-key");
+                            const submitKey = link.data("submit-key");
         
                             if (submitKey != undefined) {
                                 $("." + submitKey)[0].click();
@@ -985,8 +985,8 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                 });
         }
 
-        createConfirmDialog(link: JQuery<HTMLElement> | string, onConfirm: () => void, onCancel: () => void | undefined) {
-            var confirm = typeof (link) == 'string'
+        createConfirmDialog(link: JQuery<HTMLElement> | string, onConfirm: ()=> void, onCancel: ()=> void | undefined): void {
+            const confirm = typeof (link) == 'string'
                 ? link
                 : link.data("confirm") || $("." + link.data("confirm-selector")).html() || "";
 
@@ -996,8 +996,8 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
             }
 
             if (!$('.linkConfirmModal', this.application.element).length) {
-                var sCancel = "Cancel";
-                var sContinue = "Continue";
+                const sCancel = "Cancel";
+                const sContinue = "Continue";
 
                 this.application.element.append(
                     '<div class="modal fade linkConfirmModal" tabindex="-1" role="dialog" data-keyboard="false" data-backdrop="static">' +
@@ -1027,7 +1027,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
             $('.linkConfirmModal', this.application.element).modal({ show: true });
         }
 
-        processDropdownItems(dropdown: JQuery<HTMLElement>, dropdownItems: { Value: string | null; Text: string | null; Class: string | undefined; Subtext: string | undefined; Html: string | undefined; Selected: boolean; Visible: boolean; }[]) {
+        processDropdownItems(dropdown: JQuery<HTMLElement>, dropdownItems: { Value: string | null; Text: string | null; Class: string | undefined; Subtext: string | undefined; Html: string | undefined; Selected: boolean; Visible: boolean }[]): void {
             if ( dropdown.length === 0 ) return;
 
             const controlName = this.getInputName(dropdown);
@@ -1141,13 +1141,12 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
             }
         }
 
-        processListItems(container: JQuery<HTMLElement>, listItems: { Value: string | null | undefined; Text: string | null | undefined; Help: string | undefined; Class: string | undefined; Selected: boolean; Visible: boolean; Disabled: boolean; }[] ) {
+        processListItems(container: JQuery<HTMLElement>, listItems: { Value: string | null | undefined; Text: string | null | undefined; Help: string | undefined; Class: string | undefined; Selected: boolean; Visible: boolean; Disabled: boolean }[] ): void {
             const isBootstrap3 = $("rbl-config", this.application.element).attr("bootstrap") == "3";
             const inputName: string = container.data("inputname" );
             const id: string = container.data("id" );
             const horizontal = container.data("horizontal") ?? false;
             const itemType: string = container.data("itemtype" );
-            const itemTypeClass: string = itemType === "radio" ? "radio abc-radio" : "checkbox abc-checkbox";
 
             if ( itemType == "checkbox" ) {
                 /*                
@@ -1496,8 +1495,8 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
 		}
         getAspNetCheckboxLabel(input: JQuery<HTMLElement>): JQuery<HTMLElement> | undefined {
 			if ( this.isAspNetCheckbox(input) ) {
-			// Moved the help icons inside the label so if label is ever too long and wraps, the icon stays at the end of the text.
-            let label = $("label > span.checkbox-label", input);
+                // Moved the help icons inside the label so if label is ever too long and wraps, the icon stays at the end of the text.
+                const label = $("label > span.checkbox-label", input);
                 return label.length ? label : $("label", input);
             }
             return undefined;
@@ -2484,7 +2483,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
         private addValidationItem(summary: JQuery<HTMLElement>, input: JQuery<HTMLElement> | undefined, message: string): void {
             let ul = $("ul", summary);
             if (ul.length === 0) {
-                summary.append("<br/><ul></ul>");
+                summary.append("<ul></ul>");
                 ul = $("ul", summary);
             }
 
@@ -2972,7 +2971,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
 				}
 				else if (onPropertyValue) {
 					if (optionIndex > -1) {
-						const propertyArray = optionJson[optionName] as Array<any>;
+						const propertyArray = optionJson[optionName] as Array<any>; // eslint-disable-line @typescript-eslint/no-explicit-any
 						// If property is an array and index isn't there yet, push a new element
 						while (propertyArray.length - 1 < optionIndex) {
 							propertyArray.push(undefined);
@@ -2984,8 +2983,8 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
 						optionJson[optionName] = newValue;
 					}
 				}
-				else if (optionIndex > -1 && (optionJson[optionName] as Array<any> ).length - 1 < optionIndex) {
-					const propertyArray = optionJson[optionName] as Array<any>;
+				else if (optionIndex > -1 && (optionJson[optionName] as Array<any> ).length - 1 < optionIndex) { // eslint-disable-line @typescript-eslint/no-explicit-any
+					const propertyArray = optionJson[optionName] as Array<any>; // eslint-disable-line @typescript-eslint/no-explicit-any
 					// If property is an array and index isn't there yet, push a new element
 					while (propertyArray.length - 1 < optionIndex) {
 						propertyArray.push(undefined);
@@ -3415,6 +3414,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
 
                     if ( inputType === "date" && datePickerAvailable ) {
                         validatorContainer.addClass("input-group date");
+                        $(".error-msg", validatorContainer).addClass("addon-suffix"); // css aid
 
                         let addOnContainer = validatorContainer;
                         
@@ -3514,8 +3514,8 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                         addOnContainer.prepend($("<span class='input-group-addon input-group-text'>" + prefix + "</span>"));
                     }
                     else if ( suffix !== undefined ) {
-
                         validatorContainer.addClass("input-group");
+                        $(".error-msg", validatorContainer).addClass("addon-suffix"); // css aid
 
                         let addOnContainer = validatorContainer;
                         
@@ -3768,7 +3768,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                         title: function () {
                             const  titleSelector = $(this).data('content-selector');
                             if (titleSelector != undefined) {
-                                var title = $(titleSelector + "Title").text();
+                                const title = $(titleSelector + "Title").text();
                                 if (title != undefined) {
                                     return title;
                                 }

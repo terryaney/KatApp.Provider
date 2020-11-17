@@ -1190,7 +1190,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                 "<tr class='{visibleSelector}'>\
                     <td>\
                         <span class='radio abc-radio'>\
-                            <input id='{itemId}' type='radio' name='{itemId}:{inputName}' value='{value}' />\
+                            <input id='{itemId}' type='radio' name='{id}:{inputName}' value='{value}' />\
                             <label for='{itemId}'>{text}</label>\
                             <a class='{helpIconSelector}' style='display: none;' role='button' tabindex='0' data-toggle='popover' data-trigger='click' data-content-selector='.{helpSelector}' data-placement='top'><span class='{helpIconCss} help-icon'></span></a>\
                             <div class='{helpSelector}' style='display: none;'>{help}</div>\
@@ -1201,7 +1201,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
             const horizontalItemTemplate =
                 this.getTemplate( itemType === "radio" ? "input-radiobuttonlist-horizontal-item" : "input-checkboxlist-horizontal-item", {} )?.Content ??
                 "<div class='form-group radio abc-radio {visibleSelector}'>\
-                    <input id='{itemId}' type='radio' name='{itemId}:{inputName}' value='{value}' />\
+                    <input id='{itemId}' type='radio' name='{id}:{inputName}' value='{value}' />\
                     <label for='{itemId}'>{text}</label>\
                     <a class='{helpIconSelector}' style='display: none;' role='button' tabindex='0' data-toggle='popover' data-trigger='click' data-content-selector='.{helpSelector}' data-placement='top'><span class='{helpIconCss} help-icon'></span></a>\
                     <div class='{helpSelector}' style='display: none;'>{help}</div>\
@@ -1217,6 +1217,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                 const help = li.Help || "";
                 
                 const itemData = {
+                    id: id,
                     inputName: inputName,
                     itemId: currentItemId,
                     visibleSelector: currentVisibleSelector,

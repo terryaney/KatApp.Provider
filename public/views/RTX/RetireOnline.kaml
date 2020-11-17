@@ -4,54 +4,22 @@
     http://oneportal.uxgroup.com/LW60/NexGen/0_Product/channel_DB.html?local=1
 -->
 
-<style>
-/* Belongs in core somewhere */
-/* ASP.NET listcontrols render in a table */
-table.bs-listcontrol tr, table.bs-listcontrol td {
-    border-width: 0; /* in case nested in another table */
-    background-color: transparent !important;
-    padding: 2px;
-}
-
-    /* This should be in awesome checkbox if included */
-    table.bs-listcontrol.abc-radio label,
-    table.bs-listcontrol.abc-checkbox label,
-    table.bs-listcontrol.radio label,
-    table.bs-listcontrol.checkbox label {
-        padding-left: 5px;
-    }
-
-
-.form-inline.list-container .radio,
-.form-inline.list-container .abc-radio {
-    margin: 5px 20px 5px 2px;
-}
-
-.form-inline.list-container {
-	padding-left: 0;
-}
-
-    .form-inline.list-container .abc-radio label,
-    .form-inline.list-container .abc-checkbox label,
-    .form-inline.list-container .radio label,
-    .form-inline.list-container .checkbox label {
-        padding-left: 5px;
-    }
-</style>
-
-<div class="row">
-    <div class="col-sm-12">
-        <div class="page-header"><h1>Your Election</h1></div>
-        <div class="electionIntro"></div>
-    </div>
-</div>
-
-<div id="rblMarkup" class="rblApplication rblMarkup mb-5" style="display: none;">
+<div id="rblMarkup" class="rblApplication container rblMarkup mb-5" style="display: none;">
     <div class="d-none">
         <input name="{id}:iStep" type="text" id="katapp_{id}_iStep" class="iStep" value="1"/>
         <input name="{id}:iDirection" type="text" id="katapp_{id}_iDirection" class="iDirection" value="0"/>
     </div>
+    <div class="row">
+        <div class="col-sm-12">
+            <div class="page-header"><h1>Your Election</h1></div>
+        </div>
+    </div>
     <div class="ajaxContent">
+        <div class="row">
+            <div class="col-sm-12">
+                <div class="electionIntro"></div>
+            </div>
+        </div>
         <div class="vStep1">
             <table class="table table-striped table-bordered">
                 <tbody>

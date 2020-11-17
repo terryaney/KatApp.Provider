@@ -81,6 +81,7 @@ interface ListRow {
     help?: string;
     html?: string;
     visible?: string;
+    disabled?: string;
     "start-group"?: string;
 }
 interface SliderConfigurationRow {

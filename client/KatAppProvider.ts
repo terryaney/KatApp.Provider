@@ -489,7 +489,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                         const templateId = $(this).attr('rbl-tid');
                         if (templateId !== undefined && templateId !== "inline") {
                             //Replace content with template processing, using data-* items in this pass
-                            that.rble.injectTemplate( $(this), that.rble.getTemplate( templateId, $(this).data() ) );
+                            that.rble.injectTemplate( $(this), that.ui.getTemplate( templateId, $(this).data() ) );
                         }
                     });
 
@@ -1104,7 +1104,44 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
             }
         }
 
-        processListItems(container: JQuery<HTMLElement>, listItems: { Value: string | null | undefined; Text: string | null | undefined; Help: string | undefined; Class: string | undefined; Selected: boolean; Visible: boolean; }[] ) {
+        getTemplate( templateId: string, data: JQuery.PlainObject ): { Content: string; Type: string | undefined } | undefined {
+            const application = this.application;
+            // Look first for template overriden directly in markup of view
+            let template = $("rbl-template[tid=" + templateId + "]", application.element).first();
+
+            // Now try to find template given precedence of views provided (last template file given highest)
+            if ( template.length === 0 && application.options.viewTemplates != undefined ) {
+                application.options.viewTemplates
+                    .split(",")
+                    .reverse()
+                    .forEach( tid => {
+                        if ( template.length === 0 ) {
+                            template = $("rbl-templates[rbl-t='" + tid.toLowerCase() + "'] rbl-template[tid='" + templateId + "']").first();
+                        }    
+                    })
+            }
+
+            if ( template.length === 0 ) {
+                application.trace( "Invalid template id: " + templateId, TraceVerbosity.Quiet);
+                return undefined;
+            }
+            else {
+                const contentSelector = template.attr("content-selectorx");
+
+                return {
+                    Type: template.attr("type"),
+                    Content:
+                        ( contentSelector != undefined ? $(contentSelector, template) : template )
+                            .html()
+                            .format( KatApp.extend({}, data, { id: application.id } ) )
+                            .replace( " _id", " id") // Legacy support
+                            .replace( "id_=", "id=") // changed templates to have id_ so I didn't get browser warning about duplicate IDs inside *template markup*
+                            .replace( /tr_/g, "tr" ).replace( /td_/g, "td" ) // tr/td were *not* contained in a table in the template, browsers would just remove them when the template was injected into application, so replace here before injecting template
+                }
+            }
+        }
+
+        processListItems(container: JQuery<HTMLElement>, listItems: { Value: string | null | undefined; Text: string | null | undefined; Help: string | undefined; Class: string | undefined; Selected: boolean; Visible: boolean; Disabled: boolean; }[] ) {
             const isBootstrap3 = $("rbl-config", this.application.element).attr("bootstrap") == "3";
             const inputName: string = container.data("inputname" );
             const id: string = container.data("id" );
@@ -1127,44 +1164,91 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
 
             let itemsContainer = horizontal
                 ? container
-                : $("> table > tbody", container);
+                : $(".items-container", container);
+
+            if ( horizontal ) {
+                container.parent().addClass( "bs-listcontrol form-inline form-inline-vtop" );
+            }
+            else if ( itemsContainer.length === 0 ) {
+                const itemType: string = container.data("itemtype" );
+                const itemTypeClass: string = itemType === "radio" ? "radio abc-radio" : "checkbox abc-checkbox";
+                const temlpateContent = 
+                    this.getTemplate( itemType === "radio" ? "input-radiobuttonlist-container" : "input-checkboxlist-container", {} )?.Content ??
+                    "<table class='" + itemTypeClass + " bs-listcontrol' border='0'><tbody class='items-container'></tbody></table>"
+                container.append($(temlpateContent));
+
+
+                itemsContainer = $(".items-container", container);
+            }
 
             const that = this;
             const helpIconClass = isBootstrap3 ? "glyphicon glyphicon-info-sign" : "fa fa-question-circle";
             let configureHelp = false;
 
-            listItems.forEach( li => {
-                const currentItemSelector = "v" + inputName + "_" + li.Value;
+            const verticalItemTemplate = 
+                this.getTemplate( itemType === "radio" ? "input-radiobuttonlist-vertical-item" : "input-checkboxlist-vertical-item", {} )?.Content ??
+                "<tr class='{visibleSelector}'>\
+                    <td>\
+                        <span class='radio abc-radio'>\
+                            <input id='{itemId}' type='radio' name='{itemId}:{inputName}' value='{value}' />\
+                            <label for='{itemId}'>{text}</label>\
+                            <a class='{helpIconSelector}' style='display: none;' role='button' tabindex='0' data-toggle='popover' data-trigger='click' data-content-selector='.{helpSelector}' data-placement='top'><span class='{helpIconCss} help-icon'></span></a>\
+                            <div class='{helpSelector}' style='display: none;'>{help}</div>\
+                            <div class='{helpSelector}Title' style='display: none;'></div>\
+                        </span>\
+                    </td>\
+                </tr>";
+            const horizontalItemTemplate =
+                this.getTemplate( itemType === "radio" ? "input-radiobuttonlist-horizontal-item" : "input-checkboxlist-horizontal-item", {} )?.Content ??
+                "<div class='form-group radio abc-radio {visibleSelector}'>\
+                    <input id='{itemId}' type='radio' name='{itemId}:{inputName}' value='{value}' />\
+                    <label for='{itemId}'>{text}</label>\
+                    <a class='{helpIconSelector}' style='display: none;' role='button' tabindex='0' data-toggle='popover' data-trigger='click' data-content-selector='.{helpSelector}' data-placement='top'><span class='{helpIconCss} help-icon'></span></a>\
+                    <div class='{helpSelector}' style='display: none;'>{help}</div>\
+                    <div class='{helpSelector}Title' style='display: none;'></div>\
+                </div>";
+
+            listItems.forEach( li => {                
+                const currentItemId = id + "_" + inputName + "_" + li.Value;
+                const currentVisibleSelector = "v" + inputName + "_" + li.Value;
                 const currentHelpSelector = "h" + inputName + "_" + li.Value;
                 const currentHelpIconSelector = currentHelpSelector + "Icon";
-                const currentItemId = id + "_" + inputName + "_" + li.Value;
-                let currentItem = $("." + currentItemSelector, itemsContainer);
-                let currentInput = $("input", currentItem);
                 const text = li.Text || "";
                 const help = li.Help || "";
+                
+                const itemData = {
+                    inputName: inputName,
+                    itemId: currentItemId,
+                    visibleSelector: currentVisibleSelector,
+                    helpSelector: currentHelpSelector,
+                    helpIconSelector: currentHelpIconSelector,
+                    helpIconCss: helpIconClass,
+                    text: text,
+                    value: li.Value,
+                    help: help
+                }
+                let currentItem = $("." + currentVisibleSelector, itemsContainer);
+                let currentInput = $("input", currentItem);
 
                 // Always add so it is in order of CE even if visible is false...
                 if ( currentItem.length === 0) {
-                    var inputHtml = "<input id='" + currentItemId +"' type='" + itemType +"' name='" + id + ":" + inputName + "' value='" + li.Value + "'" + ( li.Selected ? " checked='checked'" : "" ) + "/>";
-                    var labelHtml = "<label for='" + currentItemId +"'>" + text + "</label>";
-                    var helpHmtl = 
-                        "\r\n<a class='" + currentHelpIconSelector + "' style='display: none;' role='button' tabindex='0' data-toggle='popover' data-trigger='click' data-content-selector='." + currentHelpSelector + "' data-placement='top'><span class='" + helpIconClass + " help-icon'></span></a>" + 
-                        "<div class='" + currentHelpSelector + "' style='display: none;'>" + help + "</div>" +
-                        "<div class='" + currentHelpSelector + "Title' style='display: none;'></div>";
-                        
                     if ( horizontal ) {
-                        itemsContainer.append($("<div class='form-group " + itemTypeClass + " " + currentItemSelector + "'>" + inputHtml + labelHtml + helpHmtl + "</div>"));
+                        itemsContainer.append($(horizontalItemTemplate.format( itemData )));
                     }
                     else {
-                        itemsContainer.append($("<tr class='" + currentItemSelector + "'><td><span class='" + itemTypeClass + "'>" + inputHtml + labelHtml + helpHmtl + "</span></td></tr>"));
+                        itemsContainer.append($(verticalItemTemplate.format( itemData )));
                     }
 
-                    currentItem = $("." + currentItemSelector, itemsContainer);
+                    currentItem = $("." + currentVisibleSelector, itemsContainer);
                     currentInput = $("input", currentItem);
 
                     currentInput.not(skipBindingInputSelector).on("change.RBLe", function () {
                         that.changeRBLe(currentInput);
                     });
+                }
+
+                if ( li.Selected ) {
+                    currentInput.prop("checked", true);
                 }
 
                 if ( !li.Visible ){
@@ -1181,6 +1265,14 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                         configureHelp = true;
                     }
                     currentItem.show();
+
+                    if ( li.Disabled ) {
+                        currentInput.prop("disabled", true).removeAttr("kat-disabled");
+                        currentInput.prop("checked", false);
+                    }
+                    else {
+                        currentInput.prop("disabled", false);
+                    }
                 }
             });
 
@@ -1774,39 +1866,6 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                 }
             }
         }
-
-        getTemplate( templateId: string, data: JQuery.PlainObject ): { Content: string; Type: string | undefined } | undefined {
-            const application = this.application;
-            // Look first for template overriden directly in markup of view
-            let template = $("rbl-template[tid=" + templateId + "]", application.element).first();
-
-            // Now try to find template given precedence of views provided (last template file given highest)
-            if ( application.options.viewTemplates != undefined ) {
-                application.options.viewTemplates
-                    .split(",")
-                    .reverse()
-                    .forEach( tid => {
-                        if ( template.length === 0 ) {
-                            template = $("rbl-templates[rbl-t='" + tid.toLowerCase() + "'] rbl-template[tid='" + templateId + "']").first();
-                        }    
-                    })
-            }
-
-            if ( template.length === 0 ) {
-                application.trace( "Invalid template id: " + templateId, TraceVerbosity.Quiet);
-                return undefined;
-            }
-            else {
-                return {
-                    Type: template.attr("type"),
-                    Content: 
-                        template
-                            .html()
-                            .format( KatApp.extend({}, data, { id: application.id } ) )
-                            .replace( " _id", " id" ) // changed templates to have _id so I didn't get browser warning about duplicate IDs inside *template markup*
-                }
-            }
-        }
     
         createHtmlFromResultRow( resultRow: HtmlContentRow, processBlank: boolean ): void {
             const view = this.application.element;
@@ -1837,7 +1896,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                             
                             if (templateId !== undefined) {
                                 //Replace content with template processing, using data-* items in this pass
-                                this.injectTemplate( el, this.getTemplate( templateId, el.data() ) );
+                                this.injectTemplate( el, this.ui.getTemplate( templateId, el.data() ) );
                             }
                             
                             // Append 'templated' content to view
@@ -1919,7 +1978,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                         ? inlineTemplate === undefined || inlineTemplate.length === 0
                             ? undefined
                             : $( inlineTemplate.prop("outerHTML").format( elementData) ).removeAttr("rbl-tid").prop("outerHTML")
-                        : that.getTemplate( tid, elementData )?.Content; 
+                        : that.ui.getTemplate( tid, elementData )?.Content; 
 
                     if ( templateContent === undefined ) {
                         application.trace("<b style='color: Red;'>RBL WARNING</b>: Template content could not be found: [" + tid + "].", TraceVerbosity.Minimal);
@@ -2684,7 +2743,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                 if ( listControl.length === 1 ) {
                     ui.processListItems(
                         listControl, 
-                        listRows.map( r => ({ Value:  r.key, Text: r.text, Class: r.class, Help: r.html, Selected: false, Visible: r.visible != "0" }))
+                        listRows.map( r => ({ Value:  r.key, Text: r.text, Class: r.class, Help: r.html, Selected: false, Visible: r.visible != "0", Disabled: r.disabled == "1" }))
                     );
                 }
                 else {
@@ -3139,36 +3198,37 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                 this.highchartsOptions = application.getResultTable<HighChartsOptionRow>("HighCharts-" + this.highChartsOptionsName + "-Options");
                 this.highchartsData = application.getResultTable<HighChartsDataRow>("HighCharts-" + this.highChartsDataName + "-Data");
 
-                const container = $(".chart", el);
-
-                let renderStyle = container.attr("style") ?? "";
-                const configStyle = this.getHighchartsConfigValue("config-style");
-    
-                if (configStyle !== undefined) {
-                    if (renderStyle !== "" && !renderStyle.endsWith(";")) {
-                        renderStyle += ";";
-                    }
-                    container.attr("style", renderStyle + configStyle);
-                }
-                
                 const firstDataRow = this.highchartsData.filter(r => !(r.category || "").startsWith("config-")).shift();
-                const highchartKey = container.attr('data-highcharts-chart');
-                const highchart = Highcharts.charts[ highchartKey ?? -1 ] as unknown as HighchartsChartObject;
-
-                if ( highchart !== undefined ) {
-                    highchart.destroy();                    
-                }
 
                 if ( firstDataRow !== undefined ) {
-                    const chartOptions = this.getHighchartsOptions( firstDataRow );
+                    const container = $(".chart", el);
 
+                    let renderStyle = container.attr("style") ?? "";
+                    const configStyle = this.getHighchartsConfigValue("config-style");
+        
+                    if (configStyle !== undefined) {
+                        if (renderStyle !== "" && !renderStyle.endsWith(";")) {
+                            renderStyle += ";";
+                        }
+                        container.attr("style", renderStyle + configStyle);
+                    }
+                    
+                    const highchartKey = container.attr('data-highcharts-chart');
+                    const highchart = Highcharts.charts[ highchartKey ?? -1 ] as unknown as HighchartsChartObject;
+    
+                    if ( highchart !== undefined ) {
+                        highchart.destroy();                    
+                    }
+    
+                    const chartOptions = this.getHighchartsOptions( firstDataRow );
+    
                     try {
                         container.highcharts(chartOptions);
                     } catch (error) {
                         throw error;                        
                     }
                 }
-            }
+        }
 
             return el;
         }
@@ -3333,7 +3393,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                 else if ( inputType === "multiline" ) {
                     // Replace textbox with a textarea
                     const rows = el.data("rows") ?? "4";
-                    input.replaceWith($('<textarea name="' + id + '" rows="' + rows + '" _id="' + id + '" class="form-control ' + id + '"></textarea>'))
+                    input.replaceWith($('<textarea name="' + id + '" rows="' + rows + '" id_="' + id + '" class="form-control ' + id + '"></textarea>'))
                     input = $("textarea[name='" + id + "']", el);
                 }
 
@@ -3490,6 +3550,15 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                 const lookuptable = el.data("lookuptable");
                 const css = el.data("css");
                 const formCss = el.data("formcss");
+                const container = $("." + id, el);
+                                
+                // To make it easier during RBL processing to determine what to do
+                container.attr("data-horizontal", horizontal);
+
+                if ( horizontal ) {
+                    container.addClass("form-group");
+                    $(".v" + id, el).removeClass("form-group");
+                }
 
                 if ( css !== undefined ) {
                     $(".v" + id, el).addClass(css);
@@ -3505,26 +3574,11 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                     $("span.l" + id, el).html(label);
                 }
                 
-                const container = $("." + id, el);
-                const validatorContainer = container.parent();
-                                
-                // To make it easier during RBL processing to determine what to do
-                container.attr("data-horizontal", horizontal);
-
-                if ( horizontal ) {
-                    validatorContainer.addClass( "bs-listcontrol form-inline form-inline-vtop" );
-                }
-                else {
-                    const itemType: string = container.data("itemtype" );
-                    const itemTypeClass: string = itemType === "radio" ? "radio abc-radio" : "checkbox abc-checkbox";
-                    container.append($("<table class='" + itemTypeClass + " bs-listcontrol' border='0'><tbody></tbody></table>"));
-                }
-
                 if ( lookuptable !== undefined ) {
                     // Need to fix this
                     const options =
                         $("rbl-template[tid='lookup-tables'] DataTable[id='" + lookuptable + "'] TableItem")
-                            .map( ( index, ti ) => ({ Value: ti.getAttribute("key"), Text: ti.getAttribute( "name"), Class: undefined, Help: undefined, Selected: index == 0, Visible: true }));
+                            .map( ( index, ti ) => ({ Value: ti.getAttribute("key"), Text: ti.getAttribute( "name"), Class: undefined, Help: undefined, Selected: index == 0, Visible: true, Disabled: false }));
 
                     that.ui.processListItems(container, options.toArray());
                 }
@@ -3903,4 +3957,4 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
 })(jQuery, window, document);
 // Needed this line to make sure that I could debug in VS Code since this was dynamically loaded 
 // with $.getScript() - https://stackoverflow.com/questions/9092125/how-to-debug-dynamically-loaded-javascript-with-jquery-in-the-browsers-debugg
-//# sourceURL=KatAppProvider.js
+//# sourceURL=js\KatAppProvider.js

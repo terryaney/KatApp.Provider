@@ -144,13 +144,6 @@ body:not(.borderless) .katapp-css .nav-tabs > li.active a:after {
 .katapp-css .mobile-toggle-collapse:focus {
 	color: #333;
 }
-.katapp-css .noUi-handle div {
-	color: #F6871E;
-}
-.katapp-css .noUi-handle,
-.katapp-css .noUi-horizontal .noUi-handle {
-	background: #F6871E;
-}
 .katapp-css .table.table-bordered > thead > tr > th,
 .katapp-css .table.table-bordered > tbody > tr.header > th,
 .katapp-css .table.table-bordered > tbody > tr.header > td {

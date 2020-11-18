@@ -11,6 +11,10 @@
   }
   
       /* This should be in awesome checkbox if included, but in case not included, providing here */
+      .katapp-css .abc-checkbox label,
+      .katapp-css .checkbox label {
+          display: inline;
+      }
       .katapp-css table.bs-listcontrol.abc-radio label,
       .katapp-css table.bs-listcontrol.abc-checkbox label,
       .katapp-css table.bs-listcontrol.radio label,
@@ -428,10 +432,10 @@
     <label for="katapp_{id}_{inputname}" class="col-form-label">
       <span class="l{inputname}"></span>
       <a style="display: none;" onclick="return false;" class="vh{inputname} help-icon-anchor" role="button"
-        tabindex="0" data-toggle="popover" data-trigger="click" data-content-selector=".h{inputname}"
+        tabindex="-1" data-toggle="popover" data-trigger="click" data-content-selector=".h{inputname}"
         data-placement="top"><span class="fa fa-question-circle help-icon"></span></a>
       <a style="display: none;" onclick="return false;" class="vs{inputname} help-icon-anchor" role="button"
-        tabindex="0"><span class="fa fa-volume-up"></span></a>
+        tabindex="-1"><span class="fa fa-volume-up"></span></a>
     </label>
     <div class="validator-container">
       <input name="{inputname}" id_="katapp_{id}_{inputname}" type="text" class="form-control {inputname}">
@@ -448,10 +452,10 @@
     <label class="col-form-label" for="katapp_{id}_{inputname}">
       <span class="l{inputname}"></span>
       <a style="display: none;" onclick="return false;" class="vh{inputname} help-icon-anchor" role="button"
-        tabindex="0" data-toggle="popover" data-trigger="click" data-content-selector=".h{inputname}"
+        tabindex="-1" data-toggle="popover" data-trigger="click" data-content-selector=".h{inputname}"
         data-placement="top"><span class="fa fa-question-circle help-icon"></span></a>
       <a style="display: none;" onclick="return false;" class="vs{inputname} help-icon-anchor" role="button"
-        tabindex="0"><span class="fa fa-volume-up"></span></a>
+        tabindex="-1"><span class="fa fa-volume-up"></span></a>
     </label>
     <div class="validator-container">
       <select name="{inputname}" id_="katapp_{id}_{inputname}"
@@ -469,10 +473,10 @@
     <label class="col-form-label" for="katapp_{id}_{inputname}">
       <span class="l{inputname}"></span> <span class="slider-value sv{inputname}"></span>
       <a style="display: none;" onclick="return false;" class="vh{inputname} help-icon-anchor" role="button"
-        tabindex="0" data-toggle="popover" data-trigger="click" data-content-selector=".h{inputname}"
+        tabindex="-1" data-toggle="popover" data-trigger="click" data-content-selector=".h{inputname}"
         data-placement="top"><span class="fa fa-question-circle help-icon"></span></a>
       <a style="display: none;" onclick="return false;" class="vs{inputname} help-icon-anchor" role="button"
-        tabindex="0"><span class="fa fa-volume-up"></span></a>
+        tabindex="-1"><span class="fa fa-volume-up"></span></a>
     </label>
     <div class="validator-container">
       <div class="slider-control slider-{inputname}" data-slider-type="nouislider"></div>
@@ -497,7 +501,7 @@
       <span class="radio abc-radio">
         <input id_="{itemId}" type="radio" name="{id}:{inputName}" value="{value}" />
         <label for="{itemId}">{text}</label>
-        <a class="{helpIconSelector}" style="display: none;" role="button" tabindex="0" data-toggle="popover"
+        <a class="{helpIconSelector}" style="display: none;" role="button" tabindex="-1" data-toggle="popover"
           data-trigger="click" data-content-selector=".{helpSelector}" data-placement="top"><span
             class="fa fa-question-circle help-icon"></span></a>
         <div class="{helpSelector}" style="display: none;">{help}</div>
@@ -511,7 +515,7 @@
   <div class='radio abc-radio {visibleSelector}'>
     <input id_="{itemId}" type="radio" name="{id}:{inputName}" value="{value}" />
     <label for="{itemId}">{text}</label>
-    <a class="{helpIconSelector}" style="display: none;" role="button" tabindex="0" data-toggle="popover"
+    <a class="{helpIconSelector}" style="display: none;" role="button" tabindex="-1" data-toggle="popover"
       data-trigger="click" data-content-selector=".{helpSelector}" data-placement="top"><span
         class="fa fa-question-circle help-icon"></span></a>
     <div class="{helpSelector}" style="display: none;">{help}</div>
@@ -524,10 +528,10 @@
     <label class="col-form-label" for="katapp_{id}_{inputname}">
       <span class="l{inputname}"></span>
       <a style="display: none;" onclick="return false;" class="vh{inputname} help-icon-anchor" role="button"
-        tabindex="0" data-toggle="popover" data-trigger="click" data-content-selector=".h{inputname}"
+        tabindex="-1" data-toggle="popover" data-trigger="click" data-content-selector=".h{inputname}"
         data-placement="top"><span class="fa fa-question-circle help-icon"></span></a>
       <a style="display: none;" onclick="return false;" class="vs{inputname} help-icon-anchor" role="button"
-        tabindex="0"><span class="fa fa-volume-up"></span></a>
+        tabindex="-1"><span class="fa fa-volume-up"></span></a>
     </label>
     <div class="validator-container list-container">
       <!-- Radio list injected here -->
@@ -544,10 +548,10 @@
     <label class="col-form-label" for="katapp_{id}_{inputname}">
       <span class="l{inputname}"></span> <span class="sv{inputname}"></span>
       <a style="display: none;" onclick="return false;" class="vh{inputname} help-icon-anchor" role="button"
-        tabindex="0" data-toggle="popover" data-trigger="click" data-content-selector=".h{inputname}"
+        tabindex="-1" data-toggle="popover" data-trigger="click" data-content-selector=".h{inputname}"
         data-placement="top"><span class="fa fa-question-circle help-icon"></span></a>
       <a style="display: none;" onclick="return false;" class="vs{inputname} help-icon-anchor" role="button"
-        tabindex="0"><span class="fa fa-volume-up"></span></a>
+        tabindex="-1"><span class="fa fa-volume-up"></span></a>
     </label>
     <div class="validator-container list-container">
       <!-- Checkbox list injected here -->
@@ -566,10 +570,10 @@
       <label for="katapp_{id}_{inputname}">
         <span class="checkbox-label"></span>
         <a style="display: none;" onclick="return false;" class="vh{inputname} help-icon-anchor" role="button"
-          tabindex="0" data-toggle="popover" data-trigger="click" data-content-selector=".h{inputname}"
+          tabindex="-1" data-toggle="popover" data-trigger="click" data-content-selector=".h{inputname}"
           data-placement="top"><span class="fa fa-question-circle help-icon"></span></a>
         <a style="display: none;" onclick="return false;" class="vs{inputname} help-icon-anchor" role="button"
-          tabindex="0"><span class="fa fa-volume-up"></span></a>
+          tabindex="-1"><span class="fa fa-volume-up"></span></a>
       </label>
     </span>
     <span class="error-msg" data-toggle="tooltip" data-placement="top auto"></span>
@@ -582,11 +586,11 @@
   <div class="form-group">
     <input class="form-check-input {inputname}" id_="{inputname}" type="checkbox" name="{inputname}" />
     <label class="form-check-label l{inputname}" for="{inputname}"></label>
-    <a style="display: none;" onclick="return false;" class="vh{inputname} help-icon-anchor" role="button" tabindex="0"
+    <a style="display: none;" onclick="return false;" class="vh{inputname} help-icon-anchor" role="button" tabindex="-1"
       data-toggle="popover" data-trigger="click" data-content-selector=".h{inputname}" data-placement="top"><span
         class="fa fa-info-sign help-icon"></span></a>
     <a style="display: none;" onclick="return false;" class="vs{inputname} help-icon-anchor" role="button"
-      tabindex="0"><span class="fa fa-volume-up"></span></a>
+      tabindex="-1"><span class="fa fa-volume-up"></span></a>
     <span class="error-msg" data-toggle="tooltip" data-placement="top auto"></span>
     <div class="h{inputname}Title" style="display: none;"></div>
     <div class="h{inputname}" style="display: none;"></div>

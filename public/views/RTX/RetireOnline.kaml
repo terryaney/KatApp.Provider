@@ -1,4 +1,4 @@
-<rbl-config calcengine="Conduent_NexgenDBDemo_RTX_SE" result-tabs="RBLResultElection" bootstrap="4" templates="Standard_TemplatesBS4"></rbl-config>
+<rbl-config calcengine="Conduent_NexgenDBDemo_RTX_SE" result-tabs="RBLResultElection" bootstrap="4" templates="Standard_Templates,Input_TemplatesBS4"></rbl-config>
 
 <!--
     http://oneportal.uxgroup.com/LW60/NexGen/0_Product/channel_DB.html?local=1
@@ -26,7 +26,7 @@
         <h2 class="title">Retire Online</h2>
         <div class="ajaxContent">
             <div class="row">
-                <div class="col-12">
+                <div class="col-12 mt-4">
                     <div rbl-value="electionIntro"></div>
                 </div>
             </div>
@@ -34,8 +34,8 @@
                 <div class="card-header mt-1"><h4 class="card-title">Retirement Information</h4></div>
                 <div class="card-body">
                     <div class="row">
-                        <div rbl-tid="input-textbox" data-inputname="iDateTerm" class="col-md-6" data-type="date"></div>
-                        <div rbl-tid="input-textbox" data-inputname="iDateBenComm" class="col-md-6" data-type="date"></div>
+                        <div rbl-tid="input-textbox" data-inputname="iDateBenComm" class="col-md-6" data-type="date" data-placeholder="required"></div>
+                        <div rbl-tid="input-textbox" data-inputname="iDateTerm" class="col-md-6" data-type="date" data-placeholder="optional"></div>
                     </div>
                 </div>
                 <div class="card-header mt-1"><h4 class="card-title">Beneficiary Information</h4></div>
@@ -84,7 +84,7 @@
                             <div rbl-tid="input-textbox" class="col-md-6" data-inputname="iFirstName" data-label="First Name"></div>
                             <div rbl-tid="input-textbox" class="col-md-6" data-inputname="iLastName" data-label="Last Name"></div>
                             <div rbl-tid="input-textbox" class="col-md-6" data-inputname="iSsn" data-label="Social Security Number (no spaces or dashes)"></div>
-                            <div rbl-tid="input-textbox" class="col-md-6" data-inputname="iDateBirth" IsDate="true" data-label="Date of Birth"></div>
+                            <div rbl-tid="input-textbox" class="col-md-6" data-inputname="iDateBirth" IsDate="true" data-label="Date of Birth" data-displayonly="true"></div>
                             <div rbl-tid="input-textbox" class="col-12" data-inputname="iAddress1" data-label="Street Address"></div>
                             <div rbl-tid="input-textbox" class="col-12" data-inputname="iAddress2" data-hidelabel="true"></div>
                             <div rbl-tid="input-textbox" class="col-md-4" data-inputname="iCity" data-label="City"></div>
@@ -108,7 +108,7 @@
                                     <div rbl-tid="input-textbox" class="col-md-6" data-inputname="iDDNameOnAccount" data-label="Name on Account"></div>
                                     <div rbl-tid="input-textbox" class="col-md-6" data-inputname="iDDInstitutionName" data-label="Name of Financial Institution"></div>
                                     <div rbl-tid="input-textbox" class="col-12" data-inputname="iDDAddress" data-label="Address of Financial Institution"></div>
-                                    <div rbl-tid="input-dropdown" class="col-md-4" data-inputname="iDDAcctType" data-label="Type of Account"></div>
+                                    <div rbl-tid="input-dropdown" class="col-md-4" data-inputname="iDDAcctType" data-liveSearch="false" data-label="Type of Account"></div>
                                     <div rbl-tid="input-textbox" class="col-md-4" data-inputname="iDDAcctNumber" data-label="Account Number"></div>
                                     <div rbl-tid="input-textbox" class="col-md-4" data-inputname="iDDRoutingNumber" data-label="Routing Number"></div>
                                     <div class="col-12">
@@ -232,6 +232,7 @@
                     </div>        
                 </div>
             </div>
+            <div class="ajaxloader"></div>
 
             <div class="row mt-2">
                 <div class="col-12">
@@ -244,7 +245,6 @@
                     <div rbl-tid="validation-summary"></div>
                 </div>
             </div>
-            <div class="ajaxloader"></div>
         </div>                    
     </div>
 </div>

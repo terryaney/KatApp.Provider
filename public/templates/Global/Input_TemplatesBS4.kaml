@@ -1,0 +1,145 @@
+<!-- Input templates -->
+<rbl-template tid="input-textbox" type="katapp-textbox">
+  <div class="form-group" rbl-display="v{inputname}">
+    <label for="katapp_{id}_{inputname}" class="col-form-label">
+      <span rbl-value="l{inputname}"></span>
+      <a style="display: none;" onclick="return false;" rbl-display="vh{inputname}" class="help-icon-anchor" role="button" tabindex="-1" data-toggle="popover" data-trigger="click" data-content-selector="#{id}_h{inputname}" data-placement="top"><span class="fa fa-question-circle help-icon"></span></a>
+      <a style="display: none;" onclick="return false;" rbl-display="vs{inputname}" class="help-icon-anchor" role="button" tabindex="-1"><span class="fa fa-volume-up"></span></a>
+    </label>
+    <div class="validator-container">
+      <input name="{inputname}" id_="katapp_{id}_{inputname}" type="text" class="form-control {inputname}">
+      <div class="{inputname}DisplayOnly form-control-display-only"></div>
+      <span class="error-msg" data-toggle="tooltip" data-placement="top auto"></span>
+    </div>
+    <div rbl-value="h{inputname}Title" id="{id}_h{inputname}Title" style="display: none;"></div>
+    <div rbl-value="h{inputname}" id="{id}_h{inputname}" style="display: none;"></div>
+  </div>
+</rbl-template>
+
+<rbl-template tid="input-dropdown" type="katapp-dropdown">
+  <div class="form-group" rbl-display="v{inputname}">
+    <label class="col-form-label" for="katapp_{id}_{inputname}">
+      <span rbl-value="l{inputname}"></span>
+      <a style="display: none;" onclick="return false;" rbl-display="vh{inputname}" class="help-icon-anchor" role="button" tabindex="-1" data-toggle="popover" data-trigger="click" data-content-selector="#{id}_h{inputname}" data-placement="top"><span class="fa fa-question-circle help-icon"></span></a>
+      <a style="display: none;" onclick="return false;" rbl-display="vs{inputname}" class="help-icon-anchor" role="button" tabindex="-1"><span class="fa fa-volume-up"></span></a>
+    </label>
+    <div class="validator-container">
+      <select name="{inputname}" id_="katapp_{id}_{inputname}" class="form-control bootstrap-select show-tick {inputname}" tabindex="-1"></select>
+      <span class="error-msg" data-toggle="tooltip" data-placement="top auto"></span>
+    </div>
+    <div rbl-value="h{inputname}Title" id="{id}_h{inputname}Title" style="display: none;"></div>
+    <div rbl-value="h{inputname}" id="{id}_h{inputname}" style="display: none;"></div>
+  </div>
+</rbl-template>
+
+<!-- Leaving sv{inputname} as class (instead of rbl-value) because value will never be from CE.
+     If I want to change to an ID or something, would need to make sure LAW js is updated b/c they go after class element
+-->
+<rbl-template tid="input-slider" type="katapp-slider">
+  <div class="form-group" rbl-display="v{inputname}">
+    <label class="col-form-label" for="katapp_{id}_{inputname}">
+      <span rbl-value="l{inputname}"></span> <span class="slider-value sv{inputname}"></span>
+      <a style="display: none;" onclick="return false;" rbl-display="vh{inputname}" class="help-icon-anchor" role="button" tabindex="-1" data-toggle="popover" data-trigger="click" data-content-selector="#{id}_h{inputname}" data-placement="top"><span class="fa fa-question-circle help-icon"></span></a>
+      <a style="display: none;" onclick="return false;" rbl-display="vs{inputname}" class="help-icon-anchor" role="button" tabindex="-1"><span class="fa fa-volume-up"></span></a>
+    </label>
+    <div class="validator-container">
+      <div class="slider-control slider-{inputname}" data-slider-type="nouislider"></div>
+      <input name="{inputname}" type="text" id_="katapp_{id}_{inputname}" class="form-control {inputname}" style="display: none" />
+      <span class="error-msg" data-toggle="tooltip" data-placement="top auto"></span>
+    </div>
+    <div rbl-value="h{inputname}Title" id="{id}_h{inputname}Title" style="display: none;"></div>
+    <div rbl-value="h{inputname}" id="{id}_h{inputname}" style="display: none;"></div>
+  </div>
+</rbl-template>
+
+<rbl-template tid="input-radiobuttonlist-vertical-container">
+  <table class='radio abc-radio bs-listcontrol' border='0'>
+    <tbody class='items-container'></tbody>
+  </table>
+</rbl-template>
+<!-- Need tr_/td_ because <tr/> and <td/> can not just be standalone, they are removed from html (i.e. this template markup) -->
+<rbl-template tid="input-radiobuttonlist-vertical-item">
+  <tr_ rbl-display="{visibleSelector}">
+    <td_>
+      <span class="radio abc-radio">
+        <input id_="{itemId}" type="radio" name="{id}:{inputName}" value="{value}" />
+        <label for="{itemId}">{text}</label>
+        <a rbl-display="{helpIconSelector}" style="display: none;" onclick="return false;" class="help-icon-anchor" role="button" tabindex="-1" data-toggle="popover" data-trigger="click" data-content-selector="#{id}_{helpSelector}" data-placement="top"><span class="fa fa-question-circle help-icon"></span></a>
+        <div rbl-value="{helpSelector}Title" id="{id}_{helpSelector}Title" style="display: none;"></div>
+        <div rbl-value="{helpSelector}" id="{id}_{helpSelector}" style="display: none;"></div>
+      </span>
+    </td_>
+  </tr_>
+</rbl-template>
+
+<rbl-template tid="input-radiobuttonlist-horizontal-item">
+  <div class='radio abc-radio' rbl-display="{visibleSelector}">
+    <input id_="{itemId}" type="radio" name="{id}:{inputName}" value="{value}" />
+    <label for="{itemId}">{text}</label>
+    <a rbl-display="{helpIconSelector}" style="display: none;" onclick="return false;" class="help-icon-anchor" role="button" tabindex="-1" data-toggle="popover" data-trigger="click" data-content-selector="#{id}_{helpSelector}" data-placement="top"><span class="fa fa-question-circle help-icon"></span></a>
+    <div rbl-value="{helpSelector}Title" id="{id}_{helpSelector}Title" style="display: none;"></div>
+    <div rbl-value="{helpSelector}" id="{id}_{helpSelector}" style="display: none;"></div>
+  </div>
+</rbl-template>
+
+<rbl-template tid="input-radiobuttonlist" type="katapp-radiobuttonlist">
+  <div class="form-group" rbl-display="v{inputname}">
+    <label class="col-form-label" for="katapp_{id}_{inputname}">
+      <span rbl-value="l{inputname}"></span>
+      <a style="display: none;" onclick="return false;" rbl-display="vh{inputname}" class="help-icon-anchor" role="button" tabindex="-1" data-toggle="popover" data-trigger="click" data-content-selector="#{id}_h{inputname}" data-placement="top"><span class="fa fa-question-circle help-icon"></span></a>
+      <a style="display: none;" onclick="return false;" rbl-display="vs{inputname}" class="help-icon-anchor" role="button" tabindex="-1"><span class="fa fa-volume-up"></span></a>
+    </label>
+    <div class="validator-container list-container">
+      <!-- Radio list injected here -->
+      <div class="{inputname}" data-inputname="{inputname}" data-id="{id}" data-itemtype="radio"></div>
+      <span class="error-msg" data-toggle="tooltip" data-placement="top auto"></span>
+    </div>
+    <div rbl-value="h{inputname}Title" id="{id}_h{inputname}Title" style="display: none;"></div>
+    <div rbl-value="h{inputname}" id="{id}_h{inputname}" style="display: none;"></div>
+  </div>
+</rbl-template>
+
+<rbl-template tid="input-checkboxlist" type="katapp-checkboxlist">
+  <div class="form-group" rbl-display="v{inputname}">
+    <label class="col-form-label" for="katapp_{id}_{inputname}">
+      <span rbl-value="l{inputname}"></span> <span class="sv{inputname}"></span>
+      <a style="display: none;" onclick="return false;" rbl-display="vh{inputname}" class="help-icon-anchor" role="button" tabindex="-1" data-toggle="popover" data-trigger="click" data-content-selector="#{id}_h{inputname}" data-placement="top"><span class="fa fa-question-circle help-icon"></span></a>
+      <a style="display: none;" onclick="return false;" rbl-display="vs{inputname}" class="help-icon-anchor" role="button" tabindex="-1"><span class="fa fa-volume-up"></span></a>
+    </label>
+    <div class="validator-container list-container">
+      <!-- Checkbox list injected here -->
+      <div class="{inputname}" data-inputname="{inputname}" data-id="{id}" data-itemtype="checkbox"></div>
+      <span class="error-msg" data-toggle="tooltip" data-placement="top auto"></span>
+    </div>
+    <div rbl-value="h{inputname}Title" id="{id}_h{inputname}Title" style="display: none;"></div>
+    <div rbl-value="h{inputname}" id="{id}_h{inputname}" style="display: none;"></div>
+  </div>
+</rbl-template>
+
+<rbl-template tid="input-checkbox" type="katapp-checkbox">
+  <div class="form-group validator-container checkbox-container v{inputname}">
+    <span class="checkbox abc-checkbox {inputname}" rbl-value="l{inputname}">
+      <input id_="katapp_{id}_{inputname}" type="checkbox" name="{inputname}" />
+      <label for="katapp_{id}_{inputname}">
+        <span class="checkbox-label"></span>
+        <a style="display: none;" onclick="return false;" rbl-display="vh{inputname}" class="help-icon-anchor" role="button" tabindex="-1" data-toggle="popover" data-trigger="click" data-content-selector="#{id}_h{inputname}" data-placement="top"><span class="fa fa-question-circle help-icon"></span></a>
+        <a style="display: none;" onclick="return false;" rbl-display="vs{inputname}" class="help-icon-anchor" role="button" tabindex="-1"><span class="fa fa-volume-up"></span></a>
+      </label>
+    </span>
+    <span class="error-msg" data-toggle="tooltip" data-placement="top auto"></span>
+    <div rbl-value="h{inputname}Title" id="{id}_h{inputname}Title" style="display: none;"></div>
+    <div rbl-value="h{inputname}" id="{id}_h{inputname}" style="display: none;"></div>
+  </div>
+</rbl-template>
+
+<rbl-template tid="input-checkbox-simple" type="katapp-checkbox">
+  <div class="form-group" rbl-display="v{inputname}">
+    <input class="form-check-input {inputname}" id_="{inputname}" type="checkbox" name="{inputname}" />
+    <label class="form-check-label" rbl-value="l{inputname}" for="{inputname}"></label>
+    <a style="display: none;" onclick="return false;" rbl-display="vh{inputname}" class="help-icon-anchor" role="button" tabindex="-1" data-toggle="popover" data-trigger="click" data-content-selector="#{id}_h{inputname}" data-placement="top"><span class="fa fa-question-circle help-icon"></span></a>
+    <a style="display: none;" onclick="return false;" rbl-display="vs{inputname}" class="help-icon-anchor" role="button" tabindex="-1"><span class="fa fa-volume-up"></span></a>
+    <span class="error-msg" data-toggle="tooltip" data-placement="top auto"></span>
+    <div rbl-value="h{inputname}Title" id="{id}_h{inputname}Title" style="display: none;"></div>
+    <div rbl-value="h{inputname}" id="{id}_h{inputname}" style="display: none;"></div>
+  </div>
+</rbl-template>

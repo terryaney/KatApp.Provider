@@ -1,4 +1,4 @@
-<rbl-config calcengine="Conduent_NexgenDBDemo_RTX_SE" bootstrap="4" templates="Standard_TemplatesBS4"></rbl-config>
+<rbl-config calcengine="Conduent_NexgenDBEstimateDemo_RTX_SE" bootstrap="4" templates="Standard_Templates,Input_TemplatesBS4"></rbl-config>
 
 <!--
     http://oneportal.uxgroup.com/LW60/NexGen/0_Product/channel_DB.html?local=1
@@ -78,9 +78,9 @@
                                     <div class="col-md-6"><div class="scenario-header">Scenario 2</div></div>
                                 </div>
                             </div>
-                            <div rbl-tid="input-textbox-2col" data-inputname="iDateTerm" data-inputname2="iDateTerm2" data-type="date"></div>
-                            <div rbl-tid="input-textbox-2col" data-inputname="iDateBenComm" data-inputname2="iDateBenComm2" data-type="date"></div>
-                            <div rbl-tid="input-textbox-2col" data-inputname="iDateBirthBen" data-inputname2="iDateBirthBen2" data-type="date"></div>
+                            <div rbl-tid="input-textbox-2col" data-inputname="iDateBenComm" data-inputname2="iDateBenComm2" data-type="date" data-placeholder="required"></div>
+                            <div rbl-tid="input-textbox-2col" data-inputname="iDateTerm" data-inputname2="iDateTerm2" data-type="date" data-placeholder="optional"></div>
+                            <div rbl-tid="input-textbox-2col" data-inputname="iDateBirthBen" data-inputname2="iDateBirthBen2" data-type="date" data-placeholder="optional"></div>
                             <div rbl-tid="input-slider-2col" data-inputname="iSalScale" data-inputname2="iSalScale2"></div>
                         </div>
                         <div class="col-sm-12">
@@ -103,7 +103,7 @@
                         </div>
                         <div class="col-md-12">
                             <div rbl-tid="input-dropdown" data-liveSearch="false" data-inputname="iPaymentForm"></div>
-                            <div class="ml-3 small">
+                            <div class="ml-3 small" rbl-display="viPaymentForm">
                                 <a href="#" data-toggle='modal' data-target='#{id}_all-forms-payment'>See all forms of payment</a>
                             </div>        
                         </div>

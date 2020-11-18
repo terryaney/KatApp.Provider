@@ -289,7 +289,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                                         .format( { thisView: "[rbl-application-id='" + that.id + "']", id: that.id, thisClass: thisClassCss });
 
                                 // Process as view - get info from rbl-config and inject markup
-                                const view = $("<div class='katapp-css'>" + data.replace( /.thisClass/g, thisClassCss ).replace( /thisClass/g, thisClassCss )  + "</div>");
+                                const view = $("<div class='katapp-css'>" + data.replace( /\.thisClass/g, thisClassCss ).replace( /thisClass/g, thisClassCss )  + "</div>");
                                 const rblConfig = $("rbl-config", view).first();
         
                                 if ( rblConfig.length !== 1 ) {
@@ -1186,25 +1186,25 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
 
             const verticalItemTemplate = 
                 this.getTemplate( itemType === "radio" ? "input-radiobuttonlist-vertical-item" : "input-checkboxlist-vertical-item", {} )?.Content ??
-                "<tr class='{visibleSelector}'>\
+                "<tr rbl-display='{visibleSelector}'>\
                     <td>\
                         <span class='radio abc-radio'>\
                             <input id='{itemId}' type='radio' name='{id}:{inputName}' value='{value}' />\
                             <label for='{itemId}'>{text}</label>\
-                            <a class='{helpIconSelector}' style='display: none;' role='button' tabindex='0' data-toggle='popover' data-trigger='click' data-content-selector='.{helpSelector}' data-placement='top'><span class='{helpIconCss} help-icon'></span></a>\
-                            <div class='{helpSelector}' style='display: none;'>{help}</div>\
-                            <div class='{helpSelector}Title' style='display: none;'></div>\
+                            <a rbl-display='{helpIconSelector}' style='display: none;' role='button' tabindex='0' data-toggle='popover' data-trigger='click' data-content-selector='#{id}_{helpSelector}' data-placement='top'><span class='{helpIconCss} help-icon'></span></a>\
+                            <div rbl-value='{helpSelector}' id='{id}_{helpSelector}' style='display: none;'>{help}</div>\
+                            <div rbl-value='{helpSelector}Title' id='{id}_{helpSelector}Title' style='display: none;'></div>\
                         </span>\
                     </td>\
                 </tr>";
             const horizontalItemTemplate =
                 this.getTemplate( itemType === "radio" ? "input-radiobuttonlist-horizontal-item" : "input-checkboxlist-horizontal-item", {} )?.Content ??
-                "<div class='form-group radio abc-radio {visibleSelector}'>\
+                "<div class='form-group radio abc-radio' rbl-display='{visibleSelector}'>\
                     <input id='{itemId}' type='radio' name='{id}:{inputName}' value='{value}' />\
                     <label for='{itemId}'>{text}</label>\
-                    <a class='{helpIconSelector}' style='display: none;' role='button' tabindex='0' data-toggle='popover' data-trigger='click' data-content-selector='.{helpSelector}' data-placement='top'><span class='{helpIconCss} help-icon'></span></a>\
-                    <div class='{helpSelector}' style='display: none;'>{help}</div>\
-                    <div class='{helpSelector}Title' style='display: none;'></div>\
+                    <a rbl-display='{helpIconSelector}' style='display: none;' role='button' tabindex='0' data-toggle='popover' data-trigger='click' data-content-selector='#{id}_{helpSelector}' data-placement='top'><span class='{helpIconCss} help-icon'></span></a>\
+                    <div rbl-value='{helpSelector}' id='{id}_{helpSelector}' style='display: none;'>{help}</div>\
+                    <div rbl-value='{helpSelector}Title' id='{id}_{helpSelector}Title' style='display: none;'></div>\
                 </div>";
 
             listItems.forEach( li => {                
@@ -1227,7 +1227,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                     value: li.Value,
                     help: help
                 }
-                let currentItem = $("." + currentVisibleSelector, itemsContainer);
+                let currentItem = $("[rbl-display='" + currentVisibleSelector + "']", itemsContainer);
                 let currentInput = $("input", currentItem);
 
                 // Always add so it is in order of CE even if visible is false...
@@ -1239,7 +1239,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                         itemsContainer.append($(verticalItemTemplate.format( itemData )));
                     }
 
-                    currentItem = $("." + currentVisibleSelector, itemsContainer);
+                    currentItem = $("[rbl-display='" + currentVisibleSelector + "']", itemsContainer);
                     currentInput = $("input", currentItem);
 
                     currentInput.not(skipBindingInputSelector).on("change.RBLe", function () {
@@ -1260,8 +1260,8 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                         $("label", currentItem).html(text);
                     }
                     if ( help != "" ) {
-                        $("." + currentHelpSelector, currentItem).html(help);
-                        $("." + currentHelpIconSelector, currentItem).show();
+                        $("[rbl-value='" + currentHelpSelector + "']", currentItem).html(help);
+                        $("[rbl-display='" + currentHelpIconSelector + "']", currentItem).show();
                         configureHelp = true;
                     }
                     currentItem.show();
@@ -1944,7 +1944,13 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                 const value = that.getRblSelectorValue( "ejs-output", rblValueParts );
 
                 if ( value != undefined ) {
-                    $(this).html( value );
+                    let target = $(this);
+
+                    if ( target.length === 1 ) {
+                        target = that.ui.getAspNetCheckboxLabel( target ) ?? target;
+                    }
+
+                    target.html( value );
                 }
                 else {
                     application.trace("<b style='color: Red;'>RBL WARNING</b>: no data returned for rbl-value=" + el.attr('rbl-value'), TraceVerbosity.Minimal);
@@ -2150,6 +2156,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
 
             if ( selector !== undefined ) {
                 value = value ?? "";
+                $(selector + "DisplayOnly").html(value);
                 const input = $(selector, this.application.element).not("div");
                 const isCheckboxList = input.hasClass("checkbox-list-horizontal");
                 const aspCheckbox = this.ui.getAspNetCheckboxInput(input);
@@ -2541,8 +2548,8 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
             const view = this.application.element;
             const warnings = this.getResultTable<ValidationRow>( "warnings" );
             const errors = this.getResultTable<ValidationRow>( "errors" );
-            const errorSummary = $(".ModelerValidationTable", view);
-            let warningSummary = $(".ModelerWarnings", view);
+            const errorSummary = $("#" + this.application.id + "_ModelerValidationTable", view);
+            let warningSummary = $("#" + this.application.id + "_ModelerWarnings", view);
 
             // TODO: See Bootstrap.Validation.js - need to process server side validation errors to highlight the input correctly
 
@@ -2566,9 +2573,9 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
 						scrollTop: $(".ModelerWarnings.alert", view).offset().top - 30
 					}, 1000);
 				}
-				else if ($(".ModelerValidationTable.alert ul li", view).length > 0 && errors.length > 0) {
+				else if ($("#" + this.application.id + "_ModelerValidationTable.alert ul li", view).length > 0 && errors.length > 0) {
 					$('html, body').animate({
-						scrollTop: $(".ModelerValidationTable.alert", view).offset().top - 30
+						scrollTop: $("#" + this.application.id + "_ModelerValidationTable.alert", view).offset().top - 30
 					}, 1000);
 				}
             */
@@ -3321,7 +3328,12 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                 }
 
                 if ( label !== undefined ) {
-                    $("span.l" + id + " label", el).html(label);
+                    let target = $("span[rbl-value='l" + id + "'] label span.checkbox-label", el);
+
+                    if ( target.length === 0 ) {
+                        target = $("span[rbl-value='l" + id + "'] label", el);
+                    }
+                    target.html(label);
                 }
                 if ( checked ) {
                     $("span." + id + " input", el).prop("checked", true);
@@ -3356,10 +3368,10 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                 const hideLabel = el.data("hidelabel") ?? false;
 
                 if ( css !== undefined ) {
-                    $(".v" + id, el).addClass(css);
+                    $("[rbl-display='v" + id + "']", el).addClass(css);
                 }
                 if ( formCss !== undefined ) {
-                    $(".v" + id, el).removeClass("form-group").addClass(formCss);
+                    $("[rbl-display='v" + id + "']", el).removeClass("form-group").addClass(formCss);
                 }
 
                 if ( hideLabel ) {
@@ -3367,10 +3379,10 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                 }
                 else {
                     if ( label !== undefined ) {
-                        $("span.l" + id, el).html(label);
+                        $("span[rbl-value='l" + id + "']", el).html(label);
                     }
                     if ( labelCss !== undefined ) {
-                        $("span.l" + id, el).addClass(labelCss);
+                        $("span[rbl-value='l" + id + "']", el).addClass(labelCss);
                     }
                 }
 
@@ -3560,21 +3572,21 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
 
                 if ( horizontal ) {
                     container.addClass("form-group");
-                    $(".v" + id, el).removeClass("form-group");
+                    $("[rbl-display='v" + id + "']", el).removeClass("form-group");
                 }
 
                 if ( css !== undefined ) {
-                    $(".v" + id, el).addClass(css);
+                    $("[rbl-display='v" + id + "']", el).addClass(css);
                 }
                 if ( formCss !== undefined ) {
-                    $(".v" + id, el).removeClass("form-group").addClass(formCss);
+                    $("[rbl-display='v" + id + "']", el).removeClass("form-group").addClass(formCss);
                 }
 
                 if ( hideLabel ) {
                     $("label", el).remove();                    
                 }
                 else if ( label !== undefined ) {
-                    $("span.l" + id, el).html(label);
+                    $("span[rbl-value='l" + id + "']", el).html(label);
                 }
                 
                 if ( lookuptable !== undefined ) {
@@ -3612,11 +3624,11 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                 const css = el.data("css");
 
                 if ( css !== undefined ) {
-                    $(".v" + id, el).addClass(css);
+                    $("[rbl-display='v" + id + "']", el).addClass(css);
                 }
 
                 if ( label !== undefined ) {
-                    $("span.l" + id, el).html(label);
+                    $("span[rbl-value='l" + id + "']", el).html(label);
                 }
                 
                 const input = $(".form-control", el);
@@ -3677,11 +3689,11 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                     const css = el.data("css");
                     
                     if ( css !== undefined ) {
-                        $(".v" + id, el).addClass(css);
+                        $("[rbl-display='v" + id + "']", el).addClass(css);
                     }
-            
+    
                     if ( label !== undefined ) {
-                        $("span.l" + id, el).html(label);
+                        $("span[rbl-value='l" + id + "']", el).html(label);
                     }
                 }
     
@@ -3851,7 +3863,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
 
             // When helptip <a/> for checkboxes were  moved inside <label/>, attempting to click the help icon simply toggled
             // the radio/check.  This stops that toggle and lets the help icon simply trigger it's own click to show or hide the help.
-            $('label a[data-toggle]', application.element)
+            $('.checkbox label a[data-toggle], .abc-checkbox label a[data-toggle]', application.element)
                 .not("[data-katapp-checkbox-tips-initialized='true']")
                 .on('click', function (e) {
                     e.stopPropagation();

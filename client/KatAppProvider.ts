@@ -41,8 +41,8 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
 // Need this function format to allow for me to reload script over and over (during debugging/rebuilding)
 (function($, window, document, undefined?: undefined): void {
     const tableInputsAndBootstrapButtons = ", .RBLe-input-table :input, .dropdown-toggle, button";
-    const validInputSelector = ".notRBLe, .rbl-exclude" + tableInputsAndBootstrapButtons;
-    const skipBindingInputSelector = ".notRBLe, .rbl-exclude, .skipRBLe, .skipRBLe :input, .rbl-nocalc, .rbl-nocalc :input, rbl-template :input, [type='search']" + tableInputsAndBootstrapButtons;
+    const validInputSelector = ".notRBLe, .rbl-exclude, rbl-template :input, [type='search']" + tableInputsAndBootstrapButtons;
+    const skipBindingInputSelector = ".notRBLe, .rbl-exclude, .rbl-exclude :input, .skipRBLe, .skipRBLe :input, .rbl-nocalc, .rbl-nocalc :input, rbl-template :input, [type='search']" + tableInputsAndBootstrapButtons;
 
     // Reassign options here (extending with what client/host might have already set) allows
     // options (specifically events) to be managed by CMS - adding features when needed.
@@ -134,7 +134,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
         
         constructor(id: string, element: JQuery, options: KatAppOptions)
         {
-            this.id = id;
+            this.id = "ka" + id; // Some BS elements weren't working if ID started with #
             this.element = element;
             this.displayId = element.attr("rbl-trace-id") ?? id;
             // re-assign the KatAppPlugIn to replace shim with actual implementation
@@ -968,7 +968,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                             const submitKey = link.data("submit-key");
         
                             if (submitKey != undefined) {
-                                $("." + submitKey)[0].click();
+                                $(submitKey)[0].click();
                             }
                             else {
                                 link[0].click();
@@ -988,7 +988,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
         createConfirmDialog(link: JQuery<HTMLElement> | string, onConfirm: ()=> void, onCancel: ()=> void | undefined): void {
             const confirm = typeof (link) == 'string'
                 ? link
-                : link.data("confirm") || $("." + link.data("confirm-selector")).html() || "";
+                : link.data("confirm") || $(link.data("confirm-selector"), this.application.element).html() || "";
 
             if (confirm == "") {
                 onConfirm(); // If no confirm on link (called from validation modules), just call onConfirm
@@ -1134,8 +1134,8 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                         ( contentSelector != undefined ? $(contentSelector, template) : template )
                             .html()
                             .format( KatApp.extend({}, data, { id: application.id } ) )
-                            .replace( " _id", " id") // Legacy support
-                            .replace( "id_=", "id=") // changed templates to have id_ so I didn't get browser warning about duplicate IDs inside *template markup*
+                            .replace( / _id=/g, " id=") // Legacy support
+                            .replace( / id_=/g, " id=") // changed templates to have id_ so I didn't get browser warning about duplicate IDs inside *template markup*
                             .replace( /tr_/g, "tr" ).replace( /td_/g, "td" ) // tr/td were *not* contained in a table in the template, browsers would just remove them when the template was injected into application, so replace here before injecting template
                 }
             }
@@ -1143,8 +1143,8 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
 
         processListItems(container: JQuery<HTMLElement>, listItems: { Value: string | null | undefined; Text: string | null | undefined; Help: string | undefined; Class: string | undefined; Selected: boolean; Visible: boolean; Disabled: boolean }[] ): void {
             const isBootstrap3 = $("rbl-config", this.application.element).attr("bootstrap") == "3";
-            const inputName: string = container.data("inputname" );
-            const id: string = container.data("id" );
+            const inputName: string = container.data( "inputname" );
+            const id: string = container.data( "id" );
             const horizontal = container.data("horizontal") ?? false;
             const itemType: string = container.data("itemtype" );
 
@@ -2063,7 +2063,9 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                 const expressionParts = rblDisplayParts[ rblDisplayParts.length - 1].split('=');
                 rblDisplayParts[ rblDisplayParts.length - 1] = expressionParts[0];
                 
-                let visibilityValue: string | undefined = that.getRblSelectorValue( "ejs-output", rblDisplayParts );
+                let visibilityValue = 
+                    that.getRblSelectorValue( "ejs-visibility", rblDisplayParts ) ??
+                    that.getRblSelectorValue( "ejs-output", rblDisplayParts ); // Should remove this and only check ejs-visibility as the 'default'
 
                 if (visibilityValue != undefined) {
                     if ( expressionParts.length > 1) {

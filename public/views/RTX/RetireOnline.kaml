@@ -4,238 +4,249 @@
     http://oneportal.uxgroup.com/LW60/NexGen/0_Product/channel_DB.html?local=1
 -->
 
-<div id="rblMarkup" class="rblApplication container rblMarkup mb-5" style="display: none;">
-    <div class="d-none">
-        <input name="{id}:iStep" type="text" id="katapp_{id}_iStep" class="iStep" value="1"/>
-        <input name="{id}:iDirection" type="text" id="katapp_{id}_iDirection" class="iDirection" value="0"/>
-    </div>
-    <div class="row">
-        <div class="col-sm-12">
-            <div class="page-header"><h1>Your Election</h1></div>
+<style>
+    /* overriding branding.css */
+    .input-group>.input-group-append>.btn, 
+    .input-group>.input-group-append>.input-group-text, 
+    .input-group>.input-group-prepend:first-child>.btn:not(:first-child), 
+    .input-group>.input-group-prepend:first-child>.input-group-text:not(:first-child), 
+    .input-group>.input-group-prepend:not(:first-child)>.btn, 
+    .input-group>.input-group-prepend:not(:first-child)>.input-group-text {
+        border-top-left-radius: 0 !important;
+        border-bottom-left-radius: 0 !important;
+    }
+</style>
+
+<div id="rblMarkup" class="rblApplication rblMarkup mb-5" style="display: none;">
+    <div class="container">
+        <div class="d-none">
+            <input name="{id}:iStep" type="text" id="katapp_{id}_iStep" class="iStep" value="1"/>
+            <input name="{id}:iDirection" type="text" id="katapp_{id}_iDirection" class="iDirection" value="0"/>
         </div>
-    </div>
-    <div class="ajaxContent">
-        <div class="row">
-            <div class="col-sm-12">
-                <div class="electionIntro"></div>
+        <h2 class="title">Retire Online</h2>
+        <div class="ajaxContent">
+            <div class="row">
+                <div class="col-12">
+                    <div rbl-value="electionIntro"></div>
+                </div>
             </div>
-        </div>
-        <div class="vStep1">
-            <table class="table table-striped table-bordered">
-                <tbody>
-                    <tr><th>Retirement Information</th></tr>
-                    <tr>
-                        <td>
-                            <div class="row">
-                                <div rbl-tid="input-textbox" data-inputname="iDateTerm" class="col-md-6" data-type="date"></div>
-                                <div rbl-tid="input-textbox" data-inputname="iDateBenComm" class="col-md-6" data-type="date"></div>
-                            </div>
-                        </td>
-                    </tr>
-                    <tr><th>Beneficiary Information</th></tr>
-                    <tr>
-                        <td>
-                            <div class="row">
-                                <div rbl-tid="input-checkbox" data-inputname="iMaritalStatus" class="col-sm-12"></div>
-                                <div rbl-tid="input-radiobuttonlist" data-inputname="iBeneType" class="col-md-6"></div>
-                                <div rbl-tid="input-textbox" data-inputname="iDateBirthBen" class="col-md-6" data-type="date"></div>
-                            </div>
-                        </td>
-                    </tr>
-                </tbody>
-            </table>
-        </div>
-
-        <div class="vStep2" style="display: none;">
-            <div class="alert alert-warning">KAT: Didn't include iMartialStatus, iBenIndi on this page, change electionIntro if you need to when on this step</div>
-            <table class="table table-striped table-bordered">
-                <tbody>
-                    <tr class="viElection"><th>Form of Payment Election</th></tr>
-                    <tr class="viElection">
-                        <td>
-                            <div class="row">
-                                <div rbl-tid="input-radiobuttonlist" data-hidelabel="true" data-inputname="iElection" class="col-md-12"></div>                                
-                            </div>
-                        </td>
-                    </tr>
-                    <tr class="designateBenSpouse"><th class="designateBenSpouseHeader">Beneficiary Designation</th></tr>
-                    <tr class="designateBenSpouse">
-                        <td>
-                            <p class="designateBenSpouseIntro"></p>
-                            <div class="row">
-                                <div rbl-tid="input-textbox" class="col-sm-6" data-inputname="iFirstName" data-label="First Name" />
-                                <div rbl-tid="input-textbox" class="col-sm-6" data-inputname="iLastName" data-label="Last Name" />
-                                <div rbl-tid="input-textbox" class="col-sm-6" data-inputname="iSsn" data-label="Social Security Number (no spaces or dashes)" />
-                                <div rbl-tid="input-textbox" class="col-sm-6" data-inputname="iDateBirth" IsDate="true" data-label="Date of Birth" />
-                                <div rbl-tid="input-textbox" class="col-sm-12" data-inputname="iAddress1" data-label="Street Address" />
-                                <div rbl-tid="input-textbox" class="col-sm-12" data-inputname="iAddress2" data-hidelabel="true" />
-                                <div rbl-tid="input-textbox" class="col-sm-4" data-inputname="iCity" data-label="City" />
-                                <div rbl-tid="input-dropdown" class="col-sm-4" data-inputname="iState" data-label="State" data-lookuptable="TableState" />
-                                <div rbl-tid="input-textbox" class="col-sm-4" data-inputname="iZip" data-label="Zip Code" />
-                                <div rbl-tid="input-textbox" class="col-sm-4" data-inputname="iCountry" data-label="Country" />
-                                <div rbl-tid="input-textbox" class="col-sm-4" data-inputname="iEveningPhone" data-label="Evening Phone" />
-                                <div rbl-tid="input-textbox" class="col-sm-4" data-inputname="iRelation" data-label="Relationship" />
-                                <div class="col-sm-12"><div class="alert alert-warning designateBenSpouseNote"></div></div>
-                            </div>
-                        </td>
-                    </tr>
-                    <tr class="receivingFunds"><th class="receivingFundsHeader">Receiving Funds</th></tr>
-                    <tr class="receivingFunds">
-                        <td>
-                            <div class="row">
-                                <div rbl-tid="input-checkbox" class="col-sm-12" data-inputname="iAnnCheck" data-label="I elect my monthly annuity to be paid via a check mailed to my address on file." />
-                                <div class="directDeposit col-sm-12">
-                                    <div class="row">
-                                        <div class="col-sm-12"><p class="directDepositHeader">Direct Deposit Information</p></div>                                    
-                                        <div rbl-tid="input-textbox" class="col-sm-6" data-inputname="iDDNameOnAccount" data-label="Name on Account" />
-                                        <div rbl-tid="input-textbox" class="col-sm-6" data-inputname="iDDInstitutionName" data-label="Name of Financial Institution" />
-                                        <div rbl-tid="input-textbox" class="col-sm-12" data-inputname="iDDAddress" data-label="Address of Financial Institution" />
-                                        <div rbl-tid="input-dropdown" class="col-sm-4" data-inputname="iDDAcctType" data-label="Type of Account" />
-                                        <div rbl-tid="input-textbox" class="col-sm-4" data-inputname="iDDAcctNumber" data-label="Account Number" />
-                                        <div rbl-tid="input-textbox" class="col-sm-4" data-inputname="iDDRoutingNumber" data-label="Routing Number" />
-                                        <div class="col-sm-12">
-                                            <div class="alert alert-warning directDepositHeaderNote"></div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </td>
-                    </tr>
-                    <tr class="federalWithholding"><th class="federalWithholdingHeader">Federal Tax Withholding (Must Select One of the Following Choices)</th></tr>
-                    <tr class="federalWithholding">
-                        <td>
-                            <div class="row">
-                                <div rbl-tid="input-radiobuttonlist" data-inputname="iWithholding" class="col-sm-12" Label='Withholding' />
-        
-                                <div class="col-sm-6">
-                                    <div rbl-tid="input-textbox" data-inputname="iAllowance" data-label='Federal Tax Allowances' />
-                                    <div rbl-tid="input-textbox" data-inputname="iWithholdingAmount" data-prefix="$" Label='Fixed Amount' />
-                                </div>
-        
-                                <div rbl-tid="input-radiobuttonlist" data-inputname="iMaritalStatusTax" class="col-sm-6" Label='Form W-4P Marital Status' />
-        
-                                <div class="col-sm-12">
-                                    <div class="alert alert-warning federalWithholdingNote">State tax will only be withheld if deemed mandatory by your state on file.</div>
-                                </div>
-                            </div>
-                        </td>
-                    </tr>
-                    <tr class="importantNote"><th class="importantNoteHeader">Important Note</th></tr>
-                    <tr class="importantNote"><td><p class="importantNoteIntro"><p><b>Additional Forms of Payment Are Available</b><br>Because you are eligible for early retirement under the Plan, additional payment options are available to you, including a 10&nbsp;Year&nbsp;Certain&nbsp;&amp;&nbsp;Life&nbsp;Option, 66-2/3% Joint and Survivor Annuity and Level Income Option (if you begin Plan benefits before you are eligible for benefits from Social Security).</b></p></p></td></tr>
-                    <tr class="requiredDocumentation"><th class="requiredDocumentationHeader">Required Documentation Details</th></tr>
-                    <tr class="requiredDocumentation">
-                        <td>
-                            <div class="row">
-                                <div class="col-sm-12">
-                                    <p class="requiredDocumentationIntro">I understand that my application requires me to provide the following documentation:</p>
-                                    <ul class="requiredDocuments">
-                                        <li><b>Proof of my age</b> - via a photocopy of my birth certificate or passport. Please <i>do not</i> send in an
-                                            original document as it will not be returned to you.</li>
-                                        <li><b>If married, proof of my marital status</b> via a photocopy of my public record of marriage (marriage license)
-                                            or marriage certificate. Please <i>do not</i> send in an original document as it will not be returned to you. By
-                                            providing a copy of my marriage license or marriage certificate, I am certifying that I am legally married to
-                                            the individual named in the marriage license or marriage certificate as of the date I deliver my election to the
-                                            Arizona Igloo Retirement Benefits Service Center.</li>
-                                        <li><b>If married, proof of my spouse's consent</b> to this election and waiver of the normal payment option for
-                                            married participants. My spouse must sign the <i>Consent of Spouse Form</i> and have it notarized; I must return
-                                            the completed, notarized form to the Arizona Igloo Retirement Benefits Service Center by scanning and uploading
-                                            it to the secure website, via secure fax or by mail. (Note: This is not required if you are electing a 50%, 75%
-                                            or 100% Joint and Survivor Annuity with your spouse as the beneficiary.)</li>
-                                    </ul>
-                                </div>
-                            </div>
-                        </td>
-                    </tr>
-                    <tr class="ptpAcknowledge"><th class="ptpAcknowledgeHeader">Participant Acknowledgement</th></tr>
-                    <tr class="ptpAcknowledge">
-                        <td>
-                            <div class="row">
-                                <div class="col-sm-12">
-                                    <p class="ptpAcknowledgeIntro"><p>I have examined the personal information on this website and it is correct. I certify that the information I have provided herein is accurate. I understand that I am entitled to at least 30 days from receipt of this notice to consider my benefit election. If I submit my election before the end of the 30-day period, I am waiving my right to the remainder of the 30-day period. I further understand that I may revoke my election at any time prior to my benefit commencement date.<br><br>I have read the explanation of my payment above and in the Plan’s Summary Plan Description (SPD). I understand that if I elect a lump-sum payment, no additional benefits will be due to me or any survivor under the Plan. I acknowledge that I have read the <i>Special Tax Notice Regarding Plan Payments</i>.<br><br>I understand that by submitting this election, I revoke all benefit elections and/or beneficiary designations previously made by me. I further understand that I may not change my option of payment elected after my benefit commencement date.</p></p>
-                                </div>
-                                <div rbl-tid="input-checkbox" data-inputname="iConfirmElection" class="col-sm-12" data-label="I agree that I have reviewed my election and acknowledge the above."></div>
-                            </div>
-                        </td>
-                    </tr>
-                </tbody>
-            </table>
-        </div>
-
-        <div class="vStep3" style="display: none;">
-            <div class="alert alert-warning">
-                <p>KAT Notes:</p>
-                <ul>
-                    <li>Didn't include confirmIntro (use electionIntro)</li>
-                    <li>Code up table required-document-progress to generate Document/Delivery/Status/Action table</li>
-                    <li>upload-controls for visibility, in ESS logic is based on whether they have doc to upload (required-document-progress table is not blank) and date-upload-end isn't past</li>
-                    <li>iUploadType - need to put that in ejs-listcontrols to build the drop down that controls documents available in upload control</li>
-                </ul>
-            </div>
-
-            <div class="upload-controls">
-                <div rbl-tid="result-table" rbl-source="required-document-progress" data-css="table table-bordered table-condensed"></div>
-                <div class="row">
-                    <div class="col-sm-12">
-                        <div class="alert alert-info electionStatusNote"></div>
+            <div class="card mt-0" rbl-display="vStep1">
+                <div class="card-header mt-1"><h4 class="card-title">Retirement Information</h4></div>
+                <div class="card-body">
+                    <div class="row">
+                        <div rbl-tid="input-textbox" data-inputname="iDateTerm" class="col-md-6" data-type="date"></div>
+                        <div rbl-tid="input-textbox" data-inputname="iDateBenComm" class="col-md-6" data-type="date"></div>
                     </div>
                 </div>
-                <table class="table table-striped table-bordered">
-                    <tr class="fileUploadHeader"><th class="fileUploadHeader">Select a file to upload</th></tr>
-                    <tr>
-                        <td>
+                <div class="card-header mt-1"><h4 class="card-title">Beneficiary Information</h4></div>
+                <div class="card-body">
+                    <div class="row">
+                        <div rbl-tid="input-checkbox" data-inputname="iMaritalStatus" class="col-12"></div>
+                        <div rbl-tid="input-radiobuttonlist" data-inputname="iBeneType" class="col-md-6"></div>
+                        <div rbl-tid="input-textbox" data-inputname="iDateBirthBen" class="col-md-6" data-type="date"></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card" rbl-display="vStep2" style="display: none;">
+                <div class="alert alert-warning">KAT: Didn't include iMartialStatus, iBenIndi on this page, change electionIntro if you need to when on this step</div>
+                <div class="card-header mt-1"><h4 class="card-title">Form of Payment Election</h4></div>
+                <div class="card-body">
+                    <div class="row">
+                        <div rbl-tid="input-radiobuttonlist" data-hidelabel="true" data-inputname="iElection" class="col-12"></div>                                
+                    </div>
+                </div>
+                <div rbl-display="viLSElection" style="display: none;">
+                    <div class="card-header mt-1"><h4 class="card-title" rbl-value="lsElectionHeader">Lump Sum Distribution Type (Must Select One of the Following Choices)</h4></div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div rbl-tid="input-radiobuttonlist" data-inputname="iLSElection" class="col-12" data-horizontal="true" data-hidelabel="true"></div>
+                            <div class="col-12" rbl-display="lumpSumDistribution" style="display: none;">
+                                <div class="row">
+                                    <div rbl-tid="input-radiobuttonlist" data-inputname="iRollType" class="col-sm-6" data-label="Rollover Type"></div>
+
+                                    <div class="col-sm-6">
+                                        <div rbl-tid="input-textbox" data-inputname="iInstitutionName" data-label="Name of IRA or Eligible Retirement Plan"></div>
+                                        <div rbl-tid="input-textbox" data-inputname="iIRANumber" data-label="IRA Account Number"></div>
+                                        <div rbl-tid="input-textbox" data-inputname="iRolloverAmount" data-prefix="$" data-label="Percentage of the lump-sum payment to be paid directly to me"></div>
+                                    </div>
+                                    <div class="col-sm-12 alert alert-warning" rbl-value="lumpSumDistributionNote" rbl-display="lumpSumDistributionNote" role="alert"></div>        
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div rbl-display="designateBenSpouse">
+                    <div class="card-header mt-1"><h4 class="card-title" rbl-value="designateBenSpouseHeader">Spouse Information</h4></div>
+                    <div class="card-body">
+                        <p rbl-value="designateBenSpouseIntro">Since you elected a joint annuity form of payment, you must provide the following details concerning your spouse.</p>
+                        <div class="row">
+                            <div rbl-tid="input-textbox" class="col-md-6" data-inputname="iFirstName" data-label="First Name"></div>
+                            <div rbl-tid="input-textbox" class="col-md-6" data-inputname="iLastName" data-label="Last Name"></div>
+                            <div rbl-tid="input-textbox" class="col-md-6" data-inputname="iSsn" data-label="Social Security Number (no spaces or dashes)"></div>
+                            <div rbl-tid="input-textbox" class="col-md-6" data-inputname="iDateBirth" IsDate="true" data-label="Date of Birth"></div>
+                            <div rbl-tid="input-textbox" class="col-12" data-inputname="iAddress1" data-label="Street Address"></div>
+                            <div rbl-tid="input-textbox" class="col-12" data-inputname="iAddress2" data-hidelabel="true"></div>
+                            <div rbl-tid="input-textbox" class="col-md-4" data-inputname="iCity" data-label="City"></div>
+                            <div rbl-tid="input-dropdown" class="col-md-4" data-inputname="iState" data-label="State" data-lookuptable="TableState"></div>
+                            <div rbl-tid="input-textbox" class="col-md-4" data-inputname="iZip" data-label="Zip Code"></div>
+                            <div rbl-tid="input-textbox" class="col-md-4" data-inputname="iCountry" data-label="Country"></div>
+                            <div rbl-tid="input-textbox" class="col-md-4" data-inputname="iEveningPhone" data-label="Evening Phone"></div>
+                            <div rbl-tid="input-textbox" class="col-md-4" data-inputname="iRelation" data-label="Relationship"></div>
+                            <div class="col-12"><div class="alert alert-warning" rbl-value="designateBenSpouseNote" rbl-display="designateBenSpouseNote"></div></div>
+                        </div>
+                    </div>    
+                </div>
+                <div class="receivingFunds">
+                    <div class="card-header mt-1"><h4 class="card-title" rbl-value="receivingFundsHeader"></h4></div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div rbl-tid="input-checkbox" class="col-12" data-inputname="iAnnCheck" data-label="I elect my monthly annuity to be paid via a check mailed to my address on file."></div>
+                            <div class="col-12" rbl-display="directDeposit">
+                                <div class="row">
+                                    <div class="col-12"><p rbl-value="directDepositHeader">Direct Deposit Information</p></div>                                    
+                                    <div rbl-tid="input-textbox" class="col-md-6" data-inputname="iDDNameOnAccount" data-label="Name on Account"></div>
+                                    <div rbl-tid="input-textbox" class="col-md-6" data-inputname="iDDInstitutionName" data-label="Name of Financial Institution"></div>
+                                    <div rbl-tid="input-textbox" class="col-12" data-inputname="iDDAddress" data-label="Address of Financial Institution"></div>
+                                    <div rbl-tid="input-dropdown" class="col-md-4" data-inputname="iDDAcctType" data-label="Type of Account"></div>
+                                    <div rbl-tid="input-textbox" class="col-md-4" data-inputname="iDDAcctNumber" data-label="Account Number"></div>
+                                    <div rbl-tid="input-textbox" class="col-md-4" data-inputname="iDDRoutingNumber" data-label="Routing Number"></div>
+                                    <div class="col-12">
+                                        <div class="alert alert-warning" rbl-value="directDepositHeaderNote" rbl-display="directDepositHeaderNote"></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>    
+                </div>
+                <div rbl-display="federalWithholding">
+                    <div class="card-header mt-1"><h4 class="card-title" rbl-value="federalWithholdingHeader">Federal Tax Withholding (Must Select One of the Following Choices)</h4></div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div rbl-tid="input-radiobuttonlist" data-inputname="iWithholding" class="col-12" Label='Withholding'></div>
+            
+                            <div class="col-md-6">
+                                <div rbl-tid="input-textbox" data-inputname="iAllowance" data-label='Federal Tax Allowances'></div>
+                                <div rbl-tid="input-textbox" data-inputname="iWithholdingAmount" data-prefix="$" Label='Fixed Amount'></div>
+                            </div>
+
+                            <div rbl-tid="input-radiobuttonlist" data-inputname="iMaritalStatusTax" class="col-md-6" Label='Form W-4P Marital Status'></div>
+
+                            <div class="col-12">
+                                <div class="alert alert-warning" rbl-value="federalWithholdingNote" rbl-display="federalWithholdingNote">State tax will only be withheld if deemed mandatory by your state on file.</div>
+                            </div>
+                        </div>
+                    </div>    
+                </div>
+                <div rbl-display="importantNote">
+                    <div class="card-header mt-1"><h4 class="card-title" rbl-value="importantNoteHeader">Important Note</h4></div>
+                    <div class="card-body">
+                        <p><b>Additional Forms of Payment Are Available</b></p><br>
+                        <p>Because you are eligible for early retirement under the Plan, additional payment options are available to you, including a 10&nbsp;Year&nbsp;Certain&nbsp;&amp;&nbsp;Life&nbsp;Option, 66-2/3% Joint and Survivor Annuity and Level Income Option (if you begin Plan benefits before you are eligible for benefits from Social Security).</p>
+                    </div>    
+                </div>
+                <div rbl-display="requiredDocumentation">
+                    <div class="card-header mt-1"><h4 class="card-title" rbl-value="requiredDocumentationHeader">Required Documentation Details</h4></div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-12">
+                                <p rbl-value="requiredDocumentationIntro">I understand that my application requires me to provide the following documentation:</p>
+                                <ul rbl-value="requiredDocuments">
+                                    <li><b>Proof of my age</b> - via a photocopy of my birth certificate or passport. Please <i>do not</i> send in an original document as it will not be returned to you.</li>
+                                    <li><b>If married, proof of my marital status</b> via a photocopy of my public record of marriage (marriage license) or marriage certificate. Please <i>do not</i> send in an original document as it will not be returned to you. By providing a copy of my marriage license or marriage certificate, I am certifying that I am legally married to the individual named in the marriage license or marriage certificate as of the date I deliver my election to the Arizona Igloo Retirement Benefits Service Center.</li>
+                                    <li><b>If married, proof of my spouse's consent</b> to this election and waiver of the normal payment option for married participants. My spouse must sign the <i>Consent of Spouse Form</i> and have it notarized; I must return the completed, notarized form to the Arizona Igloo Retirement Benefits Service Center by scanning and uploading it to the secure website, via secure fax or by mail. (Note: This is not required if you are electing a 50%, 75% or 100% Joint and Survivor Annuity with your spouse as the beneficiary.)</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>    
+                </div>
+                <div rbl-display="ptpAcknowledge">
+                    <div class="card-header mt-1"><h4 class="card-title" rbl-value="ptpAcknowledgeHeader">Participant Acknowledgement</h4></div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-12">
+                                <p rbl-value="ptpAcknowledgeIntro">I have examined the personal information on this website and it is correct. I certify that the information I have provided herein is accurate. I understand that I am entitled to at least 30 days from receipt of this notice to consider my benefit election. If I submit my election before the end of the 30-day period, I am waiving my right to the remainder of the 30-day period. I further understand that I may revoke my election at any time prior to my benefit commencement date.<br><br>I have read the explanation of my payment above and in the Plan’s Summary Plan Description (SPD). I understand that if I elect a lump-sum payment, no additional benefits will be due to me or any survivor under the Plan. I acknowledge that I have read the <i>Special Tax Notice Regarding Plan Payments</i>.<br><br>I understand that by submitting this election, I revoke all benefit elections and/or beneficiary designations previously made by me. I further understand that I may not change my option of payment elected after my benefit commencement date.</p>
+                            </div>
+                            <div rbl-tid="input-checkbox" data-inputname="iConfirmElection" class="col-12" data-label="I agree that I have reviewed my election and acknowledge the above."></div>
+                        </div>
+                    </div>    
+                </div>
+            </div>
+
+            <div class="card" rbl-display="vStep3" style="display: none;">
+                <div class="alert alert-warning">
+                    <p>KAT Notes:</p>
+                    <ul>
+                        <li>Didn't include confirmIntro (use electionIntro)</li>
+                        <li>Code up table required-document-progress to generate Document/Delivery/Status/Action table</li>
+                        <li>upload-controls for visibility, in ESS logic is based on whether they have doc to upload (required-document-progress table is not blank) and date-upload-end isn't past</li>
+                        <li>iUploadType - need to put that in ejs-listcontrols to build the drop down that controls documents available in upload control</li>
+                    </ul>
+                </div>
+
+                <div rbl-display="upload-controls">
+                    <div class="row">
+                        <div class="col-12">
+                            <div rbl-tid="result-table" rbl-source="required-document-progress" data-css="table table-bordered table-condensed"></div>
+                            <div class="alert alert-info" rbl-value="electionStatusNote" rbl-display="electionStatusNote"></div>
+                        </div>
+                    </div>
+                    <div class="card-header mt-1"><h4 class="card-title" rbl-value="fileUploadHeader">Select a file to upload</h4></div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div rbl-tid="input-dropdown" class="col-md-3" data-inputname="iUploadType" data-liveSearch="false" data-label="Document Type"></div>
+
+                            <div class="form-group col-md-9" rbl-display="viUpload">
+                                <label for="" class="col-form-label liUpload">File Name</label>
+                                <div class="validator-container">
+                                    <div class="input-group">
+                                        <input name="{id}:iUpload" id="{id}_iUpload" type="text" class="form-control iUpload">
+                                        <span class="input-group-append">
+                                            <a class="btn btn-primary btnUpload">Browse</a>
+                                        </span>
+                                    </div>
+                                    <span class="error-msg" data-toggle="tooltip" data-placement="top"></span>
+                                </div>
+                            </div>
+                    
+                            <div class="col-12">
+                                <div class="alert alert-warning" rbl-value="fileUploadNote"><b>Note:</b> Uploads are limited to 30Mb</div>
+                            </div>
+                            <div class="col-12">
+                                <div class="alert alert-success alert-dismissable fileUploadSuccess d-none">
+                                    <button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                                    <div class="pUploadConfirm"><b>Upload successfully received.</b></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div rbl-display="requiredDocumentation">
+                        <div class="card-header mt-1"><h4 class="card-title" rbl-value="requiredDocumentationHeader">Required Documentation Details</h4></div>
+                        <div class="card-body">
                             <div class="row">
-                                <div rbl-tid="input-dropdown" class="col-sm-3" data-inputname="iUploadType" data-label="Document Type" />
-
-                                <div class="form-group viUpload col-sm-9">
-                                    <label for="" class="control-label liUpload">File Name</label>
-                                    <div class="validator-container">
-                                        <div class="input-group">
-                                            <input name="{id}:iUpload" id="{id}_iUpload" type="text" class="form-control iUpload">
-                                            <span class="input-group-append">
-                                                <a class="btn btn-primary btnUpload">Browse</a>
-                                            </span>
-                                        </div>
-                                        <span class="error-msg" data-toggle="tooltip" data-placement="top"></span>
-                                    </div>
-                                </div>
-                        
-                                <div class="col-sm-12">
-                                    <div class="alert alert-warning fileUploadNote"><b>Note:</b> Uploads are limited to 30Mb</div>
-                                </div>
-                                <div class="col-sm-12">
-                                    <div class="alert alert-success alert-dismissable fileUploadSuccess d-none">
-                                        <button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button>
-                                        <div class="pUploadConfirm"><b>Upload successfully received.</b></div>
-                                    </div>
+                                <div class="col-12">
+                                    <ul rbl-value="requiredDocuments"></ul>
                                 </div>
                             </div>
-                        </td>
-                    </tr>
-                    <tr class="requiredDocumentation"><th class="requiredDocumentationHeader">Required Documentation Details</th></tr>
-                    <tr class="requiredDocumentation">
-                        <td>
-                            <div class="col-sm-12">
-                                <ul class="requiredDocuments"></ul>
-                            </div>
-                        </td>
-                    </tr>
-                </table>
+                        </div>    
+                    </div>        
+                </div>
             </div>
-        </div>
 
-        <div class="row">
-            <div class="col-sm-12">
-                <a class="btn btn-primary btnPrevious" id="{id}_Previous" style="display: none;">Previous</a>
-                <a class="btn btn-primary btnContinue" id="{id}_Continue">Continue</a>
-                <a class="btn btn-primary btnSubmit" data-confirm-selector="electionConfirm" data-submit-key="btnContinue" id="{id}_Submit">Submit</a>
-                <div class="d-none electionConfirm"></div>
+            <div class="row mt-2">
+                <div class="col-12">
+                    <a class="btn btnPrevious" id="{id}_Previous" style="display: none;"><span class="glyphicons glyphicons-chevron-left"></span><span class="d-none d-md-inline-block">Previous</span></a>
+                    <a class="btn btn-primary btnContinue" id="{id}_Continue"><span class="d-none d-md-inline-block">Continue</span><span class="glyphicons glyphicons-chevron-right"></span></a>
+                    <a class="btn btn-primary btnSubmit" data-confirm-selector="#{id}_electionConfirm" data-submit-key=".btnContinue" id="{id}_Submit">Submit</a>
+                    <div class="d-none" id="{id}_electionConfirm" rbl-value="electionConfirm"></div>
+                </div>
+                <div class="col-12 pt-2">
+                    <div rbl-tid="validation-summary"></div>
+                </div>
             </div>
-            <div class="col-sm-12">
-                <div rbl-tid="validation-summary"></div>
-            </div>
-        </div>
-        <div class="ajaxloader"></div>
-    </div>            
+            <div class="ajaxloader"></div>
+        </div>                    
+    </div>
 </div>
 
 <script>
@@ -267,77 +278,77 @@
 
 <rbl-template tid="lookup-tables">
 	<DataTable id="TableState">
-        <TableItem key="AA" name="Military APO (AA)" />
-        <TableItem key="AB" name="Alberta" />
-        <TableItem key="AE" name="Military APO (AE)" />
-        <TableItem key="AP" name="Military APO (AP)" />
-        <TableItem key="TT" name="Military APO (TT)" />
-        <TableItem key="AL" name="Alabama" />
-        <TableItem key="AK" name="Alaska" />
-        <TableItem key="AZ" name="Arizona" />
-        <TableItem key="AR" name="Arkansas" />
-        <TableItem key="CA" name="California" />
-        <TableItem key="CO" name="Colorado" />
-        <TableItem key="CT" name="Connecticut" />
-        <TableItem key="DE" name="Delaware" />
-        <TableItem key="DC" name="District of Columbia" />
-        <TableItem key="FL" name="Florida" />
-        <TableItem key="GA" name="Georgia" />
-        <TableItem key="HI" name="Hawaii" />
-        <TableItem key="ID" name="Idaho" />
-        <TableItem key="IL" name="Illinois" />
-        <TableItem key="IN" name="Indiana" />
-        <TableItem key="IA" name="Iowa" />
-        <TableItem key="KS" name="Kansas" />
-        <TableItem key="KY" name="Kentucky" />
-        <TableItem key="LA" name="Louisiana" />
-        <TableItem key="ME" name="Maine" />
-        <TableItem key="MD" name="Maryland" />
-        <TableItem key="MA" name="Massachusetts" />
-        <TableItem key="MI" name="Michigan" />
-        <TableItem key="MN" name="Minnesota" />
-        <TableItem key="MS" name="Mississippi" />
-        <TableItem key="MO" name="Missouri" />
-        <TableItem key="MT" name="Montana" />
-        <TableItem key="NE" name="Nebraska" />
-        <TableItem key="NV" name="Nevada" />
-        <TableItem key="NH" name="New Hampshire" />
-        <TableItem key="NJ" name="New Jersey" />
-        <TableItem key="NM" name="New Mexico" />
-        <TableItem key="NY" name="New York" />
-        <TableItem key="NC" name="North Carolina" />
-        <TableItem key="ND" name="North Dakota" />
-        <TableItem key="OH" name="Ohio" />
-        <TableItem key="OK" name="Oklahoma" />
-        <TableItem key="OR" name="Oregon" />
-        <TableItem key="PA" name="Pennsylvania" />
-        <TableItem key="RI" name="Rhode Island" />
-        <TableItem key="SC" name="South Carolina" />
-        <TableItem key="SD" name="South Dakota" />
-        <TableItem key="TN" name="Tennessee" />
-        <TableItem key="TX" name="Texas" />
-        <TableItem key="UT" name="Utah" />
-        <TableItem key="VT" name="Vermont" />
-        <TableItem key="VA" name="Virginia" />
-        <TableItem key="WA" name="Washington" />
-        <TableItem key="WV" name="West Virginia" />
-        <TableItem key="WI" name="Wisconsin" />
-        <TableItem key="WY" name="Wyoming" />
-        <TableItem key="AS" name="American Samoa" />
-        <TableItem key="BC" name="British Columbia" />
-        <TableItem key="FM" name="Federated States Of Micronesia" />
-        <TableItem key="GU" name="Guam" />
-        <TableItem key="MH" name="Marshall Islands" />
-        <TableItem key="MP" name="Northern Mariana Islands" />
-        <TableItem key="ON" name="Ontario, CA" />
-        <TableItem key="PQ" name="Quebec (PQ)" />
-        <TableItem key="PR" name="Puerto Rico" />
-        <TableItem key="PW" name="Palau" />
-        <TableItem key="QB" name="Quebec (QB)" />
-        <TableItem key="QC" name="Quebec" />
-        <TableItem key="QU" name="Quebec (QU)" />
-        <TableItem key="SG" name="Singapore" />
-        <TableItem key="VI" name="Virgin Islands" />
-        <TableItem key="ZZ" name="International" />
+        <TableItem key="AA" name="Military APO (AA)"></div>
+        <TableItem key="AB" name="Alberta"></div>
+        <TableItem key="AE" name="Military APO (AE)"></div>
+        <TableItem key="AP" name="Military APO (AP)"></div>
+        <TableItem key="TT" name="Military APO (TT)"></div>
+        <TableItem key="AL" name="Alabama"></div>
+        <TableItem key="AK" name="Alaska"></div>
+        <TableItem key="AZ" name="Arizona"></div>
+        <TableItem key="AR" name="Arkansas"></div>
+        <TableItem key="CA" name="California"></div>
+        <TableItem key="CO" name="Colorado"></div>
+        <TableItem key="CT" name="Connecticut"></div>
+        <TableItem key="DE" name="Delaware"></div>
+        <TableItem key="DC" name="District of Columbia"></div>
+        <TableItem key="FL" name="Florida"></div>
+        <TableItem key="GA" name="Georgia"></div>
+        <TableItem key="HI" name="Hawaii"></div>
+        <TableItem key="ID" name="Idaho"></div>
+        <TableItem key="IL" name="Illinois"></div>
+        <TableItem key="IN" name="Indiana"></div>
+        <TableItem key="IA" name="Iowa"></div>
+        <TableItem key="KS" name="Kansas"></div>
+        <TableItem key="KY" name="Kentucky"></div>
+        <TableItem key="LA" name="Louisiana"></div>
+        <TableItem key="ME" name="Maine"></div>
+        <TableItem key="MD" name="Maryland"></div>
+        <TableItem key="MA" name="Massachusetts"></div>
+        <TableItem key="MI" name="Michigan"></div>
+        <TableItem key="MN" name="Minnesota"></div>
+        <TableItem key="MS" name="Mississippi"></div>
+        <TableItem key="MO" name="Missouri"></div>
+        <TableItem key="MT" name="Montana"></div>
+        <TableItem key="NE" name="Nebraska"></div>
+        <TableItem key="NV" name="Nevada"></div>
+        <TableItem key="NH" name="New Hampshire"></div>
+        <TableItem key="NJ" name="New Jersey"></div>
+        <TableItem key="NM" name="New Mexico"></div>
+        <TableItem key="NY" name="New York"></div>
+        <TableItem key="NC" name="North Carolina"></div>
+        <TableItem key="ND" name="North Dakota"></div>
+        <TableItem key="OH" name="Ohio"></div>
+        <TableItem key="OK" name="Oklahoma"></div>
+        <TableItem key="OR" name="Oregon"></div>
+        <TableItem key="PA" name="Pennsylvania"></div>
+        <TableItem key="RI" name="Rhode Island"></div>
+        <TableItem key="SC" name="South Carolina"></div>
+        <TableItem key="SD" name="South Dakota"></div>
+        <TableItem key="TN" name="Tennessee"></div>
+        <TableItem key="TX" name="Texas"></div>
+        <TableItem key="UT" name="Utah"></div>
+        <TableItem key="VT" name="Vermont"></div>
+        <TableItem key="VA" name="Virginia"></div>
+        <TableItem key="WA" name="Washington"></div>
+        <TableItem key="WV" name="West Virginia"></div>
+        <TableItem key="WI" name="Wisconsin"></div>
+        <TableItem key="WY" name="Wyoming"></div>
+        <TableItem key="AS" name="American Samoa"></div>
+        <TableItem key="BC" name="British Columbia"></div>
+        <TableItem key="FM" name="Federated States Of Micronesia"></div>
+        <TableItem key="GU" name="Guam"></div>
+        <TableItem key="MH" name="Marshall Islands"></div>
+        <TableItem key="MP" name="Northern Mariana Islands"></div>
+        <TableItem key="ON" name="Ontario, CA"></div>
+        <TableItem key="PQ" name="Quebec (PQ)"></div>
+        <TableItem key="PR" name="Puerto Rico"></div>
+        <TableItem key="PW" name="Palau"></div>
+        <TableItem key="QB" name="Quebec (QB)"></div>
+        <TableItem key="QC" name="Quebec"></div>
+        <TableItem key="QU" name="Quebec (QU)"></div>
+        <TableItem key="SG" name="Singapore"></div>
+        <TableItem key="VI" name="Virgin Islands"></div>
+        <TableItem key="ZZ" name="International"></div>
     </DataTable>
 </rbl-template>

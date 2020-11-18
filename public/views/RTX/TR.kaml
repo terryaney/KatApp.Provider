@@ -1,0 +1,301 @@
+<rbl-config calcengine="Conduent_NexgenTRDemo_RTX_SE" templates="Standard_Templates"></rbl-config>
+
+<style>
+
+	thisClass span.highcharts-title {
+		font-family: inherit !important;
+	}
+	
+	thisClass .chart-swatch {
+	width: 20px; height: 20px;
+	}
+	thisClass td.swatch {
+	width: 26px;
+	padding-right: 0px;
+	}
+	thisClass .table > thead > tr > th {
+	border-color: #000;
+	}
+	thisClass .table > tbody > tr.total > td {
+	font-weight: bold;
+	}
+	thisClass .table > tbody > tr.total > td {
+	text-align: right;
+	}
+	thisClass th.value {
+	    text-align: right;
+	}
+	thisClass td.value {
+	    text-align: right;
+	}
+
+	.bs-callout {
+		padding: 20px;
+		margin: 20px 0;
+		border: 1px solid #eee;
+		border-left-width: 5px;
+		border-radius: 3px;
+	}
+	.bs-callout-info {
+		border-left-color: #1b809e;
+	}
+	.bs-callout-warning {
+		border-left-color: orange;
+	}
+
+
+
+</style>
+
+<script>
+$(document).ready(function(){
+	$(".fd-main, .fd-totalrewards, .fd-totalwealth, .AC-Item").hide();
+	$(".fd-main").show();	
+});
+
+</script>
+
+<div class="d-none">
+	<asp:TextBox runat="server" ID="iCurrentPage" CssClass="iCurrentPage" Text="1" />
+</div>
+
+<div class="container kat-app-css">
+	<div class="ajaxContent">
+		<h2 class="title">Financial Dashboard</h2>
+		<div class="ajaxloader"></div>
+
+		<div class="row mt-4">
+<!--1st level-->
+			<div class="col-12 col-md-4 fd-main fd-totalrewards-summary">
+				<div class="card mt-0">
+					<div class="card-header text-center">
+						<h4 class="card-title compensationHeader"></h4>
+					</div>
+					<div class="card-body pl-1 pr-1">
+						<div class="text-center">
+							<div rbl-tid="chart-highcharts" rbl-chartdata="CompensationChart" rbl-chartoptions="Pie"></div>
+							<a class="btn btn-primary details-totalrewards" href="#">
+								<span class="compensationLink_">Details</span>
+							</a>
+						</div>
+						<div class="mt-3" rbl-tid="result-table" rbl-tablename="CompensationTable"></div>
+					</div>
+				</div>
+			</div>
+			<div class="col-12 col-md-4 fd-main fd-totalwealth-summary">
+				<div class="card mt-0">
+					<div class="card-header text-center">
+						<h4 class="card-title wealthHeader"></h4>
+					</div>
+					<div class="card-body pl-1 pr-1">
+						<div class="text-center">
+							<div rbl-tid="chart-highcharts" rbl-chartdata="WealthChart" rbl-chartoptions="Pie"></div>
+							<a class="btn btn-primary details-totalwealth" href="#"><span class="wealthLink_">Details</span></a>
+						</div>
+						<div class="mt-3" rbl-tid="result-table" rbl-tablename="WealthTable"></div>
+					</div>
+				</div>
+			</div>
+<!--2nd level-->
+			<div class="col-12 col-md-4 fd-totalrewards">
+				<div class="CashCompensation AC-Item">
+					<div class="card mt-0">
+						<div class="card-header text-center">
+							<h4 class="card-title compCashHeader"></h4>
+						</div>
+						<div class="card-body pl-0 pr-0">
+							<div class="col-12 pl-1 pr-1">
+								<div class="compCashDetail"></div>
+								<div rbl-tid="chart-highcharts" rbl-chartdata="CashCompensationChart" rbl-chartoptions="Bars"></div>
+								<div class="mt-3" rbl-tid="result-table" rbl-tablename="CashCompensationTable"></div>
+							</div>
+						</div>
+					</div>
+				</div>
+				<div class="HealthWelfare AC-Item" style="display: none;">
+					<div class="card mt-0">
+						<div class="card-header text-center">
+							<h4 class="card-title compHwHeader"></h4>
+						</div>
+						<div class="card-body pl-0 pr-0">
+							<div class="col-12 pl-1 pr-1">
+								<div class="compHwDetail"></div>
+								<div rbl-tid="chart-highcharts" rbl-chartdata="HWBenefitsChart" rbl-chartoptions="Bars"></div>
+								<div class="mt-3" rbl-tid="result-table" rbl-tablename="HWBenefitsTable"></div>
+							</div>
+						</div>
+					</div>
+				</div>
+				<div class="RetirementBenefit AC-Item" style="display: none;">
+					<div class="card mt-0">
+						<div class="card-header text-center">
+							<h4 class="card-title compRetHeader"></h4>
+						</div>
+						<div class="card-body pl-0 pr-0">
+							<div class="col-12 pl-1 pr-1">
+								<div class="compRetDetail"></div>
+								<div rbl-tid="chart-highcharts" rbl-chartdata="RetirementBenefitsChart" rbl-chartoptions="Bars"></div>
+								<div class="mt-3" rbl-tid="result-table" rbl-tablename="RetirementBenefitsTable"></div>
+							</div>
+						</div>
+					</div>
+				</div>
+				<div class="HRBenefits AC-Item" style="display:none;">
+					<div class="card mt-0">
+						<div class="card-header text-center">
+							<h4 class="card-title compHrHeader"></h4>
+						</div>
+						<div class="card-body pl-0 pr-0">
+							<div class="col-12 pl-1 pr-1">
+								<div class="compHrDetail"></div>
+								<div rbl-tid="chart-highcharts" rbl-chartdata="HRBenefitsChart" rbl-chartoptions="Bars"></div>
+								<div class="mt-3" rbl-tid="result-table" rbl-tablename="HRBenefitsTable"></div>
+							</div>
+						</div>
+					</div>
+				</div>
+			</div>
+			<div class="col-12 col-md-4 fd-totalwealth">
+				<div class="futureWealth AW-Item">
+					<div class="card mt-0">
+						<div class="card-header text-center">
+							<h4 class="card-title wealthFutureHeader"></h4>
+						</div>
+						<div class="card-body pl-0 pr-0">
+							<div class="col-12 pl-1 pr-1">
+								<div class="wealthFutureDetail"></div>
+								<div rbl-tid="chart-highcharts" rbl-chartdata="FutureWealthChart" rbl-chartoptions="Bars"></div>
+								<div class="col-12" rbl-tid="input-slider" data-inputname="iPretaxRothCont"></div>
+								<div class="mt-3" rbl-tid="result-table" rbl-tablename="FutureWealthTable"></div>
+							</div>
+							<div class="text-center">
+								<a href="javascript:$('li.nav-item a:contains(Retirement Planning)').trigger('click')">Explore Your Future</a>
+							</div>
+						</div>
+					</div>
+					<div class="ajaxloader" style="display: none;"></div>
+				</div>
+			</div>
+<!--3rd section-->
+			<div class="col-sm-4 fd-considerations mt-4">
+				<div class="panel_ panel-default_">
+					<div class="card-header text-center d-none">
+						<h4 class="card-title">Considerations/notices</h4>
+					</div>
+					<div class="card-body_">
+						<div rbl-source="Considerations">
+							<div rbl-tid="inline" class="bs-callout bs-callout-warning considerations category-{category}">{text}</div>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
+</div>
+
+<script >
+
+	if ( $("{thisView}").data("debugger" ) == true ) debugger;
+
+    (function() {
+        var view = $("{thisView}");
+        var application = view.KatApp();
+
+		function fdShowScreen( screen ){
+			$(".fd-main, .fd-totalrewards, .fd-totalrewards-summary, .fd-totalwealth-summary, .fd-totalwealth, .AC-Item").hide();
+			if ( screen === "fd-main") {
+				$(".fd-main").show();
+				$(".iCurrentPage").val(1);
+			}
+			else $(".iCurrentPage").val(0);
+			if ( screen === "fd-totalrewards") {
+				$(".fd-totalrewards-summary").show();
+				$(".fd-totalrewards").show();
+				$(".CashCompensation").show();
+			}
+			if ( screen === "fd-totalwealth") $(".fd-totalwealth, .fd-totalwealth-summary").show();
+			$("." + screen).fadeIn();
+			filterConsiderations();
+		}
+
+		function filterConsiderations() {
+			var filterCategory = "general";
+			//general wealth health retirement work-life 
+			if ($("div.futureWealth.AW-Item").is(":visible")) filterCategory = "wealth";
+			else if ($("div.CashCompensation.AC-Item").is(":visible")) filterCategory = "cash";
+			else if ($("div.HealthWelfare.AC-Item").is(":visible")) filterCategory = "health";
+			else if ($("div.RetirementBenefit.AC-Item").is(":visible")) filterCategory = "retirement";
+			else if ($("div.HRBenefits.AC-Item").is(":visible")) filterCategory = "work-life";
+			else filterCategory = "general";
+			$(".fd-considerations .considerations").hide();
+			$(".fd-considerations .considerations.category-" + filterCategory ).fadeIn();
+		}
+
+	view.on( "onCalculation.RBLe", function( event, calculationResults, calcOptions, application ) {
+		filterConsiderations();
+	});
+
+	view.on( "onConfigureUICalculation.RBLe", function( event, results, options, application ) {
+
+			$("[rbl-tablename=CompensationTable] a").click(function () {	
+				$(".fd-totalrewards .AC-Item").hide();
+				if ( $(".fd-totalwealth-summary").is(":visible") ) {
+					$("a.details-totalrewards").trigger("click");
+					//$(".fd-totalwealth-summary").hide();
+					//$(".fd-totalrewards").show();
+				};
+				$(".fd-considerations .considerations").hide();
+				$(".fd-totalrewards div." + $(this).data("tr-type") ).fadeIn(1000, filterConsiderations);
+				return false;
+			});
+			$("a.details-totalrewards_, a.details-totalwealth_").click (function() {
+				$(".ajaxloader").show();
+
+				if ( $(this).text() == "Back to Dashboard" ) {
+					fdShowScreen( "fd-main" );
+					$(this).text("Details");
+				}
+				else if ( $(this).hasClass("details-totalrewards") ) {
+					fdShowScreen('fd-totalrewards');
+					$(this).text("Back to Dashboard");
+				}
+				else {
+					fdShowScreen('fd-totalwealth')
+					$(this).text("Back to Dashboard"); 
+				};
+			});
+
+			$("a.details-totalrewards, a.details-totalwealth").click (function() {
+				if ( $(this).text() == "Back to Dashboard" ) {
+					fdShowScreen( "fd-main" );
+					$(this).text("Details");
+				}
+				else if ( $(this).hasClass("details-totalrewards") ) {
+					fdShowScreen('fd-totalrewards');
+					$(this).text("Back to Dashboard");
+				}
+				else {
+					fdShowScreen('fd-totalwealth')
+					$(this).text("Back to Dashboard"); 
+				};
+			});
+
+			
+			$(":input.rbl-nocalc, :input.skipRBLe", view).bind("change", function() {
+                showRecalc();
+            });
+            $("input.rbl-nocalc, :input.skipRBLe", view).prev(".slider-control").each(function(index) {
+                var slider = $(this)[0];
+                slider.noUiSlider.on('set', function() {
+                    showRecalc();
+                });
+            });
+
+			filterConsiderations();
+			$(".loader", view).hide();
+            $(".rblMarkup", view).show();
+        });
+    })();
+
+    //# sourceURL=lawsharkfin.js
+</script>

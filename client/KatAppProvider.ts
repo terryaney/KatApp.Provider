@@ -1,3 +1,7 @@
+// Approval
+// - Provider + Templates together (make sure to test LAW/Dr as well)
+// - After approval of Find Dr, delete Standard_TemplatesBS4
+
 // TODO
 // - How do I check/handle for errors when I try to load view
 // - Ability to have two CE's for one view might be needed for stochastic
@@ -2156,11 +2160,12 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
 
             if ( selector !== undefined ) {
                 value = value ?? "";
-                $(selector + "DisplayOnly").html(value);
+                $(selector + "DisplayOnly", this.application.element).html(value);
                 const input = $(selector, this.application.element).not("div");
+                const listControl = $(selector + "[data-itemtype]", this.application.element);
                 const isCheckboxList = input.hasClass("checkbox-list-horizontal");
                 const aspCheckbox = this.ui.getAspNetCheckboxInput(input);
-                const radioButton = input.find("input[value='" + value + "']");
+                const radioButton = listControl.find("input[value='" + value + "']");
                 const noUiSlider = this.ui.getNoUiSlider(id, this.application.element);
 
                 if ( noUiSlider !== undefined ) {
@@ -3319,12 +3324,18 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                 
                 const id = el.data("inputname");
                 const label = el.data("label");
+                const help = el.data("help");
                 const checked = el.data("checked");
                 const css = el.data("css");
                 const inputCss = el.data("inputcss");
 
                 if ( css !== undefined ) {
-                    $(".v" + id, el).addClass(css);
+                    $("[rbl-display='v" + id + "']", el).addClass(css);
+                }
+
+                if ( help !== undefined ) {
+                    $("div[rbl-value='h" + id + "']", el).html(help);
+                    $("a[rbl-display='vh" + id + "']", el).show();
                 }
 
                 if ( label !== undefined ) {
@@ -3386,8 +3397,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                     }
                 }
 
-                let input = $("input[name='" + id + "']", el);
-                const displayOnlyLabel = $("div." + id + "DisplayOnly", el);
+                let input = $("input", el);
 
                 if ( inputCss !== undefined ) {
                     input.addClass(inputCss);
@@ -3416,13 +3426,16 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                 }
                 
                 if ( value !== undefined ) {
-                    input.val(value);
+                    // Don't use 'input' variable here because some templates are 
+                    // 2 column templates and I want all the styling to apply (i.e. RTX:PensionEstimate)
+                    // to all inputs but default value should only apply to current value
+                    $("input[name='" + id + "']", el).val(value);
                 }
 
                 const validatorContainer = $(".validator-container", el);
 
                 if ( !displayOnly ) {
-                    displayOnlyLabel.remove();
+                    $(".form-control-display-only", el).remove();
 
                     const datePickerAvailable = typeof $.fn.datepicker === "function";
 
@@ -3543,7 +3556,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                 }
                 else {
                     input.css("display", "none");
-                    displayOnlyLabel.html(value);
+                    $("div." + id + "DisplayOnly", el).html(value);
                 }
 
                 el.attr("data-katapp-initialized", "true");
@@ -3844,6 +3857,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                 };
 
                 application.element
+                    .on("show.bs.popover.RBLe", function( e ) {  hideVisiblePopover(); })
                     .on("shown.bs.popover.RBLe", function( e ) { visiblePopover = e.target; })
                     .on("hide.bs.popover.RBLe", function() { visiblePopover = undefined; })
                     .on("keyup.RBLe", function( e ) {

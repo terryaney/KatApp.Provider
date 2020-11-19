@@ -22,6 +22,7 @@
         <div class="d-none">
             <input name="{id}:iStep" type="text" id="katapp_{id}_iStep" class="iStep" value="1"/>
             <input name="{id}:iDirection" type="text" id="katapp_{id}_iDirection" class="iDirection" value="0"/>
+            <input name="{id}:iPlan" type="text" id="katapp_{id}_iPlan" class="iPlan" value="1"/>
         </div>
         <h2 class="title">Retire Online</h2>
         <div class="ajaxContent">
@@ -48,7 +49,17 @@
                 </div>
             </div>
 
-            <div class="card" rbl-display="vStep2" style="display: none;">
+            <div class="card mt-0" rbl-display="vStep2">
+                <div class="card-header mt-1"><h4 class="card-title">Landing Page</h4></div>
+                <div class="card-body">
+                    <div class="row">
+                        <a class="btn btn-primary pl-2 btnNavigation" data-direction="-1">Change Retirement Information</a>
+                        <a class="btn btn-primary btnNavigation" data-direction="1" data-plan-id="1" id="{id}_StartPlan">Make Election</a>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card" rbl-display="vStep3" style="display: none;">
                 <div class="alert alert-warning">KAT: Didn't include iMartialStatus, iBenIndi on this page, change electionIntro if you need to when on this step</div>
                 <div class="card-header mt-1"><h4 class="card-title">Form of Payment Election</h4></div>
                 <div class="card-body">
@@ -173,7 +184,7 @@
                 </div>
             </div>
 
-            <div class="card" rbl-display="vStep3" style="display: none;">
+            <div class="card" rbl-display="vStep4" style="display: none;">
                 <div class="alert alert-warning">
                     <p>KAT Notes:</p>
                     <ul>
@@ -236,9 +247,9 @@
 
             <div class="row mt-2">
                 <div class="col-12">
-                    <a class="btn btnPrevious" id="{id}_Previous" style="display: none;"><span class="glyphicons glyphicons-chevron-left"></span><span class="d-none d-md-inline-block">Previous</span></a>
-                    <a class="btn btn-primary btnContinue" id="{id}_Continue"><span class="d-none d-md-inline-block">Continue</span><span class="glyphicons glyphicons-chevron-right"></span></a>
-                    <a class="btn btn-primary btnSubmit" data-confirm-selector="#{id}_electionConfirm" data-submit-key=".btnContinue" id="{id}_Submit">Submit</a>
+                    <a class="btn btnNavigation" rbl-display="btnPrevious" data-direction="-1" id="{id}_Previous" style="display: none;"><span class="glyphicons glyphicons-chevron-left"></span><span class="d-none d-md-inline-block">Previous</span></a>
+                    <a class="btn btn-primary btnNavigation" rbl-display="btnContinue" data-direction="1" id="{id}_Continue"><span class="d-none d-md-inline-block">Continue</span><span class="glyphicons glyphicons-chevron-right"></span></a>
+                    <a class="btn btn-primary btnNavigation" rbl-display="btnSubmit" data-direction="1" data-confirm-selector="#{id}_electionConfirm" data-submit-key=".btnContinue" id="{id}_Submit">Submit</a>
                     <div class="d-none" id="{id}_electionConfirm" rbl-value="electionConfirm"></div>
                 </div>
                 <div class="col-12 pt-2">
@@ -257,20 +268,89 @@
 			debugger;
 		}
 
+        function setElectionData ( electionData ) { sessionStorage.setItem('RTX:ElectionData', JSON.stringify(electionData)); }
+        function getElectionData () { 
+            var dataJson = sessionStorage.getItem('RTX:ElectionData');
+            var data = dataJson != undefined ? JSON.parse(dataJson) : undefined;
+
+            return data || {
+                Assumptions: { },
+                Plans: [] 
+            }; 
+        }
+
+        function bindNavigation() {
+            $("a[data-direction]", view)
+                .off("click.rtx")
+                .on("click.rtx", function() {
+                    var direction = $(this).data("direction");
+                    var planId = $(this).data("plan-id");
+
+                    if ( planId != undefined ) {
+                        alert(planId);
+                        $(".iPlan", view).val(planId);
+                    }
+                    $(".iDirection", view).val(direction);
+                    view.KatApp().calculate();
+                });
+        }
+
         view.on( "onCalculation.RBLe", function( event, results, options, application ) {
+            var direction = application.calculationInputs.iDirection;
+            var step = $(".iStep", view).val();
+
+            if ( direction != "0" ) {
+                bindNavigation();
+            }
+            
+            if ( direction == "1" && step == "2" ) {
+                // They just finished retirement information...save to session
+                var electionData = getElectionData();
+                $("div[rbl-display='vStep1'] div[data-inputname] input", application.element).each(function () {
+                    var input = $(this);
+                    var value = application.ui.getInputValue(input);
+                    var name = application.ui.getInputName(input);
+
+                    if (value !== undefined) {
+                        electionData.Assumptions[ name ] = value;
+                    }
+                });
+                electionData.Assumptions[ "iDirection" ] = "1";
+
+                setElectionData(electionData);
+            }
+
+            if ( step == "4" ) {
+                // Valid submission happened, save table to electionData
+            }
         });
+
         view.on("onConfigureUICalculation.RBLe", function(event, results, options, application) {
             $(".rblMarkup", view).show();
+
+            let electionData = getElectionData();
+
+            if ( electionData.Assumptions != undefined ) {
+                application.setInputs(electionData.Assumptions);
+            }
         });
-		view.on( "onInitialized.RBLe", function( event, application ) {
-            $(".btnContinue", view).on("click", function() {
-                $(".iDirection", view).val(1);
-                application.calculate();
-            });
-            $(".btnPrevious", view).on("click", function() {
-                $(".iDirection", view).val(-1);
-                application.calculate();
-            });
+
+        view.on( "onInitialized.RBLe", function( event, application ) {
+            bindNavigation();
+
+            /*
+            // Save data to sessionStorage
+            sessionStorage.setItem('key', 'value');
+
+            // Get saved data from sessionStorage
+            let data = sessionStorage.getItem('key');
+
+            // Remove saved data from sessionStorage
+            sessionStorage.removeItem('key');
+
+            // Remove all saved data from sessionStorage
+            sessionStorage.clear();
+            */
 		});
 	})();
 	//# sourceURL=RetireOnline.kaml
@@ -278,77 +358,77 @@
 
 <rbl-template tid="lookup-tables">
 	<DataTable id="TableState">
-        <TableItem key="AA" name="Military APO (AA)"></div>
-        <TableItem key="AB" name="Alberta"></div>
-        <TableItem key="AE" name="Military APO (AE)"></div>
-        <TableItem key="AP" name="Military APO (AP)"></div>
-        <TableItem key="TT" name="Military APO (TT)"></div>
-        <TableItem key="AL" name="Alabama"></div>
-        <TableItem key="AK" name="Alaska"></div>
-        <TableItem key="AZ" name="Arizona"></div>
-        <TableItem key="AR" name="Arkansas"></div>
-        <TableItem key="CA" name="California"></div>
-        <TableItem key="CO" name="Colorado"></div>
-        <TableItem key="CT" name="Connecticut"></div>
-        <TableItem key="DE" name="Delaware"></div>
-        <TableItem key="DC" name="District of Columbia"></div>
-        <TableItem key="FL" name="Florida"></div>
-        <TableItem key="GA" name="Georgia"></div>
-        <TableItem key="HI" name="Hawaii"></div>
-        <TableItem key="ID" name="Idaho"></div>
-        <TableItem key="IL" name="Illinois"></div>
-        <TableItem key="IN" name="Indiana"></div>
-        <TableItem key="IA" name="Iowa"></div>
-        <TableItem key="KS" name="Kansas"></div>
-        <TableItem key="KY" name="Kentucky"></div>
-        <TableItem key="LA" name="Louisiana"></div>
-        <TableItem key="ME" name="Maine"></div>
-        <TableItem key="MD" name="Maryland"></div>
-        <TableItem key="MA" name="Massachusetts"></div>
-        <TableItem key="MI" name="Michigan"></div>
-        <TableItem key="MN" name="Minnesota"></div>
-        <TableItem key="MS" name="Mississippi"></div>
-        <TableItem key="MO" name="Missouri"></div>
-        <TableItem key="MT" name="Montana"></div>
-        <TableItem key="NE" name="Nebraska"></div>
-        <TableItem key="NV" name="Nevada"></div>
-        <TableItem key="NH" name="New Hampshire"></div>
-        <TableItem key="NJ" name="New Jersey"></div>
-        <TableItem key="NM" name="New Mexico"></div>
-        <TableItem key="NY" name="New York"></div>
-        <TableItem key="NC" name="North Carolina"></div>
-        <TableItem key="ND" name="North Dakota"></div>
-        <TableItem key="OH" name="Ohio"></div>
-        <TableItem key="OK" name="Oklahoma"></div>
-        <TableItem key="OR" name="Oregon"></div>
-        <TableItem key="PA" name="Pennsylvania"></div>
-        <TableItem key="RI" name="Rhode Island"></div>
-        <TableItem key="SC" name="South Carolina"></div>
-        <TableItem key="SD" name="South Dakota"></div>
-        <TableItem key="TN" name="Tennessee"></div>
-        <TableItem key="TX" name="Texas"></div>
-        <TableItem key="UT" name="Utah"></div>
-        <TableItem key="VT" name="Vermont"></div>
-        <TableItem key="VA" name="Virginia"></div>
-        <TableItem key="WA" name="Washington"></div>
-        <TableItem key="WV" name="West Virginia"></div>
-        <TableItem key="WI" name="Wisconsin"></div>
-        <TableItem key="WY" name="Wyoming"></div>
-        <TableItem key="AS" name="American Samoa"></div>
-        <TableItem key="BC" name="British Columbia"></div>
-        <TableItem key="FM" name="Federated States Of Micronesia"></div>
-        <TableItem key="GU" name="Guam"></div>
-        <TableItem key="MH" name="Marshall Islands"></div>
-        <TableItem key="MP" name="Northern Mariana Islands"></div>
-        <TableItem key="ON" name="Ontario, CA"></div>
-        <TableItem key="PQ" name="Quebec (PQ)"></div>
-        <TableItem key="PR" name="Puerto Rico"></div>
-        <TableItem key="PW" name="Palau"></div>
-        <TableItem key="QB" name="Quebec (QB)"></div>
-        <TableItem key="QC" name="Quebec"></div>
-        <TableItem key="QU" name="Quebec (QU)"></div>
-        <TableItem key="SG" name="Singapore"></div>
-        <TableItem key="VI" name="Virgin Islands"></div>
-        <TableItem key="ZZ" name="International"></div>
+        <TableItem key="AA" name="Military APO (AA)"/>
+        <TableItem key="AB" name="Alberta"/>
+        <TableItem key="AE" name="Military APO (AE)"/>
+        <TableItem key="AP" name="Military APO (AP)"/>
+        <TableItem key="TT" name="Military APO (TT)"/>
+        <TableItem key="AL" name="Alabama"/>
+        <TableItem key="AK" name="Alaska"/>
+        <TableItem key="AZ" name="Arizona"/>
+        <TableItem key="AR" name="Arkansas"/>
+        <TableItem key="CA" name="California"/>
+        <TableItem key="CO" name="Colorado"/>
+        <TableItem key="CT" name="Connecticut"/>
+        <TableItem key="DE" name="Delaware"/>
+        <TableItem key="DC" name="District of Columbia"/>
+        <TableItem key="FL" name="Florida"/>
+        <TableItem key="GA" name="Georgia"/>
+        <TableItem key="HI" name="Hawaii"/>
+        <TableItem key="ID" name="Idaho"/>
+        <TableItem key="IL" name="Illinois"/>
+        <TableItem key="IN" name="Indiana"/>
+        <TableItem key="IA" name="Iowa"/>
+        <TableItem key="KS" name="Kansas"/>
+        <TableItem key="KY" name="Kentucky"/>
+        <TableItem key="LA" name="Louisiana"/>
+        <TableItem key="ME" name="Maine"/>
+        <TableItem key="MD" name="Maryland"/>
+        <TableItem key="MA" name="Massachusetts"/>
+        <TableItem key="MI" name="Michigan"/>
+        <TableItem key="MN" name="Minnesota"/>
+        <TableItem key="MS" name="Mississippi"/>
+        <TableItem key="MO" name="Missouri"/>
+        <TableItem key="MT" name="Montana"/>
+        <TableItem key="NE" name="Nebraska"/>
+        <TableItem key="NV" name="Nevada"/>
+        <TableItem key="NH" name="New Hampshire"/>
+        <TableItem key="NJ" name="New Jersey"/>
+        <TableItem key="NM" name="New Mexico"/>
+        <TableItem key="NY" name="New York"/>
+        <TableItem key="NC" name="North Carolina"/>
+        <TableItem key="ND" name="North Dakota"/>
+        <TableItem key="OH" name="Ohio"/>
+        <TableItem key="OK" name="Oklahoma"/>
+        <TableItem key="OR" name="Oregon"/>
+        <TableItem key="PA" name="Pennsylvania"/>
+        <TableItem key="RI" name="Rhode Island"/>
+        <TableItem key="SC" name="South Carolina"/>
+        <TableItem key="SD" name="South Dakota"/>
+        <TableItem key="TN" name="Tennessee"/>
+        <TableItem key="TX" name="Texas"/>
+        <TableItem key="UT" name="Utah"/>
+        <TableItem key="VT" name="Vermont"/>
+        <TableItem key="VA" name="Virginia"/>
+        <TableItem key="WA" name="Washington"/>
+        <TableItem key="WV" name="West Virginia"/>
+        <TableItem key="WI" name="Wisconsin"/>
+        <TableItem key="WY" name="Wyoming"/>
+        <TableItem key="AS" name="American Samoa"/>
+        <TableItem key="BC" name="British Columbia"/>
+        <TableItem key="FM" name="Federated States Of Micronesia"/>
+        <TableItem key="GU" name="Guam"/>
+        <TableItem key="MH" name="Marshall Islands"/>
+        <TableItem key="MP" name="Northern Mariana Islands"/>
+        <TableItem key="ON" name="Ontario, CA"/>
+        <TableItem key="PQ" name="Quebec (PQ)"/>
+        <TableItem key="PR" name="Puerto Rico"/>
+        <TableItem key="PW" name="Palau"/>
+        <TableItem key="QB" name="Quebec (QB)"/>
+        <TableItem key="QC" name="Quebec"/>
+        <TableItem key="QU" name="Quebec (QU)"/>
+        <TableItem key="SG" name="Singapore"/>
+        <TableItem key="VI" name="Virgin Islands"/>
+        <TableItem key="ZZ" name="International"/>
     </DataTable>
 </rbl-template>

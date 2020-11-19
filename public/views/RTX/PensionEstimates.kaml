@@ -191,7 +191,7 @@
                 <div class="both-scenarios-v" style="display: none;"><div class="d-sm-block d-md-none scenario-header-mobile m-1">Scenario 1</div></div>
                 <div class="validator-container">
                     <input name="{inputname}" id_="katapp_{id}_{inputname}" type="text" class="form-control {inputname}" />
-                    <div class="{inputname}DisplayOnly"></div>
+                    <div class="{inputname}DisplayOnly form-control-display-only"></div>
                     <span class="error-msg" data-toggle="tooltip" data-placement="top auto"></span>
                 </div>
             </div>
@@ -199,7 +199,7 @@
                 <div class="d-sm-block d-md-none m-1 scenario-header-mobile">Scenario 2</div>
                 <div class="validator-container">
                     <input name="{inputname2}" id_="katapp_{id}_{inputname2}" type="text" class="form-control {inputname2}" />
-                    <div class="{inputname2}DisplayOnly"></div>
+                    <div class="{inputname2}DisplayOnly form-control-display-only"></div>
                     <span class="error-msg" data-toggle="tooltip" data-placement="top auto"></span>
                 </div>
             </div>

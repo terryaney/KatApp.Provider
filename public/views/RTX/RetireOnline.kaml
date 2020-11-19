@@ -50,17 +50,102 @@
             </div>
 
             <div class="card mt-0" rbl-display="vStep2">
-                <div class="card-header mt-1"><h4 class="card-title">Landing Page</h4></div>
+                <div class="card-header mt-1"><h4 class="card-title">Elections</h4></div>
+                <div class="card-body" rbl-source="plans">
+                    <div class="row" rbl-tid="inline">
+                        <div class="col-6">
+                            <p><b>Plan: {text}</b></p>
+                            <p>General status of election for {text}</p>
+                        </div>
+                        <div class="col-6">
+                            <a class="btn btn-primary btnNavigation" data-direction="1" data-plan-id="{@id}" id="{id}_StartPlan">Make Election</a>
+                        </div>
+                        
+                        <hr class="w-100"/>
+
+                        <div class="col12" rbl-value="electionSummary"></div>
+
+                        <div class="col12" rbl-display="upload-controls" style="display:none;">
+                            <div class="row">
+                                <div class="col-12">
+                                    <div rbl-tid="result-table" rbl-source="required-document-progress" data-css="table table-bordered table-condensed"></div>
+                                    <div class="alert alert-info" rbl-value="electionStatusNote" rbl-display="electionStatusNote"></div>
+                                </div>
+                            </div>
+                            <div class="card-header mt-1"><h4 class="card-title" rbl-value="fileUploadHeader">Select a file to upload</h4></div>
+                            <div class="card-body">
+                                <div class="row">
+                                    <div rbl-tid="input-dropdown" class="col-md-3" data-inputname="iUploadType" data-liveSearch="false" data-label="Document Type"></div>
+        
+                                    <div class="form-group col-md-9" rbl-display="viUpload">
+                                        <label for="" class="col-form-label liUpload">File Name</label>
+                                        <div class="validator-container">
+                                            <div class="input-group">
+                                                <input name="{id}:iUpload" id="{id}_iUpload" type="text" class="form-control iUpload">
+                                                <span class="input-group-append">
+                                                    <a class="btn btn-primary btnUpload">Browse</a>
+                                                </span>
+                                            </div>
+                                            <span class="error-msg" data-toggle="tooltip" data-placement="top"></span>
+                                        </div>
+                                    </div>
+                            
+                                    <div class="col-12">
+                                        <div class="alert alert-warning" rbl-value="fileUploadNote"><b>Note:</b> Uploads are limited to 30Mb</div>
+                                    </div>
+                                    <div class="col-12">
+                                        <div class="alert alert-success alert-dismissable fileUploadSuccess d-none">
+                                            <button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                                            <div class="pUploadConfirm"><b>Upload successfully received.</b></div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div rbl-display="requiredDocumentation">
+                                <div class="card-header mt-1"><h4 class="card-title" rbl-value="requiredDocumentationHeader">Required Documentation Details</h4></div>
+                                <div class="card-body">
+                                    <div class="row">
+                                        <div class="col-12">
+                                            <ul rbl-value="requiredDocuments"></ul>
+                                        </div>
+                                    </div>
+                                </div>    
+                            </div>        
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-12 mt-2"><a class="btn btn-primary-outline pl-2 btnNavigation" data-direction="-1"><span class="glyphicons glyphicons-chevron-left"></span>Back to Retirement Information</a></div>    
+
+                <div class="card-header mt-1"><h4 class="card-title">KAT TO DO</h4></div>
                 <div class="card-body">
-                    <div class="row">
-                        <a class="btn btn-primary pl-2 btnNavigation" data-direction="-1">Change Retirement Information</a>
-                        <a class="btn btn-primary btnNavigation" data-direction="1" data-plan-id="1" id="{id}_StartPlan">Make Election</a>
+                    <div class="alert alert-warning">
+                        <p>Retirement Information</p>
+                        <ul>
+                            <li>rbleSkip on dates</li>
+                        </ul>
+                        <p>Landing Confirm:</p>
+                        <ul>
+                            <li>Didn't include confirmIntro (use electionIntro)</li>
+                            <li>Code up table required-document-progress to generate Document/Delivery/Status/Action table</li>
+                            <li>upload-controls for visibility, in ESS logic is based on whether they have doc to upload (required-document-progress table is not blank) and date-upload-end isn't past</li>
+                            <li>iUploadType - need to put that in ejs-listcontrols to build the drop down that controls documents available in upload control</li>
+                        </ul>
+                        <p>Plan Election</p>
+                        <ul>
+                            <li>rbleSkip on any controls that don't show/hide sections</li>
+                            <li>After save (or before start) need to assign/clear all inputs, b/c I went thru 2 elections and previous values were selected</li>
+                            <li>Does iElection change based on plan?  Think yes.  You probably need to include entire list of all possible when you build iElection originally, then just return id/visible (text too if you want to change text) when going to plan elections to show appropriate ones</li>
+                        </ul>
+                        <p>Plan Election Confirm:</p>
+                        <ul>
+                            <li>Use electionConfirm for a 'simple' confirm after plan election</li>
+                        </ul>
                     </div>
                 </div>
             </div>
 
             <div class="card" rbl-display="vStep3" style="display: none;">
-                <div class="alert alert-warning">KAT: Didn't include iMartialStatus, iBenIndi on this page, change electionIntro if you need to when on this step</div>
                 <div class="card-header mt-1"><h4 class="card-title">Form of Payment Election</h4></div>
                 <div class="card-body">
                     <div class="row">
@@ -185,62 +270,9 @@
             </div>
 
             <div class="card" rbl-display="vStep4" style="display: none;">
-                <div class="alert alert-warning">
-                    <p>KAT Notes:</p>
-                    <ul>
-                        <li>Didn't include confirmIntro (use electionIntro)</li>
-                        <li>Code up table required-document-progress to generate Document/Delivery/Status/Action table</li>
-                        <li>upload-controls for visibility, in ESS logic is based on whether they have doc to upload (required-document-progress table is not blank) and date-upload-end isn't past</li>
-                        <li>iUploadType - need to put that in ejs-listcontrols to build the drop down that controls documents available in upload control</li>
-                    </ul>
-                </div>
-
-                <div rbl-display="upload-controls">
-                    <div class="row">
-                        <div class="col-12">
-                            <div rbl-tid="result-table" rbl-source="required-document-progress" data-css="table table-bordered table-condensed"></div>
-                            <div class="alert alert-info" rbl-value="electionStatusNote" rbl-display="electionStatusNote"></div>
-                        </div>
-                    </div>
-                    <div class="card-header mt-1"><h4 class="card-title" rbl-value="fileUploadHeader">Select a file to upload</h4></div>
-                    <div class="card-body">
-                        <div class="row">
-                            <div rbl-tid="input-dropdown" class="col-md-3" data-inputname="iUploadType" data-liveSearch="false" data-label="Document Type"></div>
-
-                            <div class="form-group col-md-9" rbl-display="viUpload">
-                                <label for="" class="col-form-label liUpload">File Name</label>
-                                <div class="validator-container">
-                                    <div class="input-group">
-                                        <input name="{id}:iUpload" id="{id}_iUpload" type="text" class="form-control iUpload">
-                                        <span class="input-group-append">
-                                            <a class="btn btn-primary btnUpload">Browse</a>
-                                        </span>
-                                    </div>
-                                    <span class="error-msg" data-toggle="tooltip" data-placement="top"></span>
-                                </div>
-                            </div>
-                    
-                            <div class="col-12">
-                                <div class="alert alert-warning" rbl-value="fileUploadNote"><b>Note:</b> Uploads are limited to 30Mb</div>
-                            </div>
-                            <div class="col-12">
-                                <div class="alert alert-success alert-dismissable fileUploadSuccess d-none">
-                                    <button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button>
-                                    <div class="pUploadConfirm"><b>Upload successfully received.</b></div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    <div rbl-display="requiredDocumentation">
-                        <div class="card-header mt-1"><h4 class="card-title" rbl-value="requiredDocumentationHeader">Required Documentation Details</h4></div>
-                        <div class="card-body">
-                            <div class="row">
-                                <div class="col-12">
-                                    <ul rbl-value="requiredDocuments"></ul>
-                                </div>
-                            </div>
-                        </div>    
-                    </div>        
+                <div class="card-header mt-1"><h4 class="card-title">Election Confirmation</h4></div>
+                <div class="card-body">
+                    <div rbl-value="electionConfirm"></div>
                 </div>
             </div>
             <div class="ajaxloader"></div>
@@ -249,7 +281,7 @@
                 <div class="col-12">
                     <a class="btn btnNavigation" rbl-display="btnPrevious" data-direction="-1" id="{id}_Previous" style="display: none;"><span class="glyphicons glyphicons-chevron-left"></span><span class="d-none d-md-inline-block">Previous</span></a>
                     <a class="btn btn-primary btnNavigation" rbl-display="btnContinue" data-direction="1" id="{id}_Continue"><span class="d-none d-md-inline-block">Continue</span><span class="glyphicons glyphicons-chevron-right"></span></a>
-                    <a class="btn btn-primary btnNavigation" rbl-display="btnSubmit" data-direction="1" data-confirm-selector="#{id}_electionConfirm" data-submit-key=".btnContinue" id="{id}_Submit">Submit</a>
+                    <a class="btn btn-primary btnNavigation" rbl-display="btnSubmit" data-direction="1" data-confirm-selector="#{id}_electionConfirm" data-submit-key="[rbl-display='btnContinue']" id="{id}_Submit">Submit</a>
                     <div class="d-none" id="{id}_electionConfirm" rbl-value="electionConfirm"></div>
                 </div>
                 <div class="col-12 pt-2">
@@ -280,14 +312,13 @@
         }
 
         function bindNavigation() {
-            $("a[data-direction]", view)
+            $("a[data-direction]", view).not("[rbl-display='btnSubmit']")
                 .off("click.rtx")
                 .on("click.rtx", function() {
                     var direction = $(this).data("direction");
                     var planId = $(this).data("plan-id");
 
                     if ( planId != undefined ) {
-                        alert(planId);
                         $(".iPlan", view).val(planId);
                     }
                     $(".iDirection", view).val(direction);
@@ -295,15 +326,7 @@
                 });
         }
 
-        view.on( "onCalculation.RBLe", function( event, results, options, application ) {
-            var direction = application.calculationInputs.iDirection;
-            var step = $(".iStep", view).val();
-
-            if ( direction != "0" ) {
-                bindNavigation();
-            }
-            
-            if ( direction == "1" && step == "2" ) {
+        function saveRetirementInformation(application) {
                 // They just finished retirement information...save to session
                 var electionData = getElectionData();
                 $("div[rbl-display='vStep1'] div[data-inputname] input", application.element).each(function () {
@@ -318,10 +341,64 @@
                 electionData.Assumptions[ "iDirection" ] = "1";
 
                 setElectionData(electionData);
+        }
+
+        view.on( "onCalculationOptions.RBLe", function( event, submitOptions, application ) {
+            var tables = submitOptions.InputTables;
+            if ( tables == null ) { 
+                submitOptions.InputTables = tables = [];
+            }
+
+            var electionData = getElectionData();
+
+            var electionTable = {
+                Name: "election",
+                Rows: []
+            };
+
+            electionData.Plans.forEach(function (p) {
+                var row = { index: p.index };
+                Object
+                    .keys(p)
+                    .filter( function(r) { return r != "index"; })
+                    .forEach( function(r) {
+                        row[ r ] = p[ r ];
+                    } );
+
+                electionTable.Rows.push( row );
+            });
+
+            tables.push(electionTable);
+        });
+        
+        view.on( "onCalculation.RBLe", function( event, results, options, application ) {
+            var direction = application.calculationInputs.iDirection;
+            var step = $(".iStep", view).val();
+
+            if ( direction != "0" ) {
+                bindNavigation();
+            }
+            
+            if ( direction == "1" && step == "2" ) {
+                saveRetirementInformation(application);
             }
 
             if ( step == "4" ) {
                 // Valid submission happened, save table to electionData
+                var updates = application.getResultTable("data-updates");
+                var index = application.getResultValueByColumn("data-updates", "field", "index", "value");
+                var electionData = getElectionData();
+                var planArrInd = electionData.Plans.findIndex(r => r.index == index );
+                var plan = false && planArrInd != -1 ? electionData.Plans[ planArrInd ] : {};
+
+                updates.forEach(function (u) {
+                    plan[ u.field ] = u.value;
+                });
+                
+                if ( planArrInd > -1 ) electionData.Plans[ planArrInd ] = plan;
+                else electionData.Plans.push( plan );
+
+                setElectionData(electionData);
             }
         });
 

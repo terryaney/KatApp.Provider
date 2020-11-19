@@ -1693,7 +1693,8 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
             }
 
             const inputs: CalculationInputs = application.calculationInputs = KatApp.extend( this.ui.getInputs( currentOptions ), currentOptions.defaultInputs, currentOptions.manualInputs );
-			let preCalcs = currentOptions.preCalcs;
+
+            let preCalcs = currentOptions.preCalcs;
 
 			if (inputs.iInputTrigger !== undefined) {
 				const rblOnChange = $("." + inputs.iInputTrigger).data("rbl-on-change") as string ?? "";
@@ -1726,6 +1727,8 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                     Environment: "PITT.PROD"
                 }
             };
+
+            this.ui.triggerEvent( "onCalculationOptions", calculationOptions, this );
 
             const that: RBLeUtilities = this;
 
@@ -3962,7 +3965,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
     if ( $.fn.KatApp.templatesUsedByAllApps == undefined ) {
         $('<rbl-katapps>\
             <style>\
-                rbl-katapps, rbl-templates, rbl-template { display: none; }\
+                rbl-katapps, rbl-templates, rbl-template, [rbl-tid="inline"] { display: none; }\
             </style>\
         </rbl-katapps>').appendTo("body");
         

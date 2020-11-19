@@ -70,6 +70,7 @@ interface KatAppOptions
     // Can use onResultsProcessing if you want to do something before generic result processing happens (i.e. clear/destroy table/chart so only displays if results in current calculation)
     onResultsProcessing?: (this: HTMLElement, calculationResults: JSON, calcOptions: KatAppOptions, application: KatAppPlugInInterface )=> void;
     onConfigureUICalculation?: (this: HTMLElement, calculationResults: JSON, calcOptions: KatAppOptions, application: KatAppPlugInInterface )=> void;
+    onCalculationOptions?: (this: HTMLElement, submitOptions: SubmitCalculationOptions, application: KatAppPlugInInterface )=> void;
     onCalculation?: (this: HTMLElement, calculationResults: JSON, calcOptions: KatAppOptions, application: KatAppPlugInInterface )=> void;
     onCalculationErrors?: (this: HTMLElement, key: string, message: string, exception: RBLeServiceResults | undefined, calcOptions: KatAppOptions, application: KatAppPlugInInterface)=> void;
     onCalculateEnd?: (this: HTMLElement, appilcation: KatAppPlugInInterface )=> void;

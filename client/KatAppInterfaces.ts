@@ -21,6 +21,7 @@ interface KatAppOptions
 
     sessionUrl?: string;
     functionUrl?: string;
+    rbleUpdatesUrl?: string;
 
     registerDataWithService?: boolean;
     shareDataWithOtherApplications?: boolean;
@@ -29,6 +30,7 @@ interface KatAppOptions
     registeredToken?: string; // Used if registerDataWithService = true
 
     currentPage?: string;
+    currentUICulture?: string;
     calcEngine?: string;
     inputTab?: string;
     resultTabs?: string[];

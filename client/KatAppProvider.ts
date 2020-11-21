@@ -1619,7 +1619,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                             TestCE: currentOptions.debug?.useTestCalcEngine ?? false,
                             CurrentPage: currentOptions.currentPage ?? "Unknown",
                             RequestIP: "1.1.1.1",
-                            CurrentUICulture: "en-US",
+                            CurrentUICulture: currentOptions.currentUICulture ?? "en-US",
                             Environment: "PITT.PROD"                                
                         }
                     };

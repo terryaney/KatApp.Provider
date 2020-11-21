@@ -122,13 +122,13 @@
                     <label for="UseTestCalcEngine">Use test CalcEngine</label>
                 </span>
             </div>
-            <div class="validator-container checkbox-container vUseLocalFiles">
+            <div class="validator-container checkbox-container vUseLocalFiles d-none">
                 <span class="checkbox abc-checkbox UseLocalFiles lUseLocalFiles">
                     <input id="UseLocalFiles" type="checkbox" name="UseLocalFiles">
                     <label for="UseLocalFiles">Use local View/Template files</label>
                 </span>
             </div>
-            <div class="validator-container checkbox-container vUseLocalProvider">
+            <div class="validator-container checkbox-container vUseLocalProvider d-none">
                 <span class="checkbox abc-checkbox UseLocalProvider lUseLocalProvider">
                     <input id="UseLocalProvider" type="checkbox" name="UseLocalProvider">
                     <label for="UseLocalProvider">Use local KatAppProvider file</label>
@@ -259,8 +259,8 @@
                     useTestView: $("#UseTestView", view).prop("checked"),
                     useTestPlugin: $("#UseTestPlugin", view).prop("checked"),
                     useTestCalcEngine: $("#UseTestCalcEngine", view).prop("checked"),
-                    debugResourcesDomain: $("#UseLocalFiles", view).prop("checked") ? "http://localhost:8887/" /* start at root of site */ : undefined,
-                    debugProviderDomain: $("#UseLocalProvider", view).prop("checked") ? "http://localhost:8887/" /* start at root of site */ : undefined,                    
+                    debugResourcesDomain: false && $("#UseLocalFiles", view).prop("checked") ? "http://localhost:8887/" /* start at root of site */ : undefined,
+                    debugProviderDomain: false && $("#UseLocalProvider", view).prop("checked") ? "http://localhost:8887/" /* start at root of site */ : undefined,                    
                 };
 
                 // Reset default options with options from UI

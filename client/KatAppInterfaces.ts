@@ -30,6 +30,8 @@ interface KatAppOptions
     registeredToken?: string; // Used if registerDataWithService = true
 
     currentPage?: string;
+    requestIP?: string;
+    environment?: string;
     currentUICulture?: string;
     calcEngine?: string;
     inputTab?: string;

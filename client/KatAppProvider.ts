@@ -274,10 +274,10 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                     that.trace(viewId + " requested from CMS.", TraceVerbosity.Detailed);
                     
                     let debugResourcesDomain = that.options.debug?.debugResourcesDomain;
+
                     if ( debugResourcesDomain !== undefined ) {
                         debugResourcesDomain += "views/";
                     }
-                    that.trace("Downloading " + viewId + " from " + debugResourcesDomain ?? functionUrl, TraceVerbosity.Diagnostic );
 
                     KatApp.getResources( that, viewId, useTestView, false, debugResourcesDomain,
                         ( errorMessage, results ) => {                                
@@ -1618,9 +1618,9 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                             ResultTabs: currentOptions.resultTabs as string[],
                             TestCE: currentOptions.debug?.useTestCalcEngine ?? false,
                             CurrentPage: currentOptions.currentPage ?? "Unknown",
-                            RequestIP: "1.1.1.1",
+                            RequestIP: currentOptions.requestIP ?? "1.1.1.1",
                             CurrentUICulture: currentOptions.currentUICulture ?? "en-US",
-                            Environment: "PITT.PROD"                                
+                            Environment: currentOptions.environment ?? "PITT.PROD"                                
                         }
                     };
                 

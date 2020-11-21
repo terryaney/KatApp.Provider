@@ -244,35 +244,89 @@
       padding: 2px;
   }
   
-      /* This should be in awesome checkbox if included, but in case not included, providing here */
+      /* Checkbox and Radio styling */
       .katapp-css .abc-checkbox label,
-      .katapp-css .checkbox label {
-          display: inline;
-      }
-      .katapp-css table.bs-listcontrol.abc-radio label,
-      .katapp-css table.bs-listcontrol.abc-checkbox label,
-      .katapp-css table.bs-listcontrol.radio label,
-      .katapp-css table.bs-listcontrol.checkbox label {
-          padding-left: 5px;
-      }
-  
+      .katapp-css .checkbox label,
       .katapp-css .radio label,
       .katapp-css .abc-radio label {
-        display: inline;
+          /*  BS has positioning CSS on input to help when label wraps, but wasn't exactly what we wanted, 
+              so this accomplished keeping label and input together when wraps */
+          display: inline; 
       }
-      .katapp-css .radio input[type="radio"]:disabled,
-      .katapp-css .abc-radio input[type="radio"]:disabled {
-          cursor: not-allowed
-      }
-      .katapp-css .radio input[type="radio"]:disabled+label,
-      .katapp-css .abc-radio input[type="radio"]:disabled+label {
-          opacity: .65
-      }
-      .katapp-css .radio input[type="radio"]:disabled+label::before,
-      .katapp-css .abc-radio input[type="radio"]:disabled+label::before {
-          cursor: not-allowed
-      }
-  
+
+          /*  Awesome checkbox has some spacing and styling when disabled, but not requiring that dependency */
+          .katapp-css table.bs-listcontrol.abc-radio label,
+          .katapp-css table.bs-listcontrol.abc-checkbox label,
+          .katapp-css table.bs-listcontrol.radio label,
+          .katapp-css table.bs-listcontrol.checkbox label,
+          .katapp-css .form-inline .abc-radio label,
+          .katapp-css .form-inline .abc-checkbox label,
+          .katapp-css .form-inline .radio label,
+          .katapp-css .form-inline .checkbox label {
+              padding-left: 5px;
+          }
+      
+          .katapp-css .radio input[type="radio"]:disabled,
+          .katapp-css .abc-radio input[type="radio"]:disabled,
+          .katapp-css .radio input[type="radio"]:disabled+label::before,
+          .katapp-css .abc-radio input[type="radio"]:disabled+label::before {
+              cursor: not-allowed
+          }
+          .katapp-css .radio input[type="radio"]:disabled+label,
+          .katapp-css .abc-radio input[type="radio"]:disabled+label {
+              opacity: .65
+          }
+
+          /* For horizontal lists, have to apply some styling to make it look better */
+          .katapp-css .form-inline .form-group .abc-checkbox label::before,
+          .katapp-css .form-inline .form-group .abc-checkbox label::after,
+          .katapp-css .form-inline .form-group .abc-radio label::before,
+          .katapp-css .form-inline .form-group .abc-radio label::after,
+          .katapp-css .form-inline .form-group .checkbox label::before,
+          .katapp-css .form-inline .form-group .checkbox label::after,
+          .katapp-css .form-inline .form-group .radio label::before,
+          .katapp-css .form-inline .form-group .radio label::after {
+              margin-left: -25px;
+          }
+
+          /* Color input border */
+          /*
+          .katapp-css .abc-radio label:before,
+          .katapp-css .abc-checkbox label:before,
+          .katapp-css .radio label:before,
+          .katapp-css .checkbox label:before {
+            border: 1px solid #333;
+          }
+          */
+
+          .katapp-css .abc-radio table.form-control,
+          .katapp-css .abc-checkbox table.form-control,
+          .katapp-css .abc-radio span.form-control,
+          .katapp-css .abc-checkbox span.form-control,
+          .katapp-css .radio table.form-control,
+          .katapp-css .checkbox table.form-control,
+          .katapp-css .radio span.form-control,
+          .katapp-css .checkbox span.form-control {
+              border-width: 0;
+              box-shadow: 0 0 0 0;
+              height: auto;
+              padding: 0 12px 0 12px;
+          }
+          .katapp-css .form-inline.list-container .radio,
+          .katapp-css .form-inline.list-container .abc-radio {
+              margin: 5px 20px 5px 2px;
+          }
+          .katapp-css .form-inline.list-container {
+              padding-left: 0;
+          }
+          .katapp-css .form-inline.list-container .abc-radio label,
+          .katapp-css .form-inline.list-container .abc-checkbox label,
+          .katapp-css .form-inline.list-container .radio label,
+          .katapp-css .form-inline.list-container .checkbox label {
+              padding-left: 5px;
+          }
+
+  /* Ajax blocker during calculations */
   .katapp-css .ajaxContent {
       position: relative;
       min-height: 200px;

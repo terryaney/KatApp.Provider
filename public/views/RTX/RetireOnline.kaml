@@ -65,7 +65,13 @@
 
                         <div class="col12" rbl-value="electionSummary"></div>
 
-                        <div class="col12" rbl-display="upload-controls" style="display:none;">
+                    </div>
+                </div>
+
+                <div rbl-display="upload-controls" class="card-header mt-1" style="display:none;"><h4 class="card-title">Elections</h4></div>
+                <div rbl-display="upload-controls" class="card-body" style="display:none;">
+                    <div class="row">
+                        <div class="col12">
                             <div class="row">
                                 <div class="col-12">
                                     <div rbl-tid="result-table" rbl-source="required-document-progress" data-css="table table-bordered table-condensed"></div>
@@ -119,29 +125,33 @@
 
                 <div class="card-header mt-1"><h4 class="card-title">KAT TO DO</h4></div>
                 <div class="card-body">
-                    <div class="alert alert-warning">
-                        <p>Retirement Information</p>
+                    <p>Landing Confirm:</p>
+                    <ul>
+                        <li>Hide/clear/update electionIntro (didn't include confirmIntro)</li>
+                        <li>When all elections made</li>
                         <ul>
-                            <li>rbleSkip on dates</li>
-                        </ul>
-                        <p>Landing Confirm:</p>
-                        <ul>
-                            <li>Didn't include confirmIntro (use electionIntro)</li>
                             <li>Code up table required-document-progress to generate Document/Delivery/Status/Action table</li>
                             <li>upload-controls for visibility, in ESS logic is based on whether they have doc to upload (required-document-progress table is not blank) and date-upload-end isn't past</li>
                             <li>iUploadType - need to put that in ejs-listcontrols to build the drop down that controls documents available in upload control</li>
                         </ul>
-                        <p>Plan Election</p>
-                        <ul>
-                            <li>rbleSkip on any controls that don't show/hide sections</li>
-                            <li>After save (or before start) need to assign/clear all inputs, b/c I went thru 2 elections and previous values were selected</li>
-                            <li>Does iElection change based on plan?  Think yes.  You probably need to include entire list of all possible when you build iElection originally, then just return id/visible (text too if you want to change text) when going to plan elections to show appropriate ones</li>
-                        </ul>
-                        <p>Plan Election Confirm:</p>
-                        <ul>
-                            <li>Use electionConfirm for a 'simple' confirm after plan election</li>
-                        </ul>
-                    </div>
+                    </ul>
+                    <p>Plan Election</p>
+                    <ul>
+                        <li>Hide/clear/update electionIntro</li>
+                        <li>rbleSkip on any controls that don't show/hide sections</li>
+                        <li>Hide lumpSumDistributionNote if you are not going to use it, appears empty right now?</li>
+                        <li>iDateBirth value is 1/0/1900 instead of correctly using input from first page</li>
+                        <li>Validation of inputs (can currently click submit without filling everything out)</li>
+                        <li>Confirm prompt (let me know if questions)</li>
+                        <li>Does iElection change based on plan?  Think yes.  You probably need to include entire list of all possible when you build iElection originally, then just return id/visible (text too if you want to change text) when going to plan elections to show appropriate ones</li>
+                    </ul>
+                    <p>Plan Election Confirm:</p>
+                    <ul>
+                        <li>Hide/clear electionIntro</li>
+                        <li>After save (or before start) need to assign/clear all inputs, b/c I went thru 2 elections and previous values were selected</li>
+                        <li>Make sure to add validation of 'everything' when they do the submit, to protect against POST hacking (i.e. all inputs valid, iPlan is valid, iElection is valid choice given data - instead of just 'required') - might be simpler if we are hosting in site in our frameworks/Evolution when you can rely on 'data' versus all inputs</li>
+                        <li>Use electionConfirm for a 'simple' confirm after plan election</li>
+                    </ul>
                 </div>
             </div>
 

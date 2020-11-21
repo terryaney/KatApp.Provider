@@ -1,0 +1,11 @@
+<rbl-config bootstrap="4"></rbl-config>
+
+<style>
+</style>
+
+<div class="page-header"><h1>KatApp Landing</h1></div>
+<div class="row">
+	<div class="col-xs-12">
+		<p>Hello</p>
+	</div>
+</div>

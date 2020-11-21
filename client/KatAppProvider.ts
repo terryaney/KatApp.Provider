@@ -1155,7 +1155,9 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
             if ( itemType == "checkbox" ) {
                 /*                
                 Find checkboxlist in ess for example rendering.
-                Current code in KatApps seems to assume checkbox list if has checkbox-list-horizontal class
+                    - Look at SetCheckboxListInputNames method as well
+
+                Current provider code seems to assume checkbox list if has checkbox-list-horizontal class
                     - if ess version is NOT horizontal, don't think defaults would be working in here because it is
                         not flagged as a isCheckboxList?
                     - Search for isCheck, checkbox, checkbox-list to see how I'm using it

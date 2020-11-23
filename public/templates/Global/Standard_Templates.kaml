@@ -640,7 +640,48 @@
       background: transparent;
   }
 
-  .validation-summary ul {
+  .katapp-css .validation-summary ul {
     margin-bottom: 0;
   }
+
+/* File Upload */
+.katapp-css .file-upload i {
+  padding-right: 5px;
+}
+.katapp-css .input-group-btn .btn, 
+.katapp-css .input-group-append .btn {
+  border: none;
+  border: 1px solid #ccc;
+}
+
+.katapp-css .input-group-btn .btn-primary {
+  padding: 6px 12px;
+}
+
+.katapp-css .file-upload .btn-file {
+  position: relative;
+  overflow: hidden;
+}
+
+.katapp-css .file-upload .btn-file input[type=file], 
+.katapp-css .file-upload .btn-file .bootstrap-select {
+  position: absolute;
+  top: 0;
+  right: 0;
+  min-width: 100%;
+  min-height: 100%;
+  font-size: 100px;
+  text-align: right;
+  filter: alpha(opacity=0);
+  opacity: 0;
+  outline: none;
+  background: white;
+  cursor: inherit;
+  display: block;
+}
+
+.katapp-css .file-upload input[readonly] {
+  background-color: white !important;
+  cursor: text !important;
+}
 </style>

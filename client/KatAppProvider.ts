@@ -45,8 +45,8 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
 // Need this function format to allow for me to reload script over and over (during debugging/rebuilding)
 (function($, window, document, undefined?: undefined): void {
     const tableInputsAndBootstrapButtons = ", .RBLe-input-table :input, .dropdown-toggle, button";
-    const validInputSelector = ".notRBLe, .rbl-exclude, rbl-template :input, [type='search']" + tableInputsAndBootstrapButtons;
-    const skipBindingInputSelector = ".notRBLe, .rbl-exclude, .rbl-exclude :input, .skipRBLe, .skipRBLe :input, .rbl-nocalc, .rbl-nocalc :input, rbl-template :input, [type='search']" + tableInputsAndBootstrapButtons;
+    const validInputSelector = ".notRBLe, .notRBLe :input, .rbl-exclude, .rbl-exclude :input, rbl-template :input, [type='search']" + tableInputsAndBootstrapButtons;
+    const skipBindingInputSelector = ".notRBLe, .notRBLe :input, .rbl-exclude, .rbl-exclude :input, .skipRBLe, .skipRBLe :input, .rbl-nocalc, .rbl-nocalc :input, rbl-template :input, [type='search']" + tableInputsAndBootstrapButtons;
 
     // Reassign options here (extending with what client/host might have already set) allows
     // options (specifically events) to be managed by CMS - adding features when needed.
@@ -303,7 +303,8 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                                 that.options.calcEngine = that.options.calcEngine ?? rblConfig?.attr("calcengine");
                                 that.options.inputTab = that.options.inputTab ?? rblConfig?.attr("input-tab") ?? "RBLInput";
                                 that.options.resultTabs = that.options.resultTabs ?? rblConfig?.attr("result-tabs")?.split(",") ?? ["RBLResult"];
-                    
+                                that.options.preCalcs = that.options.preCalcs ?? rblConfig?.attr("precalcs");
+                                
                                 const toFetch = rblConfig?.attr("templates");
                                 if ( toFetch !== undefined ) {
                                     requiredTemplates = 
@@ -634,6 +635,8 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
 
             // Made all pipeline functions variables just so that I could search on name better instead of 
             // simply a delegate added to the pipeline array.
+
+            // Calc Failed - 0, Success - 3, Unhandled Error - 3
             const submitCalculation = function(): void { 
                 try {
                     that.rble.submitCalculation( 
@@ -649,6 +652,8 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                     calculatePipeline( 3 );
                 }
             };
+
+            // Success = 1, Error - 2, Need Register - 0
             const getCalculationData = function(): void {
                 try {
                     pipelineError = undefined; // Was set in previous pipeline calculate attempt, but clear out and try flow again
@@ -753,6 +758,8 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                     calculatePipeline( 2 ); // If error, jump to finish
                 }
             };
+
+            // Success = 0, Error - 1
             const registerData = function(): void {
                 try {
                     that.rble.registerData( 
@@ -785,6 +792,8 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                     calculatePipeline( 1 );                            
                 }
             };
+
+            // Always go 0
             const resubmitCalculation = function(): void {
                 try {
                     that.rble.submitCalculation( 
@@ -800,9 +809,11 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                     calculatePipeline( 0 );
                 }
             };
+
+            // Success - 1, Error - 1 (checks pipeline error before processing)
             const processResults = function(): void {
                 that.trace("Processing results from calculation.", TraceVerbosity.Detailed);
-
+                
                 try {
                     if ( pipelineError === undefined ) {
                         that.element.removeData("katapp-save-calcengine");
@@ -819,19 +830,66 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                         }
 
                         that.ui.triggerEvent( "onCalculation", that.results, currentOptions, that );
+                        calculatePipeline( 0 );
                     }
                     else {
-                        that.rble.setResults( undefined );
-                        // TODO: Need error status key?  Might want to swap between calc and registration, but not sure
-                        that.ui.triggerEvent( "onCalculationErrors", "RunCalculation", pipelineError, that.exception, currentOptions, that );
+                        throw new Error(pipelineError);
                     }
                 } catch (error) {
+                    that.rble.setResults( undefined );
                     that.trace( "Error during result processing: " + error, TraceVerbosity.None );
                     that.ui.triggerEvent( "onCalculationErrors", "RunCalculation", error, that.exception, currentOptions, that );
+                    calculatePipeline( 1 );
                 }
-                finally {
-                    that.ui.triggerEvent( "onCalculateEnd", that );
+            };
+
+            // Always go 0
+            const updateData = function(): void {
+                that.trace("Posting jwt update data from results.", TraceVerbosity.Detailed);
+
+                try {
+                    const uploadUrl = that.options.rbleUpdatesUrl;
+                    const jwtToken = {
+                        Tokens: that.getResultTable<JSON>( "jwt-data").map( r => ({ Name: r[ "@id"], Token: r[ "value" ] }) )
+                    };
+
+					if (jwtToken.Tokens.filter( t => t.Name == "data-updates" ).length > 0 && uploadUrl !== undefined ) {
+						const jsonParams = {
+							url: uploadUrl,
+							type: "POST",
+							processData: false,
+							data: JSON.stringify(jwtToken),
+							dataType: "json"
+						};
+
+						$.ajax(jsonParams)
+							.done(function (data) {
+								if (data.Status != 1) {
+									console.log("Unable to save data: " + data.Message);
+                                    that.ui.triggerEvent( "onDataUpdateErrors", data.Message, that.exception, currentOptions, that );
+								}
+                                calculatePipeline( 0 );
+							})
+							.fail(function (_jqXHR, textStatus) {
+								console.log("Unable to save data: " + textStatus);
+                                that.ui.triggerEvent( "onDataUpdateErrors", textStatus, that.exception, currentOptions, that );
+                                calculatePipeline( 0 );
+							});
+                    }
+                    else
+                    {
+                        calculatePipeline( 0 );
+                    }
+                } catch (error) {
+                    that.trace( "Error during jwd update data processing: " + error, TraceVerbosity.None );
+                    that.ui.triggerEvent( "onDataUpdateErrors", error, that.exception, currentOptions, that );
+                    calculatePipeline( 0 );
                 }
+            };
+
+            const calculateEnd = function(): void {
+                that.ui.triggerEvent( "onCalculateEnd", that );
+                calculatePipeline( 0 );
             };
 
             pipeline.push( 
@@ -839,14 +897,18 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                 getCalculationData,
                 registerData,
                 resubmitCalculation,
-                processResults
+                processResults,
+                updateData,
+                calculateEnd
             )
             pipelineNames.push( 
                 "calculatePipeline.submitCalculation",
                 "calculatePipeline.getCalculationData",
                 "calculatePipeline.registerData",
                 "calculatePipeline.resubmitCalculation",
-                "calculatePipeline.processResults"
+                "calculatePipeline.processResults",
+                "calculatePipeline.updateData",
+                "calculatePipeline.calculateEnd"
             )
 
             // Start the pipeline
@@ -1946,7 +2008,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
             const application = this.application;
 
             //[rbl-value] inserts text value of referenced tabdef result into .html()
-            $("[rbl-value]", application.element).each(function () {
+            $("[rbl-value]", application.element).not("rbl-template [rbl-value]").each(function () {
                 const el = $(this);
                 const rblValueParts = el.attr('rbl-value')!.split('.'); // eslint-disable-line @typescript-eslint/no-non-null-assertion
 
@@ -1972,7 +2034,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
             const application = this.application;
             
             //[rbl-source] processing templates that use rbl results
-            $("[rbl-source], [rbl-source-table]", application.element).each(function () {
+            $("[rbl-source], [rbl-source-table]", application.element).not("rbl-template [rbl-source], rbl-template [rbl-source-table]").each(function () {
                 const el = $(this);
 
                 // TOM - Need some flow documentation here, can't really picture entire thing in my head
@@ -2068,7 +2130,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
             // toggle visibility
             //[rbl-display] controls display = none|block(flex?).  
             //Should this be rbl-state ? i.e. other states visibility, disabled, delete
-            $("[rbl-display]", application.element).each(function () {
+            $("[rbl-display]", application.element).not("rbl-template [rbl-display]").each(function () {
                 const el = $(this);
 
                 //legacy table is ejs-visibility but might work a little differently
@@ -2317,7 +2379,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
             const view = application.element;
             const that: RBLeUtilities = this;
 
-            $("[rbl-tid='result-table']", view).each(function ( i, r ) {
+            $("[rbl-tid='result-table']", view).not("rbl-template [rbl-tid='result-table']").each(function ( i, r ) {
                 const tableName = r.getAttribute( "rbl-tablename" ) ?? r.getAttribute( "rbl-source" );
                 const templateCss = r.getAttribute( "data-css" );
 
@@ -3362,6 +3424,234 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
             });
         }
 
+        private incrementProgressBars() {
+            let progressBarValue = 0;
+            const that = this;
+            const progressBarInterval = setInterval(function () {
+                progressBarValue += 1;
+        
+                $(".progress-bar", that.application.element)
+                    .css("width", progressBarValue + "%")
+                    .attr("aria-valuenow", progressBarValue);
+        
+                if (progressBarValue >= 100) {
+                    clearInterval(progressBarInterval);
+                }
+            }, 185);
+        }
+        
+        private buildFileDownloads( view: JQuery<HTMLElement> ): void {
+            const that = this;
+            $('[rbl-download="true"]', view).not('[data-katapp-initialized="true"]').each(function () {
+                const el = $(this);
+                
+                const katAppCommand = el.data("command") ?? "DownloadFile";
+
+                el.on("click", function () {
+                    // JWT Support
+                    // https://stackoverflow.com/a/49725482/166231 (comment about jwt, probably use XMLHttpRequest.setRequestHeader() in my implementation)
+        
+                    // Implementation based off of these questions
+                    // https://stackoverflow.com/a/44435573/166231 (Using XMLHttpRequest to download)
+                    // https://stackoverflow.com/a/29039823/166231 (dynamically changing response type)
+        
+                    // Failed Attempts
+                    // https://stackoverflow.com/a/11520119/166231 (dynamically append/remove a form and post that)
+                    //	Page navigated when error was returned.  Didn't try target=_blank or anything because in current
+                    //	ESS, not used.  The <a/> does postback and if success, response is set to 'content' and it downloads
+                    //	the data and all is good.  If it fails, the entire page rerenders (since just navigating to self).
+                    //	Also, I didn't even try a valid file return with this yet
+                    /*
+                        var inputs =
+                            '<input type="hidden" name="KatAppCommand" value="DocGenDownload" />' +
+                            '<input type="hidden" name="KatAppView" value="' + (application.options.view || "Unknown") + '" />' +
+                            '<input type="hidden" name="KatAppInputs" />';
+        
+                        //send request
+                        var form = $('<form action="' + url + '" method="post">' + inputs + '</form>');
+                        form.appendTo('body');
+        
+                        $("[name='KatAppInputs']", form).val(JSON.stringify(application.getInputs()));
+        
+                        form.submit().remove();
+                    */
+                    // https://gist.github.com/domharrington/884346cc04c30eeb1237
+                    //	Didn't try this one, but has some 'browser compatability' code that I might want/need
+                    // https://stackoverflow.com/a/28002215/166231 (looks promising with full source)
+                    //	Actually didn't attempt this one.
+                    // https://storiknow.com/download-file-with-jquery-and-web-api-2-0-ihttpactionresult/ (most recent answer I could find)
+                    //	This one didn't work (left a comment) because of needing to return text (error) or file (success).
+                            
+                    var url = that.application.options.rbleUpdatesUrl;
+        
+                    if (url != undefined) {
+                        const fd = new FormData();
+                        fd.append("KatAppCommand", katAppCommand);
+                        fd.append("KatAppView", that.application.options.view ?? "Unknown");
+                        fd.append("KatAppInputs", JSON.stringify(that.application.getInputs()));
+        
+                        const xhr = new XMLHttpRequest();
+                        xhr.open('POST', url, true);
+        
+                        xhr.onreadystatechange = function () {
+                            if (xhr.readyState == 4) {
+                                if (xhr.status == 200) {
+                                    console.log(typeof xhr.response); // should be a blob
+                                } else if (xhr.responseText != "") {
+                                    console.log(xhr.responseText);
+                                }
+                            } else if (xhr.readyState == 2) {
+                                if (xhr.status == 200) {
+                                    xhr.responseType = "blob";
+                                } else {
+                                    xhr.responseType = "text";
+                                }
+                            }
+                        };
+        
+                        xhr.onload = function () {
+                            if (xhr.responseType == "text") {
+                                console.log("Show error: " + xhr.responseText);
+                            }
+                            else {
+                                const blob = xhr.response;
+        
+                                let filename = "Download.pdf";
+                                const disposition = xhr.getResponseHeader('Content-Disposition');
+                                if (disposition && disposition.indexOf('attachment') !== -1) {
+                                    filename = disposition.split('filename=')[1].split(';')[0];
+                                }
+        
+                                const tempEl = document.createElement("a");
+                                $(tempEl).addClass( "d-none hidden" );
+                                url = window.URL.createObjectURL(blob);
+                                tempEl.href = url;
+                                tempEl.download = filename;
+                                tempEl.click();
+                                window.URL.revokeObjectURL(url);
+                            }
+                        }.bind(this);
+        
+                        xhr.send(fd);
+                    }
+                })
+        
+                el.attr("data-katapp-initialized", "true");
+            });
+        }
+
+        private buildFileUploads( view: JQuery<HTMLElement> ): void {
+            const that = this;
+
+            $('[rbl-tid="input-fileupload"],[rbl-template-type="katapp-fileupload"]', view).not('[data-katapp-initialized="true"]').each(function () {
+                const el = $(this);
+                
+                const id = el.data("inputname");
+                const label = el.data("label");
+                const css = el.data("css");
+                const formCss = el.data("formcss");
+                const inputCss = el.data("inputcss");
+                const labelCss = el.data("labelcss");
+                const hideLabel = el.data("hidelabel") ?? false;
+                const katAppCommand = el.data("command") ?? "UploadFile";
+
+                if ( css !== undefined ) {
+                    $("[rbl-display='v" + id + "']", el).addClass(css);
+                }
+                if ( formCss !== undefined ) {
+                    $("[rbl-display='v" + id + "']", el).removeClass("form-group").addClass(formCss);
+                }
+
+                if ( hideLabel ) {
+                    $("label", el).remove();                    
+                }
+                else {
+                    if ( label !== undefined ) {
+                        $("span[rbl-value='l" + id + "']", el).html(label);
+                    }
+                    if ( labelCss !== undefined ) {
+                        $("span[rbl-value='l" + id + "']", el).addClass(labelCss);
+                    }
+                }
+
+                let input = $("input", el);
+
+                if ( inputCss !== undefined ) {
+                    input.addClass(inputCss);
+                }
+
+                $(".btn-file-remove", el).on("click", function () {
+                    var file = $(this).parents('.input-group').find(':file');
+                    file.val("").trigger("change");
+                });
+                $(".btn-file-upload", el).on("click", function () {
+                    const uploadUrl = that.application.options.rbleUpdatesUrl;
+
+                    if ( uploadUrl !== undefined ) {
+                        $(".ajaxloader", that.application.element).show();
+                        $(".file-upload .btn", el).addClass("disabled");
+                        that.incrementProgressBars();
+                        $(".file-upload-progress", that.application.element).show();
+
+                        const fileUpload = $(".file-data", $(this).parent());
+                        const fd = new FormData();
+                        const files = ( fileUpload[0] as HTMLInputElement ).files;
+
+                        $.each(files, function(key, value)
+                        {
+                            fd.append(key, value);
+                        });
+
+                        fd.append("KatAppCommand", katAppCommand);
+                        fd.append("KatAppView", that.application.options.view ?? "Unknown" );
+                        fd.append("KatAppInputs", JSON.stringify(that.application.getInputs()));
+
+                        $.ajax({
+                            url: uploadUrl,  
+                            type: 'POST',
+                            data: fd,
+                            cache: false,
+                            contentType: false,
+                            processData: false
+                        }).done( function( payLoad ) {
+                            console.log("Upload good");
+                        })
+                        .fail( function( _jqXHR, textStatus ) {
+                            console.log("Upload bad");
+                        })
+                        .always( function() {
+                            fileUpload.val("").trigger("change");
+                            $(".file-upload .btn", el).removeClass("disabled");
+                            $(".file-upload-progress", that.application.element).hide();
+                            $(".ajaxloader", that.application.element).hide();
+                        })
+                    }
+                });
+                $(".btn-file :file", el).on("change", function () {
+                    var fileUpload = $(this),
+                        files = ( fileUpload[0] as HTMLInputElement ).files,
+                        numFiles = files?.length ?? 1,
+                        label = ( fileUpload.val() as string).replace(/\\/g, '/').replace(/.*\//, ''), // remove c:\fakepath
+                        display = $(this).parents('.input-group').find(':text'),
+                        upload = $(this).parents('.input-group').find('.btn-file-upload'),
+                        remove = $(this).parents('.input-group').find('.btn-file-remove');
+            
+                    label = numFiles > 1 ? numFiles + ' files selected' : label;
+            
+                    display.val(label);
+                    if (numFiles > 0) {
+                        upload.add(remove).removeClass("hidden d-none");
+                    }
+                    else {
+                        upload.add(remove).addClass("hidden d-none");
+                    }
+                });
+            
+                const validatorContainer = $(".validator-container", el);
+                el.attr("data-katapp-initialized", "true");
+            });
+        }
+
         private buildTextBoxes( view: JQuery<HTMLElement> ): void {
             const isBootstrap3 = $("rbl-config",view).attr("bootstrap") == "3";
             $('[rbl-tid="input-textbox"],[rbl-template-type="katapp-textbox"]', view).not('[data-katapp-initialized="true"]').each(function () {
@@ -3896,6 +4186,8 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
 
             this.buildDropdowns( view );
             this.buildTextBoxes( view );
+            this.buildFileUploads( view );
+            this.buildFileDownloads( view );
             this.buildListControls( view );
             this.buildCheckboxes( view );
             this.buildSliders( view );

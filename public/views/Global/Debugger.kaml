@@ -48,22 +48,6 @@
         </div>
     </div>
     <div class="row">
-        <div class="form-group vCurrentApp col-sm-6">
-            <label for="CurrentApp" class="control-label">Current Application</label>
-            <select name="CurrentApp" id="CurrentApp" class="form-control bootstrap-select show-tick CurrentApp" tabindex="-98">
-                <option value="Custom" selected="true">Custom View</option>
-                <option value="DST:Disability">DST - Disability</option>
-                <option value="DST:DevROI">DST - Dependent Eligibility Verification Savings Estimator</option>
-                <option value="DST:FSA">DST - FSA Tax Savings Calculator</option>
-                <option value="DST:FWA">DST - Financial Wellness Modeler</option>
-                <option value="DST:HSAErSavings">DST - Employer Savings from Employee pre-tax HSA contributions</option>
-                <option value="DST:HSALimit">DST - HSA Contribution Limit Calculator</option>
-                <option value="DST:HSATax">DST - HSA Tax Savings</option>
-                <option value="DST:IRP">DST - Income Replacement Percentage (IRP) Calculator</option>
-                <option value="DST:LifeInputs">DST - Life Insurance Calculator</option>
-                <option value="DST:RothVsPreTaxInputs">DST - Roth vs PreTax Calculator</option>
-            </select>
-        </div>
         <div class="form-group vCustomView col-sm-6">
             <label for="" class="control-label lCustomView">Custom View</label>
             <div class="validator-container">
@@ -71,8 +55,6 @@
                 <span class="error-msg" data-toggle="tooltip" data-placement="top"></span>
             </div>
         </div>
-    </div>
-    <div class="row">
         <div class="form-group vKatAppSelector col-sm-6">
             <label for="" class="control-label lKatAppSelector">KatApp Selector To Override</label>
             <div class="validator-container">
@@ -80,6 +62,8 @@
                 <span class="error-msg" data-toggle="tooltip" data-placement="top"></span>
             </div>
         </div>
+    </div>
+    <div class="row">
         <div class="form-group vDataAttributes col-sm-6">
             <label for="" class="control-label lDataAttributes">Data Attributes To Apply...</label>
             <div class="validator-container">
@@ -101,7 +85,15 @@
         </div>
     </div>
     <div class="row">
-        <div class="col-sm-4">
+        <div class="form-group vSampleData col-sm-6">
+            <label for="" class="control-label lSampleData">Sample Data</label>
+            <div class="validator-container">
+                <input name="SampleData" id="SampleData" type="text" placeholder="i.e. xDataDefs/xDataDef/Profile" class="form-control SampleData">
+                <span class="error-msg" data-toggle="tooltip" data-placement="top"></span>
+            </div>
+        </div>
+        <div class="col-sm-3">
+            <label data-info="spacer"></label>
             <div class="validator-container checkbox-container vUseTestPlugin">
                 <span class="checkbox abc-checkbox UseTestPlugin lUseTestPlugin">
                     <input id="UseTestPlugin" type="checkbox" name="UseTestPlugin">
@@ -115,7 +107,8 @@
                 </span>
             </div>
         </div>
-        <div class="col-sm-4">
+        <div class="col-sm-3">
+            <label data-info="spacer"></label>
             <div class="validator-container checkbox-container vUseTestCalcEngine">
                 <span class="checkbox abc-checkbox UseTestCalcEngine lUseTestCalcEngine">
                     <input id="UseTestCalcEngine" type="checkbox" name="UseTestCalcEngine">
@@ -178,15 +171,6 @@
 
             $(".KatAppSelector").val($(view).data("selector"));
 
-            $("select.CurrentApp", view).change(function() {
-                if ( $(this).val() === "Custom" ) {
-                    $(".vCustomView", view).show();
-                }
-                else {
-                    $(".vCustomView", view).hide();
-                }
-            }).trigger("change");
-
             const getSelector = function() {
                 return $(".KatAppSelector", view).val() || "[rbl-application-id]"; // Default to all katapps on page;
             }
@@ -240,16 +224,12 @@
                 var initialSaveLocation = $(".SaveCalcEngineLocation", view).val() || "";
                 $(".SaveCalcEngineLocation", view).val("");
 
-                let currentView = $("#CurrentApp", view).val();
                 let calcEngine = undefined;
-
-                if ( currentView === "Custom" ) {
-                    currentView = $(".CustomView", view).val() || "";
-                    const viewParts = currentView.split(">");
-                    if ( viewParts.length === 2 ) {
-                        currentView = viewParts[ 0 ];
-                        calcEngine = viewParts[ 1 ];
-                    }
+                let currentView = $(".CustomView", view).val() || "";
+                const viewParts = currentView.split(">");
+                if ( viewParts.length === 2 ) {
+                    currentView = viewParts[ 0 ];
+                    calcEngine = viewParts[ 1 ];
                 }
 
                 const debugOptions = { 
@@ -314,8 +294,8 @@
                     $.fn.KatApp.templatesUsedByAllApps = {};
                     $.fn.KatApp.templateDelegates = [];
 
-                    $(".logo-left").html("KatApp Test Harness: " + $("#CurrentApp option:selected").text());
-                    $(selector).attr("rbl-trace-id", $("#CurrentApp").val().split(":")[1]).KatApp(options);
+                    $(".logo-left").html("KatApp Test Harness: " + $(".CustomView", view).val());
+                    $(selector).attr("rbl-trace-id", $(".CustomView", view).val().split(":")[1]).KatApp(options);
                 }
                 else {
                     $(selector).KatApp("updateOptions", { debug: debugOptions });

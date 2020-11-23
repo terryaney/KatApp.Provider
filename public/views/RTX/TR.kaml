@@ -1,4 +1,4 @@
-<rbl-config calcengine="Conduent_NexgenTRDemo_RTX_SE" templates="Standard_Templates"></rbl-config>
+<rbl-config calcengine="Conduent_NexgenTRDemo_RTX_SE" templates="Standard_Templates,Input_TemplatesBS4"></rbl-config>
 
 <style>
 
@@ -12,9 +12,6 @@
 	thisClass td.swatch {
 	width: 26px;
 	padding-right: 0px;
-	}
-	thisClass .table > thead > tr > th {
-	border-color: #000;
 	}
 	thisClass .table > tbody > tr.total > td {
 	font-weight: bold;

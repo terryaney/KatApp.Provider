@@ -172,7 +172,7 @@ class KatApp
             ( resources === "Global:KatAppProvider.js"
                 ? "http://localhost:8887/js/"
                 : "http://localhost:8887/views/" );
-
+                
         let useLocalResources = localDomain !== undefined; // global value for all requested resources
         // viewParts[ 0 ], viewParts[ 1 ]
         // folder: string, resource: string, optional Version
@@ -266,9 +266,9 @@ class KatApp
                                     const ajaxConfig = 
                                     { 
                                         url: resourceUrl,
-                                        data: !useLocalResource ? JSON.stringify( o ) : undefined,
-                                        method: !useLocalResource ? "POST" : undefined,
-                                        dataType: !useLocalResource ? "json" : undefined,
+                                        data: !useLocalResource && !isRelativePath ? JSON.stringify( o ) : undefined,
+                                        method: !useLocalResource && !isRelativePath ? "POST" : undefined,
+                                        dataType: !useLocalResource && !isRelativePath ? "json" : undefined,
                                         cache: false
                                     };
             
@@ -327,6 +327,14 @@ class KatApp
                                 if ( useLocalResource && currentFolder < folders.length - 1 ) {
                                     currentFolder++;
                                     localFolder = !isScript ? folders[ currentFolder ] + "/" : "";
+                                    submit( application as KatAppPlugInInterface, params, submitDone, submitFailed );
+                                }
+                                else if ( useLocalResource && localDomain == "http://localhost:8887/views/" ) {
+                                    // Couldn't pass in views or templates because of existing KatApp.js
+                                    // in PROD for other environments would be broken, so just have to try
+                                    // templates folder if I was running on local domain
+                                    localDomain = "http://localhost:8887/templates/";
+                                    currentFolder = 0;
                                     submit( application as KatAppPlugInInterface, params, submitDone, submitFailed );
                                 }
                                 else if ( useLocalResource && !isRelativePath && currentFolder >= folders.length -1 ) {

@@ -6,7 +6,7 @@
         <script>with debugger line as placeholder/sample</script>
 -->
 
-<rbl-config calcengine="Conduent_NexgenSharkfinDemo_RTX_SE" templates="Standard_TemplatesBS4"></rbl-config>
+<rbl-config calcengine="Conduent_NexgenSharkfinDemo_RTX_SE" templates="Standard_Templates,Input_TemplatesBS4"></rbl-config>
 <style>
     .kat-app-css .ajaxloader {
     position: absolute;
@@ -281,13 +281,13 @@ label.warning, span.warning {
                         </div>
                         <div class="card-body">
                             <div class="tab-content" style="width: 100%;">
-                                <div class="tab-pane fade border show active" id="pills-tab1" role="tabpanel" aria-labelledby="pills-tab1-tab">
+                                <div class="tab-pane fade show active" id="pills-tab1" role="tabpanel" aria-labelledby="pills-tab1-tab">
                                     <div rbl-tid="chart-highcharts" rbl-chartdata="BalanceChart"></div>
                                 </div>
-                                <div class="tab-pane fade border" id="pills-tab2" role="tabpanel" aria-labelledby="pills-tab2-tab">
+                                <div class="tab-pane fade" id="pills-tab2" role="tabpanel" aria-labelledby="pills-tab2-tab">
                                     <div rbl-tid="chart-highcharts" rbl-chartdata="RetirementIncomeChart"></div>
                                 </div>
-                                <div class="tab-pane fade border" id="pills-tab3" role="tabpanel" aria-labelledby="pills-tab3-tab">
+                                <div class="tab-pane fade" id="pills-tab3" role="tabpanel" aria-labelledby="pills-tab3-tab">
                                     <div rbl-tid="result-table" rbl-tablename="Assumptions"></div>
                                 </div>   
                                 <div class="ajaxloader"></div>
@@ -296,7 +296,7 @@ label.warning, span.warning {
                             <div class="mt-4">
                                 <div class="row m-0 card-group">
                                   <div class="col-12 col-md-6 p-0 dashemphasis card">
-                                      Using these assumptions, you are <span class="boldText" rbl-value="probReachGoal"></span> likely to have funds that cover your retirement goals. 
+                                      Using these assumptions, you are <span class="boldText" style="font-size: 150%" rbl-value="probReachGoal"></span> likely to have funds that cover your retirement goals. 
                                   </div>
                                   <div class="col-12 col-md-6 p-0">
                                     <div class="alert alert-notify sideside">

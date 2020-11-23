@@ -1,4 +1,28 @@
 <!-- Input templates -->
+<rbl-template tid="input-fileupload" type="katapp-fileupload">
+  <div class="form-group" rbl-display="v{inputname}">
+    <label for="katapp_{id}_{inputname}" class="col-form-label">
+      <span rbl-value="l{inputname}"></span>
+    </label>
+    <div class="validator-container">
+      <div class="input-group file-upload rbl-exclude">
+        <input name="{inputname}Display" id_="katapp_{id}_{inputname}Display" type="text" class="form-control file-display" readonly="readonly" />
+        <span class="input-group-append">
+          <a class="btn btn-default btn-file-remove hidden d-none" title="Clear selected file"><i class="fa fa-trash-alt"></i><span class="d-none d-md-inline">Remove</span></a>
+          <a class="btn btn-default btn-file-upload hidden d-none" title="Upload selected file"><i class="fa fa-upload"></i><span class="d-none d-md-inline">Upload</span></a>
+          <span class="btn btn-primary btn-file">
+            <i class="fa fa-folder-open"></i> <span class="hidden-xs">Browse</span>
+            <input type="file" name="{inputname}" id_="katapp_{id}_{inputname}" class="{inputname} file-data" />
+          </span>
+        </span>
+      </div>
+      <span class="error-msg" data-toggle="tooltip" data-placement="top auto"></span>
+    </div>
+    <div class="hiUpload" style="display: none;"></div>
+    <div class="hiUploadTitle" style="display: none;"></div>
+  </div>
+</rbl-template>
+
 <rbl-template tid="input-textbox" type="katapp-textbox">
   <div class="form-group" rbl-display="v{inputname}">
     <label for="katapp_{id}_{inputname}" class="col-form-label">

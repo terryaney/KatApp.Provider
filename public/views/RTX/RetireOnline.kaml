@@ -1,4 +1,4 @@
-<rbl-config calcengine="Conduent_NexgenDBDemo_RTX_SE" result-tabs="RBLResultElection" bootstrap="4" templates="Standard_Templates,Input_TemplatesBS4"></rbl-config>
+<rbl-config calcengine="Conduent_ABC_RetOnline_SE" precalcs="Conduent_ABC_DBCalc_SE|RBLInput|RBLResult" result-tabs="RBLResultElection" bootstrap="4" templates="Standard_Templates,Input_TemplatesBS4"></rbl-config>
 
 <!--
     http://oneportal.uxgroup.com/LW60/NexGen/0_Product/channel_DB.html?local=1
@@ -19,275 +19,240 @@
     }
 </style>
 
-<div id="rblMarkup" class="rblApplication rblMarkup mb-5" style="display: none;">
-    <div class="container">
-        <div class="d-none">
-            <input name="{id}:iStep" type="text" id="katapp_{id}_iStep" class="iStep" value="1"/>
-            <input name="{id}:iDirection" type="text" id="katapp_{id}_iDirection" class="iDirection" value="0"/>
-            <input name="{id}:iPlan" type="text" id="katapp_{id}_iPlan" class="iPlan" value="1"/>
-        </div>
-        <h2 class="title">Retire Online</h2>
-        <div class="ajaxContent">
-            <div class="row">
-                <div class="col-12 mt-4">
-                    <div rbl-value="electionIntro"></div>
-                </div>
-            </div>
-            <div class="card mt-0" rbl-display="vStep1">
-                <div class="card-header mt-1"><h4 class="card-title">Retirement Information</h4></div>
-                <div class="card-body">
-                    <div class="row">
-                        <div rbl-tid="input-textbox" data-inputname="iDateBenComm" class="col-md-6" data-type="date" data-placeholder="required"></div>
-                        <div rbl-tid="input-textbox" data-inputname="iDateTerm" class="col-md-6" data-type="date" data-placeholder="optional"></div>
+<section id="retire-online" class="retire-online section-padding scroll-indicator" data-scroll-indicator-title="Retire Online">
+    <div id="rblMarkup" class="rblApplication rblMarkup mb-5" style="display: none;">
+        <div class="container">
+            <div class="d-none">
+                <input name="{id}:iStep" type="text" id="katapp_{id}_iStep" class="iStep" value="1"/>
+                <input name="{id}:iDirection" type="text" id="katapp_{id}_iDirection" class="iDirection" value="0"/>
+                <input name="{id}:iPlan" type="text" id="katapp_{id}_iPlan" class="iPlan" value="1"/>
+            </div>        
+            <h2 class="title">Retire Online</h2>
+            <div class="ajaxContent">
+                <div class="row">
+                    <div class="col-12 mt-4">
+                        <div rbl-value="electionIntro"></div>
                     </div>
                 </div>
-                <div class="card-header mt-1"><h4 class="card-title">Beneficiary Information</h4></div>
-                <div class="card-body">
-                    <div class="row">
-                        <div rbl-tid="input-checkbox" data-inputname="iMaritalStatus" class="col-12"></div>
-                        <div rbl-tid="input-radiobuttonlist" data-inputname="iBeneType" class="col-md-6"></div>
-                        <div rbl-tid="input-textbox" data-inputname="iDateBirthBen" class="col-md-6" data-type="date"></div>
-                    </div>
-                </div>
-            </div>
-
-            <div class="card mt-0" rbl-display="vStep2">
-                <div class="card-header mt-1"><h4 class="card-title">Elections</h4></div>
-                <div class="card-body" rbl-source="plans">
-                    <div class="row" rbl-tid="inline">
-                        <div class="col-6">
-                            <p><b>Plan: {text}</b></p>
-                            <p>General status of election for {text}</p>
+                <div class="card mt-0" rbl-display="vStep1">
+                    <div class="card-header mt-1"><h4 class="card-title">Retirement Information</h4></div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div rbl-tid="input-textbox" data-inputname="iDateBenComm" class="col-md-6" data-type="date" data-placeholder="required"></div>
+                            <div rbl-tid="input-textbox" data-inputname="iDateTerm" class="col-md-6" data-type="date" data-placeholder="optional"></div>
                         </div>
-                        <div class="col-6">
-                            <a class="btn btn-primary btnNavigation" data-direction="1" data-plan-id="{@id}" id="{id}_StartPlan">Make Election</a>
+                    </div>
+                    <div class="card-header mt-1"><h4 class="card-title">Beneficiary Information</h4></div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div rbl-tid="input-checkbox" data-inputname="iMaritalStatus" class="col-12"></div>
+                            <div rbl-tid="input-radiobuttonlist" data-inputname="iBeneType" class="col-md-6"></div>
+                            <div rbl-tid="input-textbox" data-inputname="iDateBirthBen" class="col-md-6" data-type="date"></div>
                         </div>
-                        
-                        <hr class="w-100"/>
-
-                        <div class="col12" rbl-value="electionSummary"></div>
-
                     </div>
                 </div>
 
-                <div rbl-display="upload-controls" class="card-header mt-1" style="display:none;"><h4 class="card-title">Elections</h4></div>
-                <div rbl-display="upload-controls" class="card-body" style="display:none;">
-                    <div class="row">
-                        <div class="col-12">
-                            <div rbl-tid="result-table" rbl-source="required-document-progress" data-css="table table-bordered table-condensed"></div>
-                            <div class="alert alert-info" rbl-value="electionStatusNote" rbl-display="electionStatusNote"></div>
-                            <div class="card-header mt-1"><h4 class="card-title" rbl-value="fileUploadHeader">Select a file to upload</h4></div>
-                            <div class="card-body">
-                                <div class="row">
-                                    <div rbl-tid="input-dropdown" class="col-md-3" data-inputname="iUploadType" data-liveSearch="false" data-label="Document Type"></div>
-        
-                                    <div rbl-tid="input-fileupload" class="col-md-9" data-hidelabel="false" data-label="File Name" data-inputname="iUpload" data-command="UploadRequiredDocument"></div>
+                <div class="card mt-0" rbl-display="vStep2">
+                    <div class="card-header mt-1"><h4 class="card-title">Plan Elections</h4></div>
+                    <div class="card-body" rbl-source="plans">
+                        <div class="row" rbl-tid="inline">
+                            <div class="col-6">
+                                <p><b>Plan: {text}</b></p>
+                                <p>General status of election for {text}</p>
+                            </div>
+                            <div class="col-6">
+                                <a class="btn btn-primary btnNavigation" data-direction="1" data-plan-id="{@id}" id="{id}_StartPlan">Make Election</a>
+                            </div>
                             
-                                    <div class="col-12">
-                                        <div class="alert alert-warning" rbl-value="fileUploadNote"><b>Note:</b> Uploads are limited to 30Mb</div>
-                                    </div>
-                                    <div class="col-12">
-                                        <div class="alert alert-success alert-dismissable fileUploadSuccess d-none">
-                                            <button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button>
-                                            <div class="pUploadConfirm"><b>Upload successfully received.</b></div>
-                                        </div>
+                            <hr class="w-100"/>
+
+                            <div class="col12" rbl-value="electionSummary"></div>
+                        </div>
+                    </div>
+
+                    <div rbl-display="requiredDocumentation">
+                        <div class="card-header mt-1"><h4 class="card-title" rbl-value="requiredDocumentationHeader">Required Documentation</h4></div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-12">
+                                    <div rbl-tid="result-table" rbl-source="required-document-progress" data-css="table table-bordered table-condensed"></div>
+                                    <div class="alert alert-info" rbl-value="electionStatusNote" rbl-display="electionStatusNote" style="display: none;"></div>
+                                </div>
+                            </div>
+                            <div class="row" rbl-display="upload-controls" style="display:none;">
+                                <div rbl-tid="input-dropdown" class="col-md-3" data-inputname="iUploadType" data-liveSearch="false" data-label="Document Type"></div>
+                                <div rbl-tid="input-fileupload" class="col-md-9" data-hidelabel="false" data-label="File Name" data-inputname="iUpload" data-command="UploadRequiredDocument"></div>
+                        
+                                <div class="col-12">
+                                    <div class="alert alert-warning" rbl-value="fileUploadNote"><b>Note:</b> Uploads are limited to 30Mb</div>
+                                </div>
+                                <div class="col-12">
+                                    <div class="alert alert-success alert-dismissable fileUploadSuccess d-none">
+                                        <button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                                        <div rbl-value="pUploadConfirm"></div>
                                     </div>
                                 </div>
                             </div>
-                            <div rbl-display="requiredDocumentation">
-                                <div class="card-header mt-1"><h4 class="card-title" rbl-value="requiredDocumentationHeader">Required Documentation Details</h4></div>
-                                <div class="card-body">
+                        </div>
+
+                        <div class="card-header mt-1"><h4 class="card-title" rbl-value="requiredDocumentationDetailsHeader">Required Documentation Details</h4></div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-12">
+                                    <ul rbl-source="required-documents">
+                                        <li rbl-tid="inline">{text}</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>    
+                    </div>        
+                </div>
+
+                <div class="card" rbl-display="vStep3" style="display: none;">
+                    <div class="card-header mt-1"><h4 class="card-title">Form of Payment Election</h4></div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div rbl-tid="input-radiobuttonlist" data-hidelabel="true" data-inputname="iElection" class="col-12"></div>                                
+                        </div>
+                    </div>
+                    <div rbl-display="viLSElection" style="display: none;">
+                        <div class="card-header mt-1"><h4 class="card-title" rbl-value="lsElectionHeader">Lump Sum Distribution Type (Must Select One of the Following Choices)</h4></div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div rbl-tid="input-radiobuttonlist" data-inputname="iLSElection" class="col-12" data-horizontal="true" data-hidelabel="true"></div>
+                                <div class="col-12" rbl-display="lumpSumDistribution" style="display: none;">
                                     <div class="row">
+                                        <div rbl-tid="input-radiobuttonlist" data-inputname="iRollType" class="col-sm-6" data-label="Rollover Type"></div>
+
+                                        <div class="col-sm-6">
+                                            <div rbl-tid="input-textbox" data-inputname="iInstitutionName" data-label="Name of IRA or Eligible Retirement Plan"></div>
+                                            <div rbl-tid="input-textbox" data-inputname="iIRANumber" data-label="IRA Account Number"></div>
+                                            <div rbl-tid="input-textbox" data-inputname="iRolloverAmount" data-prefix="$" data-label="Percentage of the lump-sum payment to be paid directly to me"></div>
+                                        </div>
+                                        <div class="col-sm-12 alert alert-warning" rbl-value="lumpSumDistributionNote" rbl-display="lumpSumDistributionNote" role="alert"></div>        
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div rbl-display="designateBenSpouse">
+                        <div class="card-header mt-1"><h4 class="card-title" rbl-value="designateBenSpouseHeader">Spouse Information</h4></div>
+                        <div class="card-body">
+                            <p rbl-value="designateBenSpouseIntro">Since you elected a joint annuity form of payment, you must provide the following details concerning your spouse.</p>
+                            <div class="row">
+                                <div rbl-tid="input-textbox" class="col-md-6" data-inputname="iFirstName" data-label="First Name"></div>
+                                <div rbl-tid="input-textbox" class="col-md-6" data-inputname="iLastName" data-label="Last Name"></div>
+                                <div rbl-tid="input-textbox" class="col-md-6" data-inputname="iSsn" data-label="Social Security Number (no spaces or dashes)"></div>
+                                <div rbl-tid="input-textbox" class="col-md-6" data-inputname="iDateBirth" IsDate="true" data-label="Date of Birth" data-displayonly="true"></div>
+                                <div rbl-tid="input-textbox" class="col-12" data-inputname="iAddress1" data-label="Street Address"></div>
+                                <div rbl-tid="input-textbox" class="col-12" data-inputname="iAddress2" data-hidelabel="true"></div>
+                                <div rbl-tid="input-textbox" class="col-md-4" data-inputname="iCity" data-label="City"></div>
+                                <div rbl-tid="input-dropdown" class="col-md-4" data-inputname="iState" data-label="State" data-lookuptable="TableState"></div>
+                                <div rbl-tid="input-textbox" class="col-md-4" data-inputname="iZip" data-label="Zip Code"></div>
+                                <div rbl-tid="input-textbox" class="col-md-4" data-inputname="iCountry" data-label="Country"></div>
+                                <div rbl-tid="input-textbox" class="col-md-4" data-inputname="iEveningPhone" data-label="Evening Phone"></div>
+                                <div rbl-tid="input-textbox" class="col-md-4" data-inputname="iRelation" data-label="Relationship"></div>
+                                <div class="col-12"><div class="alert alert-warning" rbl-value="designateBenSpouseNote" rbl-display="designateBenSpouseNote"></div></div>
+                            </div>
+                        </div>    
+                    </div>
+                    <div class="receivingFunds">
+                        <div class="card-header mt-1"><h4 class="card-title" rbl-value="receivingFundsHeader"></h4></div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div rbl-tid="input-checkbox" class="col-12" data-inputname="iAnnCheck" data-label="I elect my monthly annuity to be paid via a check mailed to my address on file."></div>
+                                <div class="col-12" rbl-display="directDeposit">
+                                    <div class="row">
+                                        <div class="col-12"><p rbl-value="directDepositHeader">Direct Deposit Information</p></div>                                    
+                                        <div rbl-tid="input-textbox" class="col-md-6" data-inputname="iDDNameOnAccount" data-label="Name on Account"></div>
+                                        <div rbl-tid="input-textbox" class="col-md-6" data-inputname="iDDInstitutionName" data-label="Name of Financial Institution"></div>
+                                        <div rbl-tid="input-textbox" class="col-12" data-inputname="iDDAddress" data-label="Address of Financial Institution"></div>
+                                        <div rbl-tid="input-dropdown" class="col-md-4" data-inputname="iDDAcctType" data-liveSearch="false" data-label="Type of Account"></div>
+                                        <div rbl-tid="input-textbox" class="col-md-4" data-inputname="iDDAcctNumber" data-label="Account Number"></div>
+                                        <div rbl-tid="input-textbox" class="col-md-4" data-inputname="iDDRoutingNumber" data-label="Routing Number"></div>
                                         <div class="col-12">
-                                            <ul rbl-value="requiredDocuments"></ul>
+                                            <div class="alert alert-warning" rbl-value="directDepositHeaderNote" rbl-display="directDepositHeaderNote"></div>
                                         </div>
                                     </div>
-                                </div>    
-                            </div>        
-                        </div>
-                    </div>
-                </div>
-
-                <div class="col-12 mt-2"><a class="btn btn-primary-outline pl-2 btnNavigation" data-direction="-1"><span class="glyphicons glyphicons-chevron-left"></span>Back to Retirement Information</a></div>    
-
-                <div class="card-header mt-1"><h4 class="card-title">KAT TO DO</h4></div>
-                <div class="card-body">
-                    <p>Landing Confirm:</p>
-                    <ul>
-                        <li>Hide/clear/update electionIntro (didn't include confirmIntro)</li>
-                        <li>When all elections made</li>
-                        <ul>
-                            <li>Code up table required-document-progress to generate Document/Delivery/Status/Action table</li>
-                            <li>upload-controls for visibility, in ESS logic is based on whether they have doc to upload (required-document-progress table is not blank) and date-upload-end isn't past</li>
-                            <li>iUploadType - need to put that in ejs-listcontrols to build the drop down that controls documents available in upload control</li>
-                        </ul>
-                    </ul>
-                    <p>Plan Election</p>
-                    <ul>
-                        <li>Hide/clear/update electionIntro</li>
-                        <li>rbleSkip on any controls that don't show/hide sections</li>
-                        <li>Hide lumpSumDistributionNote if you are not going to use it, appears empty right now?</li>
-                        <li>iDateBirth value is 1/0/1900 instead of correctly using input from first page</li>
-                        <li>Validation of inputs (can currently click submit without filling everything out)</li>
-                        <li>Confirm prompt (let me know if questions)</li>
-                        <li>Does iElection change based on plan?  Think yes.  You probably need to include entire list of all possible when you build iElection originally, then just return id/visible (text too if you want to change text) when going to plan elections to show appropriate ones</li>
-                    </ul>
-                    <p>Plan Election Confirm:</p>
-                    <ul>
-                        <li>Hide/clear electionIntro</li>
-                        <li>After save (or before start) need to assign/clear all inputs, b/c I went thru 2 elections and previous values were selected</li>
-                        <li>Make sure to add validation of 'everything' when they do the submit, to protect against POST hacking (i.e. all inputs valid, iPlan is valid, iElection is valid choice given data - instead of just 'required') - might be simpler if we are hosting in site in our frameworks/Evolution when you can rely on 'data' versus all inputs</li>
-                        <li>Use electionConfirm for a 'simple' confirm after plan election</li>
-                    </ul>
-                </div>
-            </div>
-
-            <div class="card" rbl-display="vStep3" style="display: none;">
-                <div class="card-header mt-1"><h4 class="card-title">Form of Payment Election</h4></div>
-                <div class="card-body">
-                    <div class="row">
-                        <div rbl-tid="input-radiobuttonlist" data-hidelabel="true" data-inputname="iElection" class="col-12"></div>                                
-                    </div>
-                </div>
-                <div rbl-display="viLSElection" style="display: none;">
-                    <div class="card-header mt-1"><h4 class="card-title" rbl-value="lsElectionHeader">Lump Sum Distribution Type (Must Select One of the Following Choices)</h4></div>
-                    <div class="card-body">
-                        <div class="row">
-                            <div rbl-tid="input-radiobuttonlist" data-inputname="iLSElection" class="col-12" data-horizontal="true" data-hidelabel="true"></div>
-                            <div class="col-12" rbl-display="lumpSumDistribution" style="display: none;">
-                                <div class="row">
-                                    <div rbl-tid="input-radiobuttonlist" data-inputname="iRollType" class="col-sm-6" data-label="Rollover Type"></div>
-
-                                    <div class="col-sm-6">
-                                        <div rbl-tid="input-textbox" data-inputname="iInstitutionName" data-label="Name of IRA or Eligible Retirement Plan"></div>
-                                        <div rbl-tid="input-textbox" data-inputname="iIRANumber" data-label="IRA Account Number"></div>
-                                        <div rbl-tid="input-textbox" data-inputname="iRolloverAmount" data-prefix="$" data-label="Percentage of the lump-sum payment to be paid directly to me"></div>
-                                    </div>
-                                    <div class="col-sm-12 alert alert-warning" rbl-value="lumpSumDistributionNote" rbl-display="lumpSumDistributionNote" role="alert"></div>        
                                 </div>
                             </div>
-                        </div>
+                        </div>    
                     </div>
-                </div>
-                <div rbl-display="designateBenSpouse">
-                    <div class="card-header mt-1"><h4 class="card-title" rbl-value="designateBenSpouseHeader">Spouse Information</h4></div>
-                    <div class="card-body">
-                        <p rbl-value="designateBenSpouseIntro">Since you elected a joint annuity form of payment, you must provide the following details concerning your spouse.</p>
-                        <div class="row">
-                            <div rbl-tid="input-textbox" class="col-md-6" data-inputname="iFirstName" data-label="First Name"></div>
-                            <div rbl-tid="input-textbox" class="col-md-6" data-inputname="iLastName" data-label="Last Name"></div>
-                            <div rbl-tid="input-textbox" class="col-md-6" data-inputname="iSsn" data-label="Social Security Number (no spaces or dashes)"></div>
-                            <div rbl-tid="input-textbox" class="col-md-6" data-inputname="iDateBirth" IsDate="true" data-label="Date of Birth" data-displayonly="true"></div>
-                            <div rbl-tid="input-textbox" class="col-12" data-inputname="iAddress1" data-label="Street Address"></div>
-                            <div rbl-tid="input-textbox" class="col-12" data-inputname="iAddress2" data-hidelabel="true"></div>
-                            <div rbl-tid="input-textbox" class="col-md-4" data-inputname="iCity" data-label="City"></div>
-                            <div rbl-tid="input-dropdown" class="col-md-4" data-inputname="iState" data-label="State" data-lookuptable="TableState"></div>
-                            <div rbl-tid="input-textbox" class="col-md-4" data-inputname="iZip" data-label="Zip Code"></div>
-                            <div rbl-tid="input-textbox" class="col-md-4" data-inputname="iCountry" data-label="Country"></div>
-                            <div rbl-tid="input-textbox" class="col-md-4" data-inputname="iEveningPhone" data-label="Evening Phone"></div>
-                            <div rbl-tid="input-textbox" class="col-md-4" data-inputname="iRelation" data-label="Relationship"></div>
-                            <div class="col-12"><div class="alert alert-warning" rbl-value="designateBenSpouseNote" rbl-display="designateBenSpouseNote"></div></div>
-                        </div>
-                    </div>    
-                </div>
-                <div class="receivingFunds">
-                    <div class="card-header mt-1"><h4 class="card-title" rbl-value="receivingFundsHeader"></h4></div>
-                    <div class="card-body">
-                        <div class="row">
-                            <div rbl-tid="input-checkbox" class="col-12" data-inputname="iAnnCheck" data-label="I elect my monthly annuity to be paid via a check mailed to my address on file."></div>
-                            <div class="col-12" rbl-display="directDeposit">
-                                <div class="row">
-                                    <div class="col-12"><p rbl-value="directDepositHeader">Direct Deposit Information</p></div>                                    
-                                    <div rbl-tid="input-textbox" class="col-md-6" data-inputname="iDDNameOnAccount" data-label="Name on Account"></div>
-                                    <div rbl-tid="input-textbox" class="col-md-6" data-inputname="iDDInstitutionName" data-label="Name of Financial Institution"></div>
-                                    <div rbl-tid="input-textbox" class="col-12" data-inputname="iDDAddress" data-label="Address of Financial Institution"></div>
-                                    <div rbl-tid="input-dropdown" class="col-md-4" data-inputname="iDDAcctType" data-liveSearch="false" data-label="Type of Account"></div>
-                                    <div rbl-tid="input-textbox" class="col-md-4" data-inputname="iDDAcctNumber" data-label="Account Number"></div>
-                                    <div rbl-tid="input-textbox" class="col-md-4" data-inputname="iDDRoutingNumber" data-label="Routing Number"></div>
-                                    <div class="col-12">
-                                        <div class="alert alert-warning" rbl-value="directDepositHeaderNote" rbl-display="directDepositHeaderNote"></div>
-                                    </div>
+                    <div rbl-display="federalWithholding">
+                        <div class="card-header mt-1"><h4 class="card-title" rbl-value="federalWithholdingHeader">Federal Tax Withholding (Must Select One of the Following Choices)</h4></div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div rbl-tid="input-radiobuttonlist" data-inputname="iWithholding" class="col-12" Label='Withholding'></div>
+                
+                                <div class="col-md-6">
+                                    <div rbl-tid="input-textbox" data-inputname="iAllowance" data-label='Federal Tax Allowances'></div>
+                                    <div rbl-tid="input-textbox" data-inputname="iWithholdingAmount" data-prefix="$" Label='Fixed Amount'></div>
+                                </div>
+
+                                <div rbl-tid="input-radiobuttonlist" data-inputname="iMaritalStatusTax" class="col-md-6" Label='Form W-4P Marital Status'></div>
+
+                                <div class="col-12">
+                                    <div class="alert alert-warning" rbl-value="federalWithholdingNote" rbl-display="federalWithholdingNote">State tax will only be withheld if deemed mandatory by your state on file.</div>
                                 </div>
                             </div>
-                        </div>
-                    </div>    
-                </div>
-                <div rbl-display="federalWithholding">
-                    <div class="card-header mt-1"><h4 class="card-title" rbl-value="federalWithholdingHeader">Federal Tax Withholding (Must Select One of the Following Choices)</h4></div>
-                    <div class="card-body">
-                        <div class="row">
-                            <div rbl-tid="input-radiobuttonlist" data-inputname="iWithholding" class="col-12" Label='Withholding'></div>
-            
-                            <div class="col-md-6">
-                                <div rbl-tid="input-textbox" data-inputname="iAllowance" data-label='Federal Tax Allowances'></div>
-                                <div rbl-tid="input-textbox" data-inputname="iWithholdingAmount" data-prefix="$" Label='Fixed Amount'></div>
+                        </div>    
+                    </div>
+                    <div rbl-display="importantNote">
+                        <div class="card-header mt-1"><h4 class="card-title" rbl-value="importantNoteHeader">Important Note</h4></div>
+                        <div class="card-body">
+                            <p><b>Additional Forms of Payment Are Available</b></p><br>
+                            <p>Because you are eligible for early retirement under the Plan, additional payment options are available to you, including a 10&nbsp;Year&nbsp;Certain&nbsp;&amp;&nbsp;Life&nbsp;Option, 66-2/3% Joint and Survivor Annuity and Level Income Option (if you begin Plan benefits before you are eligible for benefits from Social Security).</p>
+                        </div>    
+                    </div>
+                    <div rbl-display="requiredDocumentation">
+                        <div class="card-header mt-1"><h4 class="card-title" rbl-value="requiredDocumentationHeader">Required Documentation Details</h4></div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-12">
+                                    <p rbl-value="requiredDocumentationIntro">I understand that my application requires me to provide the following documentation:</p>
+                                    <ul rbl-source="required-documents">
+                                        <li rbl-tid="inline">{text}</li>
+                                    </ul>
+                                </div>
                             </div>
-
-                            <div rbl-tid="input-radiobuttonlist" data-inputname="iMaritalStatusTax" class="col-md-6" Label='Form W-4P Marital Status'></div>
-
-                            <div class="col-12">
-                                <div class="alert alert-warning" rbl-value="federalWithholdingNote" rbl-display="federalWithholdingNote">State tax will only be withheld if deemed mandatory by your state on file.</div>
+                        </div>    
+                    </div>
+                    <div rbl-display="ptpAcknowledge">
+                        <div class="card-header mt-1"><h4 class="card-title" rbl-value="ptpAcknowledgeHeader">Participant Acknowledgement</h4></div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-12">
+                                    <p rbl-value="ptpAcknowledgeIntro">I have examined the personal information on this website and it is correct. I certify that the information I have provided herein is accurate. I understand that I am entitled to at least 30 days from receipt of this notice to consider my benefit election. If I submit my election before the end of the 30-day period, I am waiving my right to the remainder of the 30-day period. I further understand that I may revoke my election at any time prior to my benefit commencement date.<br><br>I have read the explanation of my payment above and in the Plan’s Summary Plan Description (SPD). I understand that if I elect a lump-sum payment, no additional benefits will be due to me or any survivor under the Plan. I acknowledge that I have read the <i>Special Tax Notice Regarding Plan Payments</i>.<br><br>I understand that by submitting this election, I revoke all benefit elections and/or beneficiary designations previously made by me. I further understand that I may not change my option of payment elected after my benefit commencement date.</p>
+                                </div>
+                                <div rbl-tid="input-checkbox" data-inputname="iConfirmElection" class="col-12" data-label="I agree that I have reviewed my election and acknowledge the above."></div>
                             </div>
-                        </div>
-                    </div>    
+                        </div>    
+                    </div>
                 </div>
-                <div rbl-display="importantNote">
-                    <div class="card-header mt-1"><h4 class="card-title" rbl-value="importantNoteHeader">Important Note</h4></div>
-                    <div class="card-body">
-                        <p><b>Additional Forms of Payment Are Available</b></p><br>
-                        <p>Because you are eligible for early retirement under the Plan, additional payment options are available to you, including a 10&nbsp;Year&nbsp;Certain&nbsp;&amp;&nbsp;Life&nbsp;Option, 66-2/3% Joint and Survivor Annuity and Level Income Option (if you begin Plan benefits before you are eligible for benefits from Social Security).</p>
-                    </div>    
-                </div>
-                <div rbl-display="requiredDocumentation">
-                    <div class="card-header mt-1"><h4 class="card-title" rbl-value="requiredDocumentationHeader">Required Documentation Details</h4></div>
-                    <div class="card-body">
-                        <div class="row">
-                            <div class="col-12">
-                                <p rbl-value="requiredDocumentationIntro">I understand that my application requires me to provide the following documentation:</p>
-                                <ul rbl-value="requiredDocuments">
-                                    <li><b>Proof of my age</b> - via a photocopy of my birth certificate or passport. Please <i>do not</i> send in an original document as it will not be returned to you.</li>
-                                    <li><b>If married, proof of my marital status</b> via a photocopy of my public record of marriage (marriage license) or marriage certificate. Please <i>do not</i> send in an original document as it will not be returned to you. By providing a copy of my marriage license or marriage certificate, I am certifying that I am legally married to the individual named in the marriage license or marriage certificate as of the date I deliver my election to the Arizona Igloo Retirement Benefits Service Center.</li>
-                                    <li><b>If married, proof of my spouse's consent</b> to this election and waiver of the normal payment option for married participants. My spouse must sign the <i>Consent of Spouse Form</i> and have it notarized; I must return the completed, notarized form to the Arizona Igloo Retirement Benefits Service Center by scanning and uploading it to the secure website, via secure fax or by mail. (Note: This is not required if you are electing a 50%, 75% or 100% Joint and Survivor Annuity with your spouse as the beneficiary.)</li>
-                                </ul>
-                            </div>
-                        </div>
-                    </div>    
-                </div>
-                <div rbl-display="ptpAcknowledge">
-                    <div class="card-header mt-1"><h4 class="card-title" rbl-value="ptpAcknowledgeHeader">Participant Acknowledgement</h4></div>
-                    <div class="card-body">
-                        <div class="row">
-                            <div class="col-12">
-                                <p rbl-value="ptpAcknowledgeIntro">I have examined the personal information on this website and it is correct. I certify that the information I have provided herein is accurate. I understand that I am entitled to at least 30 days from receipt of this notice to consider my benefit election. If I submit my election before the end of the 30-day period, I am waiving my right to the remainder of the 30-day period. I further understand that I may revoke my election at any time prior to my benefit commencement date.<br><br>I have read the explanation of my payment above and in the Plan’s Summary Plan Description (SPD). I understand that if I elect a lump-sum payment, no additional benefits will be due to me or any survivor under the Plan. I acknowledge that I have read the <i>Special Tax Notice Regarding Plan Payments</i>.<br><br>I understand that by submitting this election, I revoke all benefit elections and/or beneficiary designations previously made by me. I further understand that I may not change my option of payment elected after my benefit commencement date.</p>
-                            </div>
-                            <div rbl-tid="input-checkbox" data-inputname="iConfirmElection" class="col-12" data-label="I agree that I have reviewed my election and acknowledge the above."></div>
-                        </div>
-                    </div>    
-                </div>
-            </div>
 
-            <div class="card" rbl-display="vStep4" style="display: none;">
-                <div class="card-header mt-1"><h4 class="card-title">Election Confirmation</h4></div>
-                <div class="card-body">
-                    <div rbl-value="electionConfirm"></div>
+                <div class="card" rbl-display="vStep4" style="display: none;">
+                    <div class="card-header mt-1"><h4 class="card-title">Election Confirmation</h4></div>
+                    <div class="card-body">
+                        <div rbl-value="electionConfirm"></div>
+                    </div>
                 </div>
-            </div>
-            <div class="ajaxloader"></div>
+                <div class="ajaxloader"></div>
 
-            <div class="row mt-2">
-                <div class="col-12">
-                    <a class="btn btnNavigation" rbl-display="btnPrevious" data-direction="-1" id="{id}_Previous" style="display: none;"><span class="glyphicons glyphicons-chevron-left"></span><span class="d-none d-md-inline-block">Previous</span></a>
-                    <a class="btn btn-primary btnNavigation" rbl-display="btnContinue" data-direction="1" id="{id}_Continue"><span class="d-none d-md-inline-block">Continue</span><span class="glyphicons glyphicons-chevron-right"></span></a>
-                    <a class="btn btn-primary btnNavigation" rbl-display="btnSubmit" data-direction="1" data-confirm-selector="#{id}_electionConfirm" data-submit-key="[rbl-display='btnContinue']" id="{id}_Submit">Submit</a>
-                    <div class="d-none" id="{id}_electionConfirm" rbl-value="electionConfirm"></div>
+                <div class="row mt-2">
+                    <div class="col-12">
+                        <a class="btn btn-primary-outline btnNavigation" rbl-value="btnPrevious" rbl-display="btnPrevious" data-direction="-1" id="{id}_Previous" style="display: none;"><span class="glyphicons glyphicons-chevron-left"></span><span class="d-none d-md-inline-block">Previous</span></a>
+                        <a class="btn btn-primary btnNavigation" rbl-value="btnContinue" rbl-display="btnContinue" data-direction="1" id="{id}_Continue"><span class="d-none d-md-inline-block">Continue</span><span class="glyphicons glyphicons-chevron-right"></span></a>
+                        <a class="btn btn-primary btnNavigation" rbl-display="btnSubmit" data-direction="1" data-confirm-selector="#{id}_electionConfirm" data-submit-key="[rbl-display='btnContinue']" id="{id}_Submit">Submit</a>
+                        <div class="d-none" id="{id}_electionConfirm" rbl-value="electionConfirm"></div>
+                    </div>
+                    <div class="col-12 pt-2">
+                        <div rbl-tid="validation-summary"></div>
+                    </div>
                 </div>
-                <div class="col-12 pt-2">
-                    <div rbl-tid="validation-summary"></div>
-                </div>
-            </div>
-        </div>                    
+            </div>                    
+        </div>
     </div>
-</div>
+</section>
 
 <script>
 	(function(){
@@ -377,7 +342,7 @@
             }
             
             if ( direction == "1" && step == "2" ) {
-                saveRetirementInformation(application);
+                // saveRetirementInformation(application);
             }
 
             if ( step == "4" ) {
@@ -395,7 +360,7 @@
                 if ( planArrInd > -1 ) electionData.Plans[ planArrInd ] = plan;
                 else electionData.Plans.push( plan );
 
-                setElectionData(electionData);
+                // setElectionData(electionData);
             }
         });
 

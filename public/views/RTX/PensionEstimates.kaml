@@ -60,82 +60,84 @@
     }
 </style>
 
-<div id="rblMarkup" class="rblApplication rblMarkup container mb-5" style="display: none;">
-    <div class="d-none">
-    </div>
-    <h2 class="title">Pension Estimate</h2>
-    <div class="row ajaxContent">
-        <div class="col-md-6 recalcInputs">
-            <div class="card mt-0">
-                <div class="card-header mt-1"><h4 class="card-title">Assumptions</h4></div>
-                <div class="card-body">
-                    <div class="row">
-                        <div class="col-md-12">
-                            <div rbl-tid="input-checkbox" data-inputcss="rbl-nocalc" data-inputname="iAdditionalDates"></div>
-                            <div class="d-sm-none d-md-block">
-                                <div class="row both-scenarios-v" style="display: none;">
-                                    <div class="col-md-6"><div class="scenario-header">Scenario 1</div></div>
-                                    <div class="col-md-6"><div class="scenario-header">Scenario 2</div></div>
+<section id="pension-estimates" class="pension-estimates section-padding scroll-indicator" data-scroll-indicator-title="Pension Estimates">
+    <div id="rblMarkup" class="rblApplication rblMarkup container mb-5" style="display: none;">
+        <div class="d-none">
+        </div>
+        <h2 class="title">Pension Estimate</h2>
+        <div class="row ajaxContent">
+            <div class="col-md-6 recalcInputs">
+                <div class="card mt-0">
+                    <div class="card-header mt-1"><h4 class="card-title">Assumptions</h4></div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-12">
+                                <div rbl-tid="input-checkbox" data-inputcss="rbl-nocalc" data-inputname="iAdditionalDates"></div>
+                                <div class="d-sm-none d-md-block">
+                                    <div class="row both-scenarios-v" style="display: none;">
+                                        <div class="col-md-6"><div class="scenario-header">Scenario 1</div></div>
+                                        <div class="col-md-6"><div class="scenario-header">Scenario 2</div></div>
+                                    </div>
+                                </div>
+                                <div rbl-tid="input-textbox-2col" data-inputname="iDateBenComm" data-inputname2="iDateBenComm2" data-type="date" data-placeholder="required"></div>
+                                <div rbl-tid="input-textbox-2col" data-inputname="iDateTerm" data-inputname2="iDateTerm2" data-type="date" data-placeholder="optional"></div>
+                                <div rbl-tid="input-textbox-2col" data-inputname="iDateBirthBen" data-inputname2="iDateBirthBen2" data-type="date" data-placeholder="optional"></div>
+                                <div rbl-tid="input-slider-2col" data-inputname="iSalScale" data-inputname2="iSalScale2"></div>
+                            </div>
+                            <div class="col-sm-12">
+                                <div rbl-tid="validation-summary"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div> 
+                <a class="btn btn-primary mt-2" id="{id}_calculateButton">Calculate</a>
+            </div>
+            <div class="col-md-6">
+                <div class="panel panel-default mt-0">
+                    <div class="card-header mt-1"><h4 class="card-title">Results</h4></div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-12">
+                                <div class="text-center">
+                                    <div rbl-tid="chart-highcharts" rbl-chartdata="RetirementIncomeChart"></div>
                                 </div>
                             </div>
-                            <div rbl-tid="input-textbox-2col" data-inputname="iDateBenComm" data-inputname2="iDateBenComm2" data-type="date" data-placeholder="required"></div>
-                            <div rbl-tid="input-textbox-2col" data-inputname="iDateTerm" data-inputname2="iDateTerm2" data-type="date" data-placeholder="optional"></div>
-                            <div rbl-tid="input-textbox-2col" data-inputname="iDateBirthBen" data-inputname2="iDateBirthBen2" data-type="date" data-placeholder="optional"></div>
-                            <div rbl-tid="input-slider-2col" data-inputname="iSalScale" data-inputname2="iSalScale2"></div>
-                        </div>
-                        <div class="col-sm-12">
-                            <div rbl-tid="validation-summary"></div>
-                        </div>
-                    </div>
-                </div>
-            </div> 
-            <a class="btn btn-primary mt-2" id="{id}_calculateButton">Calculate</a>
-        </div>
-        <div class="col-md-6">
-            <div class="panel panel-default mt-0">
-                <div class="card-header mt-1"><h4 class="card-title">Results</h4></div>
-                <div class="card-body">
-                    <div class="row">
-                        <div class="col-md-12">
-                            <div class="text-center">
-                                <div rbl-tid="chart-highcharts" rbl-chartdata="RetirementIncomeChart"></div>
+                            <div class="col-md-12">
+                                <div rbl-tid="input-dropdown" data-liveSearch="false" data-inputname="iPaymentForm"></div>
+                                <div class="ml-3 small" rbl-display="viPaymentForm">
+                                    <a href="#" data-toggle='modal' data-target='#{id}_all-forms-payment'>See all forms of payment</a>
+                                </div>        
                             </div>
+                            <div class="recalcNeeded recalcWrapper"></div>
+                            <div class="recalcNeeded recalcLogoText">
+                                <span class="glyphicons glyphicons-refresh"></span>
+                                <div class="recalcText"><p>Click calculate to refresh</p></div>
+                            </div>                    
                         </div>
-                        <div class="col-md-12">
-                            <div rbl-tid="input-dropdown" data-liveSearch="false" data-inputname="iPaymentForm"></div>
-                            <div class="ml-3 small" rbl-display="viPaymentForm">
-                                <a href="#" data-toggle='modal' data-target='#{id}_all-forms-payment'>See all forms of payment</a>
-                            </div>        
-                        </div>
-                        <div class="recalcNeeded recalcWrapper"></div>
-                        <div class="recalcNeeded recalcLogoText">
-                            <span class="glyphicons glyphicons-refresh"></span>
-                            <div class="recalcText"><p>Click calculate to refresh</p></div>
-                        </div>                    
                     </div>
-                </div>
-            </div> 
-        </div>
-        <div class="ajaxloader"></div>
-    </div>            
-    
-    <div class="modal fade" id="{id}_all-forms-payment" tabindex="-1" role="dialog" data-backdrop="static">
-        <div class="modal-dialog modal-lg">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h4 class="modal-title" rbl-value="all-forms-payment-header">All Forms of Payment - Starting at age 65</h4>
-                    <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
-                </div>
-                <div class="modal-body">
-                    <div rbl-tid="result-table" rbl-tablename="ret-estimate"></div>
-                </div>
-                <div class="modal-footer text-center">
-                    <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+                </div> 
+            </div>
+            <div class="ajaxloader"></div>
+        </div>            
+        
+        <div class="modal fade" id="{id}_all-forms-payment" tabindex="-1" role="dialog" data-backdrop="static">
+            <div class="modal-dialog modal-lg">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h4 class="modal-title" rbl-value="all-forms-payment-header">All Forms of Payment - Starting at age 65</h4>
+                        <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                    </div>
+                    <div class="modal-body">
+                        <div rbl-tid="result-table" rbl-tablename="ret-estimate"></div>
+                    </div>
+                    <div class="modal-footer text-center">
+                        <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
-</div>
+</section>
 
 <script>
 	(function(){

@@ -86,9 +86,9 @@
     </div>
     <div class="row">
         <div class="form-group vSampleData col-sm-6">
-            <label for="" class="control-label lSampleData">Sample Data</label>
+            <label for="" class="control-label lSampleData">Sample Data (json)</label>
             <div class="validator-container">
-                <input name="SampleData" id="SampleData" type="text" placeholder="i.e. xDataDefs/xDataDef/Profile" class="form-control SampleData">
+                <input name="SampleData" id="SampleData" type="text" placeholder="paste json from DataSource" class="form-control SampleData">
                 <span class="error-msg" data-toggle="tooltip" data-placement="top"></span>
             </div>
         </div>
@@ -284,12 +284,19 @@
                     
                     const options = KatApp.extend( {}, KatApp.defaultOptions, { 
                         view: currentView,
-                        calcEngine: calcEngine
+                        calcEngine: calcEngine,
+                        getData: ($(".SampleData").val() || "" ) != ""
+                            ? function( application, _options, done ) {    
+                                application.trace("Using sample data from Debugger.kaml", TraceVerbosity.Normal);
+                                done(JSON.parse($(".SampleData").val()));
+                            }
+                            : KatApp.defaultOptions.getData
                     } );
 
                     // This is deleted each time the 'real' Provider js runs, so rebuild it and reset factory to shim factory
                     $.fn.KatApp.plugInShims = [];
                     $.fn.KatApp.applicationFactory = $.fn.KatApp.debugApplicationFactory;
+                    $.fn.KatApp.sharedData = { requesting: false, callbacks: [] };
                     $("rbl-katapps > rbl-templates").remove(); // remove templates
                     $.fn.KatApp.templatesUsedByAllApps = {};
                     $.fn.KatApp.templateDelegates = [];

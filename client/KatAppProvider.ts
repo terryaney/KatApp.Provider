@@ -644,7 +644,12 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                         // If failed, let it do next job (getData, register, resubmit), otherwise, jump to finish
                         errorMessage => { 
                             pipelineError = errorMessage; 
-                            calculatePipeline( errorMessage !== undefined ? 0 : 3 );
+
+                            const offset = currentOptions.registeredToken === undefined && currentOptions.data === undefined 
+                                ? 0 
+                                : 3;
+
+                            calculatePipeline( offset );
                         } 
                     );
                 } catch (error) {
@@ -2024,7 +2029,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                     target.html( value );
                 }
                 else {
-                    application.trace("<b style='color: Red;'>RBL WARNING</b>: no data returned for rbl-value=" + el.attr('rbl-value'), TraceVerbosity.Minimal);
+                    application.trace("<b style='color: Red;'>RBL WARNING</b>: no data returned for rbl-value=" + el.attr('rbl-value'), TraceVerbosity.Detailed);
                 }
             });
         }
@@ -2058,10 +2063,10 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                         : that.ui.getTemplate( tid, elementData )?.Content; 
 
                     if ( templateContent === undefined ) {
-                        application.trace("<b style='color: Red;'>RBL WARNING</b>: Template content could not be found: [" + tid + "].", TraceVerbosity.Minimal);
+                        application.trace("<b style='color: Red;'>RBL WARNING</b>: Template content could not be found: [" + tid + "].", TraceVerbosity.Detailed);
                     }
                     else if ( rblSourceParts === undefined || rblSourceParts.length === 0) {
-                        application.trace("<b style='color: Red;'>RBL WARNING</b>: no rbl-source data", TraceVerbosity.Quiet);
+                        application.trace("<b style='color: Red;'>RBL WARNING</b>: no rbl-source data", TraceVerbosity.Detailed);
                     }
                     else if ( rblSourceParts.length === 1 || rblSourceParts.length === 3 ) {
                         
@@ -2091,7 +2096,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                             })
 
                         } else {
-                            application.trace("<b style='color: Red;'>RBL WARNING</b>: no data returned for rbl-source=" + el.attr('rbl-source'), TraceVerbosity.Normal);
+                            application.trace("<b style='color: Red;'>RBL WARNING</b>: no data returned for rbl-source=" + el.attr('rbl-source'), TraceVerbosity.Detailed);
                         }
 
                     } else if ( rblSourceParts.length === 2 ) {
@@ -2102,7 +2107,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                             el.html( templateContent.format( row ) );
                         }
                         else {
-                            application.trace("<b style='color: Red;'>RBL WARNING</b>: no data returned for rbl-source=" + el.attr('rbl-source'), TraceVerbosity.Normal);
+                            application.trace("<b style='color: Red;'>RBL WARNING</b>: no data returned for rbl-source=" + el.attr('rbl-source'), TraceVerbosity.Detailed);
                         }
 
                     }
@@ -2114,7 +2119,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                             el.html( templateContent.format( { "value": value } ) );                                    
                         }
                         else {
-                            application.trace("<b style='color: Red;'>RBL WARNING</b>: no data returned for rbl-source=" + el.attr('rbl-source'), TraceVerbosity.Normal);
+                            application.trace("<b style='color: Red;'>RBL WARNING</b>: no data returned for rbl-source=" + el.attr('rbl-source'), TraceVerbosity.Detailed);
                         }
 
                     }
@@ -2157,7 +2162,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                     }
                 }
                 else {
-                    application.trace("<b style='color: Red;'>RBL WARNING</b>: no data returned for rbl-display=" + el.attr('rbl-display'), TraceVerbosity.Diagnostic);
+                    application.trace("<b style='color: Red;'>RBL WARNING</b>: no data returned for rbl-display=" + el.attr('rbl-display'), TraceVerbosity.Detailed);
                 }
             });
 
@@ -2665,7 +2670,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                         return configIds.indexOf( r.getAttribute( "data-inputname" ) ) < 0;
                     })
                     .each( ( i, r ) => {
-                        application.trace("<b style='color: Red;'>RBL WARNING</b>: No slider configuration can be found for " + r.getAttribute( "data-inputname" ) + ".", TraceVerbosity.None);
+                        application.trace("<b style='color: Red;'>RBL WARNING</b>: No slider configuration can be found for " + r.getAttribute( "data-inputname" ) + ".", TraceVerbosity.Detailed);
                     });
             }
 
@@ -2680,7 +2685,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                 const sliderJQuery = $(".slider-" + id, application.element);
 
                 if ( sliderJQuery.length !== 1 ) {
-                    application.trace("<b style='color: Red;'>RBL WARNING</b>: No slider div can be found for " + id + ".", TraceVerbosity.Minimal);
+                    application.trace("<b style='color: Red;'>RBL WARNING</b>: No slider div can be found for " + id + ".", TraceVerbosity.Detailed);
                 }
                 else {
                     const minValue = Number( config.min );

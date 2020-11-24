@@ -172,7 +172,11 @@ class KatApp
             ( resources === "Global:KatAppProvider.js"
                 ? "http://localhost:8887/js/"
                 : "http://localhost:8887/views/" );
-                
+
+        if ( !( application.element.data("kat-local-domain-reachable") ?? true ) ) {
+            localDomain = undefined;
+        }
+
         let useLocalResources = localDomain !== undefined; // global value for all requested resources
         // viewParts[ 0 ], viewParts[ 1 ]
         // folder: string, resource: string, optional Version
@@ -206,6 +210,7 @@ class KatApp
                             if ( !responded ) {
                                 localDomain = undefined;
                                 useLocalResources = false;
+                                application.element.data("kat-local-domain-reachable", false);
                             }
                             getResourcesPipeline(); // Now start downloading resources
                         });
@@ -269,6 +274,7 @@ class KatApp
                                         data: !useLocalResource && !isRelativePath ? JSON.stringify( o ) : undefined,
                                         method: !useLocalResource && !isRelativePath ? "POST" : undefined,
                                         dataType: !useLocalResource && !isRelativePath ? "json" : undefined,
+                                        // async: true, // NO LONGER ALLOWED TO BE FALSE BY BROWSER
                                         cache: false
                                     };
             

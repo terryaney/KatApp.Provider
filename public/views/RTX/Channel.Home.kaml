@@ -1,0 +1,673 @@
+﻿<script type="text/javascript" src="resources/js/core.js"></script>
+
+	
+<!-- ============================================================================================================= -->
+<!--                                   				START - BODY CONENT																									 -->
+<!-- ============================================================================================================= -->
+<div id="home" class="site-content scroll-indicator" data-scroll-indicator-title="Top">
+	
+
+<!-- ============================================================================================================= -->
+<!--                                   				START - EMERGENCY ALERT MESSAGES																		 -->
+<!-- ============================================================================================================= -->
+<!--<section id="emergencyAlert" class="emergencyAlert">
+  <div class="alert alert-black">
+    <strong>COVID!</strong> Service center is experiencing high call volume. <a href="#null" data-toggle="modal" data-target="#modal-Emergency" class="btn btn-black alertMessage">Learn More</a>
+  </div>
+</section>-->
+<!-- ============================================================================================================= -->
+<!--                                   				END - EMERGENCY MESSAGES																						 -->
+<!-- ============================================================================================================= -->
+
+
+
+
+
+
+
+
+
+<!-- ============================================================================================================= -->
+<!--                                   				START - HERO																												 -->
+<!-- ============================================================================================================= -->
+<section id="hero" class="hero heroDB hideme">
+  <div class="container-fluid">
+    <div class="row">
+      <div class="col col-md-12">
+        <div class="hero-content text-center">
+          <h1>Learn about your pension </h1>
+					<h3>Answers to all your questions</h3>
+					<a href="javascript:void(0)" class="btn btn-primary btn-lg heroLink" data-toggle="modal" data-target="#modal-DB">More Info</a>
+        </div>
+      </div>
+
+    </div>	
+  </div>
+  <div class="down-arrow floating-arrow"><span class="glyphicons glyphicons-mouse-scroll"></span></div>
+</section>
+<!-- ============================================================================================================= -->
+<!--                                   				END - HERO																													 -->
+<!-- ============================================================================================================= -->
+
+
+
+<style>
+.alertMoreMenu{width: 95%;height:98%;background-color:#fff;position:absolute;z-index:1;display: none;}
+	.alertMenuRemove {
+		font-size: 18px;
+	}
+.alertMoreMenu .card-body {
+	margin: 0;
+  position: relative;
+  top: 50%;
+  left: 40%;
+	font-size: 18px;
+}
+</style>
+
+
+
+	
+	
+
+
+<!-- ============================================================================================================= -->
+<!--                                   				START - ALERT CENTER																								 -->
+<!-- ============================================================================================================= -->   
+<section id="alertCenter" class="alertCenter section-padding scroll-indicator hideme" data-scroll-indicator-title="Alert Center">
+
+	<h2 class="title">Alert Center</h2>
+	
+	
+<div id="swipe" class="container">	
+	
+	
+<!-- Slider main container -->
+<div class="swiper-container">
+  <!-- Additional required wrapper -->
+  <div class="swiper-wrapper">
+      <!-- Slides -->
+		
+      <div class="swiper-slide">
+        <div class="card h-100">
+          <div class="row no-gutters">
+            <div class="col-2">
+              <img src="resources/images/Icon_Suggestion.png" class="card-img" alt="Suggestion"><div class="text-center"><small></small></div>
+            </div>
+            <div class="col-10">
+              <div class="card-body">
+                <h5 class="card-title">Increase your pension amount </h5>
+                <p class="card-text card-content">You get an additional Company subsidy if you work till age 65.</p>
+                <a href="#null" class="cardHover stretched-link" aria-expanded="false"></a>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+		
+        
+      <div class="swiper-slide">
+        <div class="card h-100">
+          <div class="row no-gutters">
+            <div class="col-2">
+              <img src="resources/images/Icon_Suggestion.png" class="card-img" alt="Suggestion"><div class="text-center"><small></small></div>
+            </div>
+            <div class="col-10">
+              <div class="card-body">
+                <h5 class="card-title">How much is your pension worth? </h5>
+                <p class="card-text card-content">Now that you turned 50, try the Pension Calculator to estimate at key retirement dates.</p>
+                <a href="#null" class="cardHover stretched-link" aria-expanded="false"></a>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+		
+      <div class="swiper-slide">
+        <div class="card h-100">
+          <div class="row no-gutters">
+            <div class="col-2">
+              <img src="resources/images/Icon_Docs.png" class="card-img" alt="Message"><div class="text-center"><small></small></div>
+            </div>
+            <div class="col-10">
+              <div class="card-body">
+                <h5 class="card-title">Retirement Packet </h5>
+                <p class="card-text card-content">Was mailed to your home address on Nov 6, 2020.</p>
+                <p class="card-text"><small class="text-muted">Sent: Nov 6, 2020</small></p>
+                <a href="#null" class="cardHover stretched-link"></a>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      
+      <div class="swiper-slide">
+        <div class="card h-100">
+          <div class="row no-gutters">
+            <div class="col-2">
+              <img src="resources/images/Icon_Actions.png" class="card-img" alt="Action"><div class="text-center"><small></small></div>
+            </div>
+            <div class="col-10">
+              <div class="card-body">
+                <h5 class="card-title">Form Due</h5>
+                <p class="card-text card-content">You must sign and return your Pension Election Form by Dec 31, 2020.</p>
+                <p class="card-text"><small class="text-muted">Due: Dec 31, 2020</small></p>
+                <a href="#null" class="cardHover stretched-link" aria-expanded="false"></a>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+  </div>
+  <!-- If we need pagination -->
+  <div class="swiper-pagination"></div>
+</div>
+
+
+	
+	</div>
+</section>
+<!-- ============================================================================================================= -->
+<!--                                   				END - ALERT CENTER																									 -->
+<!-- ============================================================================================================= -->
+
+
+
+
+
+
+
+
+
+<!-- ============================================================================================================= -->
+<!--                                   				START - DASHBOARD																										 -->
+<!-- ============================================================================================================= -->
+<section id="dashboard" class="dashboard section-padding scroll-indicator" data-scroll-indicator-title="Dashboard">
+
+<h2 class="title hideme">Dashboard <a href="#null" id="dashboardSettings" class="sectionSettings" data-toggle="modal" data-target="#modal-DashboardSettings"><span class="glyphicons glyphicons-cogwheel"></span></a></h2>
+
+<div class="container-fluid">
+	
+<div class="row widgets m-0">
+	
+
+<!-- ================================================================  START Health & Insurance   ======= -->
+<div class="col-12 col-md-6 col-lg-4 hideme">
+
+  <div class="panel panel-default panelBenefits">
+	<div class="panel-heading benefits">
+    <h4 class="panel-title">Pension</h4>
+    
+    <div class="dropdown">
+      <a id="showMorePension" href="#null" class="showMore boldTxt" data-target="#" data-toggle="dropdown" aria-expanded="false"><span title="More" class="btn-plus options">+</span></a>
+      
+      <ul class="dropdown-menu showMoreMenu" aria-labelledby="showMorePension">
+        <li><a href="channel_DB.html">More details <span class="glyphicons glyphicons-chevron-right"></span></a></li>
+        <li><a href="#null" class="control-CashBalance">Cash Balance <span class="glyphicons glyphicons-check"></span></a></li>
+        <li><a href="#null">Today's Estimate <span class="glyphicons glyphicons-check"></span></a></li>
+        <li><a href="#null">Earliest Estimate<span class="glyphicons glyphicons-unchecked"></span></a></li>
+        <li><a href="#null">Normal Estimate<span class="glyphicons glyphicons-unchecked"></span></a></li>
+        <li><a href="#null">Alerts <span class="glyphicons glyphicons-check"></span></a></li>
+      </ul>
+    </div>
+    
+  </div>
+     <div class="panel-body">
+			
+			<div class="title">
+				<strong>Cash Balance Plan</strong> <small> as of November 11, 2020</small>
+			</div>
+			<div class="row indent-1">
+        <div class="col-6">Total Balance</div>
+        <div class="col-6 boldText text-right cashBalance">$53,185.62</div>
+			</div>
+			
+			<hr>
+			
+			<div class="title">
+				<strong>Monthly Accrued Benefit</strong> <small> as of Today</small>
+			</div>
+			<div class="row indent-1">
+        <div class="col-6">Plan A </div>
+        <div class="col-6 boldText text-right">$2,600.82</div>
+			</div>
+			<div class="row indent-1">
+        <div class="col-6">Plan B</div>
+        <div class="col-6 boldText text-right">$602.95</div>
+			</div>
+
+    
+   
+    
+        <div id="alertMoreSuggestion01" class="row alert-more">
+			
+			<div class="hrDivider"></div>
+			
+      <div class="alert alert-notify">
+        <div class="alertTitle"><img src="resources/images/Icon_Suggestion.png" alt="Suggestion"/> SUGGESTION <span class=""><a href="#null" class="alertDelete showMore" aria-expanded="false"><span class="glyphicons glyphicons-remove"></span></a>
+          <ul class="dropdown-menu showActions" aria-labelledby="showMoreSavings">
+            <li><a href="#null">Remind<br/>Later</a></li>
+            <li><a href="#null">Delete</a></li>
+          </ul>
+        </span>
+        </div>
+        <a href="#null" class="alertActions">Get an additional Company subsidy which increases your pension amount if you work till age 65.</a>
+        <a href="#suggestion01" class="alertMore alertMoreSuggestion01" data-toggle="collapse" aria-expanded="false">1 more suggestion</a>  
+      </div>
+    </div>
+    <div id="suggestion01" class="row collapse p-0 m-0">  
+      <div class="alert alert-notify">
+      <div class="alertTitle"><img src="resources/images/Icon_Suggestion.png" alt="Suggestion"/> SUGGESTION</div>
+          <a href="#null" class="alertActions">Now that you turned 50, try the Pension Calculator to estimate how much your Pension is worth at key retirement dates.</a>
+      </div>
+    </div>
+
+    
+    </div>
+</div>
+  
+</div>
+
+<!-- ================================================================  END Health & Insurance   ======= -->
+	
+<!-- ================================================================   START Retirement Planning   ======= -->
+<div class="col-12 col-md-6 col-lg-4 hideme">
+
+<div class="panel panel-default panelBenefits">
+	<div class="panel-heading benefits">
+    <h4 class="panel-title">Retirement Planning</h4>
+    
+    <div class="dropdown">
+      <a id="showMoreRetire" href="#null" class="showMore boldTxt" data-target="#" data-toggle="dropdown" aria-expanded="false"><span id="plusButton" title="More" class="btn-plus options">+</span></a>
+      <ul class="dropdown-menu showMoreMenu" aria-labelledby="showMoreRetire">
+        <li><a href="Benefits_DB.html">More details <span class="glyphicons glyphicons-chevron-right"></span></a></li>
+        <li><a href="#null">Projected Balance <span class="glyphicons glyphicons-unchecked"></span></a></li>
+        <li><a href="#null">Retirement Likelihood <span class="glyphicons glyphicons-check"></span></a></li>
+        <li><a href="#null">Alerts <span class="glyphicons glyphicons-check"></span></a></li>
+      </ul>
+    </div>
+    
+  </div>
+	
+  <div class="panel-body">
+    <div class="row m-0 card-group">
+      <div class="col-12 col-md-6 p-0 dashemphasis card">
+      	You are only <span class="boldText planAmt">48%</span> likely to be able to retire at age 65. 
+      </div>
+      <div class="col-12 col-md-6 p-0">
+      <div class="alert alert-notify sideside">
+        <div class="alertTitle"><img src="resources/images/Icon_Suggestion.png" alt=""/> SUGGESTION</div>
+        <a class="alertActions" href="#null">Make changes that may increase you to 87%.</a>
+      </div>
+      </div>
+    </div>
+  </div>
+	
+</div>
+
+</div>
+<!-- ================================================================   END Retirement Planning   ======= -->
+	
+	
+<!-- ================================================================   START Total Rewards   ======= -->	
+<div class="col-12 col-md-6 col-lg-4 hideme">
+
+  <div class="panel panel-default panelBenefits">
+    <div class="panel-heading benefits">
+      <h4 class="panel-title">Total Rewards</h4>
+
+      <div class="dropdown">
+        <a id="showMoreSavings" href="#null" class="showMore boldTxt" data-target="#" data-toggle="dropdown" aria-expanded="false"><span title="More" class="btn-plus options">+</span></a>
+
+        <ul class="dropdown-menu showMoreMenu" aria-labelledby="showMoreSavings">
+          <li><a href="Benefits_DC.html">More details <span class="glyphicons glyphicons-chevron-right"></span></a></li>
+          <li><a href="#null">Amounts<span class="glyphicons glyphicons-check"></span></a></li>
+        <li><a href="#null">Alerts <span class="glyphicons glyphicons-unchecked"></span></a></li>
+        </ul>
+      </div>
+      
+    </div>
+    <div class="panel-body">			
+    <div class="row benSpacing">
+      <div class="col-6 pieChart"><img src="resources/images/HP_totalrewards.png" width="135" alt="Pie Chart"/></div>
+      <div class="col-6"><div class="typeTitle"><span class="chartColor ColorChartComp"></span> Compensation</div>
+      <div class="text-right boldText planAmt"><span class="balances balance401k">$120,622</span></div>
+      <div class="typeTitle"><span class="chartColor ColorChartRet"></span> Retirement</div>
+      <div class="text-right boldText planAmt"><span class="balances balanceNonQual">$68,986</span></div>
+      <div class="typeTitle"><span class="chartColor ColorChartHealth"></span> Health</div>
+      <div class="text-right boldText planAmt"><span class="balances balanceHSA">$33,528</span></div>
+      <div class="typeTitle"><span class="chartColor ColorChartOther"></span> Other Benefits*</div>
+      <div class="text-right boldText planAmt"><span class="balances balanceHSA">$3,004</span></div> 
+      <hr class="dashboardHR">
+      <div class="typeTitle boldText">Total</div>
+      <div class="text-right boldText planAmt"><span class="balances balanceHSA">$226,140</span></div> 
+    </div>
+    
+    </div>
+    </div>
+  </div>
+  
+</div>
+<!-- ================================================================   END Total Rewards   ======= -->
+
+</div> <!-- end row -->
+</div> <!-- end container-fluid -->
+</section>
+<!-- ============================================================================================================= -->
+<!--                                   				END - DASHBOARD																											 -->
+<!-- ============================================================================================================= -->
+
+
+
+
+
+
+
+
+
+
+<!-- ============================================================================================================= -->
+<!--                                   				START - NEWS & ADVERTS																							 -->
+<!-- ============================================================================================================= --> 
+<section id="NewsAdverts" class="intro newsAdverts section-padding scroll-indicator hideme" data-scroll-indicator-title="News & Adverts">
+	
+<h2 class="title">News &amp; Adverts</h2>
+	
+<div class="container-fluid">  
+	
+    <!-- ==========================   START: News Slider   ========================== -->                                        
+<div id="slider">                
+<div id="carousel-example-generic" class="carousel slide" data-ride="carousel" data-interval="5000">
+ 
+<!-- Wrapper for slides -->
+<div class="carousel-inner" role="listbox">
+    
+    <div class="carousel-item active">
+    	<div class="img col-12 col-md-4"><img src="resources/images/rotatingAd_Finance.png" alt="Finance"></div>
+    <div class="carousel-caption col-12 col-md-8">
+      <h2>Retirement and Financial Advice</h2>
+       <p class="author">Everyone deserves clear financial advice and guidance.... <a href="#null">Learn more</a></p> 
+    </div>
+    </div>
+		
+		<div class="carousel-item">
+      <div class="img col-12 col-md-4"><img src="resources/images/rotatingAd_Covid.png" alt="Covid"></div>
+      <div class="carousel-caption col-12 col-md-8">
+        <h2>Getting help during the COVID-19 outbreak</h2>
+        <div class="author">We want to be sure you get the help you need during this difficult time. We encourage you to use this portal to transact and get answers regarding your account. If you call the service center, you may experience high wait times. We appreciate your patience.</div>
+       </div>
+    </div>
+		
+    
+		
+</div> <!-- End carousel-inner -->
+
+<!-- Indicators -->
+	<ol class="carousel-indicators mt-4">
+		<li data-target="#carousel-example-generic" data-slide-to="0" class="active"></li>
+		<li data-target="#carousel-example-generic" data-slide-to="1"></li>
+        <button id="pauseButton" type="button" class="btn btn-default btn-xs carouselbutton">
+      <span class="glyphicons glyphicons-pause"></span>
+  </button>
+	</ol>
+
+  <!--<button id="pauseButton" type="button" class="btn btn-default btn-xs carausalbutton align-self-center">
+      <span class="glyphicons glyphicons-pause"></span>
+  </button>-->
+	
+ </div>
+ </div>
+
+	</div>
+</section>
+<!-- ============================================================================================================= -->
+<!--                                   				END - NEWS & ADVERTS																								 -->
+<!-- ============================================================================================================= -->
+
+
+
+
+
+
+
+
+
+<!-- ============================================================================================================= -->
+<!--                                   				START - CONNECTIONS																									 -->
+<!-- ============================================================================================================= --> 
+<section id="connections" class="connections section-padding scroll-indicator" data-anchor="connections" data-scroll-indicator-title="Connections">
+  <h2 class="title hideme">Connections</h2>
+	<div class="container-fluid">
+     
+     <div class="row connect hideme">
+     
+       <ul class="video__tabs hideme">  
+         <!--<li class="video__tab video__tab--selected"> <a class="video__tab__link" role="link" data-category="All" href="#null"> All </a> </li> --> 
+         <li id="memberLink" class="video__tab video__tab--selected"> 
+					 <a href="#null" id="member" class="video__tab__link" role="link" data-category="Member"> Member </a> 
+				 </li>  
+         <li id="recommendedLink" class="video__tab"> 
+					 <a href="#null" id="recommended" class="video__tab__link" role="link" data-category="Recommended"> Recommended </a> 
+				 </li> 
+       </ul>
+			 
+			 <div class="dropdown">
+    <a id="showMoreBalance" href="#null" class="showMore text-bold btn moreLink push" data-target="#" data-toggle="dropdown" aria-expanded="false"><span title="More" class=" options">+</span></a>
+
+    <ul class="dropdown-menu showMoreMenu" aria-labelledby="showMoreBalance">
+      <li><a href="#null">Visit Yammer <span class="glyphicons glyphicons-chevron-right"></span></a></li>
+    </ul>
+  </div>
+     
+      <div class="grid row m-0 hideme tab-content" id="pills-tabContent">
+				
+				<div id="spinnerContainer" class="d-flex justify-content-center">
+          <div id="spinner" class="spinner-border" role="status">
+            <span class="sr-only">Loading...</span>
+          </div>
+        </div>
+	
+        <figure class="effect-zoe BB member">
+          <img src="resources/images/Connect_FIRE.jpg" alt="Guy waiting to travel">
+          <h2>Retire <span>Early</span></h2>
+        <figcaption>
+          <p class="description">THE F.I.R.E. MOVEMENT - Financial Independence Retire Early</p>
+          <p class="icon-links">23,745 members <button class="btn btn-primary btn-sm" type="button">Connect</button></p>
+        </figcaption>			
+        </figure>
+        
+        <figure class="effect-zoe NH member">
+          <img src="resources/images/Connect_RService.jpg" alt="Guy waiting to travel">
+          <h2>Think, Save, <span>Retire</span></h2>
+        <figcaption>
+          <p class="description">Tips to save &amp; budget your money.</p>
+          <p class="icon-links">23,745 members <button class="btn btn-primary btn-sm" type="button">Connect</button></p>
+        </figcaption>			
+        </figure>
+        
+        <figure class="effect-zoe NH member">
+          <img src="resources/images/Connect_Council.jpg" alt="Guy waiting to travel">
+          <h2>Pension <span>Council</span></h2>
+        <figcaption>
+          <p class="description">Insights from leading professionals.</p>
+          <p class="icon-links">23,745 members <button class="btn btn-primary btn-sm" type="button">Connect</button></p>
+        </figcaption>			
+        </figure>
+			
+				
+        <figure class="effect-zoe MM recommended">
+          <img src="resources/images/Connect_Mixer.jpg" alt="Office Meeting">
+          <h2>Retiree <span>Mixer</span></h2>
+          <figcaption>	
+            <p class="description">Collaborate with others on navigating retirement, tips on budgeting, saving, and investing.</p>
+            <p class="icon-links">626 members <button class="btn btn-primary btn-sm" type="button">Join</button></p>
+          </figcaption>	
+        </figure>
+
+				
+      </div>
+      
+    </div>
+    
+  </div>  
+</section>	
+<!-- ============================================================================================================= -->
+<!--                                   				END - CONNECTIONS																										 -->
+<!-- ============================================================================================================= -->
+
+
+
+
+
+
+
+
+</div>
+<!-- ============================================================================================================= -->
+<!--                                   				END - BODY CONENT																										 -->
+<!-- ============================================================================================================= -->
+
+
+
+	
+	
+	
+	
+<!-- ============================================================================================================= -->
+<!--                                   				START - LOCAL MODALS																								 -->
+<!-- ============================================================================================================= -->
+<div id="modal-Emergency" class="modal fade" tabindex="-1" role="dialog" aria-labelledby="modal-Emergency" aria-hidden="true">
+  <div class="modal-dialog modal-lg" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h4 class="modal-title">EMERGENCY</h4>
+        <button type="button" class="close" id="closemodal" data-dismiss="modal" aria-label="Close"><span class="glyphicons glyphicons-remove"></span></button>
+      </div>
+      <div class="modal-body alert-danger">
+
+			<h4>COVID!!!</h4>
+				<div>You have extra time to file claims and report certain life events. Additionally former employees and qualified beneficiaries have extra time to enroll in and pay for COBRA. </div>
+				
+			</div><!-- /.modal-body -->
+			<div class="modal-footer"> <a class="btn btn-default btn-sm" data-dismiss="modal">Close</a></div>
+		</div><!-- /.modal-content -->
+  </div><!-- /.modal-dialog -->
+</div><!-- /.modal -->
+<!-- ============================================================================================================= -->
+<!--                                   				END - LOCAL MODALS																									 -->
+<!-- ============================================================================================================= -->
+	
+	
+
+
+	
+	
+	
+<!-- ============================================================================================================= -->
+<!--                                   				START - LOCAL PAGE SCRIPTS																					 -->
+<!-- ============================================================================================================= -->
+
+<script type="text/javascript" src="resources/js/easyScrollDots.min.js"></script>
+<script type="text/javascript" src="resources/js/swiper-bundle.min.js"></script>
+
+<script>
+easyScrollDots({
+  'fixedNav': false,
+  'fixedNavId': '',
+  'fixedNavUpward': false
+});
+//ensure header included file loaded first before the containing functions can be use
+$loadedMainScript.done(function() {
+	
+	$(function () {
+		$('.hero').fadeIn('slow');
+		$('#carousel-example-generic').carousel({
+			interval:5000,
+			pause: "false"
+		});
+		
+	});
+		
+	$(".carouselbutton").click(function () {
+		if ($(this).attr("id") === "pauseButton") {
+		  $('#carousel-example-generic').carousel('pause');
+				$(this).attr("id", "playButton");
+		  $("span",this).toggleClass("glyphicons-play glyphicons-pause");
+		} else {
+				  $('#carousel-example-generic').carousel('cycle');
+				$(this).attr("id", "pauseButton");
+		  $("span",this).toggleClass("glyphicons-pause glyphicons-play");
+		}
+	});
+					
+	$('.carousel').carousel({
+	  interval: 5000
+	})
+
+	<!-- Initialize Swiper -->
+
+	var swiper = new Swiper('.swiper-container', {
+	  slidesPerView: 1,
+	  spaceBetween: 10,
+	  // init: false,
+	  pagination: {
+		el: '.swiper-pagination',
+		clickable: true,
+	  },
+	  breakpoints: {
+		'@0.00': {
+		  slidesPerView: 1.5,
+		  spaceBetween: 10,
+		},
+		'@0.75': {
+		  slidesPerView: 2.5,
+		  spaceBetween: 10,
+		},
+		'@1.00': {
+		  slidesPerView: 3.5,
+		  spaceBetween: 10,
+		},
+		'@1.50': {
+		  slidesPerView: 3.5,
+		  spaceBetween: 10,
+		},
+	  }
+	});
+
+}).fail(function(error) {
+     console.log('one or more scripts failed to load');
+});
+
+$("#member").click(function() {
+	$(this).parent().siblings("#recommendedLink").removeClass("video__tab--selected");
+	$(this).parent("li.video__tab").addClass("video__tab--selected");
+	$(".recommended").fadeOut("slow");
+	$("#spinner").delay(300).fadeIn();
+	$("#spinner").fadeOut(300);
+	$(".member").delay(1000).fadeIn("slow");
+});
+	
+$("#recommended").click(function() {
+	$(this).parent().siblings("#memberLink").removeClass("video__tab--selected");
+	$(this).parent("li.video__tab").addClass("video__tab--selected");
+	$(".member").fadeOut("slow");
+	$("#spinner").delay(300).fadeIn();
+	$("#spinner").fadeOut(300);
+	$(".recommended").delay(1000).fadeIn("slow");
+});
+
+$('.openMoreMenuAlert').click(function() {
+	$(".alertMoreMenu").fadeIn(300);
+});
+
+$('.closeMoreMenuAlert').click(function() {
+	$(".alertMoreMenu").fadeOut(300);
+});
+
+</script>
+<!-- ============================================================================================================= -->
+<!--                                   				END - LOCAL PAGE SCRIPTS																						 -->
+<!-- ============================================================================================================= -->

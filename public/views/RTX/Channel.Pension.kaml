@@ -1,0 +1,820 @@
+﻿<rbl-config bootstrap="4"></rbl-config>
+<script type="text/javascript" src="resources/js/core.js"></script>
+<script>
+$(window).scroll(function() {
+   if ($(this).scrollTop() < 57){
+      $('h5').addClass("absolute");
+   } else {
+      $('h5').removeClass("absolute");
+   }
+});
+</script>
+
+
+<!-- ============================================================================================================= -->
+<!--                                   				START - BODY CONENT																									 -->
+<!-- ============================================================================================================= -->
+	<h5 class="pageTitle sticky-top absolute"><a href="#top">Pension</a></h5>
+
+
+	<!-- ============================================================================================================= -->
+	<!--                                   				START - ALERT CENTER										   -->
+	<!-- ============================================================================================================= -->
+	<section id="alertCenter" class="alertCenter section-padding scroll-indicator hideme" data-scroll-indicator-title="Alert Center">
+
+		<h2 class="title">Alert Center</h2>
+
+
+		<div id="swipe" class="container">
+
+
+			<!-- Slider main container -->
+			<div class="swiper-container">
+				<!-- Additional required wrapper -->
+				<div class="swiper-wrapper">
+					<!-- Slides -->
+
+					<div class="swiper-slide">
+						<div class="card h-100">
+							<div class="row no-gutters">
+								<div class="col-2">
+									<img src="resources/images/Icon_Suggestion.png" class="card-img" alt="Suggestion"><div class="text-center"><small></small></div>
+								</div>
+								<div class="col-10">
+									<div class="card-body">
+										<h5 class="card-title">Increase your pension amount </h5>
+										<p class="card-text card-content">You get an additional Company subsidy if you work till age 65.</p>
+										<a href="#null" class="cardHover stretched-link" aria-expanded="false"></a>
+									</div>
+								</div>
+							</div>
+						</div>
+					</div>
+
+
+					<div class="swiper-slide">
+						<div class="card h-100">
+							<div class="row no-gutters">
+								<div class="col-2">
+									<img src="resources/images/Icon_Suggestion.png" class="card-img" alt="Suggestion"><div class="text-center"><small></small></div>
+								</div>
+								<div class="col-10">
+									<div class="card-body">
+										<h5 class="card-title">How much is your pension worth? </h5>
+										<p class="card-text card-content">Now that you turned 50, try the Pension Calculator to estimate at key retirement dates.</p>
+										<a href="#null" class="cardHover stretched-link" aria-expanded="false"></a>
+									</div>
+								</div>
+							</div>
+						</div>
+					</div>
+
+
+					<div class="swiper-slide">
+						<div class="card h-100">
+							<div class="row no-gutters">
+								<div class="col-2">
+									<img src="resources/images/Icon_Docs.png" class="card-img" alt="Message"><div class="text-center"><small></small></div>
+								</div>
+								<div class="col-10">
+									<div class="card-body">
+										<h5 class="card-title">Retirement Packet </h5>
+										<p class="card-text card-content">Was mailed to your home address on Nov 6, 2020.</p>
+										<p class="card-text"><small class="text-muted">Sent: Nov 6, 2020</small></p>
+										<a href="#null" class="cardHover stretched-link"></a>
+									</div>
+								</div>
+							</div>
+						</div>
+					</div>
+
+
+					<div class="swiper-slide">
+						<div class="card h-100">
+							<div class="row no-gutters">
+								<div class="col-2">
+									<img src="resources/images/Icon_Actions.png" class="card-img" alt="Action"><div class="text-center"><small></small></div>
+								</div>
+								<div class="col-10">
+									<div class="card-body">
+										<h5 class="card-title">Form Due</h5>
+										<p class="card-text card-content">You must sign and return your Pension Election Form by Dec 31, 2020.</p>
+										<p class="card-text"><small class="text-muted">Due: Dec 31, 2020</small></p>
+										<a href="#null" class="cardHover stretched-link" aria-expanded="false"></a>
+									</div>
+								</div>
+							</div>
+						</div>
+					</div>
+
+				</div>
+				<!-- If we need pagination -->
+				<div class="swiper-pagination"></div>
+			</div>
+
+
+
+		</div>
+	</section>
+	<!-- ============================================================================================================= -->
+	<!--                                   				END - ALERT CENTER																									 -->
+	<!-- ============================================================================================================= -->
+	<!-- ============================================================================================================= -->
+	<!--                                   				START - Estimates											   -->
+	<!-- ============================================================================================================= -->
+	<section id="estimates" class="estimates section-padding scroll-indicator hideme" data-scroll-indicator-title="Estimates">
+
+		<h2 class="title">ESTIMATES</h2>
+
+		<div class="container">
+
+			<div class="row">
+				<div class="col-12 col-lg-8">
+					<div class="card assist trans">
+						<h3>What are your plans worth at key retirement dates?</h3>
+						<div class="card-body">
+							<h3 class="question">
+								<span class="assistImage"></span>
+
+								<div class="assistRating">
+									<span class="">Reminder!</span>
+								</div>
+								<div class="assistResponse">
+									Get an additional Company subsidy which increases your pension amount if you work till age 65.
+								</div>
+							</h3>
+						</div>
+					</div>
+				</div>
+				<div class="d-none d-lg-block col-lg-4">
+
+					<div class="card promoAd">
+						<img src="resources/images/promoAds/adBenefitProj.png" class="card-img-top" alt="Estimate Pension">
+						<h2 class="card-title">Estimate your</h2>
+						<div class="card-body">
+							<p class="card-text">Pension Benefit</p>
+							<p><a href="#" class="btn btn-primary">Estimate</a></p>
+						</div>
+					</div>
+
+				</div>
+			</div>
+
+
+			<div class="row">
+				<!-- ==========================   COLUMN 1   ========================== -->
+				<div class="col-12 col-lg-8">
+
+
+					<!-- CURRENT VALUE -->
+					<div class="card">
+						<div class="card-header gradient">
+							<h4>Current - your Plans value today  <span class="paranthetical">(as of Nov 19, 2020)</span></h4>
+
+							<div class="dropdown">
+								<a id="showMoreCurrentValue" href="#null" class="showMore text-bold btn moreLink push" data-target="#" data-toggle="dropdown" aria-expanded="false"><span title="More" class=" options">+</span></a>
+
+								<ul class="dropdown-menu showMoreMenu" aria-labelledby="showMoreCurrentValue">
+									<li><a href="Wealth/Pension_AccountActivity.html">Account Activity <span class="glyphicons glyphicons-chevron-right"></span></a></li>
+									<li><a href="#null">Online Statement <span class="glyphicons glyphicons-chevron-right"></span></a></li>
+									<li><a href="Wealth/Pension_Profile.html">Pension Profile Summary <span class="glyphicons glyphicons-chevron-right"></span></a></li>
+									<li><a href="#null">Learn about your Pension <span class="glyphicons glyphicons-chevron-right"></span></a></li>
+									<li><a href="#null">Transaction History <span class="glyphicons glyphicons-chevron-right"></span></a></li>
+								</ul>
+							</div>
+
+						</div>
+
+						<div class="card-body">
+							<table class="rwd-table">
+								<thead class="d-none-mobile">
+									<tr>
+										<th></th>
+										<th class="borderBtm font-weight-light text-right">Current Balance</th>
+										<th class="borderBtm"></th>
+										<th class="borderBtm font-weight-light text-right">Monthly Benefit at Age 65*</th>
+									</tr>
+								</thead>
+								<tbody>
+									<tr class="borderBtm-mobile">
+										<td class="tableTitleNormal">Cash Balance Plan</td>
+										<td data-th="Current Balance" class="tableValueR"><span>$44,321.35</span></td>
+										<td class="text-center">OR</td>
+										<td data-th="Monthly Benefit at Age 65*" class="tableValueR"><span>$755.21</span></td>
+									</tr>
+									<tr class="borderBtm-mobile">
+										<td class="tableTitleNormal">Raytheon Pension Plan</td>
+										<td data-th="Current Balance" class="tableValueR"><span>n/a</span></td>
+										<td class="text-center">OR</td>
+										<td data-th="Monthly Benefit at Age 65*" class="tableValueR"><span>$5,084.22</span></td>
+									</tr>
+									<tr class="borderBtm-mobile">
+										<td class="tableTitleNormal">UTC Pension Plan</td>
+										<td data-th="Current Balance" class="tableValueR"><span>n/a</span></td>
+										<td class="text-center">OR</td>
+										<td data-th="Monthly Benefit at Age 65*" class="tableValueR"><span>$602.95</span></td>
+									</tr>
+								</tbody>
+							</table>
+							<!--<img src="resources/images/Pension_CurrentValue.png" alt="Current Pension Value" />-->
+						</div>
+
+					</div>
+
+
+
+					<!-- FUTURE VALUE -->
+					<div class="card">
+						<div class="card-header gradient">
+							<h4>Future - your Plans estimated value at key dates  <span class="paranthetical">(as of Nov 19, 2020)</span></h4>
+
+							<div class="dropdown">
+								<a id="showMoreFutureValue" href="#null" class="showMore text-bold btn moreLink push" data-target="#" data-toggle="dropdown" aria-expanded="false"><span title="More" class=" options">+</span></a>
+
+								<ul class="dropdown-menu showMoreMenu" aria-labelledby="showMoreFutureValue">
+									<li><a href="Wealth/Pension_AccountActivity.html">Account Activity <span class="glyphicons glyphicons-chevron-right"></span></a></li>
+									<li><a href="#null">Online Statement <span class="glyphicons glyphicons-chevron-right"></span></a></li>
+									<li><a href="Wealth/Pension_Profile.html">Pension Profile Summary <span class="glyphicons glyphicons-chevron-right"></span></a></li>
+									<li><a href="#null">Learn about your Pension <span class="glyphicons glyphicons-chevron-right"></span></a></li>
+									<li><a href="#null">Transaction History <span class="glyphicons glyphicons-chevron-right"></span></a></li>
+								</ul>
+							</div>
+
+						</div>
+
+						<div class="card-body">
+							<img src="resources/images/Pension_FutureValuePart1.png" alt="Future Pension Value" />
+							<img src="resources/images/Pension_FutureValuePart2.png" alt="Future Pension Value" />
+						</div>
+
+					</div>
+
+
+					<div class="card didYouKnow">
+						<div class="row no-gutters">
+							<img src="resources/images/PENprofile.png" class="card-img" alt="Profile Photo">
+							<div class="card-body">
+								<h5 class="card-title">WHAT THIS MEANS TO YOU </h5>
+								<ul class="removeBullets">
+									<li>You have two Pension Plans - the Plan A and Plan B.</li>
+									<li>The value of your plans is based on when you stop working and when you begin taking your pension payments. </li>
+									<li>At the earliest retirement date (stop working at age 60) you'll get monthly payments of <strong>$4,031.71</strong> from Plan A and <strong>$483.36</strong> from Plan B.</li>
+									<li>At the Normal retirement date (stop working at age 65) you'll get monthly payments of <strong>$5,084.22</strong> from Plan A and <strong>$602.95</strong> from Plan B.</li>
+									<li>Your pension continues to grow as long as you keep working.</li>
+								</ul>
+							</div>
+						</div>
+					</div>
+
+
+				</div>
+
+				<!-- ==========================   COLUMN 2   ========================== -->
+				<div class="col-12 col-lg-4">
+
+					<div class="card retirePlan">
+						<div class="card-header">
+							<h4>Retirement Planning</h4>
+						</div>
+
+						<div class="card-body">
+							<div class="row m-0">
+								<div class="col-12 p-0 dashemphasis card retPlan">
+									You are only <span class="boldText planAmt">48%</span> likely to be able to retire at age 65.
+								</div>
+								<div class="col-12 p-0 card retPlan alertCard">
+									<div class="alert alert-notify sideside">
+										<div class="alertTitle"><img src="resources/images/Icon_Suggestion.png" alt="" /> SUGGESTION</div>
+										<a class="alertActions" href="#null">Make changes that may increase you to 87%.</a>
+									</div>
+								</div>
+							</div>
+						</div>
+
+					</div>
+
+
+
+				</div>
+
+			</div>
+
+		</div>
+	</section>
+	<!-- ============================================================================================================= -->
+	<!--                                   				END - Estimates                                                -->
+	<!-- ============================================================================================================= -->
+	<!-- ============================================================================================================= -->
+	<!--                                   				START - Traditional																								 -->
+	<!-- ============================================================================================================= -->
+	<section id="savedEstimates" class="savedEstimates section-padding scroll-indicator" data-scroll-indicator-title="Saved Estimates">
+
+		<h2 class="title hideme">Saved Estimates</h2>
+
+
+
+		<div class="container">
+
+			<div class="row">
+
+				<div class="col-12 col-lg-8">
+
+					<div class="card">
+						<div class="card-header">
+							<h4>Saved Estimates</h4>
+
+							<div class="dropdown">
+								<a id="showMoreSavedEstimates" href="#null" class="showMore text-bold btn moreLink push" data-target="#" data-toggle="dropdown" aria-expanded="false"><span title="More" class=" options">+</span></a>
+
+								<ul class="dropdown-menu showMoreMenu" aria-labelledby="showMoreSavedEstimates">
+									<li><a href="#null">View All Saved Estimates <span class="glyphicons glyphicons-chevron-right"></span></a></li>
+									<li><a href="#null">Pension Modelling <span class="glyphicons glyphicons-chevron-right"></span></a></li>
+									<li><a href="#null">Learn about your Pension <span class="glyphicons glyphicons-chevron-right"></span></a></li>
+								</ul>
+							</div>
+
+						</div>
+
+						<div class="card-body">
+							<div class="row m-0 p-0">
+								<div class="col-4 col-sm-3 dataTitle">
+									Saved Date
+								</div>
+								<div class="d-none d-sm-block col-sm-3 dataTitle">
+									Stop Working Age
+								</div>
+								<div class="col-4 col-sm-3 text-right dataTitle">
+									Begin Payment
+								</div>
+								<div class="col-4 col-sm-3 text-right dataTitle">
+									Amount
+								</div>
+							</div>
+
+							<hr>
+
+							<div class="row m-0 p-0">
+								<div class="col-4 col-sm-3">
+									<a href="#null">10/26/2020</a>
+								</div>
+								<div class="d-none d-sm-block col-sm-3 text-center">
+									65</br>63
+								</div>
+								<div class="col-4 col-sm-3 text-right">
+									Mar 01, 2038</br>Mar 01, 2033
+								</div>
+								<div class="col-4 col-sm-3 text-right">
+									$2,643.90</br>$1,445.77
+								</div>
+							</div>
+
+							<hr>
+
+							<div class="row m-0 p-0">
+								<div class="col-4 col-sm-3">
+									<a href="#null">10/12/2020</a>
+								</div>
+								<div class="d-none d-sm-block col-sm-3 text-center">
+									63
+								</div>
+								<div class="col-4 col-sm-3 text-right">
+									Mar 01, 2036
+								</div>
+								<div class="col-4 col-sm-3 text-right">
+									$1,825.78
+								</div>
+							</div>
+
+							<hr>
+
+							<div class="row m-0 p-0">
+								<div class="col-4 col-sm-3">
+									<a href="#null">5/25/2020</a>
+								</div>
+								<div class="d-none d-sm-block col-sm-3 text-center">
+									59
+								</div>
+								<div class="col-4 col-sm-3 text-right">
+									Mar 01, 2032
+								</div>
+								<div class="col-4 col-sm-3 text-right">
+									$1,024.32
+								</div>
+							</div>
+
+							<div class="alert alert-notify mt-5">
+								<div class="alertTitle"><img src="resources/images/Icon_Suggestion.png" alt="Suggestion" /> SUGGESTION</div>
+								<a href="#null" class="alertActions">You get an additional Company subsidy which will Increase your pension amount if you work till age 65.</a>
+							</div>
+
+						</div><!--End--Card Body-->
+
+					</div> <!-- END card -->
+
+
+				</div>
+
+
+
+				<!-- ==========================   COLUMN 2   ========================== -->
+				<div class="col-12 col-lg-4">
+
+
+
+				</div>
+
+			</div>
+
+
+
+
+		</div> <!-- end container-fluid -->
+	</section>
+	<!-- ============================================================================================================= -->
+	<!--                                   				END - Traditional																										 -->
+	<!-- ============================================================================================================= -->
+	<!-- ============================================================================================================= -->
+	<!--                                   				START - BENEFICIARIES																								 -->
+	<!-- ============================================================================================================= -->
+	<section id="beneficiaries" class="beneficiaries section-padding scroll-indicator" data-scroll-indicator-title="Beneficiaries">
+
+		<h2 class="title hideme">BENEFICIARIES</h2>
+
+
+
+		<div class="container">
+
+			<div class="row">
+				<div class="col-12 col-lg-8">
+					<div class="card assist trans">
+						<h3>Who will inherit your money?</h3>
+					</div>
+				</div>
+				<div class="d-none d-lg-block col-lg-4"></div>
+			</div>
+
+
+
+
+			<div class="row">
+				<div class="col-12 col-lg-8">
+
+					<div class="card">
+						<div class="card-header">
+							<h4>Beneficiaries <!--<a href="#null" class="modalLink">view for all plans</a>--> </h4>
+
+							<div class="dropdown">
+								<a id="showMoreBene" href="#null" class="showMore text-bold btn moreLink push" data-target="#" data-toggle="dropdown" aria-expanded="false"><span title="More" class=" options">+</span></a>
+
+								<ul class="dropdown-menu showMoreMenu" aria-labelledby="showMoreBene">
+									<li><a href="#null">Change Beneficiaries <span class="glyphicons glyphicons-chevron-right"></span></a></li>
+								</ul>
+							</div>
+
+						</div>
+						<div class="card-body invest-funds">
+
+							<ul class="listBenes">
+
+								<!-- ==================== -->
+								<!--    Cash Balance    -->
+								<!-- ==================== -->
+								<li class="list-group-item">
+									<h5 class="optionLink">
+										<a class="btn btn-primary btn-expand expandQuick 401kSavingBtn" href="#null">
+											Cash Balance Plan
+										</a>
+									</h5>
+									<div id="collapseSavings" class="collapse show">
+										<table class="table table-mobile">
+											<tbody>
+												<tr>
+													<td colspan="3" class="text-bold">Primary Beneficiary <a href="#null" class="modalLink">(explain this)</a></td>
+												</tr>
+												<tr>
+													<td>Pat Smith</td>
+													<td>spouse</td>
+													<td>100 %</td>
+												</tr>
+												<tr>
+													<td colspan="3" class="text-bold">Secondary Beneficiaries <a href="#null" class="modalLink">(explain this)</a></td>
+												</tr>
+												<tr>
+													<td>No election</td>
+													<td></td>
+													<td></td>
+												</tr>
+											</tbody>
+										</table>
+
+
+									</div>
+
+								</li>
+
+								<!-- ==================== -->
+								<!--    Traditional     -->
+								<!-- ==================== -->
+								<li class="list-group-item">
+									<h5 class="optionLink">
+										<a class="btn btn-primary btn-expand expandQuick 401kSavingBtn" href="#null">
+											Traditional Plan
+										</a>
+									</h5>
+									<div id="collapseSavings" class="collapse show">
+										<table class="table table-mobile">
+											<tbody>
+												<tr>
+													<td colspan="3" class="text-bold">Primary Beneficiary <a href="#null" class="modalLink">(explain this)</a></td>
+												</tr>
+												<tr>
+													<td>Pat Smith</td>
+													<td>spouse</td>
+													<td>100 %</td>
+												</tr>
+												<tr>
+													<td colspan="3" class="text-bold">Secondary Beneficiaries <a href="#null" class="modalLink">(explain this)</a></td>
+												</tr>
+												<tr>
+													<td>Morgan Smith</td>
+													<td>child</td>
+													<td>50 %</td>
+												</tr>
+												<tr>
+													<td>Cameron Smith</td>
+													<td>child</td>
+													<td>50 %</td>
+												</tr>
+											</tbody>
+										</table>
+
+
+									</div>
+
+								</li>
+
+
+							</ul>
+
+
+
+
+
+
+
+
+
+
+						</div> <!-- END card-body -->
+					</div> <!-- END card -->
+
+				</div><!-- END col-12 col-lg-8 -->
+
+				<div class="col-12 col-lg-4"></div>
+
+			</div><!-- END row -->
+
+		</div> <!-- end container -->
+
+	</section>
+	<!-- ============================================================================================================= -->
+	<!--                                   				END - BENEFICIARIES																									 -->
+	<!-- ============================================================================================================= -->
+	<!-- ============================================================================================================= -->
+	<!--                                   				START - MORE LINKS																									 -->
+	<!-- ============================================================================================================= -->
+	<section id="moreLinks" class="moreLinks section-padding scroll-indicator" data-anchor="moreLinks" data-scroll-indicator-title="More Links">
+		<h2 class="title hideme"></h2>
+		<div class="container">
+
+			<div class="row no-padding">
+				<div class="col-md-4">
+					<ul class="moreLinks">
+						<li class="moreWindowHeader">
+							<span class="text-bold">View</span>
+						</li>
+						<li>
+							<a href="#null">Cash Balance - Account Activity</a>
+						</li>
+						<li>
+							<a href="#null">Cash Balance - Online Statement</a>
+						</li>
+						<li>
+							<a href="#null">Pension Profile</a>
+						</li>
+						<li>
+							<a href="#null">Saved Pension Estimates</a>
+						</li>
+						<li>
+							<a href="#null">Transaction History</a>
+						</li>
+					</ul>
+				</div>
+
+				<div class="col-md-4">
+					<ul class="moreLinks">
+						<li class="moreWindowHeader">
+							<span class="text-bold">Take Action</span>
+						</li>
+						<li>
+							<a href="#null">Model Pension Estimates</a>
+						</li>
+						<li>
+							<a href="#null">Retire Online</a>
+						</li>
+					</ul>
+				</div>
+
+				<div class="col-md-4">
+					<ul class="moreLinks">
+						<li class="moreWindowHeader">
+							<span class="text-bold">Library</span>
+						</li>
+						<li>
+							<a href="#null">Documents &amp; Forms</a>
+						</li>
+						<li>
+							<a href="#null">FAQs</a>
+						</li>
+						<li>
+							<a href="#null">Glossary</a>
+						</li>
+						<li>
+							<a href="#null">Plan Information</a>
+						</li>
+					</ul>
+				</div>
+			</div>
+
+		</div>
+	</section>
+	<!-- ============================================================================================================= -->
+	<!--                                   				END - MORE LINKS																										 -->
+	<!-- ============================================================================================================= -->
+
+<!-- ============================================================================================================= -->
+<!--                                   				END - BODY CONENT																										 -->
+<!-- ============================================================================================================= -->
+
+
+<!-- ============================================================================================================= -->
+<!--                                   				START - LOCAL PAGE SCRIPTS																					 -->
+<!-- ============================================================================================================= -->
+<script type="text/javascript" src="resources/js/easyScrollDots.min.js"></script>
+<script type="text/javascript" src="resources/js/swiper-bundle.min.js"></script>
+
+<script>
+easyScrollDots({
+  'fixedNav': false,
+  'fixedNavId': '',
+  'fixedNavUpward': false
+});
+//ensure header included file loaded first before the containing functions can be use
+$loadedMainScript.done(function() {
+
+	$(function () {
+		$('.hero').fadeIn('slow');
+		$('#carousel-example-generic').carousel({
+			interval:5000,
+			pause: "false"
+		});
+
+	});
+
+	$(".carausalbutton").click(function () {
+		if ($(this).attr("id") === "pauseButton") {
+		  $('#carousel-example-generic').carousel('pause');
+				$(this).attr("id", "playButton");
+		  $("span",this).toggleClass("glyphicons-play glyphicons-pause");
+		} else {
+				  $('#carousel-example-generic').carousel('cycle');
+				$(this).attr("id", "pauseButton");
+		  $("span",this).toggleClass("glyphicons-pause glyphicons-play");
+		}
+	});
+
+	$('.carousel').carousel({
+	  interval: 5000
+	})
+
+	$('.401kSavingBtn').collapse('show').css("width", "100%");
+
+	<!-- Initialize Swiper -->
+
+	var swiper = new Swiper('.swiper-container', {
+	  slidesPerView: 1,
+	  spaceBetween: 10,
+	  // init: false,
+	  pagination: {
+		el: '.swiper-pagination',
+		clickable: true,
+	  },
+	  breakpoints: {
+		'@0.00': {
+		  slidesPerView: 1.5,
+		  spaceBetween: 10,
+		},
+		'@0.75': {
+		  slidesPerView: 2.5,
+		  spaceBetween: 10,
+		},
+		'@1.00': {
+		  slidesPerView: 3.5,
+		  spaceBetween: 10,
+		},
+		'@1.50': {
+		  slidesPerView: 3.5,
+		  spaceBetween: 10,
+		},
+	  }
+	});
+
+	$(document).on('click', '.toggleExpandAll', function() {
+		if ($(this).html() == 'expand all'){
+			$(this).html('collpase all');
+			$('.401kSavingBtn').css("width", "100%");
+			$('.401kSavingBtn').find("span.glyphicons").removeClass('glyphicons-plus').addClass('glyphicons-minus');
+			$('#collapseSavings').collapse('show');
+			$('.NonQualSavingBtn').css("width", "100%");
+			$('.NonQualSavingBtn').find("span.glyphicons").removeClass('glyphicons-plus').addClass('glyphicons-minus');
+			$('#collapseNonQual').collapse('show');
+			$('.HSABtn').css("width", "100%");
+			$('.HSABtn').find("span.glyphicons").removeClass('glyphicons-plus').addClass('glyphicons-minus');
+			$('#collapseHSA').collapse('show');
+			$('.basicLifeBtn').css("width", "100%");
+			$('.basicLifeBtn').find("span.glyphicons").removeClass('glyphicons-plus').addClass('glyphicons-minus');
+			$('#collapseBasicLife').collapse('show');
+		} else {
+			$(this).html('expand all');
+			$('.401kSavingBtn').css("width", "300px");
+			$('.401kSavingBtn').find("span.glyphicons").removeClass('glyphicons-minus').addClass('glyphicons-plus');
+			$('#collapseSavings').collapse('hide');
+			$('.NonQualSavingBtn').css("width", "300px");
+			$('.NonQualSavingBtn').find("span.glyphicons").removeClass('glyphicons-minus').addClass('glyphicons-plus');
+			$('#collapseNonQual').collapse('hide');
+			$('.HSABtn').css("width", "300px");
+			$('.HSABtn').find("span.glyphicons").removeClass('glyphicons-minus').addClass('glyphicons-plus');
+			$('#collapseHSA').collapse('hide');
+			$('.basicLifeBtn').css("width", "300px");
+			$('.basicLifeBtn').find("span.glyphicons").removeClass('glyphicons-minus').addClass('glyphicons-plus');
+			$('#collapseBasicLife').collapse('hide');
+		}
+
+	});
+
+
+}).fail(function(error) {
+     console.log('one or more scripts failed to load');
+});
+<!-- Initialize Swiper -->
+
+var swiper = new Swiper('.swiper-container', {
+  slidesPerView: 1,
+  spaceBetween: 10,
+  // init: false,
+  pagination: {
+    el: '.swiper-pagination',
+    clickable: true,
+  },
+  breakpoints: {
+    '@0.00': {
+      slidesPerView: 1.5,
+      spaceBetween: 10,
+    },
+    '@0.75': {
+      slidesPerView: 2.5,
+      spaceBetween: 10,
+    },
+    '@1.00': {
+      slidesPerView: 3.5,
+      spaceBetween: 10,
+    },
+    '@1.50': {
+      slidesPerView: 3.5,
+      spaceBetween: 10,
+    },
+  }
+});
+
+$("#option1").click(function() {
+	$("#sourceTable").fadeOut("slow");
+
+	$("#spinner").delay(300).fadeIn();
+	$("#spinner").fadeOut(300);
+
+	$("#contribTable").delay(1000).fadeIn("slow");
+});
+$("#option2").click(function() {
+	$("#contribTable").fadeOut("slow");
+
+	$("#spinner").delay(300).fadeIn();
+	$("#spinner").fadeOut(300);
+
+	$("#sourceTable").delay(1000).fadeIn("slow");
+
+});
+</script>
+
+<!-- ============================================================================================================= -->
+<!--                                   				END - LOCAL PAGE SCRIPTS																						 -->
+<!-- ============================================================================================================= -->

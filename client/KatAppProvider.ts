@@ -829,8 +829,8 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
 
                         that.ui.triggerEvent( "onResultsProcessing", that.results, currentOptions, that );
                         that.rble.processResults();
-
-                       if ( that.calculationInputs?.iConfigureUI === 1 ) {
+                       
+                        if ( that.calculationInputs?.iConfigureUI === 1 ) {
                             that.ui.triggerEvent( "onConfigureUICalculation", that.results, currentOptions, that );
                         }
 
@@ -872,7 +872,10 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
 								if (data.Status != 1) {
 									console.log("Unable to save data: " + data.Message);
                                     that.ui.triggerEvent( "onDataUpdateErrors", data.Message, that.exception, currentOptions, that );
-								}
+                                }
+                                else {
+                                    that.ui.triggerEvent( "onDataUpdate", that.results, currentOptions, that );
+                                }
                                 calculatePipeline( 0 );
 							})
 							.fail(function (_jqXHR, textStatus) {
@@ -1023,44 +1026,57 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
             $("a[data-confirm], a[data-confirm-selector]", this.application.element)
                 .not(".confirm-bound, .jquery-validate, .skip-confirm")
                 .addClass("confirm-bound")
-                .on("click", function () {
+                .on("click", function() { 
                     const link = $(this);
-
-                    if (link.data("confirmed") == "true") {
-                        return true;
-                    }
-                    
-                    that.createConfirmDialog(
-                        link,
-
-                        // onConfirm
-                        function () {
-                            link.data("confirmed", "true");
-                            const submitKey = link.data("submit-key");
-        
-                            if (submitKey != undefined) {
-                                $(submitKey)[0].click();
-                            }
-                            else {
-                                link[0].click();
-                            }
-                        },
-                        
-                        // onCancel
-                        function () {
-                            link.data("confirmed", "false");
-                            that.triggerEvent( "onConfirmCancelled", link );
-                        });
-        
-                    return false;
+                    const confirm = 
+                        link.data("confirm") || 
+                        $(link.data("confirm-selector"), that.application.element).html() || "";
+    
+                    return that.onConfirmLinkClick( link, confirm ); 
                 });
         }
 
-        createConfirmDialog(link: JQuery<HTMLElement> | string, onConfirm: ()=> void, onCancel: ()=> void | undefined): void {
-            const confirm = typeof (link) == 'string'
-                ? link
-                : link.data("confirm") || $(link.data("confirm-selector"), this.application.element).html() || "";
+        onConfirmLinkClick( link: JQuery<HTMLElement>, confirm: string, confirmAction?: ()=> void ): boolean {
 
+            if (link.data("confirmed") == "true") {
+                return true;
+            }
+            const that = this;
+
+            this.createConfirmDialog(
+                confirm,
+
+                // onConfirm
+                function () {
+                    link.data("confirmed", "true");
+
+                    if ( confirmAction != undefined ) {
+                        confirmAction();
+                    }
+                    else {
+                        const submitKey = link.data("submit-key");
+
+                        if (submitKey != undefined) {
+                            $(submitKey)[0].click();
+                        }
+                        else {
+                            link[0].click();
+                        }
+                    }
+
+                    link.data("confirmed", "false");
+                },
+                
+                // onCancel
+                function () {
+                    link.data("confirmed", "false");
+                    that.triggerEvent( "onConfirmCancelled", link );
+                });
+
+            return false;
+        }
+
+        createConfirmDialog(confirm: string, onConfirm: ()=> void, onCancel: ()=> void | undefined): void {
             if (confirm == "") {
                 onConfirm(); // If no confirm on link (called from validation modules), just call onConfirm
                 return;
@@ -1082,23 +1098,24 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                             '</div>' +
                         '</div>' +
                     '</div>');
-
-                $('.linkConfirmModal .modal-body', this.application.element).html(confirm);
-
-                $('.linkConfirmModal .continueButton', this.application.element).off("click").on("click", function () {
-                    onConfirm();
-                });
-            
-                $('.linkConfirmModal .cancelButton', this.application.element).off("click").on("click", function () {
-                    if (onCancel != undefined) {
-                        onCancel();
-                    }
-                });            
             }
+
+            $('.linkConfirmModal .modal-body', this.application.element).html(confirm);
+
+            $('.linkConfirmModal .continueButton', this.application.element).off("click").on("click", function () {
+                onConfirm();
+            });
+        
+            $('.linkConfirmModal .cancelButton', this.application.element).off("click").on("click", function () {
+                if (onCancel != undefined) {
+                    onCancel();
+                }
+            });            
+    
             $('.linkConfirmModal', this.application.element).modal({ show: true });
         }
 
-        processDropdownItems(dropdown: JQuery<HTMLElement>, dropdownItems: { Value: string | null; Text: string | null; Class: string | undefined; Subtext: string | undefined; Html: string | undefined; Selected: boolean; Visible: boolean }[]): void {
+        processDropdownItems(dropdown: JQuery<HTMLElement>, rebuild: boolean, dropdownItems: { Value: string | null; Text: string | null; Class: string | undefined; Subtext: string | undefined; Html: string | undefined; Selected: boolean; Visible: boolean }[]): void {
             if ( dropdown.length === 0 ) return;
 
             const controlName = this.getInputName(dropdown);
@@ -1106,7 +1123,13 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                 ? dropdown
                 : undefined;
 
-            const currentValue = selectPicker?.selectpicker('val') ?? dropdown.val();
+            let currentValue = selectPicker?.selectpicker('val') ?? dropdown.val();
+
+            if ( rebuild ) {
+                $("." + controlName + " option", this.application.element).remove();
+                currentValue = undefined;
+            }
+    
             const that = this;
 
             dropdownItems.forEach( ls => {
@@ -1212,7 +1235,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
             }
         }
 
-        processListItems(container: JQuery<HTMLElement>, listItems: { Value: string | null | undefined; Text: string | null | undefined; Help: string | undefined; Class: string | undefined; Selected: boolean; Visible: boolean; Disabled: boolean }[] ): void {
+        processListItems(container: JQuery<HTMLElement>, rebuild: boolean, listItems: { Value: string | null | undefined; Text: string | null | undefined; Help: string | undefined; Class: string | undefined; Selected: boolean; Visible: boolean; Disabled: boolean }[] ): void {
             const isBootstrap3 = $("rbl-config", this.application.element).attr("bootstrap") == "3";
             const inputName: string = container.data( "inputname" );
             const id: string = container.data( "id" );
@@ -1279,6 +1302,10 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                     <div rbl-value='{helpSelector}' id='{id}_{helpSelector}' style='display: none;'>{help}</div>\
                     <div rbl-value='{helpSelector}Title' id='{id}_{helpSelector}Title' style='display: none;'></div>\
                 </div>";
+
+            if ( rebuild ) {
+                itemsContainer.empty();
+            }
 
             listItems.forEach( li => {                
                 const currentItemId = id + "_" + inputName + "_" + li.Value;
@@ -1976,7 +2003,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                             }
                             
                             // Append 'templated' content to view
-                            el.appendTo($( selector, view ));    
+                            el.appendTo($( selector, view ));
                         }
                         else {
                             target.append(content);
@@ -2595,7 +2622,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
             }
         };
 
-        private processValidationRows(summary: JQuery<HTMLElement>, errors: ValidationRow[]): void {
+        processValidationRows(summary: JQuery<HTMLElement>, errors: ValidationRow[]): void {
 			// Remove all RBLe client side created errors since they would be added back
 			$("ul li.rble", summary).remove();
 
@@ -2828,13 +2855,15 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
 
                 if ( listControl.length === 1 ) {
                     ui.processListItems(
-                        listControl, 
+                        listControl,
+                        row.rebuild == "1",
                         listRows.map( r => ({ Value:  r.key, Text: r.text, Class: r.class, Help: r.html, Selected: false, Visible: r.visible != "0", Disabled: r.disabled == "1" }))
                     );
                 }
                 else {
                     ui.processDropdownItems(
                         dropdown, 
+                        row.rebuild == "1",
                         listRows.map( r => ({ Value:  r.key, Text: r.text, Class: r.class, Subtext: r.subtext, Html: r.html, Selected: false, Visible: r.visible != "0" }))
                     );
                 }
@@ -3188,7 +3217,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
             } as HighchartsTooltipOptions;
         }
 
-        getHighchartsOptions( firstDataRow: HighChartsDataRow ): HighchartsOptions {            
+        getHighchartsOptions( firstDataRow: HighChartsDataRow | undefined ): HighchartsOptions {            
             const chartOptions: HighchartsOptions = {};
 
             // If chart has at least 1 data row and options/overrides arrays have been initialized
@@ -3201,7 +3230,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                 });
 
                 // Get series data
-                const allChartColumns = Object.keys(firstDataRow);
+                const allChartColumns = firstDataRow != undefined ? Object.keys(firstDataRow) : [];
                 const seriesColumns = allChartColumns.filter( k => k.startsWith( "series" ) );
                 const chartConfigurationRows = this.highchartsData.filter(e => e.category.startsWith("config-"));
                 const chartData = this.highchartsData.filter(e => !e.category.startsWith("config-"));
@@ -3286,7 +3315,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
 
                 const firstDataRow = this.highchartsData.filter(r => !(r.category || "").startsWith("config-")).shift();
 
-                if ( firstDataRow !== undefined ) {
+                if ( this.highchartsData.length > 0 ) {
                     const container = $(".chart", el);
 
                     let renderStyle = container.attr("style") ?? "";
@@ -3323,7 +3352,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
         return new HighchartsBuilder( application );
     };
 
-    class StandardTemplateBuilder /* implements StandardTemplateBuilderInterface*/
+    class StandardTemplateBuilder implements StandardTemplateBuilderInterface
     {
         application: KatAppPlugIn;
         ui: UIUtilities;
@@ -3358,9 +3387,9 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
             return el;
         }
 
-        private processCarousels(): void {
+        private processCarousels( container?: JQuery<HTMLElement> ): void {
             const that: StandardTemplateBuilder = this;
-            const view = this.application.element;
+            const view = container ?? this.application.element;
 
             // Hook up event handlers only when *not* already initialized
             $('.carousel-control-group:not([data-katapp-initialized="true"])', view).each(function () {
@@ -3429,7 +3458,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
             });
         }
 
-        private incrementProgressBars() {
+        private incrementProgressBars(): void {
             let progressBarValue = 0;
             const that = this;
             const progressBarInterval = setInterval(function () {
@@ -3445,108 +3474,174 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
             }, 185);
         }
         
-        private buildFileDownloads( view: JQuery<HTMLElement> ): void {
+        private buildActionLinks( container?: JQuery<HTMLElement> ): void {
+            const view = container ?? this.application.element;
             const that = this;
-            $('[rbl-download="true"]', view).not('[data-katapp-initialized="true"]').each(function () {
-                const el = $(this);
-                
-                const katAppCommand = el.data("command") ?? "DownloadFile";
+            const application = this.application;
 
-                el.on("click", function () {
-                    // JWT Support
-                    // https://stackoverflow.com/a/49725482/166231 (comment about jwt, probably use XMLHttpRequest.setRequestHeader() in my implementation)
-        
-                    // Implementation based off of these questions
-                    // https://stackoverflow.com/a/44435573/166231 (Using XMLHttpRequest to download)
-                    // https://stackoverflow.com/a/29039823/166231 (dynamically changing response type)
-        
-                    // Failed Attempts
-                    // https://stackoverflow.com/a/11520119/166231 (dynamically append/remove a form and post that)
-                    //	Page navigated when error was returned.  Didn't try target=_blank or anything because in current
-                    //	ESS, not used.  The <a/> does postback and if success, response is set to 'content' and it downloads
-                    //	the data and all is good.  If it fails, the entire page rerenders (since just navigating to self).
-                    //	Also, I didn't even try a valid file return with this yet
-                    /*
-                        var inputs =
-                            '<input type="hidden" name="KatAppCommand" value="DocGenDownload" />' +
-                            '<input type="hidden" name="KatAppView" value="' + (application.options.view || "Unknown") + '" />' +
-                            '<input type="hidden" name="KatAppInputs" />';
-        
-                        //send request
-                        var form = $('<form action="' + url + '" method="post">' + inputs + '</form>');
-                        form.appendTo('body');
-        
-                        $("[name='KatAppInputs']", form).val(JSON.stringify(application.getInputs()));
-        
-                        form.submit().remove();
-                    */
-                    // https://gist.github.com/domharrington/884346cc04c30eeb1237
-                    //	Didn't try this one, but has some 'browser compatability' code that I might want/need
-                    // https://stackoverflow.com/a/28002215/166231 (looks promising with full source)
-                    //	Actually didn't attempt this one.
-                    // https://storiknow.com/download-file-with-jquery-and-web-api-2-0-ihttpactionresult/ (most recent answer I could find)
-                    //	This one didn't work (left a comment) because of needing to return text (error) or file (success).
-                            
-                    var url = that.application.options.rbleUpdatesUrl;
-        
-                    if (url != undefined) {
-                        const fd = new FormData();
-                        fd.append("KatAppCommand", katAppCommand);
-                        fd.append("KatAppView", that.application.options.view ?? "Unknown");
-                        fd.append("KatAppInputs", JSON.stringify(that.application.getInputs()));
-        
-                        const xhr = new XMLHttpRequest();
-                        xhr.open('POST', url, true);
-        
-                        xhr.onreadystatechange = function () {
-                            if (xhr.readyState == 4) {
-                                if (xhr.status == 200) {
-                                    console.log(typeof xhr.response); // should be a blob
-                                } else if (xhr.responseText != "") {
-                                    console.log(xhr.responseText);
+            $('[rbl-action-link]', view).not('[data-katapp-initialized="true"]').each(function () {
+                $(this).on("click", function(e) {
+                    const actionLink = $(this);
+                    e.preventDefault();
+
+                    const katAppCommand = actionLink.attr("rbl-action-link") ?? "NotSupported";
+                    // Couldn't use data-confirm-selector because then two click events would have been
+                    // created and not work in, need entire flow to happen here in one click...
+                    const confirmSelector = actionLink.attr("rbl-action-confirm-selector");
+
+                    const action = function (): void {
+                        // JWT Support
+                        // https://stackoverflow.com/a/49725482/166231 (comment about jwt, probably use XMLHttpRequest.setRequestHeader() in my implementation)
+            
+                        // Implementation based off of these questions
+                        // https://stackoverflow.com/a/44435573/166231 (Using XMLHttpRequest to download)
+                        // https://stackoverflow.com/a/29039823/166231 (dynamically changing response type)
+            
+                        // Failed Attempts
+                        // https://stackoverflow.com/a/11520119/166231 (dynamically append/remove a form and post that)
+                        //	Page navigated when error was returned.  Didn't try target=_blank or anything because in current
+                        //	ESS, not used.  The <a/> does postback and if success, response is set to 'content' and it downloads
+                        //	the data and all is good.  If it fails, the entire page rerenders (since just navigating to self).
+                        //	Also, I didn't even try a valid file return with this yet
+                        /*
+                            var inputs =
+                                '<input type="hidden" name="KatAppCommand" value="DocGenDownload" />' +
+                                '<input type="hidden" name="KatAppView" value="' + (application.options.view || "Unknown") + '" />' +
+                                '<input type="hidden" name="KatAppInputs" />';
+            
+                            //send request
+                            var form = $('<form action="' + url + '" method="post">' + inputs + '</form>');
+                            form.appendTo('body');
+            
+                            $("[name='KatAppInputs']", form).val(JSON.stringify(application.getInputs()));
+            
+                            form.submit().remove();
+                        */
+                        // https://gist.github.com/domharrington/884346cc04c30eeb1237
+                        //	Didn't try this one, but has some 'browser compatability' code that I might want/need
+                        // https://stackoverflow.com/a/28002215/166231 (looks promising with full source)
+                        //	Actually didn't attempt this one.
+                        // https://storiknow.com/download-file-with-jquery-and-web-api-2-0-ihttpactionresult/ (most recent answer I could find)
+                        //	This one didn't work (left a comment) because of needing to return text (error) or file (success).
+                                
+                        let url = that.application.options.rbleUpdatesUrl;
+            
+                        if (url != undefined) {
+                            const fd = new FormData();
+                            fd.append("KatAppCommand", katAppCommand);
+                            fd.append("KatAppView", that.application.options.view ?? "Unknown");
+                            // fd.append("KatAppInputs", JSON.stringify(that.application.getInputs()));
+    
+                            const rble = $.fn.KatApp.rble( that.application, that.ui );
+                            const errors: ValidationRow[] = [];
+                            // Can't use 'view' in selector for validation summary b/c view could be a 'container' instead of entire view
+                            // if caller only wants to initialize a newly generated container's html                        
+                            const errorSummary = $("#" + that.application.id + "_ModelerValidationTable", that.application.element);
+                            $('.validator-container.error:not(.server)', that.application.element).removeClass('error');
+    
+                            const actionParameters = 
+                                [].slice.call(actionLink.get(0).attributes).filter(function(attr: Attr) {
+                                    return attr && attr.name && attr.name.indexOf("data-param-") === 0
+                                }).map( function( a: Attr ) { return a.name; } );
+    
+                            actionParameters.forEach( a => {
+                                const value = actionLink.attr(a);
+    
+                                if ( value !== undefined ) {
+                                    fd.append(a.substring(11), value);
                                 }
-                            } else if (xhr.readyState == 2) {
-                                if (xhr.status == 200) {
-                                    xhr.responseType = "blob";
-                                } else {
-                                    xhr.responseType = "text";
+                            });
+            
+                            const isDownload = actionLink.attr("rbl-action-download") ?? false;
+                            const xhr = new XMLHttpRequest();
+                            xhr.open('POST', url, true);
+            
+                            xhr.onreadystatechange = function (): void {
+                                // https://stackoverflow.com/a/29039823/166231
+                                /*
+                                if (xhr.readyState == 4) {
+                                    if (xhr.status == 200) {
+                                        console.log(typeof xhr.response); // should be a blob
+                                    }
+                                } else */
+                                if (xhr.readyState == 2) {
+                                    if (isDownload && xhr.status == 200) {
+                                        xhr.responseType = "blob";
+                                    } else {
+                                        xhr.responseType = "text";
+                                    }
                                 }
-                            }
-                        };
-        
-                        xhr.onload = function () {
-                            if (xhr.responseType == "text") {
-                                console.log("Show error: " + xhr.responseText);
-                            }
-                            else {
-                                const blob = xhr.response;
-        
-                                let filename = "Download.pdf";
-                                const disposition = xhr.getResponseHeader('Content-Disposition');
-                                if (disposition && disposition.indexOf('attachment') !== -1) {
-                                    filename = disposition.split('filename=')[1].split(';')[0];
+                            };
+            
+                            xhr.onload = function (): void {
+                                if (xhr.responseType == "text") {
+                                    const jsonResponse = JSON.parse( xhr.responseText );
+
+                                    if ( xhr.status == 500 ) {
+                                        let hasValidations = false;
+                                        if ( jsonResponse[ "Validations" ] != undefined && errorSummary.length > 0 ) {
+                                            jsonResponse.Validations.forEach((v: { [x: string]: string }) => {
+                                                errors.push( { "@id": v[ "ID" ], text: v[ "Message" ] });
+                                            });
+                                            hasValidations = true;
+                                        }
+                
+                                        if ( !hasValidations ) {
+                                            actionLink.trigger( "onActionFailed", [ jsonResponse, application ] );
+                                            console.log("Show error: " + jsonResponse.Message);
+                                        }
+                                    }
+                                    else {
+                                        actionLink.trigger( "onActionResult", [ katAppCommand, application, jsonResponse ] );
+                                    }
                                 }
-        
-                                const tempEl = document.createElement("a");
-                                $(tempEl).addClass( "d-none hidden" );
-                                url = window.URL.createObjectURL(blob);
-                                tempEl.href = url;
-                                tempEl.download = filename;
-                                tempEl.click();
-                                window.URL.revokeObjectURL(url);
-                            }
-                        }.bind(this);
-        
-                        xhr.send(fd);
+                                else {
+                                    const blob = xhr.response;
+    
+                                    actionLink.trigger( "onActionResult", [ katAppCommand, application ] );
+    
+                                    let filename = "Download.pdf";
+                                    const disposition = xhr.getResponseHeader('Content-Disposition');
+                                    if (disposition && disposition.indexOf('attachment') !== -1) {
+                                        filename = disposition.split('filename=')[1].split(';')[0];
+                                    }
+            
+                                    const tempEl = document.createElement("a");
+                                    $(tempEl).addClass( "d-none hidden" );
+                                    url = window.URL.createObjectURL(blob);
+                                    tempEl.href = url;
+                                    tempEl.download = filename;
+                                    tempEl.click();
+                                    window.URL.revokeObjectURL(url);
+                                }
+                                actionLink.trigger( "onActionComplete", [ katAppCommand, application ] );
+                                rble.processValidationRows(
+                                    errorSummary, 
+                                    errors
+                                );
+                            }.bind(actionLink);
+            
+                            actionLink.trigger( "onActionStart", [ katAppCommand, application ] );
+                            xhr.send(fd);
+                        }
+                    };
+                        
+                    // .on("click", function() { return that.onConfirmLinkClick( $(this)); })
+                    if ( confirmSelector != undefined ) {
+                        const confirm = $(confirmSelector, that.application.element).html() || "";
+                        return that.ui.onConfirmLinkClick($(this), confirm, action);
                     }
-                })
-        
-                el.attr("data-katapp-initialized", "true");
+                    else {
+                        action();
+                        return true;
+                    }
+                }).attr("data-katapp-initialized", "true");
             });
         }
 
         private buildFileUploads( view: JQuery<HTMLElement> ): void {
             const that = this;
+            const application = this.application;
 
             $('[rbl-tid="input-fileupload"],[rbl-template-type="katapp-fileupload"]', view).not('[data-katapp-initialized="true"]').each(function () {
                 const el = $(this);
@@ -3579,14 +3674,14 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                     }
                 }
 
-                let input = $("input", el);
+                const input = $("input", el);
 
                 if ( inputCss !== undefined ) {
                     input.addClass(inputCss);
                 }
 
                 $(".btn-file-remove", el).on("click", function () {
-                    var file = $(this).parents('.input-group').find(':file');
+                    const file = $(this).parents('.input-group').find(':file');
                     file.val("").trigger("change");
                 });
                 $(".btn-file-upload", el).on("click", function () {
@@ -3611,6 +3706,15 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                         fd.append("KatAppView", that.application.options.view ?? "Unknown" );
                         fd.append("KatAppInputs", JSON.stringify(that.application.getInputs()));
 
+                        const rble = $.fn.KatApp.rble( that.application, that.ui );
+                        const errors: ValidationRow[] = [];
+                        // Can't use 'view' in selector for validation summary b/c view could be a 'container' instead of entire view
+                        // if caller only wants to initialize a newly generated container's html                        
+                        const errorSummary = $("#" + that.application.id + "_ModelerValidationTable", that.application.element);
+                        $('.validator-container.error:not(.server)', that.application.element).removeClass('error');
+
+                        fileUpload.trigger( "onUploadStart", application );
+
                         $.ajax({
                             url: uploadUrl,  
                             type: 'POST',
@@ -3618,13 +3722,26 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                             cache: false,
                             contentType: false,
                             processData: false
-                        }).done( function( payLoad ) {
-                            console.log("Upload good");
+                        }).done( function( /* payLoad */ ) {
+                            fileUpload.trigger( "onUploaded", application );
                         })
-                        .fail( function( _jqXHR, textStatus ) {
-                            console.log("Upload bad");
+                        .fail( function( _jqXHR  ) {
+                            const responseText = _jqXHR.responseText || "{}";
+                            const jsonResponse = JSON.parse( responseText );
+                            if ( jsonResponse[ "Validations" ] != undefined && errorSummary.length > 0 ) {
+                                jsonResponse.Validations.forEach((v: { [x: string]: string }) => {
+                                    errors.push( { "@id": v[ "ID" ], text: v[ "Message" ] });
+                                });
+                                return;
+                            }
+                            fileUpload.trigger( "onUploadFailed", [ jsonResponse, application ] );
                         })
                         .always( function() {
+                            fileUpload.trigger( "onUploadComplete", application );
+                            rble.processValidationRows(
+                                errorSummary, 
+                                errors
+                            );
                             fileUpload.val("").trigger("change");
                             $(".file-upload .btn", el).removeClass("disabled");
                             $(".file-upload-progress", that.application.element).hide();
@@ -3633,15 +3750,14 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                     }
                 });
                 $(".btn-file :file", el).on("change", function () {
-                    var fileUpload = $(this),
+                    const fileUpload = $(this),
                         files = ( fileUpload[0] as HTMLInputElement ).files,
                         numFiles = files?.length ?? 1,
-                        label = ( fileUpload.val() as string).replace(/\\/g, '/').replace(/.*\//, ''), // remove c:\fakepath
+                        label = numFiles > 1 ? numFiles + ' files selected' : ( fileUpload.val() as string).replace(/\\/g, '/').replace(/.*\//, ''), // remove c:\fakepath
                         display = $(this).parents('.input-group').find(':text'),
                         upload = $(this).parents('.input-group').find('.btn-file-upload'),
                         remove = $(this).parents('.input-group').find('.btn-file-remove');
             
-                    label = numFiles > 1 ? numFiles + ' files selected' : label;
             
                     display.val(label);
                     if (numFiles > 0) {
@@ -3652,7 +3768,6 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                     }
                 });
             
-                const validatorContainer = $(".validator-container", el);
                 el.attr("data-katapp-initialized", "true");
             });
         }
@@ -3908,7 +4023,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                         $("rbl-template[tid='lookup-tables'] DataTable[id='" + lookuptable + "'] TableItem")
                             .map( ( index, ti ) => ({ Value: ti.getAttribute("key"), Text: ti.getAttribute( "name"), Class: undefined, Help: undefined, Selected: index == 0, Visible: true, Disabled: false }));
 
-                    that.ui.processListItems(container, options.toArray());
+                    that.ui.processListItems(container, false, options.toArray());
                 }
         
                 el.attr("data-katapp-initialized", "true");
@@ -3962,6 +4077,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                 if ( lookuptable !== undefined ) {
                     that.ui.processDropdownItems(
                         input, 
+                        false,
                         $("rbl-template[tid='lookup-tables'] DataTable[id='" + lookuptable + "'] TableItem")
                             .map( ( index, r ) => ({ Value:  r.getAttribute("key"), Text: r.getAttribute( "name"), Class: undefined, Subtext: undefined, Html: undefined, Selected: index === 0, Visible: true }))
                             .toArray()
@@ -4024,24 +4140,26 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
             });
         }
 
-        processUI(): void {
-            this.processInputs();
-            this.processCarousels();
-            this.processHelpTips();
+        processUI( container?: JQuery<HTMLElement> ): void {
+            this.processInputs( container );
+            this.processCarousels( container );
+            this.buildActionLinks( container );
+            this.processHelpTips( container );
         }
 
-        processHelpTips(): void {
+        processHelpTips( container?: JQuery<HTMLElement> ): void {
             // Couldn't include the Bootstrap.Tooltips.js file b/c it's selector hits entire page, and we want to be localized to our view.
             const selector = "[data-toggle='tooltip'], [data-toggle='popover'], .tooltip-trigger, .tooltip-text-trigger, .error-trigger";
             const application = this.application;
             const isBootstrap3 = $("rbl-config", this.application.element).attr("bootstrap") == "3";
+            const view = container ?? application.element;
 
-            if ( typeof $.fn.popover !== "function" && $(selector, application.element).length > 0 ) {
+            if ( typeof $.fn.popover !== "function" && $(selector, view).length > 0 ) {
                 this.application.trace("Bootstrap popover/tooltip javascript is not present.", TraceVerbosity.None);
                 return;
             }
 
-            $(selector, application.element)
+            $(selector, view)
                 .not(".rbl-help, [data-katapp-initialized='true']")
                 .each( function() {
                     const isErrorValidator = $(this).hasClass('error-msg');
@@ -4128,7 +4246,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                                 const isWarning = $("label.warning", $(e.target)).length == 1;
                                 if (isWarning) {
                                     const templateId = "#" + $(e.target).attr("aria-describedby");
-                                    $(templateId, application.element).removeClass("error").addClass("warning");
+                                    $(templateId, view).removeClass("error").addClass("warning");
                                 }
                             });
                     }
@@ -4157,7 +4275,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                 };
 
                 application.element
-                    .on("show.bs.popover.RBLe", function( e ) {  hideVisiblePopover(); })
+                    .on("show.bs.popover.RBLe", function() {  hideVisiblePopover(); })
                     .on("shown.bs.popover.RBLe", function( e ) { visiblePopover = e.target; })
                     .on("hide.bs.popover.RBLe", function() { visiblePopover = undefined; })
                     .on("keyup.RBLe", function( e ) {
@@ -4177,7 +4295,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
 
             // When helptip <a/> for checkboxes were  moved inside <label/>, attempting to click the help icon simply toggled
             // the radio/check.  This stops that toggle and lets the help icon simply trigger it's own click to show or hide the help.
-            $('.checkbox label a[data-toggle], .abc-checkbox label a[data-toggle]', application.element)
+            $('.checkbox label a[data-toggle], .abc-checkbox label a[data-toggle]', view)
                 .not("[data-katapp-checkbox-tips-initialized='true']")
                 .on('click', function (e) {
                     e.stopPropagation();
@@ -4186,13 +4304,12 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                 .attr("data-katapp-checkbox-tips-initialized", "true");
         }
 
-        private processInputs(): void {
-            const view = this.application.element;
+        private processInputs( container?: JQuery<HTMLElement> ): void {
+            const view = container ?? this.application.element;
 
             this.buildDropdowns( view );
             this.buildTextBoxes( view );
             this.buildFileUploads( view );
-            this.buildFileDownloads( view );
             this.buildListControls( view );
             this.buildCheckboxes( view );
             this.buildSliders( view );

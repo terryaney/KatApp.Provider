@@ -78,7 +78,8 @@ interface KatAppOptions
     onCalculation?: (this: HTMLElement, calculationResults: JSON, calcOptions: KatAppOptions, application: KatAppPlugInInterface )=> void;
     onCalculationErrors?: (this: HTMLElement, key: string, message: string, exception: RBLeServiceResults | undefined, calcOptions: KatAppOptions, application: KatAppPlugInInterface)=> void;
     onDataUpdateErrors?: (this: HTMLElement, message: string, exception: RBLeServiceResults | undefined, calcOptions: KatAppOptions, application: KatAppPlugInInterface)=> void;
-    onCalculateEnd?: (this: HTMLElement, appilcation: KatAppPlugInInterface )=> void;
+    onDataUpdate?: (this: HTMLElement, calculationResults: JSON, calcOptions: KatAppOptions, application: KatAppPlugInInterface)=> void;
+    onCalculateEnd?: (this: HTMLElement, application: KatAppPlugInInterface )=> void;
 }
 // These are the only methods available to call on .KatApp() until onInitialized is triggered (meaning
 // that the provider object has been loaded and replaced the Shim and all methods of the KatAppPlugInInterface 
@@ -286,6 +287,10 @@ interface HighChartsOverrideRow extends HighChartsOptionRow {
 interface HighChartsOptionRow {
     key: string;
     value: string;
+}
+
+interface StandardTemplateBuilderInterface {
+    processUI( container?: JQuery<HTMLElement> ): void;
 }
 
 // Made the following an interface/factory just so that I could put the

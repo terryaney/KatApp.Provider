@@ -72,6 +72,7 @@ interface ValidationRow {
 interface ListControlRow {
     "@id": string;
     table: string;
+    rebuild?: string;
 }
 interface ListRow {
     key: string;

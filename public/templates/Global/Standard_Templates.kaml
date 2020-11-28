@@ -648,6 +648,9 @@
 .katapp-css .file-upload i {
   padding-right: 5px;
 }
+.katapp-css .file-data {
+  display: none;
+}
 .katapp-css .input-group-btn .btn, 
 .katapp-css .input-group-append .btn {
   border: none;

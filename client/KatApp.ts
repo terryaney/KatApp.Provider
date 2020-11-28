@@ -94,25 +94,26 @@ class KatApp
         );
     };
 
-    static ping( url: string, callback : ( responded: boolean, error?: string | Event )=>void ) {
+    static ping( url: string, callback: ( responded: boolean, error?: string | Event )=> void ): void {
         const ip = url.replace('http://','').replace('https://','').split(/[/?#]/)[0];
 
         // https://stackoverflow.com/a/11941783/166231
         let inUse = true;
         const img = new Image();
-        img.onload = function () {
+        img.onload = function (): void {
             inUse = false;
             callback(true);
         };
         // onerror is also success, because this means the domain/ip is found, only the image not;
-        img.onerror = function (e) {
+        img.onerror = function (e): void {
             if (inUse) {
                 inUse = false;
                 callback(true, e);
             }
         };
         img.src = "http://" + ip;
-        const timer = setTimeout(function () {
+        
+        setTimeout(function () {
             if (inUse) {
                 inUse = false;
                 callback(false);
@@ -525,7 +526,9 @@ class KatApp
                         }
                         else if ( appOptions !== undefined ) {
                             instance.updateOptions( appOptions );
-                            instance.calculate();
+                            if ( appOptions.defaultInputs !== undefined ) {
+                                instance.calculate();
+                            }
                         }
                     }
                     else if (instance !== undefined && typeof instance[options] === 'function') {

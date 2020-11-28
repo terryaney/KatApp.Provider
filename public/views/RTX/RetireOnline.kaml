@@ -1,4 +1,4 @@
-<rbl-config calcengine="Conduent_ABC_RetOnline_SE" precalcs="Conduent_ABC_DBCalc_SE|RBLInput|RBLResult" result-tabs="RBLResultElection" bootstrap="4" templates="Standard_Templates,Input_TemplatesBS4"></rbl-config>
+<rbl-config calcengine="Conduent_ABC_RetOnline_SE" precalcs="Conduent_ABC_DBCalc_SE|RBLInput|RBLResult" result-tabs="RBLResultElection" bootstrap="4" templates="Standard_Templates.NexGen,Input_TemplatesBS4"></rbl-config>
 
 <!--
     http://oneportal.uxgroup.com/LW60/NexGen/0_Product/channel_DB.html?local=1
@@ -26,6 +26,7 @@
                 <input name="{id}:iStep" type="text" id="katapp_{id}_iStep" class="iStep" value="1"/>
                 <input name="{id}:iDirection" type="text" id="katapp_{id}_iDirection" class="iDirection" value="0"/>
                 <input name="{id}:iPlan" type="text" id="katapp_{id}_iPlan" class="iPlan" value="1"/>
+                <input name="{id}:iElectionConfirm" type="text" id="katapp_{id}_iElectionConfirm" class="iElectionConfirm" value="0"/>
             </div>        
             <h2 class="title">Retire Online</h2>
             <div class="ajaxContent">
@@ -58,10 +59,10 @@
                         <div class="row" rbl-tid="inline">
                             <div class="col-6">
                                 <p><b>Plan: {text}</b></p>
-                                <p>General status of election for {text}</p>
+                                <p>{value1}</p>
                             </div>
                             <div class="col-6">
-                                <a class="btn btn-primary btnNavigation" data-direction="1" data-plan-id="{@id}" id="{id}_StartPlan">Make Election</a>
+                                <a class="btn btn-primary btnNavigation" href="#" data-direction="{step}" data-plan-id="{@id}" id="{id}_StartPlan">{button-text}</a>
                             </div>
                             
                             <hr class="w-100"/>
@@ -75,22 +76,41 @@
                         <div class="card-body">
                             <div class="row">
                                 <div class="col-12">
-                                    <div rbl-tid="result-table" rbl-source="required-document-progress" data-css="table table-bordered table-condensed"></div>
+                                    <div class="d-none">
+                                        <div data-required-document-prompt="mail">Are you sure you want to mail the selected document instead of using the currently uploaded copy?</div>
+                                        <div data-required-document-prompt="delete">Are you sure you want to delete the selected document?</div>
+                                    </div>
+                                    <table class="table table-bordered table-condensed" data-process-id="required-document-progress">
+                                        <thead>
+                                            <tr>
+                                                <th class="col-xs-3 text-center">Document</th>
+                                                <th class="col-xs-3 text-center">Delivery</th>
+                                                <th class="col-xs-3 text-center">Status</th>
+                                                <th class="col-xs-3 text-center">Action</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody></tbody>
+                                    </table>
                                     <div class="alert alert-info" rbl-value="electionStatusNote" rbl-display="electionStatusNote" style="display: none;"></div>
                                 </div>
                             </div>
-                            <div class="row" rbl-display="upload-controls" style="display:none;">
+                            <div class="row" rbl-display="upload-controls">
                                 <div rbl-tid="input-dropdown" class="col-md-3" data-inputname="iUploadType" data-liveSearch="false" data-label="Document Type"></div>
-                                <div rbl-tid="input-fileupload" class="col-md-9" data-hidelabel="false" data-label="File Name" data-inputname="iUpload" data-command="UploadRequiredDocument"></div>
+                                <div rbl-tid="input-fileupload" class="col-md-9" data-hidelabel="false" data-label="File Name" data-inputname="iUpload" data-command="RetireOnline.UploadRequiredDocument"></div>
+
+                                <div class="col-12 mb-2">
+                                    <div class="alert alert-success alert-dismissable alert-toggle" id="{id}_iUpload_Success" style="display: none;">
+                                        <button type="button" class="close" data-hide="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                                        <div data-upload-alert="success"><b>Upload successfully received.</b></div>
+                                    </div>
+                                    <div class="alert alert-danger alert-dismissable alert-toggle" id="{id}_iUpload_Error" style="display: none;">
+                                        <button type="button" class="close" data-hide="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                                        <div data-upload-alert="error"><b>Upload failed.  Please try again.</b></div>
+                                    </div>
+                                </div>
                         
                                 <div class="col-12">
-                                    <div class="alert alert-warning" rbl-value="fileUploadNote"><b>Note:</b> Uploads are limited to 30Mb</div>
-                                </div>
-                                <div class="col-12">
-                                    <div class="alert alert-success alert-dismissable fileUploadSuccess d-none">
-                                        <button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button>
-                                        <div rbl-value="pUploadConfirm"></div>
-                                    </div>
+                                    <div rbl-value="fileUploadNote"><b>Note:</b> Uploads are limited to 30Mb</div>
                                 </div>
                             </div>
                         </div>
@@ -108,7 +128,7 @@
                     </div>        
                 </div>
 
-                <div class="card" rbl-display="vStep3" style="display: none;">
+                <div class="card mt-0" rbl-display="vStep3" style="display: none;">
                     <div class="card-header mt-1"><h4 class="card-title">Form of Payment Election</h4></div>
                     <div class="card-body">
                         <div class="row">
@@ -129,7 +149,9 @@
                                             <div rbl-tid="input-textbox" data-inputname="iIRANumber" data-label="IRA Account Number"></div>
                                             <div rbl-tid="input-textbox" data-inputname="iRolloverAmount" data-prefix="$" data-label="Percentage of the lump-sum payment to be paid directly to me"></div>
                                         </div>
-                                        <div class="col-sm-12 alert alert-warning" rbl-value="lumpSumDistributionNote" rbl-display="lumpSumDistributionNote" role="alert"></div>        
+                                        <div class="col-12">
+                                            <div class="alert alert-warning" rbl-value="lumpSumDistributionNote" rbl-display="lumpSumDistributionNote" role="alert"></div>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -230,20 +252,25 @@
                     </div>
                 </div>
 
-                <div class="card" rbl-display="vStep4" style="display: none;">
+                <div class="card mt-0" rbl-display="vStep4" style="display: none;">
                     <div class="card-header mt-1"><h4 class="card-title">Election Confirmation</h4></div>
                     <div class="card-body">
                         <div rbl-value="electionConfirm"></div>
+                        <div rbl-tid="result-table" rbl-source="election-confirm-details" data-css="table table-bordered table-condensed"></div>
                     </div>
                 </div>
                 <div class="ajaxloader"></div>
 
                 <div class="row mt-2">
                     <div class="col-12">
-                        <a class="btn btn-primary-outline btnNavigation" rbl-value="btnPrevious" rbl-display="btnPrevious" data-direction="-1" id="{id}_Previous" style="display: none;"><span class="glyphicons glyphicons-chevron-left"></span><span class="d-none d-md-inline-block">Previous</span></a>
-                        <a class="btn btn-primary btnNavigation" rbl-value="btnContinue" rbl-display="btnContinue" data-direction="1" id="{id}_Continue"><span class="d-none d-md-inline-block">Continue</span><span class="glyphicons glyphicons-chevron-right"></span></a>
-                        <a class="btn btn-primary btnNavigation" rbl-display="btnSubmit" data-direction="1" data-confirm-selector="#{id}_electionConfirm" data-submit-key="[rbl-display='btnContinue']" id="{id}_Submit">Submit</a>
-                        <div class="d-none" id="{id}_electionConfirm" rbl-value="electionConfirm"></div>
+                        <a class="btn btn-primary-outline btnNavigation" href="#"  rbl-value="btnPrevious" rbl-display="btnPrevious" data-direction="-1" id="{id}_Previous" style="display: none;"><span class="glyphicons glyphicons-chevron-left"></span><span class="d-none d-md-inline-block">Previous</span></a>
+                        <a class="btn btn-primary btnNavigation" href="#" rbl-value="btnContinue" rbl-display="btnContinue" data-direction="1" id="{id}_Continue"><span class="d-none d-md-inline-block">Continue</span><span class="glyphicons glyphicons-chevron-right"></span></a>
+                        <a class="btn btn-primary" href="#" rbl-display="btnSubmit" id="{id}_SubmitPrompt">Submit</a>
+                        <a class="btn btn-primary btnNavigation d-none" href="#" rbl-display="btnSubmit" data-direction="1" data-confirm-selector="#{id}_electionConfirm" data-submit-key="[rbl-display='btnContinue']" id="{id}_Submit">Submit</a>
+                        <div class="d-none" id="{id}_electionConfirm">
+                            <div rbl-value="electionConfirmPrompt"><p>Please verify your information.</p></div>
+                            <div rbl-tid="result-table" rbl-source="election-confirm-details" data-css="table table-bordered table-condensed"></div>
+                        </div>
                     </div>
                     <div class="col-12 pt-2">
                         <div rbl-tid="validation-summary"></div>
@@ -257,26 +284,17 @@
 <script>
 	(function(){
 		var view = $("{thisView}");
+        var retOnline = new RetireOnline(view);
 
 		if ( view.data("debugger" ) == true ) {
 			debugger;
 		}
 
-        function setElectionData ( electionData ) { sessionStorage.setItem('RTX:ElectionData', JSON.stringify(electionData)); }
-        function getElectionData () { 
-            var dataJson = sessionStorage.getItem('RTX:ElectionData');
-            var data = dataJson != undefined ? JSON.parse(dataJson) : undefined;
-
-            return data || {
-                Assumptions: { },
-                Plans: [] 
-            }; 
-        }
-
         function bindNavigation() {
             $("a[data-direction]", view).not("[rbl-display='btnSubmit']")
                 .off("click.rtx")
-                .on("click.rtx", function() {
+                .on("click.rtx", function(e) {
+                    e.preventDefault();
                     var direction = $(this).data("direction");
                     var planId = $(this).data("plan-id");
 
@@ -287,109 +305,39 @@
                     view.KatApp().calculate();
                 });
         }
-
-        function saveRetirementInformation(application) {
-                // They just finished retirement information...save to session
-                var electionData = getElectionData();
-                $("div[rbl-display='vStep1'] div[data-inputname] input", application.element).each(function () {
-                    var input = $(this);
-                    var value = application.ui.getInputValue(input);
-                    var name = application.ui.getInputName(input);
-
-                    if (value !== undefined) {
-                        electionData.Assumptions[ name ] = value;
-                    }
-                });
-                electionData.Assumptions[ "iDirection" ] = "1";
-
-                setElectionData(electionData);
-        }
-
-        view.on( "onCalculationOptions.RBLe", function( event, submitOptions, application ) {
-            var tables = submitOptions.InputTables;
-            if ( tables == null ) { 
-                submitOptions.InputTables = tables = [];
-            }
-
-            var electionData = getElectionData();
-
-            var electionTable = {
-                Name: "election",
-                Rows: []
-            };
-
-            electionData.Plans.forEach(function (p) {
-                var row = { index: p.index };
-                Object
-                    .keys(p)
-                    .filter( function(r) { return r != "index"; })
-                    .forEach( function(r) {
-                        row[ r ] = p[ r ];
-                    } );
-
-                electionTable.Rows.push( row );
-            });
-
-            tables.push(electionTable);
-        });
         
         view.on( "onCalculation.RBLe", function( event, results, options, application ) {
             var direction = application.calculationInputs.iDirection;
-            var step = $(".iStep", view).val();
-
             if ( direction != "0" ) {
                 bindNavigation();
             }
-            
-            if ( direction == "1" && step == "2" ) {
-                // saveRetirementInformation(application);
-            }
+            var hasValidations = 
+                application.getResultTable( "warnings" ).length > 0 ||
+                application.getResultTable( "errors" ).length > 0;
 
-            if ( step == "4" ) {
-                // Valid submission happened, save table to electionData
-                var updates = application.getResultTable("data-updates");
-                var index = application.getResultValueByColumn("data-updates", "field", "index", "value");
-                var electionData = getElectionData();
-                var planArrInd = electionData.Plans.findIndex(r => r.index == index );
-                var plan = false && planArrInd != -1 ? electionData.Plans[ planArrInd ] : {};
-
-                updates.forEach(function (u) {
-                    plan[ u.field ] = u.value;
-                });
-                
-                if ( planArrInd > -1 ) electionData.Plans[ planArrInd ] = plan;
-                else electionData.Plans.push( plan );
-
-                // setElectionData(electionData);
+            if ( !hasValidations && application.calculationInputs.iElectionConfirm == "1" ) {
+                $("#{id}_Submit", view).trigger("click");
             }
         });
 
         view.on("onConfigureUICalculation.RBLe", function(event, results, options, application) {
             $(".rblMarkup", view).show();
-
-            let electionData = getElectionData();
-
-            if ( electionData.Assumptions != undefined ) {
-                application.setInputs(electionData.Assumptions);
-            }
         });
 
         view.on( "onInitialized.RBLe", function( event, application ) {
+            $("#{id}_SubmitPrompt", view).on("click", function(e) {
+                e.preventDefault();
+                $(".iElectionConfirm", view).val(1)
+                .trigger("change")
+                .val("");
+            })
+
+            $("[data-hide='alert']", view).on("click", function(e) {
+                e.preventDefault();
+                $(this).parent().hide();
+            });
+
             bindNavigation();
-
-            /*
-            // Save data to sessionStorage
-            sessionStorage.setItem('key', 'value');
-
-            // Get saved data from sessionStorage
-            let data = sessionStorage.getItem('key');
-
-            // Remove saved data from sessionStorage
-            sessionStorage.removeItem('key');
-
-            // Remove all saved data from sessionStorage
-            sessionStorage.clear();
-            */
 		});
 	})();
 	//# sourceURL=RetireOnline.kaml

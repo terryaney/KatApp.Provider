@@ -1,7 +1,6 @@
-<rbl-config calcengine="Conduent_NexgenTRDemo_RTX_SE" templates="Standard_Templates,Input_TemplatesBS4"></rbl-config>
+<rbl-config calcengine="Conduent_ABC_TR_SE" bootstrap="4" templates="Standard_Templates.NexGen,Input_TemplatesBS4" precalcs="Conduent_ABC_DCCalc_SE|RBLInput|RBLResultDCProj"></rbl-config>
 
 <style>
-
 	thisClass span.highcharts-title {
 		font-family: inherit !important;
 	}
@@ -39,158 +38,149 @@
 	.bs-callout-warning {
 		border-left-color: orange;
 	}
-
-
-
 </style>
 
-<script>
-$(document).ready(function(){
-	$(".fd-main, .fd-totalrewards, .fd-totalwealth, .AC-Item").hide();
-	$(".fd-main").show();	
-});
-
-</script>
-
-<div class="d-none">
-	<asp:TextBox runat="server" ID="iCurrentPage" CssClass="iCurrentPage" Text="1" />
-</div>
-
-<div class="container kat-app-css">
-	<div class="ajaxContent">
-		<h2 class="title">Financial Dashboard</h2>
-		<div class="ajaxloader"></div>
-
-		<div class="row mt-4">
-<!--1st level-->
-			<div class="col-12 col-md-4 fd-main fd-totalrewards-summary">
-				<div class="card mt-0">
-					<div class="card-header text-center">
-						<h4 class="card-title compensationHeader"></h4>
-					</div>
-					<div class="card-body pl-1 pr-1">
-						<div class="text-center">
-							<div rbl-tid="chart-highcharts" rbl-chartdata="CompensationChart" rbl-chartoptions="Pie"></div>
-							<a class="btn btn-primary details-totalrewards" href="#">
-								<span class="compensationLink_">Details</span>
-							</a>
-						</div>
-						<div class="mt-3" rbl-tid="result-table" rbl-tablename="CompensationTable"></div>
-					</div>
-				</div>
-			</div>
-			<div class="col-12 col-md-4 fd-main fd-totalwealth-summary">
-				<div class="card mt-0">
-					<div class="card-header text-center">
-						<h4 class="card-title wealthHeader"></h4>
-					</div>
-					<div class="card-body pl-1 pr-1">
-						<div class="text-center">
-							<div rbl-tid="chart-highcharts" rbl-chartdata="WealthChart" rbl-chartoptions="Pie"></div>
-							<a class="btn btn-primary details-totalwealth" href="#"><span class="wealthLink_">Details</span></a>
-						</div>
-						<div class="mt-3" rbl-tid="result-table" rbl-tablename="WealthTable"></div>
-					</div>
-				</div>
-			</div>
-<!--2nd level-->
-			<div class="col-12 col-md-4 fd-totalrewards">
-				<div class="CashCompensation AC-Item">
+<section id="tr" class="tr section-padding scroll-indicator" data-scroll-indicator-title="TOTAL REWARDS">
+	<div class="container kat-app-css">
+		<div class="ajaxContent">
+			<h2 class="title" rbl-value="pageHeader"></h2>
+			<div class="ajaxloader"></div>
+	
+			<div class="row mt-4">
+	<!--1st level-->
+				<div class="col-12 col-md-4 fd-main fd-totalrewards-summary">
 					<div class="card mt-0">
 						<div class="card-header text-center">
-							<h4 class="card-title compCashHeader"></h4>
+							<h4 class="card-title" rbl-value="compensationHeader"></h4>
 						</div>
-						<div class="card-body pl-0 pr-0">
-							<div class="col-12 pl-1 pr-1">
-								<div class="compCashDetail"></div>
-								<div rbl-tid="chart-highcharts" rbl-chartdata="CashCompensationChart" rbl-chartoptions="Bars"></div>
-								<div class="mt-3" rbl-tid="result-table" rbl-tablename="CashCompensationTable"></div>
-							</div>
-						</div>
-					</div>
-				</div>
-				<div class="HealthWelfare AC-Item" style="display: none;">
-					<div class="card mt-0">
-						<div class="card-header text-center">
-							<h4 class="card-title compHwHeader"></h4>
-						</div>
-						<div class="card-body pl-0 pr-0">
-							<div class="col-12 pl-1 pr-1">
-								<div class="compHwDetail"></div>
-								<div rbl-tid="chart-highcharts" rbl-chartdata="HWBenefitsChart" rbl-chartoptions="Bars"></div>
-								<div class="mt-3" rbl-tid="result-table" rbl-tablename="HWBenefitsTable"></div>
-							</div>
-						</div>
-					</div>
-				</div>
-				<div class="RetirementBenefit AC-Item" style="display: none;">
-					<div class="card mt-0">
-						<div class="card-header text-center">
-							<h4 class="card-title compRetHeader"></h4>
-						</div>
-						<div class="card-body pl-0 pr-0">
-							<div class="col-12 pl-1 pr-1">
-								<div class="compRetDetail"></div>
-								<div rbl-tid="chart-highcharts" rbl-chartdata="RetirementBenefitsChart" rbl-chartoptions="Bars"></div>
-								<div class="mt-3" rbl-tid="result-table" rbl-tablename="RetirementBenefitsTable"></div>
-							</div>
-						</div>
-					</div>
-				</div>
-				<div class="HRBenefits AC-Item" style="display:none;">
-					<div class="card mt-0">
-						<div class="card-header text-center">
-							<h4 class="card-title compHrHeader"></h4>
-						</div>
-						<div class="card-body pl-0 pr-0">
-							<div class="col-12 pl-1 pr-1">
-								<div class="compHrDetail"></div>
-								<div rbl-tid="chart-highcharts" rbl-chartdata="HRBenefitsChart" rbl-chartoptions="Bars"></div>
-								<div class="mt-3" rbl-tid="result-table" rbl-tablename="HRBenefitsTable"></div>
-							</div>
-						</div>
-					</div>
-				</div>
-			</div>
-			<div class="col-12 col-md-4 fd-totalwealth">
-				<div class="futureWealth AW-Item">
-					<div class="card mt-0">
-						<div class="card-header text-center">
-							<h4 class="card-title wealthFutureHeader"></h4>
-						</div>
-						<div class="card-body pl-0 pr-0">
-							<div class="col-12 pl-1 pr-1">
-								<div class="wealthFutureDetail"></div>
-								<div rbl-tid="chart-highcharts" rbl-chartdata="FutureWealthChart" rbl-chartoptions="Bars"></div>
-								<div class="col-12" rbl-tid="input-slider" data-inputname="iPretaxRothCont"></div>
-								<div class="mt-3" rbl-tid="result-table" rbl-tablename="FutureWealthTable"></div>
-							</div>
+						<div class="card-body pl-1 pr-1">
 							<div class="text-center">
-								<a href="javascript:$('li.nav-item a:contains(Retirement Planning)').trigger('click')">Explore Your Future</a>
+								<div rbl-tid="chart-highcharts" rbl-chartdata="CompensationChart" rbl-chartoptions="Pie"></div>
+								<a class="btn btn-primary details-totalrewards" href="#">
+									<span>Details</span>
+								</a>
+							</div>
+							<div class="mt-3" rbl-tid="result-table" rbl-tablename="CompensationTable"></div>
+						</div>
+					</div>
+				</div>
+				<div class="col-12 col-md-4 fd-main fd-totalwealth-summary">
+					<div class="card mt-0">
+						<div class="card-header text-center">
+							<h4 class="card-title" rbl-value="wealthHeader"></h4>
+						</div>
+						<div class="card-body pl-1 pr-1">
+							<div class="text-center">
+								<div rbl-tid="chart-highcharts" rbl-chartdata="WealthChart" rbl-chartoptions="Pie"></div>
+								<a class="btn btn-primary details-totalwealth" href="#"><span>Details</span></a>
+							</div>
+							<div class="mt-3" rbl-tid="result-table" rbl-tablename="WealthTable"></div>
+						</div>
+					</div>
+				</div>
+	<!--2nd level-->
+				<div class="col-12 col-md-4 fd-totalrewards">
+					<div class="CashCompensation AC-Item">
+						<div class="card mt-0">
+							<div class="card-header text-center">
+								<h4 class="card-title" rbl-value="compCashHeader"></h4>
+							</div>
+							<div class="card-body pl-0 pr-0">
+								<div class="col-12 pl-1 pr-1">
+									<div class="compCashDetail"></div>
+									<div rbl-tid="chart-highcharts" rbl-chartdata="CashCompensationChart" rbl-chartoptions="Bars"></div>
+									<div class="mt-3" rbl-tid="result-table" rbl-tablename="CashCompensationTable"></div>
+								</div>
 							</div>
 						</div>
 					</div>
-					<div class="ajaxloader" style="display: none;"></div>
-				</div>
-			</div>
-<!--3rd section-->
-			<div class="col-sm-4 fd-considerations mt-4">
-				<div class="panel_ panel-default_">
-					<div class="card-header text-center d-none">
-						<h4 class="card-title">Considerations/notices</h4>
+					<div class="HealthWelfare AC-Item" style="display: none;">
+						<div class="card mt-0">
+							<div class="card-header text-center">
+								<h4 class="card-title" rbl-value="compHwHeader"></h4>
+							</div>
+							<div class="card-body pl-0 pr-0">
+								<div class="col-12 pl-1 pr-1">
+									<div rbl-value="compHwDetail"></div>
+									<div rbl-tid="chart-highcharts" rbl-chartdata="HWBenefitsChart" rbl-chartoptions="Bars"></div>
+									<div class="mt-3" rbl-tid="result-table" rbl-tablename="HWBenefitsTable"></div>
+								</div>
+							</div>
+						</div>
 					</div>
-					<div class="card-body_">
-						<div rbl-source="Considerations">
-							<div rbl-tid="inline" class="bs-callout bs-callout-warning considerations category-{category}">{text}</div>
+					<div class="RetirementBenefit AC-Item" style="display: none;">
+						<div class="card mt-0">
+							<div class="card-header text-center">
+								<h4 class="card-title" rbl-value="compRetHeader"></h4>
+							</div>
+							<div class="card-body pl-0 pr-0">
+								<div class="col-12 pl-1 pr-1">
+									<div rbl-value="compRetDetail"></div>
+									<div rbl-tid="chart-highcharts" rbl-chartdata="RetirementBenefitsChart" rbl-chartoptions="Bars"></div>
+									<div class="mt-3" rbl-tid="result-table" rbl-tablename="RetirementBenefitsTable"></div>
+								</div>
+							</div>
+						</div>
+					</div>
+					<div class="HRBenefits AC-Item" style="display:none;">
+						<div class="card mt-0">
+							<div class="card-header text-center">
+								<h4 class="card-title" rbl-value="compHrHeader"></h4>
+							</div>
+							<div class="card-body pl-0 pr-0">
+								<div class="col-12 pl-1 pr-1">
+									<div rbl-value="compHrDetail"></div>
+									<div rbl-tid="chart-highcharts" rbl-chartdata="HRBenefitsChart" rbl-chartoptions="Bars"></div>
+									<div class="mt-3" rbl-tid="result-table" rbl-tablename="HRBenefitsTable"></div>
+								</div>
+							</div>
+						</div>
+					</div>
+				</div>
+				<div class="col-12 col-md-4 fd-totalwealth">
+					<div class="futureWealth AW-Item">
+						<div class="card mt-0">
+							<div class="card-header text-center">
+								<h4 class="card-title" rbl-value="wealthFutureHeader"></h4>
+							</div>
+							<div class="card-body pl-0 pr-0">
+								<div class="col-12 pl-1 pr-1">
+									<div rbl-value="wealthFutureDetail"></div>
+									<div rbl-tid="chart-highcharts" rbl-chartdata="FutureWealthChart" rbl-chartoptions="Bars"></div>
+									<div class="col-12" rbl-tid="input-slider" data-inputname="iPretaxRothCont"></div>
+									<div class="mt-3" rbl-tid="result-table" rbl-tablename="FutureWealthTable"></div>
+								</div>
+								<div class="text-center">
+									<a href="javascript:$('li.nav-item a:contains(Retirement Planning)').trigger('click')">Explore Your Future</a>
+								</div>
+							</div>
+						</div>
+						<div class="ajaxloader" style="display: none;"></div>
+					</div>
+				</div>
+	<!--3rd section-->
+				<div class="col-sm-4 fd-considerations mt-4">
+					<div class="panel_ panel-default_">
+						<div class="card-header text-center d-none">
+							<h4 class="card-title">Considerations/notices</h4>
+						</div>
+						<div class="card-body_">
+							<div rbl-source="Considerations">
+								<div rbl-tid="inline" class="bs-callout bs-callout-warning considerations category-{category}">{text}</div>
+							</div>
 						</div>
 					</div>
 				</div>
 			</div>
 		</div>
-	</div>
-</div>
+	</div>	
+</section>
 
-<script >
+<script>
+	$(document).ready(function(){
+		$(".fd-main, .fd-totalrewards, .fd-totalwealth, .AC-Item").hide();
+		$(".fd-main").show();	
+	});
 
 	if ( $("{thisView}").data("debugger" ) == true ) debugger;
 
@@ -230,6 +220,7 @@ $(document).ready(function(){
 
 	view.on( "onCalculation.RBLe", function( event, calculationResults, calcOptions, application ) {
 		filterConsiderations();
+		application.options.preCalcs = undefined;
 	});
 
 	view.on( "onConfigureUICalculation.RBLe", function( event, results, options, application ) {

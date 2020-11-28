@@ -1,11 +1,8 @@
 ﻿<script type="text/javascript" src="resources/js/core.js"></script>
 
-	
 <!-- ============================================================================================================= -->
 <!--                                   				START - BODY CONENT																									 -->
 <!-- ============================================================================================================= -->
-<div id="home" class="site-content scroll-indicator" data-scroll-indicator-title="Top">
-	
 
 <!-- ============================================================================================================= -->
 <!--                                   				START - EMERGENCY ALERT MESSAGES																		 -->
@@ -35,7 +32,7 @@
     <div class="row">
       <div class="col col-md-12">
         <div class="hero-content text-center">
-          <h1>Learn about your pension </h1>
+          <h1>Learn about your pension</h1>
 					<h3>Answers to all your questions</h3>
 					<a href="javascript:void(0)" class="btn btn-primary btn-lg heroLink" data-toggle="modal" data-target="#modal-DB">More Info</a>
         </div>
@@ -76,7 +73,7 @@
 <!-- ============================================================================================================= -->   
 <section id="alertCenter" class="alertCenter section-padding scroll-indicator hideme" data-scroll-indicator-title="Alert Center">
 
-	<h2 class="title">Alert Center</h2>
+	<h2 class="title">Alert Center <a href="ActionCenter.html" class="smallTxt">view all</a></h2>
 	
 	
 <div id="swipe" class="container">	
@@ -89,7 +86,7 @@
       <!-- Slides -->
 		
       <div class="swiper-slide">
-        <div class="card h-100">
+        <div class="card">
           <div class="row no-gutters">
             <div class="col-2">
               <img src="resources/images/Icon_Suggestion.png" class="card-img" alt="Suggestion"><div class="text-center"><small></small></div>
@@ -107,7 +104,7 @@
 		
         
       <div class="swiper-slide">
-        <div class="card h-100">
+        <div class="card">
           <div class="row no-gutters">
             <div class="col-2">
               <img src="resources/images/Icon_Suggestion.png" class="card-img" alt="Suggestion"><div class="text-center"><small></small></div>
@@ -125,7 +122,7 @@
 
 		
       <div class="swiper-slide">
-        <div class="card h-100">
+        <div class="card">
           <div class="row no-gutters">
             <div class="col-2">
               <img src="resources/images/Icon_Docs.png" class="card-img" alt="Message"><div class="text-center"><small></small></div>
@@ -133,8 +130,7 @@
             <div class="col-10">
               <div class="card-body">
                 <h5 class="card-title">Retirement Packet </h5>
-                <p class="card-text card-content">Was mailed to your home address on Nov 6, 2020.</p>
-                <p class="card-text"><small class="text-muted">Sent: Nov 6, 2020</small></p>
+                <p class="card-text card-content">Mailed to your home address on Nov 6, 2020.</p>
                 <a href="#null" class="cardHover stretched-link"></a>
               </div>
             </div>
@@ -144,7 +140,7 @@
       
       
       <div class="swiper-slide">
-        <div class="card h-100">
+        <div class="card">
           <div class="row no-gutters">
             <div class="col-2">
               <img src="resources/images/Icon_Actions.png" class="card-img" alt="Action"><div class="text-center"><small></small></div>
@@ -153,7 +149,6 @@
               <div class="card-body">
                 <h5 class="card-title">Form Due</h5>
                 <p class="card-text card-content">You must sign and return your Pension Election Form by Dec 31, 2020.</p>
-                <p class="card-text"><small class="text-muted">Due: Dec 31, 2020</small></p>
                 <a href="#null" class="cardHover stretched-link" aria-expanded="false"></a>
               </div>
             </div>
@@ -187,7 +182,7 @@
 <!-- ============================================================================================================= -->
 <section id="dashboard" class="dashboard section-padding scroll-indicator" data-scroll-indicator-title="Dashboard">
 
-<h2 class="title hideme">Dashboard <a href="#null" id="dashboardSettings" class="sectionSettings" data-toggle="modal" data-target="#modal-DashboardSettings"><span class="glyphicons glyphicons-cogwheel"></span></a></h2>
+<h2 class="title hideme">Dashboard <a href="#null"><span class="glyphicons glyphicons-cogwheel"></span></a></h2>
 
 <div class="container-fluid">
 	
@@ -218,7 +213,7 @@
      <div class="panel-body">
 			
 			<div class="title">
-				<strong>Cash Balance Plan</strong> <small> as of November 11, 2020</small>
+				<strong>Cash Balance Plan</strong> <small> (as of Nov 1, 2020)</small>
 			</div>
 			<div class="row indent-1">
         <div class="col-6">Total Balance</div>
@@ -228,11 +223,11 @@
 			<hr>
 			
 			<div class="title">
-				<strong>Monthly Accrued Benefit</strong> <small> as of Today</small>
+				<strong>Monthly Accrued Benefit</strong> <small> (as of Sep 30, 2020)</small>
 			</div>
 			<div class="row indent-1">
         <div class="col-6">Plan A </div>
-        <div class="col-6 boldText text-right">$2,600.82</div>
+        <div class="col-6 boldText text-right">$2,084.82</div>
 			</div>
 			<div class="row indent-1">
         <div class="col-6">Plan B</div>
@@ -307,6 +302,32 @@
   </div>
 	
 </div>
+
+  <div class="panel panel-default panelBenefits">
+    <div class="panel-heading benefits">
+      <h4 class="panel-title">Savings</h4>
+
+      <div class="dropdown">
+        <a id="showMoreSavings" href="#null" class="showMore boldTxt" data-target="#" data-toggle="dropdown" aria-expanded="false"><span title="More" class="btn-plus options">+</span></a>
+
+        <ul class="dropdown-menu showMoreMenu" aria-labelledby="showMoreSavings">
+          <li><a href="#null">401(k) site <span class="glyphicons glyphicons-chevron-right"></span></a></li>
+        </ul>
+      </div>
+      
+    </div>
+    <div class="panel-body">			
+    <div class="row benSpacing">
+      <div class="col-12"><div class="typeTitle">401(k) Plan</div>
+      <div class="text-right boldText planAmt"><span class="balances balance401k">$321,773.82</span></div>
+      <hr class="dashboardHR">
+      <div class="typeTitle">Non-Qualified Plan</div>
+      <div class="text-right boldText planAmt"><span class="balances balanceNonQual">$19,256.54</span></div>
+    </div>
+    
+    </div>
+    </div>
+  </div>
 
 </div>
 <!-- ================================================================   END Retirement Planning   ======= -->
@@ -525,7 +546,6 @@
 
 
 
-</div>
 <!-- ============================================================================================================= -->
 <!--                                   				END - BODY CONENT																										 -->
 <!-- ============================================================================================================= -->

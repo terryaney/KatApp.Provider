@@ -1,4 +1,4 @@
-<rbl-config calcengine="Conduent_ABC_DBEstimate_SE" precalcs="Conduent_ABC_DBCalc_SE" bootstrap="4" templates="Standard_Templates,Input_TemplatesBS4"></rbl-config>
+<rbl-config calcengine="Conduent_ABC_DBEstimate_SE" precalcs="Conduent_ABC_DBCalc_SE" bootstrap="4" templates="Standard_Templates.NexGen,Input_TemplatesBS4"></rbl-config>
 
 <!--
     http://oneportal.uxgroup.com/LW60/NexGen/0_Product/channel_DB.html?local=1
@@ -6,11 +6,11 @@
 
 <style>
     .thisClass .scenario-header {
-        border-bottom: 2px solid #11820D;
+        border-bottom: 2px solid var(--colorDB);
         font-weight: bold;
     }
     .thisClass .scenario-header-mobile {
-        border-left: 2px solid #11820D;
+        border-left: 2px solid var(--colorDB);
         padding-left: 5px;
     }
 
@@ -20,12 +20,6 @@
         padding-bottom: 10px;
     }
 
-    .thisClass .resultsRecalcWrapper {
-        position: relative;
-        border: 1px solid #ccc;
-        margin: 10px 0px;
-        padding: 5px;
-    }
     .thisClass .recalcWrapper, .recalcLogoText {
         display: none;
     }
@@ -90,7 +84,7 @@
                         </div>
                     </div>
                 </div> 
-                <a class="btn btn-primary mt-2" id="{id}_calculateButton">Calculate</a>
+                <a class="btn btn-primary mt-2" href="#" id="{id}_calculateButton">Calculate</a>
             </div>
             <div class="col-md-6">
                 <div class="panel panel-default mt-0">
@@ -173,7 +167,8 @@
                 $(".recalcNeeded").addClass("active");
             })
 
-            $("#{id}_calculateButton").on("click", function() {
+            $("#{id}_calculateButton").on("click", function(e) {
+                e.preventDefault();
                 application.calculate();
             });
 		});

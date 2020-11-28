@@ -3340,6 +3340,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                     try {
                         container.highcharts(chartOptions);
                     } catch (error) {
+                        this.application.trace("Error during highchart creation.", TraceVerbosity.None);
                         throw error;                        
                     }
                 }

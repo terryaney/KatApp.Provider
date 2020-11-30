@@ -1,5 +1,61 @@
-﻿<script type="text/javascript" src="resources/js/core.js"></script>
+﻿<rbl-config calcengine="Conduent_ABC_DBC_SE" templates="Standard_Templates,Input_TemplatesBS4"
+    precalcs="Conduent_ABC_DBCalc_SE,Conduent_ABC_Sharkfin_SE|RBLInput|RBLResultDB">
+</rbl-config>
 
+<script>
+  (function() {
+    var view = $("thisClass");
+
+    if ( view.data("debugger" ) === true ) {
+      debugger;
+    }
+
+    view.on( "onInitialized.RBLe", function( event, application ) {
+      $("a", view).on('click', function(e){
+      // $(".lnkPension")[0].click()
+      //$("[data-logid='RetirementPlanning']").trigger("click")
+        var href = $(this).attr("href");
+        if ( href.includes("channel_DB")) {
+          $(".lnkPension")[0].click();
+        }
+        else if ( false) {
+
+        }
+        e.preventDefault();
+      });
+    });
+  })();
+  //# sourceURL=channel.home.kaml
+</script>
+
+
+<style>
+	thisClass span.highcharts-title {
+		font-family: inherit !important;
+	}
+	
+	thisClass .chart-swatch {
+	width: 20px; height: 20px;
+	}
+	thisClass td.swatch {
+	width: 26px;
+	padding-right: 0px;
+	}
+	thisClass .table > tbody > tr.total > td {
+	font-weight: bold;
+	}
+	thisClass .table > tbody > tr.total > td {
+	text-align: right;
+	}
+	thisClass th.value {
+	    text-align: right;
+	}
+	thisClass td.value {
+	    text-align: right;
+	}
+</style>
+
+<script type="text/javascript" src="resources/js/core.js"></script>
 <!-- ============================================================================================================= -->
 <!--                                   				START - BODY CONENT																									 -->
 <!-- ============================================================================================================= -->
@@ -82,8 +138,24 @@
 <!-- Slider main container -->
 <div class="swiper-container">
   <!-- Additional required wrapper -->
-  <div class="swiper-wrapper">
-      <!-- Slides -->
+	<div class="swiper-wrapper" rbl-source="DBAlerts">
+		<!-- Slides -->
+		<div rbl-tid="inline" class="swiper-slide" style="width: 341.429px; margin-right: 10px; padding-right: 0px">
+			<div class="card h-100">
+				<div class="row no-gutters">
+					<div class="col-2">
+						<img src="resources/images/{image}" class="card-img" alt="{type}"><div class="text-center"><small></small></div>
+					</div>
+					<div class="col-10">
+						<div class="card-body">
+							<h5 class="card-title">{title} </h5>
+							<p class="card-text card-content">{message}</p>
+							<a href="#null" class="cardHover stretched-link" aria-expanded="false"></a>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
 		
       <div class="swiper-slide">
         <div class="card">
@@ -210,8 +282,16 @@
     </div>
     
   </div>
-     <div class="panel-body">
-			
+     <div class="panel-body" rbl-source="DBDashboardPension">
+        <div rbl-tid="inline">
+          <div class="title {show-title}">{title}</div>
+          <div class="row indent-1">
+            <div class="col-6 ">{label}</div>
+            <div class="col-6 boldText text-right">{value}</div>
+          </div>
+          <span class="{show-divider}"><hr></span>
+        </div>
+
 			<div class="title">
 				<strong>Cash Balance Plan</strong> <small> (as of Nov 1, 2020)</small>
 			</div>
@@ -237,9 +317,12 @@
     
    
     
-        <div id="alertMoreSuggestion01" class="row alert-more">
+
+    
+    </div>
+    <div id="alertMoreSuggestion01" class="row alert-more">
 			
-			<div class="hrDivider"></div>
+		  <div class="hrDivider"></div>
 			
       <div class="alert alert-notify">
         <div class="alertTitle"><img src="resources/images/Icon_Suggestion.png" alt="Suggestion"/> SUGGESTION <span class=""><a href="#null" class="alertDelete showMore" aria-expanded="false"><span class="glyphicons glyphicons-remove"></span></a>
@@ -258,9 +341,6 @@
       <div class="alertTitle"><img src="resources/images/Icon_Suggestion.png" alt="Suggestion"/> SUGGESTION</div>
           <a href="#null" class="alertActions">Now that you turned 50, try the Pension Calculator to estimate how much your Pension is worth at key retirement dates.</a>
       </div>
-    </div>
-
-    
     </div>
 </div>
   
@@ -290,12 +370,12 @@
   <div class="panel-body">
     <div class="row m-0 card-group">
       <div class="col-12 col-md-6 p-0 dashemphasis card">
-      	You are only <span class="boldText planAmt">48%</span> likely to be able to retire at age 65. 
+        You are <span class="boldText" style="font-size: 150%" rbl-value="probReachGoal"></span> likely to have funds that cover your retirement goals. 
       </div>
       <div class="col-12 col-md-6 p-0">
       <div class="alert alert-notify sideside">
         <div class="alertTitle"><img src="resources/images/Icon_Suggestion.png" alt=""/> SUGGESTION</div>
-        <a class="alertActions" href="#null">Make changes that may increase you to 87%.</a>
+        <a class="alertActions" href="#null" rbl-value="suggestions"></a>
       </div>
       </div>
     </div>
@@ -353,9 +433,9 @@
     </div>
     <div class="panel-body">			
     <div class="row benSpacing">
-      <div class="col-6 pieChart"><img src="resources/images/HP_totalrewards.png" width="135" alt="Pie Chart"/></div>
-      <div class="col-6"><div class="typeTitle"><span class="chartColor ColorChartComp"></span> Compensation</div>
-      <div class="text-right boldText planAmt"><span class="balances balance401k">$120,622</span></div>
+      <div class=" col-6 pl-0 pr-0 text-center" rbl-tid="chart-highcharts" rbl-chartdata="CompensationChart" rbl-chartoptions="Pie"></div>
+      <div class="col-6"><div class="typeTitle"><span class="chartColor ColorChartComp" rbl-value="Compensation"></span> Compensation</div>
+      <div class="text-right boldText"><span class="balances">$120,622</span></div>
       <div class="typeTitle"><span class="chartColor ColorChartRet"></span> Retirement</div>
       <div class="text-right boldText planAmt"><span class="balances balanceNonQual">$68,986</span></div>
       <div class="typeTitle"><span class="chartColor ColorChartHealth"></span> Health</div>

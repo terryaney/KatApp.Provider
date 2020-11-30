@@ -687,4 +687,16 @@
   background-color: white !important;
   cursor: text !important;
 }
+
+/****** Table Formatting ******/
+.katapp-css .table thead tr th,
+.katapp-css .table tbody tr th {
+	vertical-align: bottom;
+}
+
+.katapp-css .table tbody tr td.value, 
+.katapp-css .table tbody tr th.value, 
+.katapp-css .table thead tr th.value {
+	text-align: right;
+}
 </style>

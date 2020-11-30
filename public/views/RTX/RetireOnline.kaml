@@ -27,18 +27,24 @@
                 <input name="{id}:iDirection" type="text" id="katapp_{id}_iDirection" class="iDirection" value="0"/>
                 <input name="{id}:iPlan" type="text" id="katapp_{id}_iPlan" class="iPlan" value="1"/>
                 <input name="{id}:iElectionConfirm" type="text" id="katapp_{id}_iElectionConfirm" class="iElectionConfirm" value="0"/>
+                <input name="{id}:iResetElections" type="text" id="katapp_{id}_iResetElections" class="iResetElections" value="0"/>
             </div>        
             <h2 class="title">Retire Online</h2>
             <div class="ajaxContent">
                 <div class="row">
                     <div class="col-12 mt-4">
-                        <div rbl-value="electionIntro"></div>
+                        <div rbl-value="electionIntro" rbl-display="electionIntro"></div>
+                        <a style="display: none;" rbl-value="btnReset" rbl-display="btnReset" data-confirm-selector="[rbl-value='btnResetConfirm']" class="btn btn-primary pr-2" href="#" data-submit-key="[data-reset-confirmed='true']">Clear All Elections</a>
+                        <a data-reset-confirmed="true" class="d-none">Clear All Elections Confirmed</a>                        
+                        <a style="display: none;" rbl-value="btnRemaining" rbl-display="btnRemaining" class="btn btn-primary btnNavigation" href="#" data-direction="-1">Start Remaining Elections</a>
+                        <div class="d-none" rbl-value="btnResetConfirm">Are you sure you want to clear out all previous elections?</div>
                     </div>
                 </div>
                 <div class="card mt-0" rbl-display="vStep1">
                     <div class="card-header mt-1"><h4 class="card-title">Retirement Information</h4></div>
                     <div class="card-body">
                         <div class="row">
+                            <div rbl-tid="input-checkboxlist" data-inputname="iPlansToCommence" class="col-12"></div>
                             <div rbl-tid="input-textbox" data-inputname="iDateBenComm" class="col-md-6" data-type="date" data-placeholder="required"></div>
                             <div rbl-tid="input-textbox" data-inputname="iDateTerm" class="col-md-6" data-type="date" data-placeholder="optional"></div>
                         </div>
@@ -129,7 +135,7 @@
                 </div>
 
                 <div class="card mt-0" rbl-display="vStep3" style="display: none;">
-                    <div class="card-header mt-1"><h4 class="card-title">Form of Payment Election</h4></div>
+                    <div class="card-header mt-1"><h4 class="card-title" rbl-value="electionHeader">Form of Payment Election</h4></div>
                     <div class="card-body">
                         <div class="row">
                             <div rbl-tid="input-radiobuttonlist" data-hidelabel="true" data-inputname="iElection" class="col-12"></div>                                
@@ -266,7 +272,7 @@
                         <a class="btn btn-primary-outline btnNavigation" href="#"  rbl-value="btnPrevious" rbl-display="btnPrevious" data-direction="-1" id="{id}_Previous" style="display: none;"><span class="glyphicons glyphicons-chevron-left"></span><span class="d-none d-md-inline-block">Previous</span></a>
                         <a class="btn btn-primary btnNavigation" href="#" rbl-value="btnContinue" rbl-display="btnContinue" data-direction="1" id="{id}_Continue"><span class="d-none d-md-inline-block">Continue</span><span class="glyphicons glyphicons-chevron-right"></span></a>
                         <a class="btn btn-primary" href="#" rbl-display="btnSubmit" id="{id}_SubmitPrompt">Submit</a>
-                        <a class="btn btn-primary btnNavigation d-none" href="#" rbl-display="btnSubmit" data-direction="1" data-confirm-selector="#{id}_electionConfirm" data-submit-key="[rbl-display='btnContinue']" id="{id}_Submit">Submit</a>
+                        <a class="btn btn-primary d-none" href="#" data-confirm-selector="#{id}_electionConfirm" data-submit-key="[rbl-display='btnContinue']" id="{id}_Submit">Submit</a>
                         <div class="d-none" id="{id}_electionConfirm">
                             <div rbl-value="electionConfirmPrompt"><p>Please verify your information.</p></div>
                             <div rbl-tid="result-table" rbl-source="election-confirm-details" data-css="table table-bordered table-condensed"></div>
@@ -325,11 +331,19 @@
         });
 
         view.on( "onInitialized.RBLe", function( event, application ) {
+            $("[data-reset-confirmed='true']", view).on("click", function(e) {
+                e.preventDefault();
+                $(".iDirection", view).val(-1);
+                $(".iResetElections", view).val(1)
+                    .trigger("change")
+                    .val("");
+            })
+            
             $("#{id}_SubmitPrompt", view).on("click", function(e) {
                 e.preventDefault();
                 $(".iElectionConfirm", view).val(1)
-                .trigger("change")
-                .val("");
+                    .trigger("change")
+                    .val("");
             })
 
             $("[data-hide='alert']", view).on("click", function(e) {

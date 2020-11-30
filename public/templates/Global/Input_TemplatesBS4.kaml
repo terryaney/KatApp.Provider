@@ -76,11 +76,29 @@
   </div>
 </rbl-template>
 
+<rbl-template tid="input-radiobuttonlist" type="katapp-radiobuttonlist">
+  <div class="form-group" rbl-display="v{inputname}">
+    <label class="col-form-label" for="katapp_{id}_{inputname}">
+      <span rbl-value="l{inputname}"></span>
+      <a style="display: none;" onclick="return false;" rbl-display="vh{inputname}" class="help-icon-anchor" role="button" tabindex="-1" data-toggle="popover" data-trigger="click" data-content-selector="#{id}_h{inputname}" data-placement="top"><span class="fa fa-question-circle help-icon"></span></a>
+      <a style="display: none;" onclick="return false;" rbl-display="vs{inputname}" class="help-icon-anchor" role="button" tabindex="-1"><span class="fa fa-volume-up"></span></a>
+    </label>
+    <div class="validator-container list-container">
+      <!-- Radio list injected here -->
+      <div class="{inputname}" data-inputname="{inputname}" data-id="{id}" data-itemtype="radio"></div>
+      <span class="error-msg" data-toggle="tooltip" data-placement="top auto"></span>
+    </div>
+    <div rbl-value="h{inputname}Title" id="{id}_h{inputname}Title" style="display: none;"></div>
+    <div rbl-value="h{inputname}" id="{id}_h{inputname}" style="display: none;"></div>
+  </div>
+</rbl-template>
+
 <rbl-template tid="input-radiobuttonlist-vertical-container">
   <table class='radio abc-radio bs-listcontrol' border='0'>
     <tbody class='items-container'></tbody>
   </table>
 </rbl-template>
+
 <!-- Need tr_/td_ because <tr/> and <td/> can not just be standalone, they are removed from html (i.e. this template markup) -->
 <rbl-template tid="input-radiobuttonlist-vertical-item">
   <tr_ rbl-display="{visibleSelector}">
@@ -106,23 +124,6 @@
   </div>
 </rbl-template>
 
-<rbl-template tid="input-radiobuttonlist" type="katapp-radiobuttonlist">
-  <div class="form-group" rbl-display="v{inputname}">
-    <label class="col-form-label" for="katapp_{id}_{inputname}">
-      <span rbl-value="l{inputname}"></span>
-      <a style="display: none;" onclick="return false;" rbl-display="vh{inputname}" class="help-icon-anchor" role="button" tabindex="-1" data-toggle="popover" data-trigger="click" data-content-selector="#{id}_h{inputname}" data-placement="top"><span class="fa fa-question-circle help-icon"></span></a>
-      <a style="display: none;" onclick="return false;" rbl-display="vs{inputname}" class="help-icon-anchor" role="button" tabindex="-1"><span class="fa fa-volume-up"></span></a>
-    </label>
-    <div class="validator-container list-container">
-      <!-- Radio list injected here -->
-      <div class="{inputname}" data-inputname="{inputname}" data-id="{id}" data-itemtype="radio"></div>
-      <span class="error-msg" data-toggle="tooltip" data-placement="top auto"></span>
-    </div>
-    <div rbl-value="h{inputname}Title" id="{id}_h{inputname}Title" style="display: none;"></div>
-    <div rbl-value="h{inputname}" id="{id}_h{inputname}" style="display: none;"></div>
-  </div>
-</rbl-template>
-
 <rbl-template tid="input-checkboxlist" type="katapp-checkboxlist">
   <div class="form-group" rbl-display="v{inputname}">
     <label class="col-form-label" for="katapp_{id}_{inputname}">
@@ -137,6 +138,38 @@
     </div>
     <div rbl-value="h{inputname}Title" id="{id}_h{inputname}Title" style="display: none;"></div>
     <div rbl-value="h{inputname}" id="{id}_h{inputname}" style="display: none;"></div>
+  </div>
+</rbl-template>
+
+<rbl-template tid="input-checkboxlist-vertical-container">
+  <table class='checkbox abc-checkbox bs-listcontrol' border='0'>
+    <tbody class='items-container'></tbody>
+  </table>
+</rbl-template>
+
+<!-- Need tr_/td_ because <tr/> and <td/> can not just be standalone, they are removed from html (i.e. this template markup) -->
+<rbl-template tid="input-checkboxlist-vertical-item">
+  <tr_ rbl-display="{visibleSelector}">
+    <td_>
+      <span class="checkbox abc-checkbox">
+        <input id_="{itemId}" type="checkbox" name="{id}:{inputName}:{value}" data-value="{value}" data-input-name="{inputName}"/>
+        <label for="{itemId}">{text}</label>
+        <a rbl-display="{helpIconSelector}" style="display: none;" onclick="return false;" class="help-icon-anchor" role="button" tabindex="-1" data-toggle="popover" data-trigger="click" data-content-selector="#{id}_{helpSelector}" data-placement="top"><span class="fa fa-question-circle help-icon"></span></a>
+        <div rbl-value="{helpSelector}Title" id="{id}_{helpSelector}Title" style="display: none;"></div>
+        <div rbl-value="{helpSelector}" id="{id}_{helpSelector}" style="display: none;"></div>
+      </span>
+    </td_>
+  </tr_>
+</rbl-template>
+
+<rbl-template tid="input-checkboxlist-horizontal-item">
+  <!-- form-group - might need this -->
+  <div class='checkbox abc-checkbox' rbl-display="{visibleSelector}">
+    <input id_="{itemId}" type="checkbox" name="{id}:{inputName}:{value}" data-value="{value}" data-input-name="{inputName}"/>
+    <label for="{itemId}">{text}</label>
+    <a rbl-display="{helpIconSelector}" style="display: none;" onclick="return false;" class="help-icon-anchor" role="button" tabindex="-1" data-toggle="popover" data-trigger="click" data-content-selector="#{id}_{helpSelector}" data-placement="top"><span class="fa fa-question-circle help-icon"></span></a>
+    <div rbl-value="{helpSelector}Title" id="{id}_{helpSelector}Title" style="display: none;"></div>
+    <div rbl-value="{helpSelector}" id="{id}_{helpSelector}" style="display: none;"></div>
   </div>
 </rbl-template>
 

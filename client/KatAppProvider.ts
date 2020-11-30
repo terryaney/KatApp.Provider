@@ -45,7 +45,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
 // Need this function format to allow for me to reload script over and over (during debugging/rebuilding)
 (function($, window, document, undefined?: undefined): void {
     const tableInputsAndBootstrapButtons = ", .RBLe-input-table :input, .dropdown-toggle, button";
-    const validInputSelector = ".notRBLe, .notRBLe :input, .rbl-exclude, .rbl-exclude :input, rbl-template :input, [type='search']" + tableInputsAndBootstrapButtons;
+    const validInputSelector = "[data-itemtype='checkbox'] :input, .notRBLe, .notRBLe :input, .rbl-exclude, .rbl-exclude :input, rbl-template :input, [type='search']" + tableInputsAndBootstrapButtons;
     const skipBindingInputSelector = ".notRBLe, .notRBLe :input, .rbl-exclude, .rbl-exclude :input, .skipRBLe, .skipRBLe :input, .rbl-nocalc, .rbl-nocalc :input, rbl-template :input, [type='search']" + tableInputsAndBootstrapButtons;
 
     // Reassign options here (extending with what client/host might have already set) allows
@@ -1241,6 +1241,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
             const id: string = container.data( "id" );
             const horizontal = container.data("horizontal") ?? false;
             const itemType: string = container.data("itemtype" );
+            const isRadio = itemType === "radio";
 
             if ( itemType == "checkbox" ) {
                 /*                
@@ -1253,26 +1254,49 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                     - Search for isCheck, checkbox, checkbox-list to see how I'm using it
                         Make sure I can support CheckboxList items when needed
                     - Make sure templates are right
+
+                    - Evo ess Framework
+
+                    iCheckList, with items of
+
+                    a:Item A
+                    b:Item B
+                    c:Item C
+
+                    When you set default values, you do: iCheckList: a,c (comma delim list)
+
+                    But when 'getting values' you make inputs named: iCheckLista, iCheckListb, iCheckListc (input for each item)
+
+                    How hard would it be have one input (iCheckList) and the value is comma delim of vlaues selected...Harder to work with or no?
+
+                    * Currently checkbox lists don't work in ESS (DST OOPBasic)
+                    - note, all oop's are going to MBM early next year
+                    - note, no one uses bootstrapcheckbox control (bsc), only manual markup
+                    - bsc removes col-* attribute from container, so then 'label' is offset wrong (radio and check lists when horizontal - katapp works b/c col class is on template container element)
+                        - manual works because don't have new 'bs-listcontrol' class for identification
+                    - vertical manual ones do not look good because 'checkbox abc-checkbox' isn't present in markup (should be on span containing the input/label)
+                    - both bsc/manual fail if vertical, it adds 'options' to the table, results has ejs-list table in it again for visiblity
+                        - code doesn't know how to handle/hide items b/c it is hardcoded (RBLe) to only handle 'horizontal' ones
+
                 */
-                throw new Error("CheckboxList is not supported yet.");
+                // throw new Error("CheckboxList is not supported yet.");
             }
 
             let itemsContainer = horizontal
                 ? container
                 : $(".items-container", container);
 
+            const itemTypeClass: string = isRadio ? "radio abc-radio" : "checkbox abc-checkbox";
+
             if ( horizontal ) {
                 container.parent().addClass( "bs-listcontrol form-inline form-inline-vtop" );
             }
             else if ( itemsContainer.length === 0 ) {
                 const itemType: string = container.data("itemtype" );
-                const itemTypeClass: string = itemType === "radio" ? "radio abc-radio" : "checkbox abc-checkbox";
                 const temlpateContent = 
-                    this.getTemplate( itemType === "radio" ? "input-radiobuttonlist-container" : "input-checkboxlist-container", {} )?.Content ??
+                    this.getTemplate( isRadio ? "input-radiobuttonlist-vertical-container" : "input-checkboxlist-vertical-container", {} )?.Content ??
                     "<table class='" + itemTypeClass + " bs-listcontrol' border='0'><tbody class='items-container'></tbody></table>"
                 container.append($(temlpateContent));
-
-
                 itemsContainer = $(".items-container", container);
             }
 
@@ -1280,12 +1304,16 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
             const helpIconClass = isBootstrap3 ? "glyphicon glyphicon-info-sign" : "fa fa-question-circle";
             let configureHelp = false;
 
+            const inputTemplate = isRadio
+                ? "<input id='{itemId}' type='radio' name='{id}:{inputName}' value='{value}' />"
+                : "<input id_='{itemId}' type='checkbox' name='{id}:{inputName}:{value}' data-value='{value}' data-input-name='{inputName}' />";
+
             const verticalItemTemplate = 
-                this.getTemplate( itemType === "radio" ? "input-radiobuttonlist-vertical-item" : "input-checkboxlist-vertical-item", {} )?.Content ??
+                this.getTemplate( isRadio ? "input-radiobuttonlist-vertical-item" : "input-checkboxlist-vertical-item", {} )?.Content ??
                 "<tr rbl-display='{visibleSelector}'>\
                     <td>\
-                        <span class='radio abc-radio'>\
-                            <input id='{itemId}' type='radio' name='{id}:{inputName}' value='{value}' />\
+                        <span class='" + itemTypeClass + "'>\
+                            " + inputTemplate + "\
                             <label for='{itemId}'>{text}</label>\
                             <a rbl-display='{helpIconSelector}' style='display: none;' role='button' tabindex='0' data-toggle='popover' data-trigger='click' data-content-selector='#{id}_{helpSelector}' data-placement='top'><span class='{helpIconCss} help-icon'></span></a>\
                             <div rbl-value='{helpSelector}' id='{id}_{helpSelector}' style='display: none;'>{help}</div>\
@@ -1293,10 +1321,11 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                         </span>\
                     </td>\
                 </tr>";
+
             const horizontalItemTemplate =
-                this.getTemplate( itemType === "radio" ? "input-radiobuttonlist-horizontal-item" : "input-checkboxlist-horizontal-item", {} )?.Content ??
-                "<div class='form-group radio abc-radio' rbl-display='{visibleSelector}'>\
-                    <input id='{itemId}' type='radio' name='{id}:{inputName}' value='{value}' />\
+                this.getTemplate( isRadio ? "input-radiobuttonlist-horizontal-item" : "input-checkboxlist-horizontal-item", {} )?.Content ??
+                "<div class='form-group " + itemTypeClass + "' rbl-display='{visibleSelector}'>\
+                    " + inputTemplate + "\
                     <label for='{itemId}'>{text}</label>\
                     <a rbl-display='{helpIconSelector}' style='display: none;' role='button' tabindex='0' data-toggle='popover' data-trigger='click' data-content-selector='#{id}_{helpSelector}' data-placement='top'><span class='{helpIconCss} help-icon'></span></a>\
                     <div rbl-value='{helpSelector}' id='{id}_{helpSelector}' style='display: none;'>{help}</div>\
@@ -1441,23 +1470,24 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
             const inputs = {};
             const that: UIUtilities = this;
 
-            // skip table inputs b/c those are custom, and .dropdown-toggle b/c bootstrap select
-            // puts a 'button input' inside of select in there
             if ( customOptions.inputSelector !== undefined ) {
                 const validInputs = $(customOptions.inputSelector, this.application.element).not(validInputSelector);
 
                 jQuery.each(validInputs, function () {
                     const input = $(this);
+                    const value = that.getInputValue(input);
     
-                    // bootstrap selectpicker has some 'helper' inputs that I need to ignore
-                    if (input.parents(".bs-searchbox").length === 0) {
-                        const value = that.getInputValue(input);
-    
-                        if (value !== undefined) {
-                            const name = that.getInputName(input);
-                            inputs[name] = value;
-                        }
+                    if (value !== undefined) {
+                        const name = that.getInputName(input);
+                        inputs[name] = value;
                     }
+                });
+
+                $("[data-itemtype='checkbox']", this.application.element).each(function() {
+                    const cbl = $(this);
+                    const name = cbl.data("inputname");
+                    const value = $("input:checked", cbl).toArray().map( chk => $(chk).data("value")).join(",");
+                    inputs[name] = value;
                 });
             }
 
@@ -2262,9 +2292,9 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                 $(selector + "DisplayOnly", this.application.element).html(value);
                 const input = $(selector, this.application.element).not("div");
                 const listControl = $(selector + "[data-itemtype]", this.application.element);
-                const isCheckboxList = input.hasClass("checkbox-list-horizontal");
+                const isCheckboxList = listControl.data("itemtype") == "checkbox"; // input.hasClass("checkbox-list-horizontal");
                 const aspCheckbox = this.ui.getAspNetCheckboxInput(input);
-                const radioButton = listControl.find("input[value='" + value + "']");
+                const radioButtons = $("input[type='radio']", input);
                 const noUiSlider = this.ui.getNoUiSlider(id, this.application.element);
 
                 if ( noUiSlider !== undefined ) {
@@ -2282,25 +2312,18 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                 }
                 else if ( isCheckboxList ) {
                     // turn all off first
-                    $("input", input).each((_index, element) => {
-                        const cb = this.ui.getAspNetCheckboxInput($(element).parent() /* containing span from asp.net checkbox */);
-                        if (cb !== undefined) {
-                            cb.prop("checked", false);
-                        }
-                    });
+                    $("input", listControl).prop("checked", false);
 
                     const values = value.split(",");
                     for (let k = 0; k < values.length; k++) {
                         const checkKey = values[k].trim();
-                        const checkbox = $("*[data-input-name='" + id + checkKey + "']", this.application.element); // selects span from asp.net checkbox
-                        const cb = this.ui.getAspNetCheckboxInput(checkbox);
-                        if (cb !== undefined) {
-                            cb.prop("checked", true);
-                        }
+                        const checkbox = $("[data-value='" + checkKey + "']", listControl); // selects span from asp.net checkbox
+                        checkbox.prop("checked", true);
                     }
                 }
-                else if ( radioButton.length === 1 ) {
-                    radioButton.prop("checked", true);
+                else if ( radioButtons.length > 0 ) {
+                    radioButtons.prop("checked", false);
+                    input.find("input[value='" + value + "']").prop("checked", true);
                 }
                 else if ( aspCheckbox !== undefined ) {
                     aspCheckbox.prop("checked", value === "1");

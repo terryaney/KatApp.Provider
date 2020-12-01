@@ -2293,8 +2293,9 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                 const input = $(selector, this.application.element).not("div");
                 const listControl = $(selector + "[data-itemtype]", this.application.element);
                 const isCheckboxList = listControl.data("itemtype") == "checkbox"; // input.hasClass("checkbox-list-horizontal");
+                const isRadioList = listControl.data("itemtype") == "radio"; // input.hasClass("checkbox-list-horizontal");
                 const aspCheckbox = this.ui.getAspNetCheckboxInput(input);
-                const radioButtons = $("input[type='radio']", input);
+                const radioButtons = isRadioList ? $("input", listControl) : $("input[type='radio']", input);
                 const noUiSlider = this.ui.getNoUiSlider(id, this.application.element);
 
                 if ( noUiSlider !== undefined ) {
@@ -2323,7 +2324,8 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                 }
                 else if ( radioButtons.length > 0 ) {
                     radioButtons.prop("checked", false);
-                    input.find("input[value='" + value + "']").prop("checked", true);
+                    radioButtons.filter( ( i, o ) => $(o).val() == value).prop("checked", true);
+                    // radioButtons.find("input[value='" + value + "']").prop("checked", true);
                 }
                 else if ( aspCheckbox !== undefined ) {
                     aspCheckbox.prop("checked", value === "1");

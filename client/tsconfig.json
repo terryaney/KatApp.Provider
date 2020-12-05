@@ -1,8 +1,11 @@
 {
     "extends": "./../tsconfig-base.json",
+    "exclude": [
+        "KatApp.Service.*"
+    ],        
     "compilerOptions": {
         "composite": true,
-        "outDir": "./../public/js",
+        "outDir": "./../public/DataLocker/Global",
         // "module": "none",
         // "module": "ES6", // Support ES6 export/import
         "tsBuildInfoFile": "./../build/cache/client/.tsbuildinfo",

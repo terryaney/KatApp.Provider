@@ -98,6 +98,7 @@
 <div class="d-none skipRBLe">
     <input name="{id}:iSaveInputs" type="text" id="katapp_{id}_iSaveInputs" class="iSaveInputs"/>
     <input name="{id}:iSalScale" type="text" id="katapp_{id}_iSalScale" class="iSalScale"/>
+    <input name="{id}:iAgeCommStart" type="text" id="katapp_{id}_iAgeCommStart" class="iAgeCommStart" val="1"/>
 </div>
 
 <section id="sharkfin" class="sharkfin section-padding scroll-indicator" data-scroll-indicator-title="RETIREMENT PLANNING">

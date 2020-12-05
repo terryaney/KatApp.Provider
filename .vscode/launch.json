@@ -29,7 +29,7 @@
             "request": "launch",
             "name": "Debug Client",
             "url": "http://localhost:8887/?test=1",
-            "webRoot": "${workspaceRoot}/public/js"
+            "webRoot": "${workspaceRoot}/public/DataLocker/Global"
         },
         {
             // Can put breakpoints anywhere in file, but nodemon stays open even after debuggers stopped until you kill terminal. 

@@ -1,43 +1,3 @@
-// Approval
-// - Provider + Templates together (make sure to test LAW/Dr as well)
-// - After approval of Find Dr, delete Standard_TemplatesBS4
-
-// TODO
-// - How do I check/handle for errors when I try to load view
-// - Ability to have two CE's for one view might be needed for stochastic
-//      Would need to intercept init that binds onchange and instead call a getOptions or smoething
-//      on each input, or maybe a rbl-calcengine tag on each input?
-
-// Discussions with Tom
-// - Search for TOM comments
-// - Retry - how often do we 'retry' registration?  Once per session?  Once per calc attempt?
-
-// External Usage Changes
-// 1. Look at KatAppOptions (properties and events) and KatAppPlugInInterface (public methods on a katapp (only 4))
-// 2. Kat App element attributes (instead of data): rbl-view, rbl-view-templates, rbl-calcengine
-// 3. Registration TP needs AuthID and Client like mine does, RBLe Service looks like it expects them (at least AuthID)
-// 4. If they do handlers for submit, register, etc., they *have* to call my done/fail callbacks or app will 'stall'
-// 5. Added rbl-input-tab and rbl-result-tabs to 'kat app data attributes'
-// 6. <div rbl-tid="chart-highcharts" data-name="BalanceChart" rbl-data="BalanceChart" rbl-options="BalanceChart"></div>
-
-/*
-Debug Issues
-1. If I set tsconfig-base.json removeComments: true, it removes my //# sourceURL=KatAppProvider.js at the bottom of the file
-   and debugging/finding the file in Chrome is not possible.  Need to figure out how to get that in there or manually put in
-   after I build.
-
-2. Trouble debugging KatAppProvider with breakpoints. The only way it seemed I could put breakpoints into KatAppProvider.ts 
-   was to modify the sourceMappingURL declaration in the generated file (KatAppProvider.js) to sourceMappingURL=js/KatAppProvider.js.map.
-   If it didn't have the js/ folder, Chrome said it couldn't find the file and breakpoints were never hit.
-
-   If I did change to js/, breakpoints hit, but then Chrome would display an error (in the Source file view, not the console) like:
-   
-   Could not load content for http://localhost:8887/client/KatAppProvider.ts (HTTP error: status code 404, net::ERR_HTTP_RESPONSE_CODE_FAILURE)
-
-   Maybe that is expected, but just documenting.
-
-*/
-
 const providerVersion = 8.35; // eslint-disable-line @typescript-eslint/no-unused-vars
 
 KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosity.Detailed);
@@ -275,10 +235,6 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                     
                     let debugResourcesDomain = that.options.debug?.debugResourcesDomain;
 
-                    if ( debugResourcesDomain !== undefined ) {
-                        debugResourcesDomain += "views/";
-                    }
-
                     KatApp.getResources( that, viewId, useTestView, false, debugResourcesDomain,
                         ( errorMessage, results ) => {                                
 
@@ -389,9 +345,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                     that.trace(toFetchList + " requested from CMS.", TraceVerbosity.Detailed);
 
                     let debugResourcesDomain = that.options.debug?.debugResourcesDomain;
-                    if ( debugResourcesDomain !== undefined ) {
-                        debugResourcesDomain += "templates/";
-                    }
+
                     that.trace("Downloading " + toFetchList + " from " + debugResourcesDomain ?? functionUrl, TraceVerbosity.Diagnostic );
                     KatApp.getResources( that, toFetchList, useTestView, false, debugResourcesDomain,
                         ( errorMessage, data ) => {                                
@@ -971,7 +925,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
             return this.ui.getInputs( this.options );
         };
 
-        apiAction( commandName: string, isDownload: boolean, parametersJson: {} ): void {
+        apiAction( commandName: string, isDownload: boolean | undefined, parametersJson: {} | undefined ): void {
             let url = this.options.rbleUpdatesUrl;
             
             if (url != undefined) {
@@ -979,8 +933,8 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                 fd.append("KatAppCommand", commandName);
                 fd.append("KatAppView", this.options.view ?? "Unknown");
                 fd.append("KatAppInputs", JSON.stringify(this.getInputs()));
-
-                if (Object.keys(parametersJson).length > 0) {
+                
+                if (parametersJson != undefined && Object.keys(parametersJson).length > 0) {
                     for (const propertyName in parametersJson) {
                         fd.append(propertyName, parametersJson[propertyName]);
                     }
@@ -2218,7 +2172,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                     const templateContent = tid === undefined
                         ? inlineTemplate === undefined || inlineTemplate.length === 0
                             ? undefined
-                            : $( inlineTemplate.prop("outerHTML").format( elementData) ).removeAttr("rbl-tid").prop("outerHTML")
+                            : $( inlineTemplate.prop("outerHTML").format( elementData ) ).removeAttr("rbl-tid").prop("outerHTML")
                         : that.ui.getTemplate( tid, elementData )?.Content; 
 
                     if ( templateContent === undefined ) {
@@ -2245,10 +2199,10 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                                     const templateData = KatApp.extend( {}, row, { _index0: i - 1, _index1: i++ } )
 
                                     if ( prepend ) {
-                                        el.prepend( templateContent.format( templateData ) );    
+                                        el.prepend( templateContent.format( templateData ) );
                                     }
                                     else {
-                                        el.append( templateContent.format( templateData ) );    
+                                        el.append( templateContent.format( templateData ) );
                                     }
                                 }
 
@@ -4451,4 +4405,4 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
 })(jQuery, window, document);
 // Needed this line to make sure that I could debug in VS Code since this was dynamically loaded 
 // with $.getScript() - https://stackoverflow.com/questions/9092125/how-to-debug-dynamically-loaded-javascript-with-jquery-in-the-browsers-debugg
-//# sourceURL=js\KatAppProvider.js
+//# sourceURL=DataLocker\Global\KatAppProvider.js

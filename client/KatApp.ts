@@ -97,6 +97,18 @@ class KatApp
     static ping( url: string, callback: ( responded: boolean, error?: string | Event )=> void ): void {
         const ip = url.replace('http://','').replace('https://','').split(/[/?#]/)[0];
 
+        $.ajax({
+            url: "http://" + ip + "/DataLocker/Global/ping.js",
+            timeout: 1000,
+            success: function(result){
+                callback(true);
+            },     
+            error: function(result){
+                callback(false);
+            }
+         });
+
+        /*
         // https://stackoverflow.com/a/11941783/166231
         let inUse = true;
         const img = new Image();
@@ -119,6 +131,7 @@ class KatApp
                 callback(false);
             }
         }, 1000);
+        */
     }
 
     static trace( application: KatAppPlugInShimInterface | undefined, message: string, verbosity: TraceVerbosity = TraceVerbosity.Normal ): void {
@@ -169,14 +182,7 @@ class KatApp
         const url = currentOptions.functionUrl ?? KatApp.defaultOptions.functionUrl ?? KatApp.functionUrl;
         const resourceArray = resources.split(",");
         
-        let localDomain: string | undefined = debugResourcesDomain ?? 
-            ( resources === "Global:KatAppProvider.js"
-                ? "http://localhost:8887/js/"
-                : "http://localhost:8887/views/" );
-
-        if ( !( application.element.data("kat-local-domain-reachable") ?? true ) ) {
-            localDomain = undefined;
-        }
+        let localDomain: string | undefined = debugResourcesDomain ?? "http://localhost:8887/DataLocker/";
 
         let useLocalResources = localDomain !== undefined; // global value for all requested resources
         // viewParts[ 0 ], viewParts[ 1 ]
@@ -207,14 +213,27 @@ class KatApp
             [
                 function(): void {
                     if ( localDomain !== undefined ) {
-                        KatApp.ping(localDomain, function( responded: boolean ) { 
-                            if ( !responded ) {
+                        if ( application.element.data("kat-local-domain-reachable") == undefined ) {
+                            KatApp.ping(localDomain, function( responded: boolean ) { 
+                                if ( !responded ) {
+                                    localDomain = undefined;
+                                    useLocalResources = false;
+                                    application.element.data("kat-local-domain-reachable", false);
+                                }
+                                else {
+                                    application.element.data("kat-local-domain-reachable", true);
+                                }
+                                getResourcesPipeline(); // Now start downloading resources
+                            });
+                        }
+                        else {
+                            if ( !<boolean>application.element.data("kat-local-domain-reachable") ) {
+                                // Already pinged and no return
                                 localDomain = undefined;
                                 useLocalResources = false;
-                                application.element.data("kat-local-domain-reachable", false);
                             }
                             getResourcesPipeline(); // Now start downloading resources
-                        });
+                        }                        
                     }
                     else {
                         getResourcesPipeline(); // Now start downloading resources
@@ -254,7 +273,7 @@ class KatApp
                                 ]
                             };
 
-                            let localFolder = !isScript ? folders[ currentFolder ] + "/" : "";
+                            let localFolder = folders[ currentFolder ] + "/";
                             const isRelativePath = KatApp.stringCompare( localFolder, "Rel/", true ) == 0;
 
                             const submit =
@@ -334,14 +353,6 @@ class KatApp
                                 if ( useLocalResource && currentFolder < folders.length - 1 ) {
                                     currentFolder++;
                                     localFolder = !isScript ? folders[ currentFolder ] + "/" : "";
-                                    submit( application as KatAppPlugInInterface, params, submitDone, submitFailed );
-                                }
-                                else if ( useLocalResource && localDomain == "http://localhost:8887/views/" ) {
-                                    // Couldn't pass in views or templates because of existing KatApp.js
-                                    // in PROD for other environments would be broken, so just have to try
-                                    // templates folder if I was running on local domain
-                                    localDomain = "http://localhost:8887/templates/";
-                                    currentFolder = 0;
                                     submit( application as KatAppPlugInInterface, params, submitDone, submitFailed );
                                 }
                                 else if ( useLocalResource && !isRelativePath && currentFolder >= folders.length -1 ) {

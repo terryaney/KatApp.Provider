@@ -12,17 +12,31 @@
 
     view.on( "onInitialized.RBLe", function( event, application ) {
       $("a", view).on('click', function(e){
-      // $(".lnkPension")[0].click()
-      //$("[data-logid='RetirementPlanning']").trigger("click")
         var href = $(this).attr("href");
-        if ( href.includes("channel_DB")) {
-          $(".lnkPension")[0].click();
+        console.log( "href " + $(this).attr("href") );
+        if ( href == "#null") {
+          //hander for a elements
+          //debugger;
+          //e.dispatchEvent();
         }
-        else if ( false) {
+        else {
+          if ( href.includes("channel_DB")) {
+            $(".lnkPension")[0].click();
+          }
+          else if ( href.includes("Benefits_DB") ) {
+            $(".pensionStartApp").val(".katapp-sharkfin");$(".lnkPension")[0].click();
+          }
+          else if ( href.includes("Benefits_DC") ) {
+            $(".pensionStartApp").val(".katapp-tr");$(".lnkPension")[0].click();
+          }
+          
+          $("header")[0].scrollIntoView( { behavior: "smooth"});
 
+          e.preventDefault();
+          return false;
         }
-        e.preventDefault();
       });
+      setTimeout( function() { $(".floating-arrow").fadeOut() }, 6000);
     });
   })();
   //# sourceURL=channel.home.kaml
@@ -54,6 +68,11 @@
 	    text-align: right;
 	}
 </style>
+
+<div class="d-none skipRBLe">
+  <input name="{id}:iAgeCommStart" type="text" id="katapp_{id}_iAgeCommStart" class="iAgeCommStart" val="1"/>
+  <input name="{id}:iAlertType" type="text" id="katapp_{id}_iAlertType" class="iAlertType" val="home"></input>
+</div>
 
 <script type="text/javascript" src="resources/js/core.js"></script>
 <!-- ============================================================================================================= -->
@@ -150,84 +169,14 @@
 						<div class="card-body">
 							<h5 class="card-title">{title} </h5>
 							<p class="card-text card-content">{message}</p>
-							<a href="#null" class="cardHover stretched-link" aria-expanded="false"></a>
+<!--          Commented out to allow link in message
+              <a href="#null" class="cardHover stretched-link" aria-expanded="false"></a>
+-->
 						</div>
 					</div>
 				</div>
 			</div>
 		</div>
-		
-      <div class="swiper-slide">
-        <div class="card">
-          <div class="row no-gutters">
-            <div class="col-2">
-              <img src="resources/images/Icon_Suggestion.png" class="card-img" alt="Suggestion"><div class="text-center"><small></small></div>
-            </div>
-            <div class="col-10">
-              <div class="card-body">
-                <h5 class="card-title">Increase your pension amount </h5>
-                <p class="card-text card-content">You get an additional Company subsidy if you work till age 65.</p>
-                <a href="#null" class="cardHover stretched-link" aria-expanded="false"></a>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-		
-        
-      <div class="swiper-slide">
-        <div class="card">
-          <div class="row no-gutters">
-            <div class="col-2">
-              <img src="resources/images/Icon_Suggestion.png" class="card-img" alt="Suggestion"><div class="text-center"><small></small></div>
-            </div>
-            <div class="col-10">
-              <div class="card-body">
-                <h5 class="card-title">How much is your pension worth? </h5>
-                <p class="card-text card-content">Now that you turned 50, try the Pension Calculator to estimate at key retirement dates.</p>
-                <a href="#null" class="cardHover stretched-link" aria-expanded="false"></a>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-		
-      <div class="swiper-slide">
-        <div class="card">
-          <div class="row no-gutters">
-            <div class="col-2">
-              <img src="resources/images/Icon_Docs.png" class="card-img" alt="Message"><div class="text-center"><small></small></div>
-            </div>
-            <div class="col-10">
-              <div class="card-body">
-                <h5 class="card-title">Retirement Packet </h5>
-                <p class="card-text card-content">Mailed to your home address on Nov 6, 2020.</p>
-                <a href="#null" class="cardHover stretched-link"></a>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-      
-      
-      <div class="swiper-slide">
-        <div class="card">
-          <div class="row no-gutters">
-            <div class="col-2">
-              <img src="resources/images/Icon_Actions.png" class="card-img" alt="Action"><div class="text-center"><small></small></div>
-            </div>
-            <div class="col-10">
-              <div class="card-body">
-                <h5 class="card-title">Form Due</h5>
-                <p class="card-text card-content">You must sign and return your Pension Election Form by Dec 31, 2020.</p>
-                <a href="#null" class="cardHover stretched-link" aria-expanded="false"></a>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
   </div>
   <!-- If we need pagination -->
   <div class="swiper-pagination"></div>
@@ -325,15 +274,15 @@
 		  <div class="hrDivider"></div>
 			
       <div class="alert alert-notify">
-        <div class="alertTitle"><img src="resources/images/Icon_Suggestion.png" alt="Suggestion"/> SUGGESTION <span class=""><a href="#null" class="alertDelete showMore" aria-expanded="false"><span class="glyphicons glyphicons-remove"></span></a>
-          <ul class="dropdown-menu showActions" aria-labelledby="showMoreSavings">
-            <li><a href="#null">Remind<br/>Later</a></li>
-            <li><a href="#null">Delete</a></li>
-          </ul>
-        </span>
+        <div class="alertTitle"><img src="resources/images/Icon_Suggestion.png" alt="Suggestion"/> SUGGESTION 
+          <span class="">
+            <ul class="dropdown-menu showActions" aria-labelledby="showMoreSavings">
+              <li><a href="#null">Remind<br/>Later</a></li>
+              <li><a href="#null">Delete</a></li>
+            </ul>
+          </span>
         </div>
-        <a href="#null" class="alertActions">Get an additional Company subsidy which increases your pension amount if you work till age 65.</a>
-        <a href="#suggestion01" class="alertMore alertMoreSuggestion01" data-toggle="collapse" aria-expanded="false">1 more suggestion</a>  
+        <a href="#null" class="alertActions">Pension payments are taxed like ordinary income.  See more information on how all your retirements are taxed.</a>
       </div>
     </div>
     <div id="suggestion01" class="row collapse p-0 m-0">  
@@ -399,7 +348,7 @@
     <div class="panel-body">			
     <div class="row benSpacing">
       <div class="col-12"><div class="typeTitle">401(k) Plan</div>
-      <div class="text-right boldText planAmt"><span class="balances balance401k">$321,773.82</span></div>
+      <div class="text-right boldText planAmt"><span class="balances" rbl-value="bal-401k"></span></div>
       <hr class="dashboardHR">
       <div class="typeTitle">Non-Qualified Plan</div>
       <div class="text-right boldText planAmt"><span class="balances balanceNonQual">$19,256.54</span></div>
@@ -434,17 +383,17 @@
     <div class="panel-body">			
     <div class="row benSpacing">
       <div class=" col-6 pl-0 pr-0 text-center" rbl-tid="chart-highcharts" rbl-chartdata="CompensationChart" rbl-chartoptions="Pie"></div>
-      <div class="col-6"><div class="typeTitle"><span class="chartColor ColorChartComp" rbl-value="Compensation"></span> Compensation</div>
-      <div class="text-right boldText"><span class="balances">$120,622</span></div>
-      <div class="typeTitle"><span class="chartColor ColorChartRet"></span> Retirement</div>
-      <div class="text-right boldText planAmt"><span class="balances balanceNonQual">$68,986</span></div>
-      <div class="typeTitle"><span class="chartColor ColorChartHealth"></span> Health</div>
-      <div class="text-right boldText planAmt"><span class="balances balanceHSA">$33,528</span></div>
-      <div class="typeTitle"><span class="chartColor ColorChartOther"></span> Other Benefits*</div>
-      <div class="text-right boldText planAmt"><span class="balances balanceHSA">$3,004</span></div> 
+      <div class="col-6"><div class="typeTitle" rbl-value="compensation"><span class="chartColor ColorChartComp"></span></div>
+      <div class="text-right boldText"><span class="balances" rbl-value="compensationValue"></span></div>
+      <div class="typeTitle" rbl-value="health"><span class="chartColor ColorChartRet"></span></div>
+      <div class="text-right boldText planAmt"><span class="balances" rbl-value="healthValue"></span></div>
+      <div class="typeTitle" rbl-value="retirement"><span class="chartColor ColorChartHealth"></span></div>
+      <div class="text-right boldText planAmt"><span class="balances" rbl-value="retirementValue"></span></div>
+      <div class="typeTitle" rbl-value="others"><span class="chartColor ColorChartOther"></span></div>
+      <div class="text-right boldText planAmt"><span class="balances" rbl-value="othersValue"></span></div> 
       <hr class="dashboardHR">
       <div class="typeTitle boldText">Total</div>
-      <div class="text-right boldText planAmt"><span class="balances balanceHSA">$226,140</span></div> 
+      <div class="text-right boldText planAmt"><span class="balances" rbl-value="totalValue"></span></div> 
     </div>
     
     </div>

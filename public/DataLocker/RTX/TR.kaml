@@ -4,7 +4,7 @@
 	thisClass span.highcharts-title {
 		font-family: inherit !important;
 	}
-	
+
 	thisClass .chart-swatch {
 	width: 20px; height: 20px;
 	}

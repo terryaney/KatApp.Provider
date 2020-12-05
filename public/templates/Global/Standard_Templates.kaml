@@ -648,6 +648,10 @@
 .katapp-css .file-upload i {
   padding-right: 5px;
 }
+.katapp-css .file-upload .btn-default {
+  border-radius: 0px !important;
+}
+
 .katapp-css .file-data {
   display: none;
 }

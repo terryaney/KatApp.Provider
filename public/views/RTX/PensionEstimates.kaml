@@ -54,6 +54,10 @@
     }
 </style>
 
+<div class="d-none skipRBLe">
+    <input name="{id}:iSaveInputs" type="text" id="katapp_{id}_iSaveInputs" class="iSaveInputs"/>
+</div>
+
 <section id="pension-estimates" class="pension-estimates section-padding scroll-indicator" data-scroll-indicator-title="Pension Estimates">
     <div id="rblMarkup" class="rblApplication rblMarkup container mb-5" style="display: none;">
         <div class="d-none">
@@ -81,32 +85,36 @@
                             <div class="col-sm-12">
                                 <div rbl-tid="validation-summary"></div>
                             </div>
+                            <div class="col-md-12">
+                                <a class="btn btn-primary mt-2" href="#" id="{id}_calculateButton">Calculate</a>
+                            </div>
                         </div>
                     </div>
                 </div> 
-                <a class="btn btn-primary mt-2" href="#" id="{id}_calculateButton">Calculate</a>
             </div>
             <div class="col-md-6">
-                <div class="panel panel-default mt-0">
+                <div class="card mt-0">
                     <div class="card-header mt-1"><h4 class="card-title">Results</h4></div>
                     <div class="card-body">
                         <div class="row">
-                            <div class="col-md-12">
+                            <div class="col-md-12" rbl-display="vChart">
                                 <div class="text-center">
                                     <div rbl-tid="chart-highcharts" rbl-chartdata="RetirementIncomeChart"></div>
                                 </div>
                             </div>
                             <div class="col-md-12">
                                 <div rbl-tid="input-dropdown" data-liveSearch="false" data-inputname="iPaymentForm"></div>
-                                <div class="ml-3 small" rbl-display="viPaymentForm">
-                                    <a href="#" data-toggle='modal' data-target='#{id}_all-forms-payment'>See all forms of payment</a>
-                                </div>        
                             </div>
+                            <div class="col-md-12">
+                                <a class="saveButton btn btn-primary mt-2" href="#" id="{id}_saveButton">Save Estimate</a>
+                                <a rbl-display="vOptionalForms" class="btn btn-secondary mt-2 ml-2" href="#" data-toggle='modal' data-target='#{id}_all-forms-payment'>View All Forms of Payment</a>
+                            </div>
+
                             <div class="recalcNeeded recalcWrapper"></div>
                             <div class="recalcNeeded recalcLogoText">
                                 <span class="glyphicons glyphicons-refresh"></span>
                                 <div class="recalcText"><p>Click calculate to refresh</p></div>
-                            </div>                    
+                            </div>
                         </div>
                     </div>
                 </div> 
@@ -114,7 +122,7 @@
             <div class="ajaxloader"></div>
         </div>            
         
-        <div class="modal fade" id="{id}_all-forms-payment" tabindex="-1" role="dialog" data-backdrop="static">
+        <div class="modal fade all-forms-payment" id="{id}_all-forms-payment" tabindex="-1" role="dialog" data-backdrop="static">
             <div class="modal-dialog modal-lg">
                 <div class="modal-content">
                     <div class="modal-header">
@@ -143,6 +151,10 @@
 
         view.on( "onCalculation.RBLe", function( event, results, options, application ) {
             $(".recalcNeeded").removeClass("active");
+            if ( $(".iSaveInputs").val() == "1" ) {
+                application.apiAction("UpdateTransactionPackage");
+                $(".iSaveInputs").val("0");
+            }
         });
         view.on("onConfigureUICalculation.RBLe", function(event, results, options, application) {
             $(".recalcInputs .slider-control", application.element).each(function () {
@@ -169,6 +181,10 @@
 
             $("#{id}_calculateButton").on("click", function(e) {
                 e.preventDefault();
+                application.calculate();
+            });
+            $(".saveButton", view).on('click', function (e) {
+                $(".iSaveInputs").val("1");
                 application.calculate();
             });
 		});

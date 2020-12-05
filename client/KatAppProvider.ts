@@ -971,6 +971,108 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
             return this.ui.getInputs( this.options );
         };
 
+        apiAction( commandName: string, isDownload: boolean, parametersJson: {} ): void {
+            let url = this.options.rbleUpdatesUrl;
+            
+            if (url != undefined) {
+                const fd = new FormData();
+                fd.append("KatAppCommand", commandName);
+                fd.append("KatAppView", this.options.view ?? "Unknown");
+                fd.append("KatAppInputs", JSON.stringify(this.getInputs()));
+
+                if (Object.keys(parametersJson).length > 0) {
+                    for (const propertyName in parametersJson) {
+                        fd.append(propertyName, parametersJson[propertyName]);
+                    }
+                }
+
+                const errors: ValidationRow[] = [];
+                // Can't use 'view' in selector for validation summary b/c view could be a 'container' instead of entire view
+                // if caller only wants to initialize a newly generated container's html                        
+                const errorSummary = $("#" + this.id + "_ModelerValidationTable", this.element);
+                $('.validator-container.error:not(.server)', this.element).removeClass('error');
+
+                if ( isDownload ) {
+                    $(".ajaxloader", this.element).show();
+                }
+
+                const xhr = new XMLHttpRequest();
+                xhr.open('POST', url, true);
+
+                xhr.onreadystatechange = function (): void {
+                    // https://stackoverflow.com/a/29039823/166231
+                    /*
+                    if (xhr.readyState == 4) {
+                        if (xhr.status == 200) {
+                            console.log(typeof xhr.response); // should be a blob
+                        }
+                    } else */
+                    if (xhr.readyState == 2) {
+                        if (isDownload && xhr.status == 200) {
+                            xhr.responseType = "blob";
+                        } else {
+                            xhr.responseType = "text";
+                        }
+                    }
+                };
+
+                const that = this;
+                xhr.onload = function (): void {
+                    if (xhr.responseType == "text") {
+                        const jsonResponse = JSON.parse( xhr.responseText );
+
+                        if ( xhr.status == 500 ) {
+                            if ( jsonResponse[ "Validations" ] != undefined && errorSummary.length > 0 ) {
+                                jsonResponse.Validations.forEach((v: { [x: string]: string }) => {
+                                    errors.push( { "@id": v[ "ID" ], text: v[ "Message" ] });
+                                });
+                            }
+    
+                            if ( errors.length == 0 ) {
+                                that.ui.triggerEvent( "onActionFailed", commandName, jsonResponse, that );
+                                console.log("Show error: " + jsonResponse.Message);
+                                errors.push( { "@id": "System", text: "An unexpected error has occurred.  Please try again and if the problem persists, contact technical support." });
+                            }
+                        }
+                        else {
+                            that.ui.triggerEvent( "onActionResult", commandName, jsonResponse, that );
+                        }
+                    }
+                    else {
+                        const blob = xhr.response;
+
+                        that.ui.triggerEvent( "onActionResult", commandName, undefined, that );
+
+                        let filename = "Download.pdf";
+                        const disposition = xhr.getResponseHeader('Content-Disposition');
+                        if (disposition && disposition.indexOf('attachment') !== -1) {
+                            filename = disposition.split('filename=')[1].split(';')[0];
+                        }
+
+                        const tempEl = document.createElement("a");
+                        $(tempEl).addClass( "d-none hidden" );
+                        url = window.URL.createObjectURL(blob);
+                        tempEl.href = url;
+                        tempEl.download = filename;
+                        tempEl.click();
+                        window.URL.revokeObjectURL(url);
+                    }
+                    that.ui.triggerEvent( "onActionComplete", commandName, that );
+
+                    that.rble.processValidationRows(
+                        errorSummary, 
+                        errors
+                    );
+                    if ( isDownload ) {
+                        $(".ajaxloader", that.element).hide();
+                    }
+                }; // don't think I need this .bind(actionLink);
+
+                this.ui.triggerEvent( "onActionStart", commandName, this );
+                xhr.send(fd);
+            }
+        }
+
         // Result helper
         getResultTable<T>( tableName: string): Array<T> {
             return this.rble.getResultTable<T>( tableName );
@@ -3549,115 +3651,25 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                         //	Actually didn't attempt this one.
                         // https://storiknow.com/download-file-with-jquery-and-web-api-2-0-ihttpactionresult/ (most recent answer I could find)
                         //	This one didn't work (left a comment) because of needing to return text (error) or file (success).
-                                
-                        let url = that.application.options.rbleUpdatesUrl;
-            
-                        if (url != undefined) {
-                            const fd = new FormData();
-                            fd.append("KatAppCommand", katAppCommand);
-                            fd.append("KatAppView", that.application.options.view ?? "Unknown");
-                            // fd.append("KatAppInputs", JSON.stringify(that.application.getInputs()));
-    
-                            const rble = $.fn.KatApp.rble( that.application, that.ui );
-                            const errors: ValidationRow[] = [];
-                            // Can't use 'view' in selector for validation summary b/c view could be a 'container' instead of entire view
-                            // if caller only wants to initialize a newly generated container's html                        
-                            const errorSummary = $("#" + that.application.id + "_ModelerValidationTable", that.application.element);
-                            $('.validator-container.error:not(.server)', that.application.element).removeClass('error');
-    
-                            const actionParameters = 
-                                [].slice.call(actionLink.get(0).attributes).filter(function(attr: Attr) {
-                                    return attr && attr.name && attr.name.indexOf("data-param-") === 0
-                                }).map( function( a: Attr ) { return a.name; } );
-    
-                            actionParameters.forEach( a => {
-                                const value = actionLink.attr(a);
-    
-                                if ( value !== undefined ) {
-                                    fd.append(a.substring(11), value);
-                                }
-                            });
-            
-                            const isDownload = actionLink.attr("rbl-action-download") ?? false;
+                        
+                        const actionParameters = 
+                            [].slice.call(actionLink.get(0).attributes).filter(function(attr: Attr) {
+                                return attr && attr.name && attr.name.indexOf("data-param-") === 0
+                            }).map( function( a: Attr ) { return a.name; } );
 
-                            if ( isDownload ) {
-                                $(".ajaxloader", that.application.element).show();
+                        const parametersJson = {};
+
+                        actionParameters.forEach( a => {
+                            const value = actionLink.attr(a);
+
+                            if ( value !== undefined ) {
+                                parametersJson[ a.substring(11) ] = value;
                             }
+                        });
 
-                            const xhr = new XMLHttpRequest();
-                            xhr.open('POST', url, true);
-            
-                            xhr.onreadystatechange = function (): void {
-                                // https://stackoverflow.com/a/29039823/166231
-                                /*
-                                if (xhr.readyState == 4) {
-                                    if (xhr.status == 200) {
-                                        console.log(typeof xhr.response); // should be a blob
-                                    }
-                                } else */
-                                if (xhr.readyState == 2) {
-                                    if (isDownload && xhr.status == 200) {
-                                        xhr.responseType = "blob";
-                                    } else {
-                                        xhr.responseType = "text";
-                                    }
-                                }
-                            };
-            
-                            xhr.onload = function (): void {
-                                if (xhr.responseType == "text") {
-                                    const jsonResponse = JSON.parse( xhr.responseText );
+                        const isDownload = ( actionLink.attr("rbl-action-download") ?? "false" ) == "true";
 
-                                    if ( xhr.status == 500 ) {
-                                        if ( jsonResponse[ "Validations" ] != undefined && errorSummary.length > 0 ) {
-                                            jsonResponse.Validations.forEach((v: { [x: string]: string }) => {
-                                                errors.push( { "@id": v[ "ID" ], text: v[ "Message" ] });
-                                            });
-                                        }
-                
-                                        if ( errors.length == 0 ) {
-                                            actionLink.trigger( "onActionFailed", [ jsonResponse, application ] );
-                                            console.log("Show error: " + jsonResponse.Message);
-                                            errors.push( { "@id": "System", text: "An unexpected error has occurred.  Please try again and if the problem persists, contact technical support." });
-                                        }
-                                    }
-                                    else {
-                                        actionLink.trigger( "onActionResult", [ katAppCommand, application, jsonResponse ] );
-                                    }
-                                }
-                                else {
-                                    const blob = xhr.response;
-    
-                                    actionLink.trigger( "onActionResult", [ katAppCommand, application ] );
-    
-                                    let filename = "Download.pdf";
-                                    const disposition = xhr.getResponseHeader('Content-Disposition');
-                                    if (disposition && disposition.indexOf('attachment') !== -1) {
-                                        filename = disposition.split('filename=')[1].split(';')[0];
-                                    }
-            
-                                    const tempEl = document.createElement("a");
-                                    $(tempEl).addClass( "d-none hidden" );
-                                    url = window.URL.createObjectURL(blob);
-                                    tempEl.href = url;
-                                    tempEl.download = filename;
-                                    tempEl.click();
-                                    window.URL.revokeObjectURL(url);
-                                }
-                                actionLink.trigger( "onActionComplete", [ katAppCommand, application ] );
-
-                                rble.processValidationRows(
-                                    errorSummary, 
-                                    errors
-                                );
-                                if ( isDownload ) {
-                                    $(".ajaxloader", that.application.element).hide();
-                                }
-                            }.bind(actionLink);
-            
-                            actionLink.trigger( "onActionStart", [ katAppCommand, application ] );
-                            xhr.send(fd);
-                        }
+                        application.apiAction(katAppCommand, isDownload, parametersJson);
                     };
                         
                     // .on("click", function() { return that.onConfirmLinkClick( $(this)); })

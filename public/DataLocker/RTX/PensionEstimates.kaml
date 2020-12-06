@@ -121,7 +121,10 @@
                 <div class="modal-content">
                     <div class="modal-header">
                         <h4 class="modal-title" rbl-value="all-forms-payment-header">All Forms of Payment - Starting at age 65</h4>
-                        <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                        <div class="ml-auto">
+                            <a href="#" class="btn btn-secondary downloadForms ml-auto mr-2">Download</a>
+                            <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">×</span></button>
+                        </div>
                     </div>
                     <div class="modal-body">
                         <div rbl-tid="result-table" rbl-tablename="ret-estimate"></div>
@@ -178,6 +181,10 @@
                     iSaveInputs: 1                                          
                 };
                 application.serverCalculation(customInputs);
+            });
+            $(".downloadForms", view).on('click', function (e) {
+                $(".all-forms-payment", view).modal("hide");
+                application.apiAction("PensionEstimates.DocGen.Forms", true);
             });
 		});
 	})();

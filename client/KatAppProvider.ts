@@ -928,16 +928,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
         };
 
         serverCalculation( customInputs: {} | undefined ) {
-            const calculationConfiguration = {
-                currentPage: this.options.currentPage,
-                calcEngine: this.options.calcEngine,
-                inputTab: this.options.inputTab,
-                resultTabs: this.options.resultTabs,
-                preCalcs: this.options.preCalcs        
-            };
-
             const actionParameters = {
-                "KatAppCalculationConfiguration": JSON.stringify(calculationConfiguration),
                 "KatAppCustomInputs": JSON.stringify(customInputs ?? {})
             };
 
@@ -952,7 +943,16 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                 fd.append("KatAppCommand", commandName);
                 fd.append("KatAppView", this.options.view ?? "Unknown");
                 fd.append("KatAppInputs", JSON.stringify(this.getInputs()));
-                
+
+                const calculationConfiguration = {
+                    currentPage: this.options.currentPage,
+                    calcEngine: this.options.calcEngine,
+                    inputTab: this.options.inputTab,
+                    resultTabs: this.options.resultTabs,
+                    preCalcs: this.options.preCalcs        
+                };
+                fd.append("KatAppCalculationConfiguration", JSON.stringify(calculationConfiguration));
+                    
                 if (parametersJson != undefined && Object.keys(parametersJson).length > 0) {
                     for (const propertyName in parametersJson) {
                         fd.append(propertyName, parametersJson[propertyName]);

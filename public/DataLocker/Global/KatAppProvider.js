@@ -754,15 +754,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
         };
         ;
         KatAppPlugIn.prototype.serverCalculation = function (customInputs) {
-            var calculationConfiguration = {
-                currentPage: this.options.currentPage,
-                calcEngine: this.options.calcEngine,
-                inputTab: this.options.inputTab,
-                resultTabs: this.options.resultTabs,
-                preCalcs: this.options.preCalcs
-            };
             var actionParameters = {
-                "KatAppCalculationConfiguration": JSON.stringify(calculationConfiguration),
                 "KatAppCustomInputs": JSON.stringify(customInputs !== null && customInputs !== void 0 ? customInputs : {})
             };
             this.apiAction("ServerCalculation", false, actionParameters);
@@ -775,6 +767,14 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                 fd.append("KatAppCommand", commandName);
                 fd.append("KatAppView", (_a = this.options.view) !== null && _a !== void 0 ? _a : "Unknown");
                 fd.append("KatAppInputs", JSON.stringify(this.getInputs()));
+                var calculationConfiguration = {
+                    currentPage: this.options.currentPage,
+                    calcEngine: this.options.calcEngine,
+                    inputTab: this.options.inputTab,
+                    resultTabs: this.options.resultTabs,
+                    preCalcs: this.options.preCalcs
+                };
+                fd.append("KatAppCalculationConfiguration", JSON.stringify(calculationConfiguration));
                 if (parametersJson != undefined && Object.keys(parametersJson).length > 0) {
                     for (var propertyName in parametersJson) {
                         fd.append(propertyName, parametersJson[propertyName]);

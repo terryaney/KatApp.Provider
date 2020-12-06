@@ -82,8 +82,9 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
 
     class KatAppPlugIn /* implements KatAppPlugInInterface */ {
         // Helper classes, see comment in interfaces class
-        private rble: RBLeUtilities/*Interface*/;
-        private ui: UIUtilities/*Interface*/;
+        rble: RBLeUtilities/*Interface*/;
+        ui: UIUtilities/*Interface*/;
+        templateBuilder: StandardTemplateBuilder;
 
         // Fields
         element: JQuery;
@@ -105,6 +106,8 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
             this.element[ 0 ].KatApp = this;
             this.ui = $.fn.KatApp.ui( this );
             this.rble = $.fn.KatApp.rble( this, this.ui );
+            this.templateBuilder = $.fn.KatApp.standardTemplateBuilderFactory( this );
+
             this.init( options );
         }
     
@@ -467,9 +470,8 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                             templateBuilder.processCarousels();
                         });
                     */
-                    const templateBuilder: StandardTemplateBuilder = $.fn.KatApp.standardTemplateBuilderFactory( that );
                     // Process data-* attributes and bind events
-                    templateBuilder.processUI();
+                    that.templateBuilder.processUI();
 
                     that.ui.bindCalculationInputs();
 
@@ -925,6 +927,23 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
             return this.ui.getInputs( this.options );
         };
 
+        serverCalculation( customInputs: {} | undefined ) {
+            const calculationConfiguration = {
+                currentPage: this.options.currentPage,
+                calcEngine: this.options.calcEngine,
+                inputTab: this.options.inputTab,
+                resultTabs: this.options.resultTabs,
+                preCalcs: this.options.preCalcs        
+            };
+
+            const actionParameters = {
+                "KatAppCalculationConfiguration": JSON.stringify(calculationConfiguration),
+                "KatAppCustomInputs": JSON.stringify(customInputs ?? {})
+            };
+
+            this.apiAction("ServerCalculation", false, actionParameters);
+        }
+
         apiAction( commandName: string, isDownload: boolean | undefined, parametersJson: {} | undefined ): void {
             let url = this.options.rbleUpdatesUrl;
             
@@ -946,9 +965,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                 const errorSummary = $("#" + this.id + "_ModelerValidationTable", this.element);
                 $('.validator-container.error:not(.server)', this.element).removeClass('error');
 
-                if ( isDownload ) {
-                    $(".ajaxloader", this.element).show();
-                }
+                $(".ajaxloader", this.element).show();
 
                 const xhr = new XMLHttpRequest();
                 xhr.open('POST', url, true);
@@ -1017,9 +1034,8 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                         errorSummary, 
                         errors
                     );
-                    if ( isDownload ) {
-                        $(".ajaxloader", that.element).hide();
-                    }
+
+                    $(".ajaxloader", that.element).hide();
                 }; // don't think I need this .bind(actionLink);
 
                 this.ui.triggerEvent( "onActionStart", commandName, this );
@@ -1463,8 +1479,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
 
             if ( configureHelp ) {
                 // Run one more time to catch any help items
-                const templateBuilder: StandardTemplateBuilder = $.fn.KatApp.standardTemplateBuilderFactory( this.application );
-                templateBuilder.processHelpTips();
+                this.application.templateBuilder.processHelpTips();
             }
         }
 
@@ -1731,11 +1746,9 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
 
     class RBLeUtilities /* implements RBLeUtilitiesInterface */ {
         private application: KatAppPlugIn;
-        private ui: UIUtilities;
 
         constructor( application: KatAppPlugIn, uiUtilities: UIUtilities ) {
             this.application = application;  
-            this.ui = uiUtilities;  
         }
 
         setResults( results: JSON | undefined ): void {
@@ -1836,7 +1849,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                     application.options.registeredToken = currentOptions.registeredToken = payload.registeredToken;
                     application.options.data = currentOptions.data = undefined;
 
-                    that.ui.triggerEvent( "onRegistration", currentOptions, application );
+                    that.application.ui.triggerEvent( "onRegistration", currentOptions, application );
                     registerDataHandler();
                 }
                 else {
@@ -1874,7 +1887,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                 delete currentOptions.defaultInputs.iInputTrigger;
             }
 
-            const inputs: CalculationInputs = application.calculationInputs = KatApp.extend( this.ui.getInputs( currentOptions ), currentOptions.defaultInputs, currentOptions.manualInputs );
+            const inputs: CalculationInputs = application.calculationInputs = KatApp.extend( this.application.ui.getInputs( currentOptions ), currentOptions.defaultInputs, currentOptions.manualInputs );
 
             let preCalcs = currentOptions.preCalcs;
 
@@ -1887,7 +1900,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
             const calculationOptions: SubmitCalculationOptions = {
                 Data: !( currentOptions.registerDataWithService ?? true ) ? currentOptions.data : undefined,
                 Inputs: inputs,
-                InputTables: this.ui.getInputTables(), 
+                InputTables: this.application.ui.getInputTables(), 
                 Configuration: {
                     CalcEngine: currentOptions.calcEngine,
                     Token: ( currentOptions.registerDataWithService ?? true ) ? currentOptions.registeredToken : undefined,
@@ -1910,7 +1923,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                 }
             };
 
-            this.ui.triggerEvent( "onCalculationOptions", calculationOptions, this );
+            this.application.ui.triggerEvent( "onCalculationOptions", calculationOptions, this );
 
             const that: RBLeUtilities = this;
 
@@ -2059,7 +2072,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
         createHtmlFromResultRow( resultRow: HtmlContentRow, processBlank: boolean ): void {
             const view = this.application.element;
             let content = resultRow.content ?? resultRow.html ?? resultRow.value ?? "";
-            const selector = this.ui.getJQuerySelector( resultRow.selector ) ?? this.ui.getJQuerySelector( resultRow["@id"] ) ?? "";
+            const selector = this.application.ui.getJQuerySelector( resultRow.selector ) ?? this.application.ui.getJQuerySelector( resultRow["@id"] ) ?? "";
 
             if (( processBlank || content.length > 0 ) && selector.length > 0) {
 
@@ -2068,7 +2081,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                 if ( target.length > 0 ) {
 
                     if ( target.length === 1 ) {
-                        target = this.ui.getAspNetCheckboxLabel( target ) ?? target;
+                        target = this.application.ui.getAspNetCheckboxLabel( target ) ?? target;
                     }
 
                     if ( content.startsWith("&") ) {
@@ -2085,7 +2098,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                             
                             if (templateId !== undefined) {
                                 //Replace content with template processing, using data-* items in this pass
-                                this.injectTemplate( el, this.ui.getTemplate( templateId, el.data() ) );
+                                this.injectTemplate( el, this.application.ui.getTemplate( templateId, el.data() ) );
                             }
                             
                             // Append 'templated' content to view
@@ -2136,7 +2149,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                     let target = $(this);
 
                     if ( target.length === 1 ) {
-                        target = that.ui.getAspNetCheckboxLabel( target ) ?? target;
+                        target = application.ui.getAspNetCheckboxLabel( target ) ?? target;
                     }
 
                     target.html( value );
@@ -2173,7 +2186,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                         ? inlineTemplate === undefined || inlineTemplate.length === 0
                             ? undefined
                             : $( inlineTemplate.prop("outerHTML").format( elementData ) ).removeAttr("rbl-tid").prop("outerHTML")
-                        : that.ui.getTemplate( tid, elementData )?.Content; 
+                        : application.ui.getTemplate( tid, elementData )?.Content; 
 
                     if ( templateContent === undefined ) {
                         application.trace("<b style='color: Red;'>RBL WARNING</b>: Template content could not be found: [" + tid + "].", TraceVerbosity.Detailed);
@@ -2282,7 +2295,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
             // Legacy, might not be needed
             const visibilityRows = this.getResultTable<RBLeDefaultRow>( "ejs-visibility" );
             visibilityRows.forEach( row => {
-                const selector = this.ui.getJQuerySelector( row["@id"] );
+                const selector = application.ui.getJQuerySelector( row["@id"] );
                 if ( selector !== undefined ) {
                     if (row.value === "1") {
                         $(selector, application.element).show();
@@ -2303,7 +2316,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                 const propertyNames = Object.keys(dataRows[ 0 ]).filter( k => !k.startsWith( "@" ) );
 
                 dataRows.forEach( row => {
-                    const selector = this.ui.getJQuerySelector( row["@id"] );
+                    const selector = application.ui.getJQuerySelector( row["@id"] );
 
                     if ( selector !== undefined ) {
                         const el = $(selector, application.element);
@@ -2328,20 +2341,20 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
             const application = this.application;
 
             skipRows.forEach( row => {
-                const selector = this.ui.getJQuerySelector( row["key"] || row["@id"] );
+                const selector = application.ui.getJQuerySelector( row["key"] || row["@id"] );
                 if ( selector !== undefined ) {
                     const el = $(selector, application.element);
                     
                     el.addClass("skipRBLe").off(".RBLe");
                     $(":input", el).off(".RBLe");
 
-                    this.ui.getNoUiSlider(selector.substring(1), application.element)?.off('set.RBLe');
+                    application.ui.getNoUiSlider(selector.substring(1), application.element)?.off('set.RBLe');
                 }
             });
         }
 
         setDefaultValue( id: string, value: string | undefined ): void {
-            const selector = this.ui.getJQuerySelector( id );
+            const selector = this.application.ui.getJQuerySelector( id );
 
             if ( selector !== undefined ) {
                 value = value ?? "";
@@ -2350,12 +2363,12 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                 const listControl = $(selector + "[data-itemtype]", this.application.element);
                 const isCheckboxList = listControl.data("itemtype") == "checkbox"; // input.hasClass("checkbox-list-horizontal");
                 const isRadioList = listControl.data("itemtype") == "radio"; // input.hasClass("checkbox-list-horizontal");
-                const aspCheckbox = this.ui.getAspNetCheckboxInput(input);
+                const aspCheckbox = this.application.ui.getAspNetCheckboxInput(input);
                 const radioButtons = isRadioList ? $("input", listControl) : $("input[type='radio']", input);
-                const noUiSlider = this.ui.getNoUiSlider(id, this.application.element);
+                const noUiSlider = this.application.ui.getNoUiSlider(id, this.application.element);
 
                 if ( noUiSlider !== undefined ) {
-                    const sliderContainer = this.ui.getNoUiSliderContainer(id, this.application.element);
+                    const sliderContainer = this.application.ui.getNoUiSliderContainer(id, this.application.element);
                     if ( sliderContainer !== undefined )
                     {
                         sliderContainer.data("setting-default", 1); // No way to set slider without triggering calc, so setting flag
@@ -2412,7 +2425,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
             const application = this.application;
 
             disabledRows.forEach( row => {
-                const selector = this.ui.getJQuerySelector( row["@id"] );
+                const selector = this.application.ui.getJQuerySelector( row["@id"] );
 
                 if ( selector !== undefined ) {
                     // @id - regular input
@@ -2420,7 +2433,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                     // slider-@id - noUiSlider
                     const value = row.value ?? "";
                     const input = $(selector + ", " + selector + " input", application.element);
-                    const slider = this.ui.getNoUiSliderContainer( row["@id"], application.element );
+                    const slider = this.application.ui.getNoUiSliderContainer( row["@id"], application.element );
 
                     if (slider !== undefined) {
                         if (value === "1") {
@@ -2683,7 +2696,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
 
             // Backward compat to remove validation with same id as input, but have changed it to 
             // id + Error so that $(id) doesn't get confused picking the li item.
-            const inputName = input !== undefined ? this.ui.getInputName(input) : "undefined";
+            const inputName = input !== undefined ? this.application.ui.getInputName(input) : "undefined";
             $("ul li." + inputName + ", ul li." + inputName + "Error", summary).remove();
             ul.append("<li class=\"rble " + inputName + "Error\">" + message + "</li>");
 
@@ -2709,7 +2722,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
 
 			if (errors.length > 0) {
                 errors.forEach( r => {
-                    const selector = this.ui.getJQuerySelector( r["@id"] );
+                    const selector = this.application.ui.getJQuerySelector( r["@id"] );
                     const input = selector !== undefined ? $(selector, this.application.element) : undefined;
 					this.addValidationItem(summary, input, r.text);
                 });
@@ -2923,7 +2936,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
 
         processListControls(): void {
             const application = this.application;
-            const ui = this.ui;
+            const ui = this.application.ui;
             const configRows = this.getResultTable<ListControlRow>( "ejs-listcontrol" );
 
             configRows.forEach( row => {
@@ -2984,7 +2997,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                             if ( r.addclass.indexOf("skipRBLe") > -1 || r.addclass.indexOf("rbl-nocalc") > -1 ) {
                                 el.off(".RBLe");
                                 $(":input", el).off(".RBLe");
-                                this.ui.getNoUiSlider(r.selector.substring(1), application.element)?.off('set.RBLe');
+                                this.application.ui.getNoUiSlider(r.selector.substring(1), application.element)?.off('set.RBLe');
                             }
                         }
     
@@ -2996,8 +3009,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
 
                 // Need to re-run processUI here in case any 'templates' were injected from results and need their initial
                 // data-* attributes/events processed.
-                const templateBuilder: StandardTemplateBuilder = $.fn.KatApp.standardTemplateBuilderFactory( this.application );
-                templateBuilder.processUI();
+                this.application.templateBuilder.processUI();
 
                 this.processRblDatas();
 
@@ -3437,11 +3449,9 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
     class StandardTemplateBuilder implements StandardTemplateBuilderInterface
     {
         application: KatAppPlugIn;
-        ui: UIUtilities;
 
         constructor( application: KatAppPlugIn ) {
             this.application = application;   
-            this.ui = $.fn.KatApp.ui( application );
         }
         
         private buildCarousel(el: JQuery): JQuery {
@@ -3556,7 +3566,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
             }, 185);
         }
         
-        private buildActionLinks( container?: JQuery<HTMLElement> ): void {
+        processActionLinks( container?: JQuery<HTMLElement> ): void {
             const view = container ?? this.application.element;
             const that = this;
             const application = this.application;
@@ -3629,7 +3639,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                     // .on("click", function() { return that.onConfirmLinkClick( $(this)); })
                     if ( confirmSelector != undefined ) {
                         const confirm = $(confirmSelector, that.application.element).html() || "";
-                        return that.ui.onConfirmLinkClick($(this), confirm, action);
+                        return that.application.ui.onConfirmLinkClick($(this), confirm, action);
                     }
                     else {
                         action();
@@ -3706,7 +3716,6 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                         fd.append("KatAppView", that.application.options.view ?? "Unknown" );
                         fd.append("KatAppInputs", JSON.stringify(that.application.getInputs()));
 
-                        const rble = $.fn.KatApp.rble( that.application, that.ui );
                         const errors: ValidationRow[] = [];
                         // Can't use 'view' in selector for validation summary b/c view could be a 'container' instead of entire view
                         // if caller only wants to initialize a newly generated container's html                        
@@ -3738,7 +3747,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                         })
                         .always( function() {
                             fileUpload.trigger( "onUploadComplete", application );
-                            rble.processValidationRows(
+                            application.rble.processValidationRows(
                                 errorSummary, 
                                 errors
                             );
@@ -4023,7 +4032,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                         $("rbl-template[tid='lookup-tables'] DataTable[id='" + lookuptable + "'] TableItem")
                             .map( ( index, ti ) => ({ Value: ti.getAttribute("key"), Text: ti.getAttribute( "name"), Class: undefined, Help: undefined, Selected: index == 0, Visible: true, Disabled: false }));
 
-                    that.ui.processListItems(container, false, options.toArray());
+                    that.application.ui.processListItems(container, false, options.toArray());
                 }
         
                 el.attr("data-katapp-initialized", "true");
@@ -4075,7 +4084,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                 }
 
                 if ( lookuptable !== undefined ) {
-                    that.ui.processDropdownItems(
+                    that.application.ui.processDropdownItems(
                         input, 
                         false,
                         $("rbl-template[tid='lookup-tables'] DataTable[id='" + lookuptable + "'] TableItem")
@@ -4143,8 +4152,8 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
         processUI( container?: JQuery<HTMLElement> ): void {
             this.processInputs( container );
             this.processCarousels( container );
-            this.buildActionLinks( container );
             this.processHelpTips( container );
+            this.processActionLinks( container );
         }
 
         processHelpTips( container?: JQuery<HTMLElement> ): void {
@@ -4274,9 +4283,15 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                     $(visiblePopover).popover("hide");
                 };
 
+                const app = application;
+
                 application.element
-                    .on("show.bs.popover.RBLe", function() {  hideVisiblePopover(); })
-                    .on("shown.bs.popover.RBLe", function( e ) { visiblePopover = e.target; })
+                    .on("show.bs.popover.RBLe", function() { hideVisiblePopover(); })
+                    .on("shown.bs.popover.RBLe", function( e ) { 
+                        visiblePopover = e.target; 
+                        $("div.katapp-css[role='tooltip'] [rbl-action-link]").attr("data-katapp-initialized", "false");
+                        app.templateBuilder.processActionLinks($("div.katapp-css[role='tooltip']"));
+                    })
                     .on("hide.bs.popover.RBLe", function() { visiblePopover = undefined; })
                     .on("keyup.RBLe", function( e ) {
                         if (e.keyCode != 27) // esc

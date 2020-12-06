@@ -54,14 +54,8 @@
     }
 </style>
 
-<div class="d-none skipRBLe">
-    <input name="{id}:iSaveInputs" type="text" id="katapp_{id}_iSaveInputs" class="iSaveInputs"/>
-</div>
-
 <section id="pension-estimates" class="pension-estimates section-padding scroll-indicator" data-scroll-indicator-title="Pension Estimates">
     <div id="rblMarkup" class="rblApplication rblMarkup container mb-5" style="display: none;">
-        <div class="d-none">
-        </div>
         <h2 class="title">Pension Estimate</h2>
         <div class="row ajaxContent">
             <div class="col-md-6 recalcInputs">
@@ -151,10 +145,6 @@
 
         view.on( "onCalculation.RBLe", function( event, results, options, application ) {
             $(".recalcNeeded").removeClass("active");
-            if ( $(".iSaveInputs").val() == "1" ) {
-                application.apiAction("UpdateTransactionPackage");
-                $(".iSaveInputs").val("0");
-            }
         });
         view.on("onConfigureUICalculation.RBLe", function(event, results, options, application) {
             $(".recalcInputs .slider-control", application.element).each(function () {
@@ -184,8 +174,10 @@
                 application.calculate();
             });
             $(".saveButton", view).on('click', function (e) {
-                $(".iSaveInputs").val("1");
-                application.calculate();
+                var customInputs = {
+                    iSaveInputs: 1                                          
+                };
+                application.serverCalculation(customInputs);
             });
 		});
 	})();

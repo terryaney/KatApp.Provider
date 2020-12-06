@@ -68,18 +68,28 @@ class KatApp
     static extend(target: object, ...sources: ( object | undefined )[]): object {
         sources.forEach((source) => {
             if ( source === undefined ) return;
+            this.copyProperties( target, source );
+        })
+        return target;
+    };
+    static clone(source: object, replacer?: (this: any, key: string, value: any) => any): object {
+        return this.copyProperties( {}, source, replacer );
+    };
+    private static copyProperties(target: object, source: object, replacer?: (this: any, key: string, value: any) => any): object {
+        Object.keys(source).forEach((key) => {
+            
+            const value = replacer != null
+                ? replacer( key, source[key] )
+                : source[key];
 
-            Object.keys(source).forEach((key) => {
-                
-                // Always do deep copy
-                if ( typeof source[key] === "object" && target[key] != undefined ) {
-                    KatApp.extend( target[key], source[key] );
-                }
-                else {
-                    target[key] = source[key];
-                }
+            // Always do deep copy
+            if ( typeof value === "object" && target[key] != undefined ) {
+                this.copyProperties( target[key], value );
+            }
+            else {
+                target[key] = value;
+            }
 
-            })
         })
         return target;
     };

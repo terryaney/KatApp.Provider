@@ -754,32 +754,28 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
         };
         ;
         KatAppPlugIn.prototype.serverCalculation = function (customInputs) {
-            var actionParameters = {
-                "KatAppCustomInputs": JSON.stringify(customInputs !== null && customInputs !== void 0 ? customInputs : {})
-            };
-            this.apiAction("ServerCalculation", false, actionParameters);
+            this.apiAction("ServerCalculation", {
+                customInputs: customInputs
+            });
         };
-        KatAppPlugIn.prototype.apiAction = function (commandName, isDownload, parametersJson) {
+        KatAppPlugIn.prototype.apiAction = function (commandName, customOptions) {
             var _a;
             var url = this.options.rbleUpdatesUrl;
             if (url != undefined) {
+                var isDownload_1 = (_a = customOptions === null || customOptions === void 0 ? void 0 : customOptions.isDownload) !== null && _a !== void 0 ? _a : false;
+                // Build up complete set of options to use for this calculation call
+                var currentOptions = KatApp.extend({}, // make a clone of the options
+                KatApp.clone(this.options, function (_key, value) {
+                    if (typeof value === "function") {
+                        return; // don't want any functions passed along
+                    }
+                    return value;
+                }), // original options
+                customOptions);
                 var fd = new FormData();
                 fd.append("KatAppCommand", commandName);
-                fd.append("KatAppView", (_a = this.options.view) !== null && _a !== void 0 ? _a : "Unknown");
                 fd.append("KatAppInputs", JSON.stringify(this.getInputs()));
-                var calculationConfiguration = {
-                    currentPage: this.options.currentPage,
-                    calcEngine: this.options.calcEngine,
-                    inputTab: this.options.inputTab,
-                    resultTabs: this.options.resultTabs,
-                    preCalcs: this.options.preCalcs
-                };
-                fd.append("KatAppCalculationConfiguration", JSON.stringify(calculationConfiguration));
-                if (parametersJson != undefined && Object.keys(parametersJson).length > 0) {
-                    for (var propertyName in parametersJson) {
-                        fd.append(propertyName, parametersJson[propertyName]);
-                    }
-                }
+                fd.append("KatAppConfiguration", JSON.stringify(currentOptions));
                 var errors_1 = [];
                 // Can't use 'view' in selector for validation summary b/c view could be a 'container' instead of entire view
                 // if caller only wants to initialize a newly generated container's html                        
@@ -797,7 +793,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                         }
                     } else */
                     if (xhr_1.readyState == 2) {
-                        if (isDownload && xhr_1.status == 200) {
+                        if (isDownload_1 && xhr_1.status == 200) {
                             xhr_1.responseType = "blob";
                         }
                         else {
@@ -2984,8 +2980,10 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                                 parametersJson[a.substring(11)] = value;
                             }
                         });
-                        var isDownload = ((_a = actionLink.attr("rbl-action-download")) !== null && _a !== void 0 ? _a : "false") == "true";
-                        application.apiAction(katAppCommand, isDownload, parametersJson);
+                        application.apiAction(katAppCommand, {
+                            isDownload: ((_a = actionLink.attr("rbl-action-download")) !== null && _a !== void 0 ? _a : "false") == "true",
+                            customParameters: parametersJson
+                        });
                     };
                     // .on("click", function() { return that.onConfirmLinkClick( $(this)); })
                     if (confirmSelector != undefined) {

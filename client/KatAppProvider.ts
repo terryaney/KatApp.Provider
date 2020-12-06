@@ -928,36 +928,38 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
         };
 
         serverCalculation( customInputs: {} | undefined ) {
-            const actionParameters = {
-                "KatAppCustomInputs": JSON.stringify(customInputs ?? {})
-            };
-
-            this.apiAction("ServerCalculation", false, actionParameters);
+            this.apiAction(
+                "ServerCalculation", 
+                {
+                    customInputs: customInputs
+                } );
         }
-
-        apiAction( commandName: string, isDownload: boolean | undefined, parametersJson: {} | undefined ): void {
+    
+        apiAction( commandName: string, customOptions?: KatAppActionOptions ): void {
             let url = this.options.rbleUpdatesUrl;
             
             if (url != undefined) {
+                const isDownload = customOptions?.isDownload ?? false;
+
+                // Build up complete set of options to use for this calculation call
+                const currentOptions = KatApp.extend(
+                    {}, // make a clone of the options
+                    KatApp.clone( 
+                        this.options,
+                        function( _key, value ) {
+                            if ( typeof value === "function" ) {
+                                return; // don't want any functions passed along
+                            }
+                            return value; 
+                        }
+                    ), // original options
+                    customOptions, // override options
+                ) as KatAppOptions;
+
                 const fd = new FormData();
                 fd.append("KatAppCommand", commandName);
-                fd.append("KatAppView", this.options.view ?? "Unknown");
                 fd.append("KatAppInputs", JSON.stringify(this.getInputs()));
-
-                const calculationConfiguration = {
-                    currentPage: this.options.currentPage,
-                    calcEngine: this.options.calcEngine,
-                    inputTab: this.options.inputTab,
-                    resultTabs: this.options.resultTabs,
-                    preCalcs: this.options.preCalcs        
-                };
-                fd.append("KatAppCalculationConfiguration", JSON.stringify(calculationConfiguration));
-                    
-                if (parametersJson != undefined && Object.keys(parametersJson).length > 0) {
-                    for (const propertyName in parametersJson) {
-                        fd.append(propertyName, parametersJson[propertyName]);
-                    }
-                }
+                fd.append("KatAppConfiguration", JSON.stringify(currentOptions));
 
                 const errors: ValidationRow[] = [];
                 // Can't use 'view' in selector for validation summary b/c view could be a 'container' instead of entire view
@@ -3631,9 +3633,12 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                             }
                         });
 
-                        const isDownload = ( actionLink.attr("rbl-action-download") ?? "false" ) == "true";
-
-                        application.apiAction(katAppCommand, isDownload, parametersJson);
+                        application.apiAction(
+                            katAppCommand, 
+                            { 
+                                isDownload: ( actionLink.attr("rbl-action-download") ?? "false" ) == "true",
+                                customParameters: parametersJson
+                            } );
                     };
                         
                     // .on("click", function() { return that.onConfirmLinkClick( $(this)); })

@@ -177,14 +177,11 @@
                 application.calculate();
             });
             $(".saveButton", view).on('click', function (e) {
-                var customInputs = {
-                    iSaveInputs: 1                                          
-                };
-                application.serverCalculation(customInputs);
+                application.serverCalculation({ iSaveInputs: 1 });
             });
             $(".downloadForms", view).on('click', function (e) {
                 $(".all-forms-payment", view).modal("hide");
-                application.apiAction("PensionEstimates.DocGen.Forms", true);
+                application.apiAction("PensionEstimates.DocGen.Forms", { isDownload: true, customInputs: { iDownloadForms: 1 } });
             });
 		});
 	})();

@@ -43,7 +43,7 @@ interface KatAppOptions
     // always be passed in on a calculation but aren't available in the UI, they can be assigned here.
     // The most common use of this is iConfigureUI/iDataBind/iInputTrigger
     manualInputs?: CalculationInputs;
-    // Used during updateOptions and init to set default inputs. After being inputs are set, defaultInputs
+    // Used during updateOptions and init to set default inputs. After inputs are set, defaultInputs
     // property on the options object is set to undefined so they are only applied one time.
     defaultInputs?: CalculationInputs;
     runConfigureUICalculation?: boolean;
@@ -84,6 +84,13 @@ interface KatAppOptions
 // These are the only methods available to call on .KatApp() until onInitialized is triggered (meaning
 // that the provider object has been loaded and replaced the Shim and all methods of the KatAppPlugInInterface 
 // are now implemented)
+
+interface KatAppActionOptions extends KatAppOptions {
+    isDownload?: boolean;
+    customParameters?: {};
+    customInputs?: {};
+}
+
 interface KatAppPlugInShimInterface {
     options: KatAppOptions;
     element: JQuery;
@@ -129,6 +136,7 @@ interface KatAppPlugInShimInterface {
 // *NOTE* - I don't use this interface in KatAppProvider implementation.  It would only be exposed in a *.d.ts file
 // for clients to be able to reference.
 interface KatAppPlugInInterface extends KatAppPlugInShimInterface {
+    templateBuilder: StandardTemplateBuilderInterface;
     results?: JSON;
     exception?: RBLeServiceResults;
     resultRowLookups?: ResultRowLookupsInterface;

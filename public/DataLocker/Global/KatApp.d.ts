@@ -14,6 +14,8 @@ declare class KatApp {
     static pageParameters: JSON;
     static defaultOptions: KatAppOptions;
     static extend(target: object, ...sources: (object | undefined)[]): object;
+    static clone(source: object, replacer?: (this: any, key: string, value: any) => any): object;
+    private static copyProperties;
     static generateId: () => string;
     static ping(url: string, callback: (responded: boolean, error?: string | Event) => void): void;
     static trace(application: KatAppPlugInShimInterface | undefined, message: string, verbosity?: TraceVerbosity): void;

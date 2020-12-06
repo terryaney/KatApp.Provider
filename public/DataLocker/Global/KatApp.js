@@ -44,6 +44,7 @@ var KatApp = /** @class */ (function () {
     // https://blog.logrocket.com/4-different-techniques-for-copying-objects-in-javascript-511e422ceb1e/
     // Wanted explicitly 'undefined' properties set to undefined and jquery .Extend() didn't do that
     KatApp.extend = function (target) {
+        var _this = this;
         var sources = [];
         for (var _i = 1; _i < arguments.length; _i++) {
             sources[_i - 1] = arguments[_i];
@@ -51,15 +52,28 @@ var KatApp = /** @class */ (function () {
         sources.forEach(function (source) {
             if (source === undefined)
                 return;
-            Object.keys(source).forEach(function (key) {
-                // Always do deep copy
-                if (typeof source[key] === "object" && target[key] != undefined) {
-                    KatApp.extend(target[key], source[key]);
-                }
-                else {
-                    target[key] = source[key];
-                }
-            });
+            _this.copyProperties(target, source);
+        });
+        return target;
+    };
+    ;
+    KatApp.clone = function (source, replacer) {
+        return this.copyProperties({}, source, replacer);
+    };
+    ;
+    KatApp.copyProperties = function (target, source, replacer) {
+        var _this = this;
+        Object.keys(source).forEach(function (key) {
+            var value = replacer != null
+                ? replacer(key, source[key])
+                : source[key];
+            // Always do deep copy
+            if (typeof value === "object" && target[key] != undefined) {
+                _this.copyProperties(target[key], value);
+            }
+            else {
+                target[key] = value;
+            }
         });
         return target;
     };

@@ -2446,7 +2446,8 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                 outputRows.forEach(function (r) { _this.createHtmlFromResultRow(r, true); });
                 this.processRblSources();
                 this.processRblValues();
-                // apply dynamic classes after all html updates (TOM: (this was your comment...) could this be done with 'non-template' build above)
+                // apply dynamic classes after all html updates 
+                // (TOM: (this was your comment...could this be done with 'non-template' build above)
                 markUpRows.forEach(function (r) {
                     var _a;
                     if (r.selector !== undefined) {
@@ -2464,18 +2465,20 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                         }
                     }
                 });
-                // Need to re-run processUI here in case any 'templates' were injected from results and need their initial
-                // data-* attributes/events processed.
-                this.application.templateBuilder.processUI();
                 this.processRblDatas();
+                this.processTables();
+                this.processCharts();
+                // Need to re-run processUI here in case any 'templates/inputs' were injected from 
+                // results and need their initial data-* attributes/events processed.
+                this.application.templateBuilder.processUI();
+                // These all need to be after processUI so if any inputs are built
+                // from results, they are done by the time these run (i.e. after processUI)
                 this.processVisibilities();
                 this.processSliders();
                 this.processRBLSkips();
                 this.processListControls();
                 this.processDefaults();
                 this.processDisabled();
-                this.processCharts();
-                this.processTables();
                 this.processValidations();
                 application.trace("Finished processing results for " + calcEngineName + "(" + version + ").", TraceVerbosity.Normal);
                 return true;
@@ -2857,7 +2860,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
             var that = this;
             var view = container !== null && container !== void 0 ? container : this.application.element;
             // Hook up event handlers only when *not* already initialized
-            $('.carousel-control-group:not([data-katapp-initialized="true"])', view).each(function () {
+            $('.carousel-control-group', view).not('[data-katapp-initialized="true"], rbl-template .carousel-control-group, [rbl-tid="inline"] .carousel-control-group').each(function () {
                 var el = $(this);
                 var carousel = $('.carousel', el);
                 var carouselAll = $('.carousel-all', el);
@@ -2928,7 +2931,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
             var view = container !== null && container !== void 0 ? container : this.application.element;
             var that = this;
             var application = this.application;
-            $('[rbl-action-link]', view).not('[data-katapp-initialized="true"]').each(function () {
+            $('[rbl-action-link]', view).not('[data-katapp-initialized="true"], rbl-template [rbl-action-link], [rbl-tid="inline"] [rbl-action-link]').each(function () {
                 $(this).on("click", function (e) {
                     var _a;
                     var actionLink = $(this);
@@ -2980,9 +2983,20 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                                 parametersJson[a.substring(11)] = value;
                             }
                         });
+                        var actionInputs = [].slice.call(actionLink.get(0).attributes).filter(function (attr) {
+                            return attr && attr.name && attr.name.indexOf("data-input-") === 0;
+                        }).map(function (a) { return a.name; });
+                        var inputsJson = {};
+                        actionInputs.forEach(function (a) {
+                            var value = actionLink.attr(a);
+                            if (value !== undefined) {
+                                inputsJson[a.substring(11)] = value;
+                            }
+                        });
                         application.apiAction(katAppCommand, {
                             isDownload: ((_a = actionLink.attr("rbl-action-download")) !== null && _a !== void 0 ? _a : "false") == "true",
-                            customParameters: parametersJson
+                            customParameters: parametersJson,
+                            customInputs: inputsJson
                         });
                     };
                     // .on("click", function() { return that.onConfirmLinkClick( $(this)); })
@@ -3426,7 +3440,12 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                 return;
             }
             $(selector, view)
-                .not(".rbl-help, [data-katapp-initialized='true']")
+                .not('.rbl-help, [data-katapp-initialized="true"]')
+                .not('rbl-template [data-toggle="tooltip"], [rbl-tid="inline"] [data-toggle="tooltip"]')
+                .not('rbl-template [data-toggle="popover"], [rbl-tid="inline"] [data-toggle="popover"]')
+                .not('rbl-template .tooltip-trigger, [rbl-tid="inline"] .tooltip-trigger')
+                .not('rbl-template .tooltip-text-trigger, [rbl-tid="inline"] .tooltip-text-trigger')
+                .not('rbl-template .error-trigger, [rbl-tid="inline"] .error-trigger')
                 .each(function () {
                 var isErrorValidator = $(this).hasClass('error-msg');
                 var placement = $(this).data('placement') || "top";

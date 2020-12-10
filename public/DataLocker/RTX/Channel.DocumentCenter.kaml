@@ -1,0 +1,55 @@
+﻿<rbl-config 
+    calcengine="Conduent_ABC_Documents_SE" 
+    templates="Standard_Templates,Input_TemplatesBS4" />
+
+<script>
+  (function() {
+    var view = $("thisClass");
+
+    if ( view.data("debugger" ) === true ) {
+      debugger;
+    }
+
+    view.on( "onInitialized.RBLe", function( event, application ) {
+    });
+  })();
+  //# sourceURL=channel.documentcenter.kaml
+</script>
+
+
+<style>
+	.thisClass th.value {
+	    text-align: right;
+	}
+	.thisClass td.value {
+	    text-align: right;
+	}
+
+  table.document-center thead tr th {
+    font-weight: bold;
+    border-bottom: 1px solid #000;
+  }
+  table.document-center tbody tr td {
+    border-top: 1px solid #dee2e6;
+  }  
+</style>
+
+<div class="d-none skipRBLe">
+</div>
+
+<script type="text/javascript" src="resources/js/core.js"></script>
+
+<section id="dashboard" class="document-center section-padding scroll-indicator" data-scroll-indicator-title="Document Center">
+  <h2 class="title hideme">Document Center</h2>
+  <div id="rblMarkup" class="rblApplication rblMarkup mb-5">
+    <div class="container">
+      <div class="row ajaxContent">
+        <div rbl-tid="result-table" rbl-source="document-center" data-css="table table-sm"></div>
+        <div class="ajaxloader"></div>
+      </div>
+    </div>
+  </div>
+</section>
+<!-- ============================================================================================================= -->
+<!--                                   				END - BODY CONENT																										 -->
+<!-- ============================================================================================================= -->

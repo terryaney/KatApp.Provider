@@ -2221,8 +2221,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                                     }
                                 }
 
-                            })
-
+                            });
                         } else {
                             application.trace("<b style='color: Red;'>RBL WARNING</b>: no data returned for rbl-source=" + el.attr('rbl-source'), TraceVerbosity.Detailed);
                         }
@@ -2989,7 +2988,8 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                 this.processRblSources();
                 this.processRblValues();
 
-                // apply dynamic classes after all html updates (TOM: (this was your comment...) could this be done with 'non-template' build above)
+                // apply dynamic classes after all html updates 
+                // (TOM: (this was your comment...could this be done with 'non-template' build above)
                 markUpRows.forEach( r => {
                     if ( r.selector !== undefined ) {
                         if ( r.addclass !== undefined && r.addclass.length > 0 ) {
@@ -3009,28 +3009,22 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                     }
                 });
 
-                // Need to re-run processUI here in case any 'templates' were injected from results and need their initial
-                // data-* attributes/events processed.
-                this.application.templateBuilder.processUI();
-
                 this.processRblDatas();
-
-                this.processVisibilities();
-
-                this.processSliders()
-
-                this.processRBLSkips();
-
-                this.processListControls();
-                
-                this.processDefaults();
-
-                this.processDisabled();
-
+                this.processTables();
                 this.processCharts();
 
-                this.processTables();
+                // Need to re-run processUI here in case any 'templates/inputs' were injected from 
+                // results and need their initial data-* attributes/events processed.
+                this.application.templateBuilder.processUI();
 
+                // These all need to be after processUI so if any inputs are built
+                // from results, they are done by the time these run (i.e. after processUI)
+                this.processVisibilities();
+                this.processSliders()
+                this.processRBLSkips();
+                this.processListControls();
+                this.processDefaults();
+                this.processDisabled();
                 this.processValidations();
 
                 application.trace( "Finished processing results for " + calcEngineName + "(" + version + ").", TraceVerbosity.Normal );
@@ -3486,7 +3480,8 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
             const view = container ?? this.application.element;
 
             // Hook up event handlers only when *not* already initialized
-            $('.carousel-control-group:not([data-katapp-initialized="true"])', view).each(function () {
+            
+            $('.carousel-control-group', view).not('[data-katapp-initialized="true"], rbl-template .carousel-control-group, [rbl-tid="inline"] .carousel-control-group').each(function () {
                 const el = $(this);
                 const carousel = $('.carousel', el);
                 const carouselAll = $('.carousel-all', el);
@@ -3573,7 +3568,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
             const that = this;
             const application = this.application;
 
-            $('[rbl-action-link]', view).not('[data-katapp-initialized="true"]').each(function () {
+            $('[rbl-action-link]', view).not('[data-katapp-initialized="true"], rbl-template [rbl-action-link], [rbl-tid="inline"] [rbl-action-link]').each(function () {
                 $(this).on("click", function(e) {
                     const actionLink = $(this);
                     e.preventDefault();
@@ -3633,11 +3628,26 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                             }
                         });
 
+                        const actionInputs = 
+                            [].slice.call(actionLink.get(0).attributes).filter(function(attr: Attr) {
+                                return attr && attr.name && attr.name.indexOf("data-input-") === 0
+                            }).map( function( a: Attr ) { return a.name; } );
+                        const inputsJson = {};
+
+                        actionInputs.forEach( a => {
+                            const value = actionLink.attr(a);
+
+                            if ( value !== undefined ) {
+                                inputsJson[ a.substring(11) ] = value;
+                            }
+                        });
+
                         application.apiAction(
                             katAppCommand, 
                             { 
                                 isDownload: ( actionLink.attr("rbl-action-download") ?? "false" ) == "true",
-                                customParameters: parametersJson
+                                customParameters: parametersJson,
+                                customInputs: inputsJson
                             } );
                     };
                         
@@ -4174,7 +4184,12 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
             }
 
             $(selector, view)
-                .not(".rbl-help, [data-katapp-initialized='true']")
+                .not('.rbl-help, [data-katapp-initialized="true"]')
+                .not('rbl-template [data-toggle="tooltip"], [rbl-tid="inline"] [data-toggle="tooltip"]')
+                .not('rbl-template [data-toggle="popover"], [rbl-tid="inline"] [data-toggle="popover"]')
+                .not('rbl-template .tooltip-trigger, [rbl-tid="inline"] .tooltip-trigger')
+                .not('rbl-template .tooltip-text-trigger, [rbl-tid="inline"] .tooltip-text-trigger')
+                .not('rbl-template .error-trigger, [rbl-tid="inline"] .error-trigger')
                 .each( function() {
                     const isErrorValidator = $(this).hasClass('error-msg');
                     let placement = $(this).data('placement') || "top";

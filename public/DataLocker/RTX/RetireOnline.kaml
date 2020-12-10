@@ -17,9 +17,16 @@
         border-top-left-radius: 0 !important;
         border-bottom-left-radius: 0 !important;
     }
+
+    .rca {
+        border: solid 1px #ccc;
+        padding: 10px;
+        border-radius: 5px;
+    }
 </style>
 
 <section id="retire-online" class="retire-online section-padding scroll-indicator" data-scroll-indicator-title="Retire Online">
+    <h2 class="title">Retire Online</h2>
     <div id="rblMarkup" class="rblApplication rblMarkup mb-5" style="display: none;">
         <div class="container">
             <div class="d-none">
@@ -29,11 +36,21 @@
                 <input name="{id}:iElectionConfirm" type="text" id="katapp_{id}_iElectionConfirm" class="iElectionConfirm" value="0"/>
                 <input name="{id}:iResetElections" type="text" id="katapp_{id}_iResetElections" class="iResetElections" value="0"/>
             </div>        
-            <h2 class="title">Retire Online</h2>
             <div class="ajaxContent">
                 <div class="row">
-                    <div class="col-12 mt-4">
-                        <div rbl-value="electionIntro" rbl-display="electionIntro"></div>
+                    <div class="col-12 mt-2">
+                        <div class="row">
+                            <div class="col-md-8">
+                                <div rbl-value="electionIntro" rbl-display="electionIntro"></div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="rca">
+                                  <h5><span class="glyphicons glyphicons-headset"></span> Retirement Case Administrator</h5>
+                                  <p class="marginLeft20">Jessica Wright</p>
+                                  <p class="marginLeft20">1-800-888-8888 x1234</p>
+                                </div>
+                            </div>
+                        </div>                                        
                         <a style="display: none;" rbl-value="btnReset" rbl-display="btnReset" data-confirm-selector="[rbl-value='btnResetConfirm']" class="btn btn-primary pr-2" href="#" data-submit-key="[data-reset-confirmed='true']">Clear All Elections</a>
                         <a data-reset-confirmed="true" class="d-none">Clear All Elections Confirmed</a>                        
                         <a style="display: none;" rbl-value="btnRemaining" rbl-display="btnRemaining" class="btn btn-primary btnNavigation" href="#" data-direction="-1">Start Remaining Elections</a>
@@ -313,10 +330,8 @@
         }
         
         view.on( "onCalculation.RBLe", function( event, results, options, application ) {
-            var direction = application.calculationInputs.iDirection;
-            if ( direction != "0" ) {
-                bindNavigation();
-            }
+            bindNavigation();
+
             var hasValidations = 
                 application.getResultTable( "warnings" ).length > 0 ||
                 application.getResultTable( "errors" ).length > 0;

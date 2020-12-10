@@ -1,4 +1,4 @@
-<rbl-config calcengine="Conduent_ABC_DBEstimate_SE" precalcs="Conduent_ABC_DBCalc_SE" bootstrap="4" templates="Standard_Templates.NexGen,Input_TemplatesBS4"></rbl-config>
+<rbl-config calcengine="Conduent_ABC_DBEstimate_SE" precalcs="Conduent_ABC_DBCalc_SE|RBLInput|RBLResult" bootstrap="4" templates="Standard_Templates.NexGen,Input_TemplatesBS4"></rbl-config>
 
 <!--
     http://oneportal.uxgroup.com/LW60/NexGen/0_Product/channel_DB.html?local=1
@@ -52,11 +52,16 @@
         font-weight: bold;
         font-size: .75em;
     }
+
+    .thisClass .input-group.save-estimate .input-group-append .btn {
+        border-top-left-radius: 0px !important;
+        border-bottom-left-radius: 0px !important;
+    }
 </style>
 
 <section id="pension-estimates" class="pension-estimates section-padding scroll-indicator" data-scroll-indicator-title="Pension Estimates">
+    <h2 class="title">Pension Estimate</h2>
     <div id="rblMarkup" class="rblApplication rblMarkup container mb-5" style="display: none;">
-        <h2 class="title">Pension Estimate</h2>
         <div class="row ajaxContent">
             <div class="col-md-6 recalcInputs">
                 <div class="card mt-0">
@@ -100,8 +105,13 @@
                                 <div rbl-tid="input-dropdown" data-liveSearch="false" data-inputname="iPaymentForm"></div>
                             </div>
                             <div class="col-md-12">
-                                <a class="saveButton btn btn-primary mt-2" href="#" id="{id}_saveButton">Save Estimate</a>
-                                <a rbl-display="vOptionalForms" class="btn btn-secondary mt-2 ml-2" href="#" data-toggle='modal' data-target='#{id}_all-forms-payment'>View All Forms of Payment</a>
+                                <div class="input-group save-estimate rbl-exclude mt-2" rbl-display="saveButton">
+                                    <input name="iCalculationName" id_="katapp_{id}_iCalculationName" placeholder="optional name" type="text" class="form-control iCalculationName" />
+                                    <span class="input-group-append">
+                                        <a class="btn btn-primary saveButtonAction" href="#" id="{id}_saveButton">Save</a>
+                                    </span>
+                                    <a rbl-display="vOptionalForms" class="btn btn-secondary ml-2" href="#" data-toggle='modal' data-target='#{id}_all-forms-payment'>View All Forms of Payment</a>
+                                </div>
                             </div>
 
                             <div class="recalcNeeded recalcWrapper"></div>
@@ -112,6 +122,53 @@
                         </div>
                     </div>
                 </div> 
+            </div>
+            <div class="col-md-12">
+                <div class="card mt-0">
+                    <div class="card-header mt-1">
+                        <h4 class="card-title">Saved Estimates</h4>
+                    </div>
+                    <div class="card-body">
+                        <div class="row m-0 p-0">
+                            <div class="col-2 col-sm-2 dataTitle">Saved Date</div>
+                            <div class="d-none d-sm-block col-sm-2 dataTitle">Stop Working</div>
+                            <div class="col-2 col-sm-2 text-right dataTitle">Begin Payment</div>
+                            <div class="col-3 col-sm-3 dataTitle">Plan</div>
+                            <div class="col-3 col-sm-3 text-right dataTitle">Monthly Amount</div>
+                        </div>
+            
+                        <hr>
+            
+                        <div class="d-none" data-calculation-prompt="delete">Are you sure you want to delete this estimate?</div>
+                        <div rbl-source="DBSavedEstimate">
+                            <div rbl-tid="inline">
+                                <div class="row m-0 p-0">
+                                    <div class="col-10 col-sm-12 {show-name-calc}">
+                                        <a rbl-action-link="PensionEstimates.DocGen" rbl-action-download="true"
+                                            data-param-fikey="{fi-key}" href="#"><strong>{name-calc}</strong></a>
+                                    </div>
+                                    <div class="col-2 col-sm-2">
+                                        <a rbl-action-link="PensionEstimates.DocGen" rbl-action-download="true"
+                                            data-param-fikey="{fi-key}" href="#" class="{show-date-calc}">{date-calc}</a>
+                                        <a rbl-action-link="DeleteCalculation"
+                                            rbl-action-confirm-selector="[data-calculation-prompt='delete']"
+                                            data-param-fikey="{fi-key}" class="delete-calculation text-danger {show-date-calc}"
+                                            href="#"><span class="glyphicons glyphicons-remove-circle" title="Delete"></span></a>
+                                    </div>
+                                    <div class="d-none d-sm-block col-sm-2 text-center">{age-term}</div>
+                                    <div class="col-2 col-sm-2 text-right">{date-ben-comm}</div>
+                                    <div class="col-3 col-sm-3">{plan}</div>
+                                    <div class="col-3 col-sm-3 text-right">{monthly-sla}</div>
+                                </div>
+                                <hr class="{show-div}">
+                            </div>
+                        </div>
+                        <div class="alert alert-notify mt-5">
+                            <div class="alertTitle"><img src="resources/images/Icon_Suggestion.png" alt="Suggestion" /> SUGGESTION</div>
+                            <a href="#null" class="alertActions">Pension payments are taxed like ordinary income. See more information on how all your retirements are taxed.</a>
+                        </div>
+                    </div>
+                </div>
             </div>
             <div class="ajaxloader"></div>
         </div>            
@@ -158,6 +215,12 @@
             });
             $(".rblMarkup", view).show();
         });
+        view.on("onActionResult.RBLe", function (e, commandName, _jsonResponse, application) {
+            if (commandName == "DeleteCalculation") {
+                e.preventDefault();
+                application.calculate();
+            }
+        });
 		view.on( "onInitialized.RBLe", function( event, application ) {
             $('.iAdditionalDates').click(function (e) {
                 if (e.target.tagName.toUpperCase() !== "INPUT") {
@@ -176,8 +239,12 @@
                 e.preventDefault();
                 application.calculate();
             });
-            $(".saveButton", view).on('click', function (e) {
-                application.serverCalculation({ iSaveInputs: 1 });
+            $(".saveButtonAction", view).on('click', function (e) {
+                application.serverCalculation({ iSaveInputs: 1, iCalculationName: $(".iCalculationName", view).val() });
+                application.calculate(); 
+                // Would be nice to wrap these two calls into one.  CE would have to change to give me est in summary 
+                // table BEFORE it is saved, b/c save would occur after results come back and are submitted to RBLe web api
+                // so for now just doing two calcs
             });
             $(".downloadForms", view).on('click', function (e) {
                 $(".all-forms-payment", view).modal("hide");

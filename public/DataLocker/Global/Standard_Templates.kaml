@@ -224,7 +224,7 @@
     const templateBuilder = $.fn.KatApp.standardTemplateBuilderFactory(application);
     // Could use templateBuilder here...
   });
-  //# sourceURL=Standard_TemplatesBS4.kaml
+  //# sourceURL=Standard_Templates.kaml
 </script>
 
 <!-- Core styling -->

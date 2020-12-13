@@ -1,4 +1,4 @@
-<rbl-config calcengine="Buck_DecisionSupportFSA_SE" templates="Standard_TemplatesBS4"></rbl-config>
+<rbl-config calcengine="Buck_DecisionSupportFSA_SE" templates="Standard_Templates,Input_TemplatesBS4"></rbl-config>
 
 <style>
     .katapp-css div.chart { height: 350px; }

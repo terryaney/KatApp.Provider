@@ -26,9 +26,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
         runConfigureUICalculation: true,
         ajaxLoaderSelector: ".ajaxloader",
         onCalculateStart: function (application) {
-            if (application.options.ajaxLoaderSelector !== undefined) {
-                $(application.options.ajaxLoaderSelector, application.element).show();
-            }
+            application.showAjaxBlocker();
             var inputSelector = application.element.data("katapp-input-selector");
             if (inputSelector !== undefined) {
                 $(".slider-control, " + inputSelector, application.element)
@@ -51,9 +49,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
         },
         onCalculateEnd: function (application) {
             $(".needsRBLeConfig", application.element).removeClass("needsRBLeConfig");
-            if (application.options.ajaxLoaderSelector !== undefined) {
-                $(application.options.ajaxLoaderSelector, application.element).fadeOut();
-            }
+            application.hideAjaxBlocker();
             if (typeof $.fn.selectpicker === "function") {
                 $("select[data-kat-bootstrap-select-initialized='true'][kat-disabled='true']", application.element).removeAttr("disabled").selectpicker("refresh");
             }
@@ -73,13 +69,14 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
         function KatAppPlugIn(id, element, options) {
             var _a;
             this.options = {};
+            this.blockerCount = 0;
             this.id = "ka" + id; // Some BS elements weren't working if ID started with #
             this.element = element;
             this.displayId = (_a = element.attr("rbl-trace-id")) !== null && _a !== void 0 ? _a : id;
             // re-assign the KatAppPlugIn to replace shim with actual implementation
             this.element[0].KatApp = this;
             this.ui = $.fn.KatApp.ui(this);
-            this.rble = $.fn.KatApp.rble(this, this.ui);
+            this.rble = $.fn.KatApp.rble(this);
             this.templateBuilder = $.fn.KatApp.standardTemplateBuilderFactory(this);
             this.init(options);
         }
@@ -192,7 +189,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                     that.trace(viewId + " requested from CMS.", TraceVerbosity.Detailed);
                     var debugResourcesDomain = (_a = that.options.debug) === null || _a === void 0 ? void 0 : _a.debugResourcesDomain;
                     KatApp.getResources(that, viewId, useTestView, false, debugResourcesDomain, function (errorMessage, results) {
-                        var _a, _b, _c, _d, _e, _f, _g, _h, _j;
+                        var _a, _b, _c, _d, _e, _f, _g;
                         pipelineError = errorMessage;
                         if (pipelineError === undefined) {
                             that.trace(viewId + " returned from CMS.", TraceVerbosity.Normal);
@@ -217,9 +214,6 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                                         // unique templates only
                                         .filter(function (v, i, a) { return v !== undefined && v.length != 0 && a.indexOf(v) === i; });
                             }
-                            that.options.inputTab = (_h = that.options.inputTab) !== null && _h !== void 0 ? _h : rblConfig === null || rblConfig === void 0 ? void 0 : rblConfig.attr("input-tab");
-                            var attrResultTabs_1 = rblConfig === null || rblConfig === void 0 ? void 0 : rblConfig.attr("result-tabs");
-                            that.options.resultTabs = (_j = that.options.resultTabs) !== null && _j !== void 0 ? _j : (attrResultTabs_1 != undefined ? attrResultTabs_1.split(",") : undefined);
                             that.element.empty().append(view);
                             initPipeline(0);
                         }
@@ -631,20 +625,10 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
             };
             // Success - 1, Error - 1 (checks pipeline error before processing)
             var processResults = function () {
-                var _a;
                 that.trace("Processing results from calculation.", TraceVerbosity.Detailed);
                 try {
                     if (pipelineError === undefined) {
-                        that.element.removeData("katapp-save-calcengine");
-                        that.element.removeData("katapp-trace-calcengine");
-                        that.element.removeData("katapp-refresh-calcengine");
-                        that.options.defaultInputs = undefined;
-                        that.ui.triggerEvent("onResultsProcessing", that.results, currentOptions, that);
-                        that.rble.processResults();
-                        if (((_a = that.calculationInputs) === null || _a === void 0 ? void 0 : _a.iConfigureUI) === 1) {
-                            that.ui.triggerEvent("onConfigureUICalculation", that.results, currentOptions, that);
-                        }
-                        that.ui.triggerEvent("onCalculation", that.results, currentOptions, that);
+                        that.processResults(currentOptions);
                         calculatePipeline(0);
                     }
                     else {
@@ -710,6 +694,19 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
             // Start the pipeline
             calculatePipeline(0);
         };
+        KatAppPlugIn.prototype.processResults = function (calculationOptions) {
+            var _a;
+            this.element.removeData("katapp-save-calcengine");
+            this.element.removeData("katapp-trace-calcengine");
+            this.element.removeData("katapp-refresh-calcengine");
+            this.options.defaultInputs = undefined;
+            this.ui.triggerEvent("onResultsProcessing", this.results, calculationOptions, this);
+            this.rble.processResults();
+            if (((_a = this.calculationInputs) === null || _a === void 0 ? void 0 : _a.iConfigureUI) === 1) {
+                this.ui.triggerEvent("onConfigureUICalculation", this.results, calculationOptions, this);
+            }
+            this.ui.triggerEvent("onCalculation", this.results, calculationOptions, this);
+        };
         KatAppPlugIn.prototype.configureUI = function (customOptions) {
             var manualInputs = { manualInputs: { iConfigureUI: 1, iDataBind: 1 } };
             this.calculate(KatApp.extend({}, customOptions, manualInputs));
@@ -758,6 +755,27 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                 customInputs: customInputs
             });
         };
+        KatAppPlugIn.prototype.showAjaxBlocker = function () {
+            this.blockerCount++;
+            if (this.blockerCount == 1) {
+                var selector = this.options.ajaxLoaderSelector;
+                if (selector != undefined) {
+                    $(selector, this.element).show();
+                }
+            }
+        };
+        KatAppPlugIn.prototype.hideAjaxBlocker = function () {
+            this.blockerCount--;
+            if (this.blockerCount == 0) {
+                var selector = this.options.ajaxLoaderSelector;
+                if (selector != undefined) {
+                    $(selector, this.element).fadeOut();
+                }
+            }
+            if (this.blockerCount < 0) {
+                this.blockerCount = 0;
+            }
+        };
         KatAppPlugIn.prototype.apiAction = function (commandName, customOptions) {
             var _a;
             var url = this.options.rbleUpdatesUrl;
@@ -781,7 +799,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                 // if caller only wants to initialize a newly generated container's html                        
                 var errorSummary_1 = $("#" + this.id + "_ModelerValidationTable", this.element);
                 $('.validator-container.error:not(.server)', this.element).removeClass('error');
-                $(".ajaxloader", this.element).show();
+                this.showAjaxBlocker();
                 var xhr_1 = new XMLHttpRequest();
                 xhr_1.open('POST', url, true);
                 xhr_1.onreadystatechange = function () {
@@ -839,7 +857,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                     }
                     that_1.ui.triggerEvent("onActionComplete", commandName, that_1);
                     that_1.rble.processValidationRows(errorSummary_1, errors_1);
-                    $(".ajaxloader", that_1.element).hide();
+                    that_1.hideAjaxBlocker();
                 }; // don't think I need this .bind(actionLink);
                 this.ui.triggerEvent("onActionStart", commandName, this);
                 xhr_1.send(fd);
@@ -864,7 +882,46 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
         KatAppPlugIn.prototype.saveCalcEngine = function (location) {
             this.element.data("katapp-save-calcengine", location);
         };
-        // Debug helpers
+        // Debug helpers        
+        KatAppPlugIn.prototype.redraw = function (readViewOptions) {
+            // Need to reset these so updated views are downloaded
+            $("rbl-katapps > rbl-templates").remove(); // remove templates
+            $.fn.KatApp.templatesUsedByAllApps = {};
+            $.fn.KatApp.templateDelegates = [];
+            var runConfigureUICalculation = this.options.runConfigureUICalculation;
+            if (readViewOptions || true) {
+                // Clear these out and read from the view
+                this.options.calcEngine = undefined;
+                this.options.viewTemplates = undefined;
+                this.options.preCalcs = undefined;
+                this.options.inputTab = undefined;
+                this.options.resultTabs = undefined;
+            }
+            this.rebuild({ runConfigureUICalculation: false }); // Don't run new calcs b/c need to just use existing results
+            this.options.runConfigureUICalculation = runConfigureUICalculation;
+            // From here down, some duplication from calculate(), not sure if make one
+            // private method that is used with optional param to 'use existing results'
+            // is better, but for now just putting this.
+            //
+            // NOTE: Below in error handler, I don't clear out results because if developer
+            // is calling this, presummably results worked previously and they just updated
+            // their view and want to test that.
+            this.exception = undefined; // Should I set results to undefined too?
+            var cancelCalculation = !this.ui.triggerEvent("onCalculateStart", this);
+            if (cancelCalculation) {
+                this.ui.triggerEvent("onCalculateEnd", this);
+                return;
+            }
+            try {
+                this.processResults(this.options);
+            }
+            catch (error) {
+                // this.rble.setResults( undefined );
+                this.trace("Error during result processing: " + error, TraceVerbosity.None);
+                this.ui.triggerEvent("onCalculationErrors", "RunCalculation", error, this.exception, this.options, this);
+            }
+            this.ui.triggerEvent("onCalculateEnd", this);
+        };
         KatAppPlugIn.prototype.refreshCalcEngine = function () {
             this.element.data("katapp-refresh-calcengine", "1");
         };
@@ -890,7 +947,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
             var that = this;
             this.application.element.on('onConfirmCancelled.RBLe', function () {
                 $(".SubmitButton", that.application.element).removeClass("disabled");
-                $(".ajaxloader", that.application.element).css("display", "none");
+                that.application.hideAjaxBlocker();
             });
             $("a[data-confirm], a[data-confirm-selector]", this.application.element)
                 .not(".confirm-bound, .jquery-validate, .skip-confirm")
@@ -1120,7 +1177,6 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                 container.parent().addClass("bs-listcontrol form-inline form-inline-vtop");
             }
             else if (itemsContainer.length === 0) {
-                var itemType_1 = container.data("itemtype");
                 var temlpateContent = (_c = (_b = this.getTemplate(isRadio ? "input-radiobuttonlist-vertical-container" : "input-checkboxlist-vertical-container", {})) === null || _b === void 0 ? void 0 : _b.Content) !== null && _c !== void 0 ? _c : "<table class='" + itemTypeClass + " bs-listcontrol' border='0'><tbody class='items-container'></tbody></table>";
                 container.append($(temlpateContent));
                 itemsContainer = $(".items-container", container);
@@ -1440,7 +1496,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
         return new UIUtilities(application);
     };
     var RBLeUtilities /* implements RBLeUtilitiesInterface */ = /** @class */ (function () {
-        function RBLeUtilities(application, uiUtilities) {
+        function RBLeUtilities(application) {
             this.application = application;
         }
         RBLeUtilities.prototype.setResults = function (results) {
@@ -1557,7 +1613,9 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
             if (inputs.iInputTrigger !== undefined) {
                 var rblOnChange = (_a = $("." + inputs.iInputTrigger).data("rbl-on-change")) !== null && _a !== void 0 ? _a : "";
                 var triggerPreCalc = rblOnChange.indexOf("update-tp") > -1;
-                preCalcs = triggerPreCalc ? $("." + inputs.iInputTrigger).data("rbl-update-tp-params") || preCalcs : preCalcs;
+                preCalcs = triggerPreCalc
+                    ? $("." + inputs.iInputTrigger).data("rbl-update-tp-params") || preCalcs
+                    : preCalcs;
             }
             var calculationOptions = {
                 Data: !((_b = currentOptions.registerDataWithService) !== null && _b !== void 0 ? _b : true) ? currentOptions.data : undefined,
@@ -2490,8 +2548,8 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
         };
         return RBLeUtilities;
     }());
-    $.fn.KatApp.rble = function (application, uiUtilities) {
-        return new RBLeUtilities(application, uiUtilities);
+    $.fn.KatApp.rble = function (application) {
+        return new RBLeUtilities(application);
     };
     var HighchartsBuilder = /** @class */ (function () {
         function HighchartsBuilder(application) {
@@ -3054,7 +3112,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                     var _a;
                     var uploadUrl = that.application.options.rbleUpdatesUrl;
                     if (uploadUrl !== undefined) {
-                        $(".ajaxloader", that.application.element).show();
+                        that.application.showAjaxBlocker();
                         $(".file-upload .btn", el).addClass("disabled");
                         that.incrementProgressBars();
                         $(".file-upload-progress", that.application.element).show();
@@ -3100,7 +3158,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                             fileUpload_1.val("").trigger("change");
                             $(".file-upload .btn", el).removeClass("disabled");
                             $(".file-upload-progress", that.application.element).hide();
-                            $(".ajaxloader", that.application.element).hide();
+                            that.application.hideAjaxBlocker();
                         });
                     }
                 });
@@ -3643,6 +3701,204 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
             return lastIndex !== -1 && lastIndex === position;
         };
     }
+    // Overwrite the implementation of getResources with latest version so that it can support
+    // improvements made (i.e. checking local web server first)
+    KatApp["ping"] = function (url, callback) {
+        var ip = url.replace('http://', '').replace('https://', '').split(/[/?#]/)[0];
+        $.ajax({
+            url: "http://" + ip + "/DataLocker/Global/ping.js",
+            timeout: 1000,
+            success: function ( /* result */) {
+                callback(true);
+            },
+            error: function ( /* result */) {
+                callback(false);
+            }
+        });
+    };
+    KatApp["getResources"] = function (application, resources, useTestVersion, isScript, debugResourcesDomain, getResourcesHandler) {
+        var _a, _b;
+        var currentOptions = application.options;
+        var url = (_b = (_a = currentOptions.functionUrl) !== null && _a !== void 0 ? _a : KatApp.defaultOptions.functionUrl) !== null && _b !== void 0 ? _b : KatApp.functionUrl;
+        var resourceArray = resources.split(",");
+        var localDomain = debugResourcesDomain !== null && debugResourcesDomain !== void 0 ? debugResourcesDomain : "http://localhost:8887/DataLocker/";
+        var useLocalResources = localDomain !== undefined; // global value for all requested resources
+        // viewParts[ 0 ], viewParts[ 1 ]
+        // folder: string, resource: string, optional Version
+        var pipeline = [];
+        var pipelineNames = [];
+        var pipelineIndex = 0;
+        var getResourcesPipeline = function () {
+            if (pipelineIndex > 0) {
+                application.trace(pipelineNames[pipelineIndex - 1] + ".finish", TraceVerbosity.Detailed);
+            }
+            if (pipelineIndex < pipeline.length) {
+                application.trace(pipelineNames[pipelineIndex] + ".start", TraceVerbosity.Detailed);
+                pipeline[pipelineIndex++]();
+            }
+        };
+        var pipelineError = undefined;
+        var resourceResults = {};
+        // Build a pipeline of functions for each resource requested.
+        // TODO: Figure out how to make this asynchronous
+        pipeline =
+            [
+                function () {
+                    if (localDomain !== undefined) {
+                        if (application.element.data("kat-local-domain-reachable") == undefined) {
+                            KatApp.ping(localDomain, function (responded) {
+                                if (!responded) {
+                                    localDomain = undefined;
+                                    useLocalResources = false;
+                                    application.element.data("kat-local-domain-reachable", false);
+                                }
+                                else {
+                                    application.element.data("kat-local-domain-reachable", true);
+                                }
+                                getResourcesPipeline(); // Now start downloading resources
+                            });
+                        }
+                        else {
+                            if (!application.element.data("kat-local-domain-reachable")) {
+                                // Already pinged and no return
+                                localDomain = undefined;
+                                useLocalResources = false;
+                            }
+                            getResourcesPipeline(); // Now start downloading resources
+                        }
+                    }
+                    else {
+                        getResourcesPipeline(); // Now start downloading resources
+                    }
+                }
+            ].concat(resourceArray.map(function (r) {
+                return function () {
+                    var _a;
+                    if (pipelineError !== undefined) {
+                        getResourcesPipeline();
+                        return;
+                    }
+                    var useLocalResource = useLocalResources; // value for current requested resource
+                    try {
+                        var resourceParts = r.split(":");
+                        var resource_1 = resourceParts[1];
+                        var folder = resourceParts[0];
+                        var currentFolder_1 = 0;
+                        var folders_1 = folder.split("|");
+                        var version = resourceParts.length > 2 ? resourceParts[2] : (useTestVersion ? "Test" : "Live"); // can provide a version as third part of name if you want
+                        // Template names often don't use .xhtml syntax
+                        if (!resource_1.endsWith(".kaml") && !isScript) {
+                            resource_1 += ".kaml";
+                        }
+                        var params_1 = {
+                            Command: 'KatAppResource',
+                            Resources: [
+                                {
+                                    Resource: resource_1,
+                                    Folder: folder,
+                                    Version: version
+                                }
+                            ]
+                        };
+                        var localFolder_1 = folders_1[currentFolder_1] + "/";
+                        var isRelativePath_1 = KatApp.stringCompare(localFolder_1, "Rel/", true) == 0;
+                        var submit_1 = (_a = (!useLocalResource ? currentOptions.submitCalculation : undefined)) !== null && _a !== void 0 ? _a : function (_app, o, done, fail) {
+                            var resourceUrl = useLocalResource ? localDomain + localFolder_1 + resource_1 : url; // + JSON.stringify( params )
+                            if (isRelativePath_1) {
+                                resourceUrl = resource_1;
+                            }
+                            KatApp.trace(application, "Downloading " + resource_1 + " from " + resourceUrl, TraceVerbosity.Diagnostic);
+                            var ajaxConfig = {
+                                url: resourceUrl,
+                                data: !useLocalResource && !isRelativePath_1 ? JSON.stringify(o) : undefined,
+                                method: !useLocalResource && !isRelativePath_1 ? "POST" : undefined,
+                                dataType: !useLocalResource && !isRelativePath_1 ? "json" : undefined,
+                                // async: true, // NO LONGER ALLOWED TO BE FALSE BY BROWSER
+                                cache: false
+                            };
+                            // Need to use .ajax isntead of .getScript/.get to get around CORS problem
+                            // and to also conform to using the submitCalculation wrapper by L@W.
+                            $.ajax(ajaxConfig).done(done).fail(fail);
+                        };
+                        var submitDone_1 = function (data) {
+                            var _a, _b;
+                            if (data == null) {
+                                // Bad return from L@W
+                                pipelineError = "getResources failed requesting " + r + " from L@W.";
+                                getResourcesPipeline();
+                            }
+                            else {
+                                if (data.payload !== undefined) {
+                                    data = JSON.parse(data.payload);
+                                }
+                                // data.Content when request from service, just data when local files
+                                var resourceContent = (_b = (_a = data.Resources) === null || _a === void 0 ? void 0 : _a[0].Content) !== null && _b !== void 0 ? _b : data;
+                                if (isScript) {
+                                    // If local script location is provided, doing the $.ajax code automatically 
+                                    // injects/executes the javascript, no need to do it again
+                                    var body = document.querySelector('body');
+                                    // Still trying to figure out how to best determine if I inject or not, might have to make a variable
+                                    // at top of code in KatAppProvider, but if it 'ran', then $.fn.KatApp.plugInShims should be undefined.
+                                    // Originally, I just looked to see if debugResourcesDomain was undefined...but if that is set and the domain
+                                    // does NOT match domain of site running (i.e. debugging site in asp.net that uses KatApps and I want it to
+                                    // hit development KatApp resources) then it doesn't inject it.  So can't just check undefined or not.
+                                    if (body !== undefined && body !== null && $.fn.KatApp.plugInShims !== undefined && resourceContent !== undefined) {
+                                        // Just keeping the markup a bit cleaner by only having one copy of the code
+                                        $("script[rbl-script='true']").remove();
+                                        // https://stackoverflow.com/a/56509649/166231
+                                        var script = document.createElement('script');
+                                        script.setAttribute("rbl-script", "true");
+                                        var content = resourceContent;
+                                        script.innerHTML = content;
+                                        body.appendChild(script);
+                                    }
+                                }
+                                else {
+                                    resourceResults[r] = resourceContent;
+                                }
+                                getResourcesPipeline();
+                            }
+                        };
+                        var submitFailed_1 = function (_jqXHR, textStatus, _errorThrown) {
+                            // If local resources, syntax like LAW.CLIENT|LAW:sharkfin needs to try client first, then
+                            // if not found, try generic.
+                            if (useLocalResource && currentFolder_1 < folders_1.length - 1) {
+                                currentFolder_1++;
+                                localFolder_1 = !isScript ? folders_1[currentFolder_1] + "/" : "";
+                                submit_1(application, params_1, submitDone_1, submitFailed_1);
+                            }
+                            else if (useLocalResource && !isRelativePath_1 && currentFolder_1 >= folders_1.length - 1) {
+                                useLocalResource = false; // If I had useLocalResource but it couldn't find it, try real site
+                                submit_1(application, params_1, submitDone_1, submitFailed_1);
+                            }
+                            else {
+                                pipelineError = "getResources failed requesting " + r + ":" + textStatus;
+                                console.log(_errorThrown);
+                                getResourcesPipeline();
+                            }
+                        };
+                        submit_1(application, params_1, submitDone_1, submitFailed_1);
+                    }
+                    catch (error) {
+                        pipelineError = "getResources failed trying to request " + r + ":" + error;
+                        getResourcesPipeline();
+                    }
+                };
+            }).concat([
+                // Last function
+                function () {
+                    if (pipelineError !== undefined) {
+                        getResourcesHandler(pipelineError);
+                    }
+                    else {
+                        getResourcesHandler(undefined, resourceResults);
+                    }
+                }
+            ]));
+        pipelineNames = ["getResourcesPipeline.ping"].concat(resourceArray.map(function (r) { return "getResourcesPipeline." + r; }).concat(["getResourcesPipeline.finalize"]));
+        // Start the pipeline
+        getResourcesPipeline();
+    };
     // If this is undefined, it is the first time through, so set up templates container and shared template state
     // NOTE: This script could be dynamically reloaded (via debugger KatApp) and this variable remains intact so that
     // it doesn't blow away existing shared data, so leave the if statement even though it seems like it shouldn't be

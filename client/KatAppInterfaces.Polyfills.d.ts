@@ -49,7 +49,7 @@ interface Function {
     standardTemplateBuilderFactory( application: KatAppPlugInInterface ): any /*StandardTemplateBuilderInterface*/; // eslint-disable-line @typescript-eslint/no-explicit-any
     highchartsBuilderFactory( application: KatAppPlugInInterface ): any /*StandardTemplateBuilderInterface*/; // eslint-disable-line @typescript-eslint/no-explicit-any
     ui( application: KatAppPlugInInterface ): any /*UIUtilitiesInterface*/; // eslint-disable-line @typescript-eslint/no-explicit-any
-    rble( application: KatAppPlugInInterface, uiUtilities: any ): any /*RBLeUtilitiesInterface*/; // eslint-disable-line @typescript-eslint/no-explicit-any
+    rble( application: KatAppPlugInInterface ): any /*RBLeUtilitiesInterface*/; // eslint-disable-line @typescript-eslint/no-explicit-any
     // highcharts: any /*HighchartsBuilder*/; // eslint-disable-line @typescript-eslint/no-explicit-any
 }
 

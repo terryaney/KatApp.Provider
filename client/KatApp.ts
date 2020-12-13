@@ -72,10 +72,10 @@ class KatApp
         })
         return target;
     };
-    static clone(source: object, replacer?: (this: any, key: string, value: any) => any): object {
+    static clone(source: object, replacer?: (this: any, key: string, value: any)=> any): object { // eslint-disable-line @typescript-eslint/no-explicit-any
         return this.copyProperties( {}, source, replacer );
     };
-    private static copyProperties(target: object, source: object, replacer?: (this: any, key: string, value: any) => any): object {
+    private static copyProperties(target: object, source: object, replacer?: (this: any, key: string, value: any)=> any): object { // eslint-disable-line @typescript-eslint/no-explicit-any
         Object.keys(source).forEach((key) => {
             
             const value = replacer != null
@@ -110,10 +110,10 @@ class KatApp
         $.ajax({
             url: "http://" + ip + "/DataLocker/Global/ping.js",
             timeout: 1000,
-            success: function(result){
+            success: function( /* result */ ){
                 callback(true);
             },     
-            error: function(result){
+            error: function( /* result */ ){
                 callback(false);
             }
          });
@@ -187,6 +187,7 @@ class KatApp
         }
     }
 
+    // obsolete, this is managed in KatAppProvider now...
     static getResources( application: KatAppPlugInShimInterface, resources: string, useTestVersion: boolean, isScript: boolean, debugResourcesDomain: string | undefined, getResourcesHandler: PipelineCallback ): void {
         const currentOptions = application.options;
         const url = currentOptions.functionUrl ?? KatApp.defaultOptions.functionUrl ?? KatApp.functionUrl;
@@ -237,7 +238,7 @@ class KatApp
                             });
                         }
                         else {
-                            if ( !<boolean>application.element.data("kat-local-domain-reachable") ) {
+                            if ( !( application.element.data("kat-local-domain-reachable") as boolean ) ) {
                                 // Already pinged and no return
                                 localDomain = undefined;
                                 useLocalResources = false;

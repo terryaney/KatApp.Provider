@@ -83,10 +83,10 @@ var KatApp = /** @class */ (function () {
         $.ajax({
             url: "http://" + ip + "/DataLocker/Global/ping.js",
             timeout: 1000,
-            success: function (result) {
+            success: function ( /* result */) {
                 callback(true);
             },
-            error: function (result) {
+            error: function ( /* result */) {
                 callback(false);
             }
         });
@@ -152,6 +152,7 @@ var KatApp = /** @class */ (function () {
             });
         }
     };
+    // obsolete, this is managed in KatAppProvider now...
     KatApp.getResources = function (application, resources, useTestVersion, isScript, debugResourcesDomain, getResourcesHandler) {
         var _a, _b;
         var currentOptions = application.options;

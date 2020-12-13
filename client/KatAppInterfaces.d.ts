@@ -109,7 +109,7 @@ interface KatAppPlugInShimInterface {
     
     // If you want to update options of existing KatApp, use this method.  This will not load new
     // view or templates, but the CalcEngine or any other options could be updated using this.
-    // NOTE: If $("selector").KatApp("ensure", options) is called.  Items that didn't have a KatApp
+    // NOTE: If $("selector").KatApp("ensure", options) is called, items that didn't have a KatApp
     //      already created will go through normal create/init process.  However, items that already
     //      had a KatApp created, will simply delegate to updateOptions.
     // NOTE: updateOptions (along with init()) *will* apply options.defaultInputs every time it is called

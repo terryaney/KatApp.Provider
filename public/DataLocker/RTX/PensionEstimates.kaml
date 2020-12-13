@@ -1,4 +1,4 @@
-<rbl-config calcengine="Conduent_ABC_DBEstimate_SE" precalcs="Conduent_ABC_DBCalc_SE|RBLInput|RBLResult" bootstrap="4" templates="Standard_Templates.NexGen,Input_TemplatesBS4"></rbl-config>
+<rbl-config calcengine="Conduent_ABC_DBEstimate_SE" precalcs="Conduent_ABC_DBCalc_SE|RBLInput|RBLResult" bootstrap="4" templates="Standard_Templates,Input_TemplatesBS4"></rbl-config>
 
 <!--
     http://oneportal.uxgroup.com/LW60/NexGen/0_Product/channel_DB.html?local=1

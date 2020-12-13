@@ -70,8 +70,44 @@
 
     });
 
+    
+    view.on( "onCalculateStart.RBLe", function( event, application ) {
+      $("[rbl-source=DBSavedEstimate] > div:not([rbl-tid])").remove();
+    });
+
+    view.on( "onConfigureUICalculation.RBLe", function( event, calculationResults, calcOptions, application ) {
+      $("table[data-planid]").each( function( plan ) {
+        var table = $(this);
+        var planid = table.attr("data-planid");
+        var bData = false;
+        var bene = application.getResultTable("Beneficiaries");
+        var r = "<tr>\
+                    <td style='width:40%'>{name}</td>\
+                    <td style='width:30%'>{relation}</td>\
+                    <td style='width:30%'>{pct}</td>\
+                  </tr>";
+        bene.filter( function( row ){
+          return row.index ==  planid + "-P"
+        }).forEach( function( row ) {
+          bData = true;
+          table.find("tr.primary").removeClass("d-none").after( r.format( row ));
+        });
+
+        bene.filter( function( row ){
+          return row.index ==  planid + "-C"
+        }).forEach( function( row ) {
+          bData = true;
+          table.find("tr.secondary").removeClass("d-none").after( r.format( row ));
+        });
+        if ( bData == false ) table.find("tr.primary").after("<tr><td colspan=3><b>No beneficiaries on file.</b></td></tr>");
+        //unhook from update
+        $("[rbl-source=DBCurrentBenefits]", view).removeAttr("rbl-source");
+      });
+    });
+
     view.on( "onCalculation.RBLe", function( event, calculationResults, calcOptions, application ) {
-      window.dispatchEvent(new Event('resize'));    
+      window.dispatchEvent(new Event('resize'));  
+      $(".scroll-indicator-controller").show(); 
     });
 
     view.on("onActionResult.RBLe", function (e, commandName, _jsonResponse, application) {
@@ -82,7 +118,8 @@
     });
     
   })();
-	//# sourceURL=Channel.Pension.kaml
+
+  //# sourceURL=Channel.Pension.kaml
 </script>
 
 <div class="d-none skipRBLe">
@@ -91,8 +128,11 @@
 </div>
 
 <style>
-  table .value {
+  thisClass table .value {
     text-align: right;
+  }
+  thisClass .ajaxContent {
+    min-height: inherit !important;
   }
 </style>
 
@@ -763,40 +803,25 @@
         </div>
         <div class="card-body invest-funds">
           
-        <ul class="listBenes">
+        <ul class="listBenes" rbl-source="DBCurrentBenefits">
           
           <!-- ==================== -->
           <!--    Cash Balance    -->
           <!-- ==================== -->
-          <li class="list-group-item">
+          <li class="list-group-item" rbl-tid="inline">
             <h5 class="optionLink">
-               <a class="btn btn-primary btn-expand expandQuick 401kSavingBtn" href="#null">
-                Cash Balance Plan
+               <a class="btn btn-primary btn-expand" href="#null">
+                {plan-name}
               </a>
             </h5>
             <div id="collapseSavings" class="collapse show">
-              <table class="table table-mobile">
+              <table class="table table-mobile" data-planid="{plan-id}">
                 <tbody>
-                  <tr>
-                    <td colspan="3" class="text-bold">Primary Beneficiary <a href="#null" class="modalLink">(explain this)</a></td>
+                  <tr class="d-none primary">
+                    <td colspan="3" class="text-bold">Primary Beneficiary <a href="#null" class="d-none modalLink">(explain this)</a></td>
                   </tr>
-                  <tr>
-                    <td style="width:40%">Pat Smith</td>
-                    <td style="width:30%">spouse</td>
-                    <td style="width:30%">100 %</td>
-                  </tr>
-                  <tr>
-                    <td colspan="3" class="text-bold">Contingent Beneficiaries <a href="#null" class="modalLink">(explain this)</a></td>
-                  </tr>
-                  <tr>
-                    <td>Morgan Smith</td>
-                    <td>child</td>
-                    <td>50 %</td>
-                  </tr>
-                  <tr>
-                    <td>Cameron Smith</td>
-                    <td>child</td>
-                    <td>50 %</td>
+                  <tr class="d-none secondary">
+                    <td colspan="3" class="text-bold">Contingent Beneficiaries <a href="#null" class="d-none modalLink">(explain this)</a></td>
                   </tr>
                 </tbody>
               </table>
@@ -805,36 +830,7 @@
             </div>
   
           </li>
-          
-          <!-- ==================== -->
-          <!--    Traditional     -->
-          <!-- ==================== -->
-          <li class="list-group-item">
-            <h5 class="optionLink">
-               <a class="btn btn-primary btn-expand expandQuick 401kSavingBtn" href="#null">
-                Traditional Plan
-              </a>
-            </h5>
-            <div id="collapseSavings" class="collapse show">
-              <table class="table table-mobile">
-                <tbody>
-                  <tr>
-                    <td colspan="3" class="text-bold">Primary Beneficiary <a href="#null" class="modalLink">(explain this)</a></td>
-                  </tr>
-                  <tr>
-                    <td style="width:40%">Pat Smith</td>
-                    <td style="width:30%">spouse</td>
-                    <td style="width:30%">100 %</td>
-                  </tr>
-                </tbody>
-              </table>
-  
-  
-            </div>
-  
-          </li>
-              
-  
+            
         </ul>
           
           
@@ -1133,7 +1129,7 @@ $("#option2").click(function() {
 			<!-- Cash Balance History -->
 			<div class="card">
 				<div class="card-header gradient">
-					<h4>Cash Balance History <span class="paranthetical"> (as of <span class="yesterday"></span>)</span></h4>			
+					<h4>Cash Balance History</h4>			
 				</div>
 				<!--Card Body-->
 				<div class="card-body">
@@ -1185,78 +1181,7 @@ $("#option2").click(function() {
 								<td data-th="Interest" class="tableValueR text-right borderR"><span class="inherit">{int-credit}</span></td>
 								<td data-th="Ending Balance" class="tableValueR text-right cell-45"><span class="inherit">{bal-end}</span></td>
                 </tr>
-<!--
-							  <tr class="borderBtm-mobile">
-                  <td data-th="Date" class="tableValueR"><span class="inherit">10/31/2020</span></td>
-                  <td data-th="Pay Credits" class="tableValueR text-right"><span class="inherit">$512.21</span></td>
-                  <td data-th="Adjustments" class="tableValueR text-right"><span class="inherit">&nbsp;</span></td>
-                  <td data-th="Interest" class="tableValueR text-right borderR"><span class="inherit">$97.70</span></td>
-                  <td data-th="Ending Balance" class="tableValueR text-right cell-45"><span class="inherit">$53,185.62</span></td>
-                  </tr>
-                  <tr  class="borderBtm-mobile">
-								<td data-th="Date" class="tableValueR"><span class="inherit">9/30/2020</span></td>
-								<td data-th="Pay Credits" class="tableValueR text-right"><span class="inherit">$512.21</span></td>
-								<td data-th="Adjustments" class="tableValueR text-right"><span class="inherit">&nbsp;</span></td>
-								<td data-th="Interest" class="tableValueR text-right borderR"><span class="inherit">$97.70</span></td>
-								<td data-th="Ending Balance" class="tableValueR text-right cell-45"><span class="inherit">$52,575.71</span></td>
-							  </tr>
-							  <tr  class="borderBtm-mobile">
-								<td data-th="Date" class="tableValueR"><span class="inherit">8/31/2020</span></td>
-								<td data-th="Pay Credits" class="tableValueR text-right"><span class="inherit">$512.21</span></td>
-								<td data-th="Adjustments" class="tableValueR text-right"><span class="inherit">$108.24</span></td>
-								<td data-th="Interest" class="tableValueR text-right borderR"><span class="inherit">$97.70</span></td>
-								<td data-th="Ending Balance" class="tableValueR text-right cell-45"><span class="inherit">$52,074.04</span></td>
-							  </tr>
-							  <tr  class="borderBtm-mobile">
-								<td data-th="Date" class="tableValueR"><span class="inherit">7/31/2020</span></td>
-								<td data-th="Pay Credits" class="tableValueR text-right"><span class="inherit">$512.21</span></td>
-								<td data-th="Adjustments" class="tableValueR text-right"><span class="inherit">&nbsp;</span></td>
-								<td data-th="Interest" class="tableValueR text-right borderR"><span class="inherit">$97.70</span></td>
-								<td data-th="Ending Balance" class="tableValueR text-right cell-45"><span class="inherit">$51,464.13</span></td>
-							  </tr>
-							  <tr  class="borderBtm-mobile">
-								<td data-th="Date" class="tableValueR"><span class="inherit">6/30/2020</span></td>
-								<td data-th="Pay Credits" class="tableValueR text-right"><span class="inherit">$512.21</span></td>
-								<td data-th="Adjustments" class="tableValueR text-right"><span class="inherit">&nbsp;</span></td>
-								<td data-th="Interest" class="tableValueR text-right borderR"><span class="inherit">$97.70</span></td>
-								<td data-th="Ending Balance" class="tableValueR text-right cell-45"><span class="inherit">$50,854.22</span></td>
-							  </tr>
-							  <tr  class="borderBtm-mobile">
-								<td data-th="Date" class="tableValueR"><span class="inherit">5/31/2020</span></td>
-								<td data-th="Pay Credits" class="tableValueR text-right"><span class="inherit">$512.21</span></td>
-								<td data-th="Adjustments" class="tableValueR text-right"><span class="inherit">&nbsp;</span></td>
-								<td data-th="Interest" class="tableValueR text-right borderR"><span class="inherit">$97.70</span></td>
-								<td data-th="Ending Balance" class="tableValueR text-right cell-45"><span class="inherit">$50,244.31</span></td>
-							  </tr>
-							  <tr  class="borderBtm-mobile">
-								<td data-th="Date" class="tableValueR"><span class="inherit">4/30/2020</span></td>
-								<td data-th="Pay Credits" class="tableValueR text-right"><span class="inherit">$512.21</span></td>
-								<td data-th="Adjustments" class="tableValueR text-right"><span class="inherit">&nbsp;</span></td>
-								<td data-th="Interest" class="tableValueR text-right borderR"><span class="inherit">$97.70</span></td>
-								<td data-th="Ending Balance" class="tableValueR text-right cell-45"><span class="inherit">$49,634.40</span></td>
-							  </tr>
-							  <tr  class="borderBtm-mobile">
-								<td data-th="Date" class="tableValueR"><span class="inherit">3/31/2020</span></td>
-								<td data-th="Pay Credits" class="tableValueR text-right"><span class="inherit">$512.21</span></td>
-								<td data-th="Adjustments" class="tableValueR text-right"><span class="inherit">&nbsp;</span></td>
-								<td data-th="Interest" class="tableValueR text-right borderR"><span class="inherit">$97.70</span></td>
-								<td data-th="Ending Balance" class="tableValueR text-right cell-45"><span class="inherit">$49,024.49</span></td>
-							  </tr>
-							  <tr  class="borderBtm-mobile">
-								<td data-th="Date" class="tableValueR"><span class="inherit">2/28/2020</span></td>
-								<td data-th="Pay Credits" class="tableValueR text-right"><span class="inherit">$512.21</span></td>
-								<td data-th="Adjustments" class="tableValueR text-right"><span class="inherit">&nbsp;</span></td>
-								<td data-th="Interest" class="tableValueR text-right borderR"><span class="inherit">$97.70</span></td>
-								<td data-th="Ending Balance" class="tableValueR text-right cell-45"><span class="inherit">$48,414.58</span></td>
-							  </tr>
-							  <tr  class="borderBtm-mobile">
-								<td data-th="Date" class="tableValueR"><span class="inherit">1/31/2020</span></td>
-								<td data-th="Pay Credits" class="tableValueR text-right"><span class="inherit">$512.21</span></td>
-								<td data-th="Adjustments" class="tableValueR text-right"><span class="inherit">&nbsp;</span></td>
-								<td data-th="Interest" class="tableValueR text-right borderR"><span class="inherit">$97.70</span></td>
-								<td data-th="Ending Balance" class="tableValueR text-right cell-45"><span class="inherit">$47,804.67</span></td>
-							  </tr>
--->
+
               </tbody>
 						</table>
 					</div>
@@ -1307,46 +1232,7 @@ $("#option2").click(function() {
 			  <div class="card-body">
 				
         <h5 class="card-title">Eligibility and Key Dates </h5>
-<!--
-        <p rbl-value="DBProfileSummary.eligRTNheader.text" class="mt-2 mb-1"></p>
-        <ul rbl-source="DBProfileSummary.type.eligRTN">
-          <li rbl-tid="inline">{text}</li>
-          <li>Your current status is <strong>active</strong>, which means the amount of your pension benefit will continue to increase.</li>
-					<li>You’re currently <strong>80% vested</strong> and will become fully vested on Jan 15, 2022 if you continue to work full-time.</li>
-					<li>Your <strong>earliest retirement date is Aug 21, 2027</strong>, which is when you turn 55.</li>
-					<li>Your <strong>normal retirement date is Aug 21, 2037</strong>, which is when you turn 65. </li>
-				</ul>
-        <p rbl-value="DBProfileSummary.eligUTC-Frzheader.text" class="mt-2 mb-1"></p>
-        <ul rbl-source="DBProfileSummary.type.eligUTC-Frz">
-          <li rbl-tid="inline">{text}</li>
-				</ul>
-        <p rbl-value="DBProfileSummary.eligUTC-CBheader.text" class="mt-2 mb-1"></p>
-        <ul rbl-source="DBProfileSummary.type.eligUTC-CB">
-          <li rbl-tid="inline">{text}</li>
-				</ul>
-      
-        <hr>
-        <h5 class="card-title">Service Dates </h5>
-        <p rbl-value="DBProfileSummary.serviceRTNheader.text" class="mt-2 mb-1"></p>
-        <ul rbl-source="DBProfileSummary.type.serviceRTN">
-          <li rbl-tid="inline">{text}</li>
-					<li>Your first day of work was <strong>Jan 15, 2000</strong>.</li>
-					<li>Your first day of eligibility to earn your pension benefit was <strong>Jan 15, 2002</strong>.</li>
-					<li>Your total vesting service is <strong>20.8 years</strong>, which means…</li>
-					<li>Your credited service is <strong>18.8 years</strong>, which means…</li>
-				</ul>
-        <p rbl-value="DBProfileSummary.serviceUTC-Frzheader.text" class="mt-2 mb-1"></p>
-        <ul rbl-source="DBProfileSummary.type.serviceUTC-Frz">
-          <li rbl-tid="inline">{text}</li>
-        </ul>
-        <p rbl-value="DBProfileSummary.serviceUTC-CBheader.text" class="mt-2 mb-1"></p>
-        <ul rbl-source="DBProfileSummary.type.serviceUTC-Cb">
-          <li rbl-tid="inline">{text}</li>
-        </ul>
 
-        <hr>
-        <h5 class="card-title">Details</h5> 
--->
         <div class="collapse_" id="collapseDetails"> 
            
           <table class="rwd-table">
@@ -1357,57 +1243,6 @@ $("#option2").click(function() {
                 <td class="tableValue" rbl-display="vUTC-Frz">{value2}</td>
                 <td class="tableValue" rbl-display="vCashBalance">{value3}</td>
               </tr>
-<!--
-              <tr class="tableHeader">
-                <td colspan="2">Eligibility</td>
-              </tr>
-              <tr class="tableData">
-                <td class="tableTitle">Status</td>
-                <td class="tableValue">active/td>
-              </tr>
-              <tr class="tableData">
-                <td class="tableTitle">Vesting Percentage</td>
-                <td class="tableValue">80%</td>
-              </tr>
-
-
-              <tr class="tableHeader">
-                <td colspan="2">Service</td>
-              </tr>
-              <tr class="tableData">
-                <td class="tableTitle">Hire Date</td>
-                <td class="tableValue">Jan 15, 2000</td>
-              </tr>
-              <tr class="tableData">
-                <td class="tableTitle">Participation Date</td>
-                <td class="tableValue">Jan 15, 2002</td>
-              </tr>
-              <tr class="tableData">
-                <td class="tableTitle">Total Vesting Service</td>
-                <td class="tableValue">20.8 years</td>
-              </tr>
-              <tr class="tableData">
-                <td class="tableTitle">Credited Service</td>
-                <td class="tableValue">18.8 years</td>
-              </tr>
-
-
-              <tr class="tableHeader">
-                <td colspan="2">Key Dates</td>
-              </tr>
-              <tr class="tableData">
-                <td class="tableTitle">Full vested Date</td>
-                <td class="tableValue">Jan 15, 2022</td>
-              </tr>
-              <tr class="tableData">
-                <td class="tableTitle">Earliest Retirement Date</td>
-                <td class="tableValue">Aug 21, 2027</td>
-              </tr>
-              <tr class="tableData">
-                <td class="tableTitle">Normal Retirement Date </td>
-                <td class="tableValue">Aug 21, 2037</td>
-              </tr>  
--->							
 						</tbody>
 						
           </table>
@@ -1439,10 +1274,6 @@ $("#option2").click(function() {
           </h3>
         </div>
       </div>
-      </div>
-        
-        
-        
-        
+      </div>        
 	</div>
 </div> 

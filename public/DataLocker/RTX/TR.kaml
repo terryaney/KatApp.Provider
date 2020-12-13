@@ -1,4 +1,4 @@
-<rbl-config calcengine="Conduent_ABC_TR_SE" bootstrap="4" templates="Standard_Templates.NexGen,Input_TemplatesBS4" precalcs="Conduent_ABC_DCCalc_SE|RBLInput|RBLResultDCProj"></rbl-config>
+<rbl-config calcengine="Conduent_ABC_TR_SE" bootstrap="4" templates="Standard_Templates,Input_TemplatesBS4" precalcs="Conduent_ABC_DCCalc_SE|RBLInput|RBLResultDCProj"></rbl-config>
 
 <style>
 	thisClass span.highcharts-title {
@@ -25,6 +25,11 @@
 	    text-align: right;
 	}
 
+	[rbl-chartoptions=Pie] h4 {
+		top: -15px;
+		position: relative;
+	}
+
 	.bs-callout {
 		padding: 20px;
 		margin: 20px 0;
@@ -41,17 +46,18 @@
 </style>
 
 <section id="tr" class="tr section-padding scroll-indicator" data-scroll-indicator-title="TOTAL REWARDS">
+	<h2 class="title" rbl-value="pageHeader"></h2>
 	<div class="container kat-app-css">
 		<div class="ajaxContent">
-			<h2 class="title" rbl-value="pageHeader"></h2>
 			<div class="ajaxloader"></div>
 	
 			<div class="row mt-4">
 	<!--1st level-->
 				<div class="col-12 col-md-4 fd-main fd-totalrewards-summary">
 					<div class="card mt-0">
-						<div class="card-header text-center">
-							<h4 class="card-title" rbl-value="compensationHeader"></h4>
+						<div class="card-header">
+							<h4 class="row card-title" rbl-value="compensationHeader"></h4>
+							<div class="row paranthetical" style="margin-top: 14px;" rbl-value="compensationSubHeader"></div>
 						</div>
 						<div class="card-body pl-1 pr-1">
 							<div class="text-center">
@@ -67,7 +73,8 @@
 				<div class="col-12 col-md-4 fd-main fd-totalwealth-summary">
 					<div class="card mt-0">
 						<div class="card-header text-center">
-							<h4 class="card-title" rbl-value="wealthHeader"></h4>
+							<h4 class="row card-title" rbl-value="wealthHeader"></h4>
+							<div class="row paranthetical" style="margin-top: 14px;" rbl-value="wealthSubHeader"></div>
 						</div>
 						<div class="card-body pl-1 pr-1">
 							<div class="text-center">
@@ -84,6 +91,17 @@
 						<div class="card mt-0">
 							<div class="card-header text-center">
 								<h4 class="card-title" rbl-value="compCashHeader"></h4>
+								<div class="dropdown">
+									<a id="showMoreCompCash" href="#null" class="showMore text-bold btn moreLink push" data-target="#" data-toggle="dropdown" aria-expanded="false">
+										<span title="More" class=" options">+</span>
+									</a>					  
+									<ul class="dropdown-menu showMoreMenu" aria-labelledby="showMoreCompCash">
+									  <li><a href="#null">Compensation Policies</a></li>
+									  <li><a href="#null">RTX Compensation Guide</a></li>
+									  <li><a href="#null">Stock Plan</a></li>
+									  <li><a href="#null">Wellness Reward</a></li>
+									</ul>
+								</div>					  
 							</div>
 							<div class="card-body pl-0 pr-0">
 								<div class="col-12 pl-1 pr-1">
@@ -98,6 +116,17 @@
 						<div class="card mt-0">
 							<div class="card-header text-center">
 								<h4 class="card-title" rbl-value="compHwHeader"></h4>
+								<div class="dropdown">
+									<a id="showMoreCHW" href="#null" class="showMore text-bold btn moreLink push" data-target="#" data-toggle="dropdown" aria-expanded="false">
+										<span title="More" class=" options">+</span>
+									</a>					  
+									<ul class="dropdown-menu showMoreMenu" aria-labelledby="showMoreHW">
+									  <li><a href="#null">Medical/Dental/Vision</a></li>
+									  <li><a href="#null">Insurance</a></li>
+									  <li><a href="#null">Voluntary Benefits</a></li>
+									  <li><a href="#null">HSA</a></li>
+									</ul>
+								</div>					  
 							</div>
 							<div class="card-body pl-0 pr-0">
 								<div class="col-12 pl-1 pr-1">
@@ -112,6 +141,17 @@
 						<div class="card mt-0">
 							<div class="card-header text-center">
 								<h4 class="card-title" rbl-value="compRetHeader"></h4>
+								<div class="dropdown">
+									<a id="showMoreRet" href="#null" class="showMore text-bold btn moreLink push" data-target="#" data-toggle="dropdown" aria-expanded="false">
+										<span title="More" class=" options">+</span>
+									</a>					  
+									<ul class="dropdown-menu showMoreMenu" aria-labelledby="showMoreRet">
+									  <li><a href="#null">Pension</a></li>
+									  <li><a href="#null">401(k)</a></li>
+									  <li><a href="#null">Social Security</a></li>
+									  <li><a href="#null">HSA</a></li>
+									</ul>
+								</div>					  
 							</div>
 							<div class="card-body pl-0 pr-0">
 								<div class="col-12 pl-1 pr-1">
@@ -126,6 +166,20 @@
 						<div class="card mt-0">
 							<div class="card-header text-center">
 								<h4 class="card-title" rbl-value="compHrHeader"></h4>
+								<div class="dropdown">
+									<a id="showMoreHR" href="#null" class="showMore text-bold btn moreLink push" data-target="#" data-toggle="dropdown" aria-expanded="false">
+										<span title="More" class=" options">+</span>
+									</a>					  
+									<ul class="dropdown-menu showMoreMenu" aria-labelledby="showMoreHR">
+									  <li><a href="#null">Adoption</a></li>
+									  <li><a href="#null">EAP</a></li>
+									  <li><a href="#null">Legal</a></li>
+									  <li><a href="#null">Educational</a></li>
+									  <li><a href="#null">Wellness</a></li>
+									  <li><a href="#null">Discounts</a></li>
+									  <li><a href="#null">Transportation</a></li>
+									</ul>
+								</div>					  
 							</div>
 							<div class="card-body pl-0 pr-0">
 								<div class="col-12 pl-1 pr-1">
@@ -159,22 +213,60 @@
 					</div>
 				</div>
 	<!--3rd section-->
-				<div class="col-sm-4 fd-considerations mt-4">
-					<div class="panel_ panel-default_">
-						<div class="card-header text-center d-none">
-							<h4 class="card-title">Considerations/notices</h4>
-						</div>
-						<div class="card-body_">
-							<div rbl-source="Considerations">
-								<div rbl-tid="inline" class="bs-callout bs-callout-warning considerations category-{category}">{text}</div>
+				<div class="col-12 col-md-4 fd-alerts mt-4">
+					<div rbl-source="TRAlerts.type.explain">
+						<div rbl-tid="inline" class="category-{category} alerts">	
+							<div class="card assist trans explain">
+								<div class="card-body">
+									<h3 class="question">
+										<span class="assistImage"></span> 
+										<div class="assistRating">
+											<span class="">Explain this</span>
+										</div>
+										<div class="assistResponse">
+											<p>Let's help you understand this information</p> 
+											<h6 style="font-size: 14px;">{text}</h6> 
+										</div>
+									</h3>
+								</div>
 							</div>
 						</div>
 					</div>
+					<div rbl-source="TRAlerts.type.suggestion">
+						<div rbl-tid="inline" class="category-{category} alerts">	
+							<div id="alertMoreSuggestion01" class="row {more-shade}">		
+								<div class="alert alert-notify">
+									<div class="alertTitle"><img src="resources/images/Icon_Suggestion.png" alt="Suggestion"/> SUGGESTION 
+										<span class="d-none">
+											  <ul class="dropdown-menu showActions" aria-labelledby="showMoreSavings">
+												<li><a href="#null">Remind<br/>Later</a></li>
+												<li><a href="#null">Delete</a></li>
+											  </ul>
+										</span>
+									  </div>
+									<span>{text}</span>
+									<a href="#suggestion01" class="alertMore alertMoreSuggestions collapsed {more-text}" data-toggle="collapse" aria-expanded="false">more suggestion(s)</a>
+								</div>
+							</div>
+						</div>
+					</div>
+					<div rbl-source="TRAlerts.type.suggestion2">
+						<div rbl-tid="inline" class="category-{category} alerts">	
+							<div id="suggestion01" class="row collapse p-0 m-0">  
+								<div class="alert alert-notify">
+									<div class="alertTitle"><img src="resources/images/Icon_Suggestion.png" alt="Suggestion"/> SUGGESTION</div>
+									<span>{text}</span>
+								</div>
+							</div>	
+						</div>
+					</div>	
 				</div>
 			</div>
 		</div>
 	</div>	
 </section>
+
+
 
 <script>
 	$(document).ready(function(){
@@ -192,9 +284,7 @@
 			$(".fd-main, .fd-totalrewards, .fd-totalrewards-summary, .fd-totalwealth-summary, .fd-totalwealth, .AC-Item").hide();
 			if ( screen === "fd-main") {
 				$(".fd-main").show();
-				$(".iCurrentPage").val(1);
 			}
-			else $(".iCurrentPage").val(0);
 			if ( screen === "fd-totalrewards") {
 				$(".fd-totalrewards-summary").show();
 				$(".fd-totalrewards").show();
@@ -202,10 +292,10 @@
 			}
 			if ( screen === "fd-totalwealth") $(".fd-totalwealth, .fd-totalwealth-summary").show();
 			$("." + screen).fadeIn();
-			filterConsiderations();
+			filterAlerts();
 		}
 
-		function filterConsiderations() {
+		function filterAlerts() {
 			var filterCategory = "general";
 			//general wealth health retirement work-life 
 			if ($("div.futureWealth.AW-Item").is(":visible")) filterCategory = "wealth";
@@ -214,16 +304,28 @@
 			else if ($("div.RetirementBenefit.AC-Item").is(":visible")) filterCategory = "retirement";
 			else if ($("div.HRBenefits.AC-Item").is(":visible")) filterCategory = "work-life";
 			else filterCategory = "general";
-			$(".fd-considerations .considerations").hide();
-			$(".fd-considerations .considerations.category-" + filterCategory ).fadeIn();
+			$(".fd-alerts .alerts", view).hide();
+			$(".fd-alerts .alerts.category-" + filterCategory, view).fadeIn();
 		}
 
 	view.on( "onCalculation.RBLe", function( event, calculationResults, calcOptions, application ) {
-		filterConsiderations();
+		filterAlerts();
 		application.options.preCalcs = undefined;
+
+		$(".alertMoreSuggestions")
+        .off("click")
+        .on("click", function() {
+          if ( $(this).html() == "show less") {
+            $(this).html("more suggestion(s)");
+          }          
+          else {
+            $(this).html("show less");
+          }
+        });
 	});
 
 	view.on( "onConfigureUICalculation.RBLe", function( event, results, options, application ) {
+			$("span[data-tr-type]", view).show();  // show non link
 
 			$("[rbl-tablename=CompensationTable] a").click(function () {	
 				$(".fd-totalrewards .AC-Item").hide();
@@ -232,35 +334,23 @@
 					//$(".fd-totalwealth-summary").hide();
 					//$(".fd-totalrewards").show();
 				};
-				$(".fd-considerations .considerations").hide();
-				$(".fd-totalrewards div." + $(this).data("tr-type") ).fadeIn(1000, filterConsiderations);
+				$(".fd-alerts .alerts", view).hide();
+				$(".fd-totalrewards div." + $(this).data("tr-type"), view ).fadeIn(1000, filterAlerts);
 				return false;
-			});
-			$("a.details-totalrewards_, a.details-totalwealth_").click (function() {
-				$(".ajaxloader").show();
-
-				if ( $(this).text() == "Back to Dashboard" ) {
-					fdShowScreen( "fd-main" );
-					$(this).text("Details");
-				}
-				else if ( $(this).hasClass("details-totalrewards") ) {
-					fdShowScreen('fd-totalrewards');
-					$(this).text("Back to Dashboard");
-				}
-				else {
-					fdShowScreen('fd-totalwealth')
-					$(this).text("Back to Dashboard"); 
-				};
 			});
 
 			$("a.details-totalrewards, a.details-totalwealth").click (function() {
 				if ( $(this).text() == "Back to Dashboard" ) {
 					fdShowScreen( "fd-main" );
 					$(this).text("Details");
+					$("span[data-tr-type]", view).show();
+					$("a[data-tr-type]", view).hide();
 				}
 				else if ( $(this).hasClass("details-totalrewards") ) {
 					fdShowScreen('fd-totalrewards');
 					$(this).text("Back to Dashboard");
+					$("span[data-tr-type]", view).hide();
+					$("a[data-tr-type]", view).show();
 				}
 				else {
 					fdShowScreen('fd-totalwealth')
@@ -279,7 +369,7 @@
                 });
             });
 
-			filterConsiderations();
+			filterAlerts();
 			$(".loader", view).hide();
             $(".rblMarkup", view).show();
         });

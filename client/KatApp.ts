@@ -78,12 +78,16 @@ class KatApp
     private static copyProperties(target: object, source: object, replacer?: (this: any, key: string, value: any)=> any): object { // eslint-disable-line @typescript-eslint/no-explicit-any
         Object.keys(source).forEach((key) => {
             
-            const value = replacer != null
+            const value = replacer != undefined
                 ? replacer( key, source[key] )
                 : source[key];
 
             // Always do deep copy
-            if ( typeof value === "object" && target[key] != undefined ) {
+            if ( typeof value === "object" && !Array.isArray( value ) ) {
+                if ( target[key] === undefined )
+                {
+                    target[key] = {};
+                }
                 this.copyProperties( target[key], value );
             }
             else {

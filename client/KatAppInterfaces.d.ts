@@ -66,11 +66,13 @@ interface KatAppOptions
     //      $("app").on("onInitialized.rble", function() { } ).KatApp();
     // Event call backs
     // If you use on() syntax for initialized, need to set it up before calling KatApp();
-    onInitialized?: (this: HTMLElement, appilcation: KatAppPlugInInterface )=> void;
-    onDestroyed?: (this: HTMLElement, appilcation: KatAppPlugInInterface )=> void;
-    onOptionsUpdated?: (this: HTMLElement, appilcation: KatAppPlugInInterface )=> void;
-    onRegistration?: (this: HTMLElement, calcOptions: KatAppOptions, appilcation: KatAppPlugInInterface )=> void;
-    onCalculateStart?: (this: HTMLElement, appilcation: KatAppPlugInInterface )=> void;
+    onKatAppNotification?: (this: HTMLElement, notificationName: string, notificationInformation: {}, application: KatAppPlugInInterface )=> void;
+
+    onInitialized?: (this: HTMLElement, application: KatAppPlugInInterface )=> void;
+    onDestroyed?: (this: HTMLElement, application: KatAppPlugInInterface )=> void;
+    onOptionsUpdated?: (this: HTMLElement, application: KatAppPlugInInterface )=> void;
+    onRegistration?: (this: HTMLElement, calcOptions: KatAppOptions, application: KatAppPlugInInterface )=> void;
+    onCalculateStart?: (this: HTMLElement, application: KatAppPlugInInterface )=> void;
     // Can use onResultsProcessing if you want to do something before generic result processing happens (i.e. clear/destroy table/chart so only displays if results in current calculation)
     onResultsProcessing?: (this: HTMLElement, calculationResults: JSON, calcOptions: KatAppOptions, application: KatAppPlugInInterface )=> void;
     onConfigureUICalculation?: (this: HTMLElement, calculationResults: JSON, calcOptions: KatAppOptions, application: KatAppPlugInInterface )=> void;
@@ -235,13 +237,13 @@ interface JQueryFailCallback {
 }
 
 interface SubmitCalculationDelegate {
-    ( appilcation: KatAppPlugInInterface, options: SubmitCalculationOptions | GetResourceOptions, done: RBLeServiceCallback, fail: JQueryFailCallback ): void;
+    ( application: KatAppPlugInInterface, options: SubmitCalculationOptions | GetResourceOptions, done: RBLeServiceCallback, fail: JQueryFailCallback ): void;
 }
 interface GetDataDelegate {
-    ( appilcation: KatAppPlugInInterface, options: KatAppOptions, done: RBLeRESTServiceResultCallback, fail: JQueryFailCallback ): void;
+    ( application: KatAppPlugInInterface, options: KatAppOptions, done: RBLeRESTServiceResultCallback, fail: JQueryFailCallback ): void;
 }
 interface RegisterDataDelegate {
-    ( appilcation: KatAppPlugInInterface, options: KatAppOptions, done: RBLeServiceCallback, fail: JQueryFailCallback ): void;
+    ( application: KatAppPlugInInterface, options: KatAppOptions, done: RBLeServiceCallback, fail: JQueryFailCallback ): void;
 }
 
 interface TemplateOnDelegate {

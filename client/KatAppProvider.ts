@@ -511,6 +511,10 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
             this.init( o );
         }
 
+        pushNotification(name: string, information: {} | undefined): void {
+            this.ui.pushNotification(this, name, information);
+        }
+
         setRegisteredToken( token: string ): void {
             this.options.registeredToken = token;
 
@@ -925,12 +929,13 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
             return this.ui.getInputs( this.options );
         };
 
-        serverCalculation( customInputs: {} | undefined ): void {
+        serverCalculation( customInputs: {} | undefined, actionLink?: JQuery<HTMLElement> ): void {
             this.apiAction(
                 "ServerCalculation", 
                 {
                     customInputs: customInputs
-                } );
+                },
+                actionLink );
         }
     
         blockerCount = 0;
@@ -959,7 +964,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
             }
         }
 
-        apiAction( commandName: string, customOptions?: KatAppActionOptions ): void {
+        apiAction( commandName: string, customOptions?: KatAppActionOptions, actionLink?: JQuery<HTMLElement> ): void {
             let url = this.options.rbleUpdatesUrl;
             
             if (url != undefined) {
@@ -972,7 +977,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                         this.options,
                         function( _key, value ) {
                             if ( typeof value === "function" ) {
-                                return; // don't want any functions passed along
+                                return; // don't want any functions passed along to api
                             }
                             return value; 
                         }
@@ -1026,19 +1031,19 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                             }
     
                             if ( errors.length == 0 ) {
-                                that.ui.triggerEvent( "onActionFailed", commandName, jsonResponse, that );
+                                that.ui.triggerEvent( "onActionFailed", commandName, jsonResponse, that, actionLink );
                                 console.log("Show error: " + jsonResponse.Message);
                                 errors.push( { "@id": "System", text: "An unexpected error has occurred.  Please try again and if the problem persists, contact technical support." });
                             }
                         }
                         else {
-                            that.ui.triggerEvent( "onActionResult", commandName, jsonResponse, that );
+                            that.ui.triggerEvent( "onActionResult", commandName, jsonResponse, that, actionLink );
                         }
                     }
                     else {
                         const blob = xhr.response;
 
-                        that.ui.triggerEvent( "onActionResult", commandName, undefined, that );
+                        that.ui.triggerEvent( "onActionResult", commandName, undefined, that, actionLink );
 
                         let filename = "Download.pdf";
                         const disposition = xhr.getResponseHeader('Content-Disposition');
@@ -1054,7 +1059,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                         tempEl.click();
                         window.URL.revokeObjectURL(url);
                     }
-                    that.ui.triggerEvent( "onActionComplete", commandName, that );
+                    that.ui.triggerEvent( "onActionComplete", commandName, that, actionLink );
 
                     that.rble.processValidationRows(
                         errorSummary, 
@@ -1064,7 +1069,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                     that.hideAjaxBlocker();
                 }; // don't think I need this .bind(actionLink);
 
-                this.ui.triggerEvent( "onActionStart", commandName, this );
+                this.ui.triggerEvent( "onActionStart", commandName, this, actionLink );
                 xhr.send(fd);
             }
         }
@@ -1674,8 +1679,20 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
             return hasTables ? tables : undefined;
         }
 
+        pushNotification(from: KatAppPlugIn, name: string, information: {} | undefined): void {
+            ( $.fn.KatApp.applications as KatAppPlugIn[] ).forEach( a => { 
+                if ( from.id != a.id ) {
+                    this.triggerApplicationEvent( a, "onKatAppNotification", name, information, a );
+                }
+            });        
+        }
+
         triggerEvent(eventName: string, ...args: ( object | string | undefined )[]): boolean {
             const application = this.application;
+            return this.triggerApplicationEvent( application, eventName, ...args );
+        }
+
+        private triggerApplicationEvent(application: KatAppPlugIn, eventName: string, ...args: ( object | string | undefined )[]): boolean {
             let eventCancelled = false;
             try {
                 application.trace("Calling " + eventName + " delegate: Starting...", TraceVerbosity.Diagnostic);
@@ -3721,7 +3738,8 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                                 isDownload: ( actionLink.attr("rbl-action-download") ?? "false" ) == "true",
                                 customParameters: parametersJson,
                                 customInputs: inputsJson
-                            } );
+                            },
+                            actionLink );
                     };
                         
                     // .on("click", function() { return that.onConfirmLinkClick( $(this)); })
@@ -4427,7 +4445,21 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
         return new StandardTemplateBuilder( application );
     };
 
+    $.fn.KatApp.reset = function(): void {
+        // This is deleted each time the 'real' Provider js runs, so rebuild it
+        $.fn.KatApp.plugInShims = [];
+        $.fn.KatApp.applications = [];
+        // reset factory to shim factory
+        $.fn.KatApp.applicationFactory = $.fn.KatApp.debugApplicationFactory;
+        $.fn.KatApp.sharedData = { requesting: false, callbacks: [] };
+        // remove templates
+        $("rbl-katapps > rbl-templates").remove();
+        $.fn.KatApp.templatesUsedByAllApps = {};
+        $.fn.KatApp.templateDelegates = [];
+    }
+
     // Replace the applicationFactory to create real KatAppPlugIn implementations
+    $.fn.KatApp.applications = [];
     $.fn.KatApp.applicationFactory = function( id: string, element: JQuery, options: KatAppOptions): KatAppPlugInShimInterface {
         // Timing concerns at all?
         //      $("selector").KatApp() - two returned
@@ -4443,7 +4475,10 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
         //      might have been added after initial processing (do to thread races) ... of course can't destroy the cache at bottom
         //      of this file if I am going to do that.
         
-        return new KatAppPlugIn(id, element, options);
+        const applications = $.fn.KatApp.applications as KatAppPlugIn[];
+        const application = new KatAppPlugIn(id, element, options);
+        applications.push( application );
+        return application;
     };
 
     // Get Global: put as prefix if missing

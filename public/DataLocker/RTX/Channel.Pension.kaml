@@ -110,12 +110,23 @@
       $(".scroll-indicator-controller").show(); 
     });
 
-    view.on("onActionResult.RBLe", function (e, commandName, _jsonResponse, application) {
+    view.on("onActionResult.RBLe", function (e, commandName, _jsonResponse, application, _actionLink) {
       if (commandName == "DeleteCalculation") {
         e.preventDefault();
         application.calculate();
+        application.pushNotification("DeletePensionEstimate");
       }
     });
+		view.on( "onKatAppNotification.RBLe", function( event, name, information, application ) {
+      switch( name ) {
+          case "SavePensionEstimate": // Pension Estimate Page can add/delete these
+          case "DeletePensionEstimate":
+          {
+              application.calculate();
+              break;
+          }
+      }
+		});
     
   })();
 

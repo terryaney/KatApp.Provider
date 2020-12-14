@@ -293,13 +293,7 @@
                             : KatApp.defaultOptions.getData
                     } );
 
-                    // This is deleted each time the 'real' Provider js runs, so rebuild it and reset factory to shim factory
-                    $.fn.KatApp.plugInShims = [];
-                    $.fn.KatApp.applicationFactory = $.fn.KatApp.debugApplicationFactory;
-                    $.fn.KatApp.sharedData = { requesting: false, callbacks: [] };
-                    $("rbl-katapps > rbl-templates").remove(); // remove templates
-                    $.fn.KatApp.templatesUsedByAllApps = {};
-                    $.fn.KatApp.templateDelegates = [];
+                    $.fn.KatApp.reset();
 
                     $(".logo-left").html("KatApp Test Harness: " + $(".CustomView", view).val());
                     $(selector).attr("rbl-trace-id", $(".CustomView", view).val().split(":")[1]).KatApp(options);

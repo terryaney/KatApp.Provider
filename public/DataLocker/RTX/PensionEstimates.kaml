@@ -203,6 +203,16 @@
 			debugger;
 		}
 
+		view.on( "onKatAppNotification.RBLe", function( event, name, information, application ) {
+            switch( name ) {
+                case "DeletePensionEstimate": // Pension Channel can delete this
+                {
+                    application.calculate();
+                    break;
+                }
+            }
+		});
+
         view.on( "onCalculation.RBLe", function( event, results, options, application ) {
             $(".recalcNeeded").removeClass("active");
         });
@@ -215,10 +225,11 @@
             });
             $(".rblMarkup", view).show();
         });
-        view.on("onActionResult.RBLe", function (e, commandName, _jsonResponse, application) {
+        view.on("onActionResult.RBLe", function (e, commandName, _jsonResponse, application, _actionLink) {
             if (commandName == "DeleteCalculation") {
                 e.preventDefault();
                 application.calculate();
+                application.pushNotification("DeletePensionEstimate");
             }
         });
 		view.on( "onInitialized.RBLe", function( event, application ) {
@@ -240,8 +251,9 @@
                 application.calculate();
             });
             $(".saveButtonAction", view).on('click', function (e) {
-                application.serverCalculation({ iSaveInputs: 1, iCalculationName: $(".iCalculationName", view).val() });
+                application.serverCalculation({ iSaveInputs: 1, iCalculationName: $(".iCalculationName", view).val() }, $(this));
                 application.calculate(); 
+                application.pushNotification("SavePensionEstimate");
                 // Would be nice to wrap these two calls into one.  CE would have to change to give me est in summary 
                 // table BEFORE it is saved, b/c save would occur after results come back and are submitted to RBLe web api
                 // so for now just doing two calcs

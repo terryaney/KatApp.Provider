@@ -1,9 +1,5 @@
 # Questions and TODOs
 
-## Approval
-- Provider + Templates together (make sure to test LAW/Dr as well)
-- After approval of Find Dr, delete Standard_TemplatesBS4
-
 ## TODO
 - How do I check/handle for errors when I try to load view
 - Ability to have two CE's for one view might be needed for stochastic

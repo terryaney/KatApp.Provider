@@ -504,11 +504,12 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
             initPipeline( 0 );
         }
 
-        rebuild( options: KatAppOptions ): void {
+        rebuild( options: KatAppOptions ): KatAppOptions {
             const o = KatApp.extend({}, this.options, options);
             this.ui.unbindCalculationInputs();
             this.ui.triggerEvent( "onDestroyed", this );
             this.init( o );
+            return o;
         }
 
         pushNotification(name: string, information: {} | undefined): void {
@@ -1101,9 +1102,9 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
             $.fn.KatApp.templatesUsedByAllApps = {};
             $.fn.KatApp.templateDelegates = [];
 
+            // Remove all event handlers on view because they'll be reset
+            this.element.off(".RBLe");
 
-            const runConfigureUICalculation = this.options.runConfigureUICalculation;
-            
             if ( readViewOptions || true ) {
                 // Clear these out and read from the view
                 this.options.calcEngine = undefined;
@@ -1113,34 +1114,42 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                 this.options.resultTabs = undefined;
             }
             
-            this.rebuild( { runConfigureUICalculation: false } ); // Don't run new calcs b/c need to just use existing results
-            this.options.runConfigureUICalculation = runConfigureUICalculation;
+            const that = this;
+            let rebuildOptions: KatAppOptions;
 
-            // From here down, some duplication from calculate(), not sure if make one
-            // private method that is used with optional param to 'use existing results'
-            // is better, but for now just putting this.
-            //
-            // NOTE: Below in error handler, I don't clear out results because if developer
-            // is calling this, presummably results worked previously and they just updated
-            // their view and want to test that.
+            var redrawInit = function() {
+                // From here down, some duplication from calculate(), not sure if make one
+                // private method that is used with optional param to 'use existing results'
+                // is better, but for now just putting this.
+                //
+                // NOTE: Below in error handler, I don't clear out results because if developer
+                // is calling this, presummably results worked previously and they just updated
+                // their view and want to test that.
 
-            this.exception = undefined; // Should I set results to undefined too?
+                that.exception = undefined; // Should I set results to undefined too?
 
-            const cancelCalculation = !this.ui.triggerEvent( "onCalculateStart", this );
+                const cancelCalculation = !that.ui.triggerEvent( "onCalculateStart", that );
 
-            if ( cancelCalculation ) {
-                this.ui.triggerEvent( "onCalculateEnd", this );
-                return;
-            }
+                if ( cancelCalculation ) {
+                    that.ui.triggerEvent( "onCalculateEnd", that );
+                    return;
+                }
 
-            try {
-                this.processResults(this.options);
-            } catch (error) {
-                // this.rble.setResults( undefined );
-                this.trace( "Error during result processing: " + error, TraceVerbosity.None );
-                this.ui.triggerEvent( "onCalculationErrors", "RunCalculation", error, this.exception, this.options, this );
-            }
-            this.ui.triggerEvent( "onCalculateEnd", this );
+                try {
+                    that.processResults(rebuildOptions);
+                } catch (error) {
+                    // this.rble.setResults( undefined );
+                    that.trace( "Error during result processing: " + error, TraceVerbosity.None );
+                    that.ui.triggerEvent( "onCalculationErrors", "RunCalculation", error, that.exception, that.options, that );
+                }
+                that.ui.triggerEvent( "onCalculateEnd", that );
+                that.element.off( "onInitialized.RBLe", redrawInit);
+            };
+            this.element.on( "onInitialized.RBLe", redrawInit);
+
+            // This returns right away, so need to hook up the event handler above to process everything 
+            // after view is loaded
+            rebuildOptions = this.rebuild( { runConfigureUICalculation: false } ); // Don't run new calcs b/c need to just use existing results
         }
 
         refreshCalcEngine(): void {

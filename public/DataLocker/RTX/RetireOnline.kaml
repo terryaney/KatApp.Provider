@@ -7,18 +7,7 @@
 -->
 
 <style>
-    /* overriding branding.css */
-    .input-group>.input-group-append>.btn, 
-    .input-group>.input-group-append>.input-group-text, 
-    .input-group>.input-group-prepend:first-child>.btn:not(:first-child), 
-    .input-group>.input-group-prepend:first-child>.input-group-text:not(:first-child), 
-    .input-group>.input-group-prepend:not(:first-child)>.btn, 
-    .input-group>.input-group-prepend:not(:first-child)>.input-group-text {
-        border-top-left-radius: 0 !important;
-        border-bottom-left-radius: 0 !important;
-    }
-
-    .rca {
+    .thisClass .rca {
         border: solid 1px #ccc;
         padding: 10px;
         border-radius: 5px;

@@ -1,33 +1,29 @@
-<rbl-config calcengine="Buck_DecisionSupportIRP_SE" templates="Standard_Templates"></rbl-config>
+<rbl-config calcengine="Buck_DecisionSupportIRP_SE" templates="Standard_Templates,Input_TemplatesBS4"></rbl-config>
 
 <style>
-    {thisView} div.chart { height: 350px; }
+     div.chart { height: 350px; }
     @media (max-width: 767px) {
         .irp-modal div.chart { height: 250px; }
     }
-    {thisView} .ws-info {
+    .thisClass .ws-info {
         padding-right: 5px;
         text-decoration: none;
         outline: none;
     }
-    {thisView} a.ws-info:focus {
+    .thisClass a.ws-info:focus {
         border: 0;
         outline: none;
     }
-	{thisView} .IRPResults {
-        margin-top: 100px;
-    }
-	{thisView} .irp-buttons button {
+	.thisClass .irp-buttons button {
 		width: 200px;
 	}
-	{thisView} .wsiAnnualFuturePayIncreaseRate, {thisView} .wsiMedicalCostInflation {
+	.thisClass .wsiAnnualFuturePayIncreaseRate, .thisClass .wsiMedicalCostInflation {
 		display: none;
 	}
-	{thisView} .noUi-handle div {display: none;}
-
+	.thisClass .noUi-handle div {display: none;}
 </style>
 
-<div class="hidden">
+<div class="d-none">
     <input name="iInputsFromModeler" class="iInputsFromModeler" value="">
 	<input name="iCPI" class="iCPI" value="">
 	<input name="iReplaceRatio" class="iReplaceRatio" value="">
@@ -35,11 +31,9 @@
 
 <div class="row ajaxContent">
 	<div class="col-md-4">
-		<ul class="nav nav-tabs" role="tablist">
-			<li role="presentation" class="col-xs-12 active"><a href="#tabAssumptions_{id}" role="tab" data-toggle="tab" class="text-center">Assumptions</a></li>
-		</ul>
-		<div class="tab-content match-height">
-			<div role="tabpanel" class="tab-pane fade in active" id="tabAssumptions_{id}">
+		<div class="card mt-0">
+			<div class="card-header"><h4 class="card-title">Assumptions</h4></div>
+			<div class="card-body">
 				<div class="alert alert-warning" role="alert">
 					<p>Please enter your personal information below.</p>
 					<div class="row">
@@ -49,7 +43,7 @@
 								<a class="vhassumptionType" role="button" tabindex="0" data-toggle="popover" data-trigger="click" data-content-selector=".hassumptionType_{id}" data-placement="top">
 									<span class="glyphicon glyphicon-info-sign help-icon"></span>
 								</a>
-								<div class="hidden hassumptionType_{id}">Use the dropdown to toggle between your Data/Assumptions and your Changes in Finances.</div>
+								<div class="d-none hassumptionType_{id}">Use the dropdown to toggle between your Data/Assumptions and your Changes in Finances.</div>
 								<select class="form-control bootstrap-select notRBLe skipRBLe assumptionType_{id}">
 									<option selected="selected" value=".tabDataAssumptions_{id}">Data / Assumptions</option>
 									<option value=".tabFutureFinancial_{id}">Changes in Finances</option>
@@ -84,20 +78,25 @@
 		</div>
 	</div>
 	<div class="col-md-8">
-		<div class="IRPResults">
-			<p><a class="vhiLearnMore" role="button" tabindex="0" data-toggle="modal" data-target=".learnMoreModal">Learn more about the IRP Calculation.</a></p>
-			<div class="row">
-				<div class="col-md-6">
-					<div class="text-center">
-						<div rbl-tid="chart-highcharts" rbl-chartdata="IRPChart"></div>
+		<div class="card mt-0">
+			<div class="card-header"><h4 class="card-title">Results</h4></div>
+			<div class="card-body">
+				<div class="IRPResults">
+					<p><a class="vhiLearnMore" role="button" tabindex="0" data-toggle="modal" data-target=".learnMoreModal">Learn more about the IRP Calculation.</a></p>
+					<div class="row">
+						<div class="col-md-6">
+							<div class="text-center">
+								<div rbl-tid="chart-highcharts" rbl-chartdata="IRPChart"></div>
+							</div>
+						</div>
+						<div class="col-md-6">
+							<div class="alert alert-success" role="alert"><h2 class="irpHeading"></h2></div>
+							<div rbl-tid="result-table" rbl-tablename="summary-table"></div>
+						</div>
+						<div class="col-md-12">
+							<div class="alert alert-warning" role="alert"><p class="irpFootnote">* Initially takes into account a decrease in expenses at retirement due to no payroll taxes and no savings plan contributions</p></div>
+						</div>
 					</div>
-				</div>
-				<div class="col-md-6">
-					<div class="alert alert-success" role="alert"><h2 class="irpHeading"></h2></div>
-					<div rbl-tid="result-table" rbl-tablename="summary-table"></div>
-				</div>
-				<div class="col-md-12">
-					<div class="alert alert-warning" role="alert"><p class="irpFootnote">* Initially takes into account a decrease in expenses at retirement due to no payroll taxes and no savings plan contributions</p></div>
 				</div>
 			</div>
 		</div>

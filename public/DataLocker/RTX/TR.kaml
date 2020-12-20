@@ -1,47 +1,22 @@
 <rbl-config calcengine="Conduent_ABC_TR_SE" bootstrap="4" templates="Standard_Templates,Input_TemplatesBS4" precalcs="Conduent_ABC_DCCalc_SE|RBLInput|RBLResultDCProj"></rbl-config>
 
 <style>
-	thisClass span.highcharts-title {
+	.thisClass span.highcharts-title {
 		font-family: inherit !important;
 	}
-
-	thisClass .chart-swatch {
-	width: 20px; height: 20px;
+	.thisClass .chart-swatch {
+		width: 20px; height: 20px;
 	}
-	thisClass td.swatch {
-	width: 26px;
-	padding-right: 0px;
+	.thisClass td.swatch {
+		width: 26px;
+		padding-right: 0px;
 	}
-	thisClass .table > tbody > tr.total > td {
-	font-weight: bold;
+	.thisClass .table > tbody > tr.total > td {
+		text-align: right;
 	}
-	thisClass .table > tbody > tr.total > td {
-	text-align: right;
-	}
-	thisClass th.value {
-	    text-align: right;
-	}
-	thisClass td.value {
-	    text-align: right;
-	}
-
-	[rbl-chartoptions=Pie] h4 {
+	.thisClass [rbl-chartoptions=Pie] h4 {
 		top: -15px;
 		position: relative;
-	}
-
-	.bs-callout {
-		padding: 20px;
-		margin: 20px 0;
-		border: 1px solid #eee;
-		border-left-width: 5px;
-		border-radius: 3px;
-	}
-	.bs-callout-info {
-		border-left-color: #1b809e;
-	}
-	.bs-callout-warning {
-		border-left-color: orange;
 	}
 </style>
 

@@ -130,24 +130,6 @@
     
   })();
 
-  //# sourceURL=Channel.Pension.kaml
-</script>
-
-<div class="d-none skipRBLe">
-  <input name="{id}:iAgeCommStart" type="text" id="katapp_{id}_iAgeCommStart" class="iAgeCommStart" val="1"/>
-  <input name="{id}:iAlertType" type="text" id="katapp_{id}_iAlertType" class="iAlertType" val="pension"></input>
-</div>
-
-<style>
-  thisClass table .value {
-    text-align: right;
-  }
-  thisClass .ajaxContent {
-    min-height: inherit !important;
-  }
-</style>
-
-<script>
   $(window).scroll(function() {
      if ($(this).scrollTop() < 57){
         $('h5').addClass("absolute");
@@ -155,7 +137,13 @@
         $('h5').removeClass("absolute");
      }
   });
+  //# sourceURL=Channel.Pension.kaml
 </script>
+
+<div class="d-none skipRBLe">
+  <input name="{id}:iAgeCommStart" type="text" id="katapp_{id}_iAgeCommStart" class="iAgeCommStart" val="1"/>
+  <input name="{id}:iAlertType" type="text" id="katapp_{id}_iAlertType" class="iAlertType" val="pension"></input>
+</div>
 
 <div class="ajaxContent">
   <h5 class="pageTitle sticky-top absolute"><a href="#top">Pension</a></h5>

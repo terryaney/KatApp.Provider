@@ -692,6 +692,39 @@
   cursor: text !important;
 }
 
+/* Make sure buttons in 'middle' of input group don't have rounded corners */
+.katapp-css .input-group>.input-group-append>.btn, 
+.katapp-css .input-group>.input-group-append>.input-group-text, 
+.katapp-css .input-group>.input-group-prepend:first-child>.btn:not(:first-child), 
+.katapp-css .input-group>.input-group-prepend:first-child>.input-group-text:not(:first-child), 
+.katapp-css .input-group>.input-group-prepend:not(:first-child)>.btn, 
+.katapp-css .input-group>.input-group-prepend:not(:first-child)>.input-group-text {
+    border-top-left-radius: 0 !important;
+    border-bottom-left-radius: 0 !important;
+}
+
+/****** KatApp modals ******/
+.katapp-css .katapp-modal {
+    display: none; /* Hidden by default */
+    position: fixed; /* Stay in place */
+    z-index: 1050; /* Sit on top */
+    left: 0;
+    top: 0;
+    width: 100%; /* Full width */
+    height: 100%; /* Full height */
+    overflow: auto; /* Enable scroll if needed */
+    background-color: rgb(0,0,0); /* Fallback color */
+    background-color: rgba(0,0,0,0.4); /* Black w/ opacity */
+}
+
+.katapp-css .katapp-modal .katapp-content {
+    background-color: #fefefe;
+    margin: 20px auto; /* 'top' and centered */
+    padding: 20px;
+    border: 2px solid #888;
+    width: 80%; /* Could be more or less, depending on screen size */
+}
+
 /****** Table Formatting ******/
 .katapp-css .table thead tr th,
 .katapp-css .table tbody tr th {
@@ -703,4 +736,9 @@
 .katapp-css .table thead tr th.value {
 	text-align: right;
 }
+
+.katapp-css .table > tbody > tr.total > td {
+  font-weight: bold;
+}
+
 </style>

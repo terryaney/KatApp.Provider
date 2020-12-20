@@ -57,6 +57,19 @@
         border-top-left-radius: 0px !important;
         border-bottom-left-radius: 0px !important;
     }
+
+    .thisClass table.ret-estimate tr td {
+        padding: 0.3em;
+    }
+    .thisClass table.ret-estimate tr.plan-header td {
+        padding-top: 1em;
+        font-size: 20px;
+        border-bottom: 1px solid #000;
+    }
+    .thisClass table.ret-estimate tr.plan-columns td {
+        padding-top: 0.6em;
+        border-bottom: 1px solid #000;
+    }    
 </style>
 
 <section id="pension-estimates" class="pension-estimates section-padding scroll-indicator" data-scroll-indicator-title="Pension Estimates">

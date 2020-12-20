@@ -147,7 +147,6 @@
   }
 </style>
 
-<script type="text/javascript" src="resources/js/core.js"></script>
 <script>
   $(window).scroll(function() {
      if ($(this).scrollTop() < 57){
@@ -164,125 +163,47 @@
   <!--                                   				START - BODY CONENT											   -->
   <!-- ============================================================================================================= -->
     
-  
-    
-  
     
     
   <!-- ============================================================================================================= -->
   <!--                                   				START - ALERT CENTER										   -->
   <!-- ============================================================================================================= -->   
-  <section id="alertCenter" class="alertCenter section-padding scroll-indicator hideme d-none" data-scroll-indicator-title="Alert Center">
+  <section id="alertCenter" class="alertCenter section-padding scroll-indicator-off hideme d-none"
+    data-scroll-indicator-title="Alert Center">
   
     <h2 class="title">Alert Center <a href="ActionCenter.html" class="smallTxt">view all</a></h2>
-    
-    
-  <div id="swipe" class="container">	
-    
-    
-  <!-- Slider main container -->
-  <div class="swiper-container">
-    <!-- Additional required wrapper -->
-    <div class="swiper-wrapper" rbl-source="DBAlerts">
-      <!-- Slides -->
-      <div rbl-tid="inline" class="swiper-slide" style="width: 341.429px; margin-right: 10px; padding-right: 0px">
-        <div class="card h-100">
-          <div class="row no-gutters">
-            <div class="col-2">
-              <img src="resources/images/{image}" class="card-img" alt="{type}"><div class="text-center"><small></small></div>
-            </div>
-            <div class="col-10">
-              <div class="card-body">
-                <h5 class="card-title">{title} </h5>
-                <p class="card-text card-content">{message}</p>
-  <!--          Commented out to allow link in message
-                <a href="#null" class="cardHover stretched-link" aria-expanded="false"></a>
-  -->
+  
+    <div id="swipe" class="container">
+      <!-- Slider main container -->
+      <div class="swiper-container">
+        <!-- Additional required wrapper -->
+        <div class="swiper-wrapper" rbl-source="DBAlerts">
+          <!-- Slides -->
+          <div rbl-tid="inline" class="swiper-slide" style="width: 341.429px; margin-right: 10px; padding-right: 0px">
+            <div class="card h-100">
+              <div class="row no-gutters">
+                <div class="col-2">
+                  <img src="resources/images/{image}" class="card-img" alt="{type}">
+                  <div class="text-center"><small></small></div>
+                </div>
+                <div class="col-10">
+                  <div class="card-body">
+                    <h5 class="card-title">{title} </h5>
+                    <p class="card-text card-content">{message}</p>
+                    <!--          Commented out to allow link in message
+                    <a href="#null" class="cardHover stretched-link" aria-expanded="false"></a>
+                    -->
+                  </div>
+                </div>
               </div>
             </div>
           </div>
+  
         </div>
+        <!-- If we need pagination -->
+        <div class="swiper-pagination"></div>
       </div>
   
-      <!--
-        <div class="swiper-slide">
-          <div class="card">
-            <div class="row no-gutters">
-              <div class="col-2">
-                <img src="resources/images/Icon_Suggestion.png" class="card-img" alt="Suggestion"><div class="text-center"><small></small></div>
-              </div>
-              <div class="col-10">
-                <div class="card-body">
-                  <h5 class="card-title">Increase your pension amount </h5>
-                  <p class="card-text card-content">You get an additional Company subsidy if you work till age 65.</p>
-                  <a href="#null" class="cardHover stretched-link" aria-expanded="false"></a>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      
-          
-        <div class="swiper-slide">
-          <div class="card">
-            <div class="row no-gutters">
-              <div class="col-2">
-                <img src="resources/images/Icon_Suggestion.png" class="card-img" alt="Suggestion"><div class="text-center"><small></small></div>
-              </div>
-              <div class="col-10">
-                <div class="card-body">
-                  <h5 class="card-title">How much is your pension worth? </h5>
-                  <p class="card-text card-content">Now that you turned 50, try the Pension Calculator to estimate at key retirement dates.</p>
-                  <a href="htl_DBEstimate" class="cardHover stretched-link" aria-expanded="false"></a>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-  
-      
-        <div class="swiper-slide">
-          <div class="card">
-            <div class="row no-gutters">
-              <div class="col-2">
-                <img src="resources/images/Icon_Docs.png" class="card-img" alt="Message"><div class="text-center"><small></small></div>
-              </div>
-              <div class="col-10">
-                <div class="card-body">
-                  <h5 class="card-title">Retirement Packet </h5>
-                  <p class="card-text card-content">Was mailed to your home address on Nov 6, 2020.</p>
-                  <a href="#null" class="cardHover stretched-link"></a>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-        
-        
-        <div class="swiper-slide">
-          <div class="card">
-            <div class="row no-gutters">
-              <div class="col-2">
-                <img src="resources/images/Icon_Actions.png" class="card-img" alt="Action"><div class="text-center"><small></small></div>
-              </div>
-              <div class="col-10">
-                <div class="card-body">
-                  <h5 class="card-title">Form Due</h5>
-                  <p class="card-text card-content">You must sign and return your Pension Election Form by Dec 31, 2020.</p>
-                  <a href="#null" class="cardHover stretched-link" aria-expanded="false"></a>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>      
-      -->
-    </div>
-    <!-- If we need pagination -->
-    <div class="swiper-pagination"></div>
-  </div>
-  
-  
-    
     </div>
   </section>
   <!-- ============================================================================================================= -->
@@ -290,324 +211,193 @@
   <!-- ============================================================================================================= -->
   
     
-    
-    
-    
   
   
   <!-- ============================================================================================================= -->
   <!--                                   				START - Pension Amounts										   -->
   <!-- ============================================================================================================= --> 
-  <section id="pensionAmounts" class="pensionAmounts section-padding scroll-indicator hideme" data-scroll-indicator-title="Pension Amounts">
-    
-  <h2 class="title">Pension Amounts</h2>	
+  <section id="pensionAmounts" class="pensionAmounts section-padding scroll-indicator hideme"
+    data-scroll-indicator-title="Pension Amounts">
   
-  <div class="container"> 
-    
-          
-  <div class="row">
-  <!-- ==========================   COLUMN 1   ========================== --> 
-  <div class="col-12 col-lg-8">
+    <h2 class="title">Pension Amounts</h2>
+    <div class="container">
+      <div class="row">
+        <!-- ==========================   COLUMN 1   ========================== -->
+        <div class="col-12 col-lg-8">
   
-    
-  <!-- CURRENT VALUE -->
-    <div class="card">
-      <div class="card-header gradient">
-        <h4>Current Accrued Benefit <span class="paranthetical">(Based on pay and service through dates indicated)</span></h4>
+          <!-- CURRENT VALUE -->
+          <div class="card">
+            <div class="card-header gradient">
+              <h4>Current Accrued Benefit <span class="paranthetical">(Based on pay and service through dates indicated)</span></h4>
   
-        <div class="dropdown">
-          <a id="showMoreCurrentValue" href="#null" class="showMore text-bold btn moreLink push" data-target="#" data-toggle="dropdown" aria-expanded="false"><span title="More" class=" options">+</span></a>
+              <div class="dropdown">
+                <a id="showMoreCurrentValue" href="#null" class="showMore text-bold btn moreLink push" data-target="#"
+                  data-toggle="dropdown" aria-expanded="false"><span title="More" class=" options">+</span></a>
   
-          <ul class="dropdown-menu showMoreMenu" aria-labelledby="showMoreCurrentValue">
-            <li rbl-display="vCashBalance"><a href="Wealth/Pension_AccountActivity.html">Cash Balance History <span class="glyphicons glyphicons-chevron-right"></span></a></li>
-            <li><a href="#null">Online Statement <span class="glyphicons glyphicons-chevron-right"></span></a></li>
-            <li><a href="Wealth/Pension_Profile.html">Pension Profile <span class="glyphicons glyphicons-chevron-right"></span></a></li>
-            <li><a href="javascript:void(0)" data-toggle="modal" data-target="#modal-DB">Learn about your Pension <span class="glyphicons glyphicons-chevron-right"></span></a></li>
-            <li rbl-display="vRetireOnline"><a href="htl_RetOnline">Retire Online <span class="glyphicons glyphicons-chevron-right"></span></a></li>
-          </ul>
-        </div>
-  
-      </div>
-  
-      <div class="card-body">
-      <table class="rwd-table">
-        <thead class="d-none-mobile">
-          <tr>
-            <th></th>
-            <th class="borderBtm font-weight-light text-right" rbl-value="DBCurrentBenefitsCol1" rbl-display="vCashBalance"></th>
-            <th class="borderBtm" rbl-display="vCashBalance"></th>
-            <th class="borderBtm font-weight-light text-right" rbl-value="DBCurrentBenefitsCol2"></th>
-          </tr>
-        </thead>
-        <tbody rbl-source="DBCurrentBenefits">
-          <tr class="borderBtm-mobile" rbl-tid="inline">
-            <td class="tableTitleNormal">{text}</td>
-            <td data-th="{label1}" class="tableValueR text-right"  rbl-display="vCashBalance"><span>{value1}</span></td>
-            <td class="text-center" rbl-display="vCashBalance">OR</td>
-            <td data-th="{label2}" class="tableValueR text-right"><span>{value2}</span></td>
-          </tr>
-  <!--
-          <tr class="borderBtm-mobile">
-            <td class="tableTitleNormal">Cash Balance Plan<br/><small class="paranthetical">(as of Nov 1, 2020)</small></td>
-            <td data-th="Current Balance" class="tableValueR text-right"><span>$53,185.62</span></td>
-            <td class="text-right">OR</td>
-            <td data-th="Monthly Benefit at Age 65" class="tableValueR text-right"><span>$355.21</span></td>
-          </tr>
-          <tr class="borderBtm-mobile">
-            <td class="tableTitleNormal">Raytheon Pension Plan<br/><small class="paranthetical">(as of Sep 30, 2020)</small></td>
-            <td data-th="Current Balance" class="tableValueR text-right"><span>n/a</span></td>
-            <td class="text-center">&nbsp;</td>
-            <td data-th="Monthly Benefit at Age 65" class="tableValueR text-right"><span>$2,084.22</span></td>
-          </tr>
-          <tr class="borderBtm-mobile">
-            <td class="tableTitleNormal">UTC Pension Plan<br/><small class="paranthetical">(as of Sep 30, 2020)</small></td>
-            <td data-th="Current Balance" class="tableValueR text-right"><span>n/a</span></td>
-            <td class="text-center">&nbsp;</td>
-            <td data-th="Monthly Benefit at Age 65" class="tableValueR text-right"><span>$602.95</span></td>
-          </tr>
-  -->
-        </tbody>
-      </table>
-      <!--<img src="resources/images/Pension_CurrentValue.png" alt="Current Pension Value" />-->
-      </div>
-  
-    </div>
-  
-  </div>
-  <!-- ==========================   COLUMN 2   ========================== --> 
-  <div class="col-12 col-lg-4">
-  
-  <div class="card retirePlan">
-  <div class="card-header">
-  <h4>Retirement Planning</h4>
-  </div>
-    
-    <div class="card-body">
-      <div class="row m-0">
-        <div class="col-12 p-0 dashemphasis card retPlan">
-          You are <span class="boldText" style="font-size: 150%" rbl-value="probReachGoal"></span> likely to have funds that cover your retirement goals. 
-        </div>
-        <div class="col-12 p-0 card retPlan alertCard">
-        <div class="alert alert-notify sideside">
-          <div class="alertTitle"><img src="resources/images/Icon_Suggestion.png" alt=""/> SUGGESTION</div>
-          <a class="alertActions" href="htl_sharkfin" rbl-value="suggestions"></a>
-        </div>
-        </div>
-      </div>
-    </div>
-    
-  </div>
-  </div>
-  </div>
-  
-  
-  
-      <div class="row">	
-      <div class="col-12 col-lg-8">	
-        <div class="card assist trans">
-          <div class="card-body">
-            <h3 class="question">
-              <span class="assistImage"></span> 
-  
-              <div class="assistRating">
-                 <span class="">Reminder!</span>
+                <ul class="dropdown-menu showMoreMenu" aria-labelledby="showMoreCurrentValue">
+                  <li rbl-display="vCashBalance"><a href="Wealth/Pension_AccountActivity.html">Cash Balance History <span class="glyphicons glyphicons-chevron-right"></span></a></li>
+                  <li><a href="#null">Online Statement <span class="glyphicons glyphicons-chevron-right"></span></a></li>
+                  <li><a href="Wealth/Pension_Profile.html">Pension Profile <span class="glyphicons glyphicons-chevron-right"></span></a></li>
+                  <li><a href="#null" data-toggle="modal" data-target="#kat-modal-DB">Learn about your Pension <span class="glyphicons glyphicons-chevron-right"></span></a></li>
+                  <li rbl-display="vRetireOnline"><a href="htl_RetOnline">Retire Online <span class="glyphicons glyphicons-chevron-right"></span></a></li>
+                </ul>
               </div>
-              <div class="assistResponse">
-                <p>The Future Estimates shown below illustrate the monthly payments you would get if you quit working at the ages shown and immediately start receiving monthly payments</p> 
-              </div>
-            </h3>
+  
+            </div>
+  
+            <div class="card-body">
+              <table class="rwd-table">
+                <thead class="d-none-mobile">
+                  <tr>
+                    <th></th>
+                    <th class="borderBtm font-weight-light text-right" rbl-value="DBCurrentBenefitsCol1" rbl-display="vCashBalance"></th>
+                    <th class="borderBtm" rbl-display="vCashBalance"></th>
+                    <th class="borderBtm font-weight-light text-right" rbl-value="DBCurrentBenefitsCol2"></th>
+                  </tr>
+                </thead>
+                <tbody rbl-source="DBCurrentBenefits">
+                  <tr class="borderBtm-mobile" rbl-tid="inline">
+                    <td class="tableTitleNormal">{text}</td>
+                    <td data-th="{label1}" class="tableValueR text-right" rbl-display="vCashBalance"><span>{value1}</span></td>
+                    <td class="text-center" rbl-display="vCashBalance">OR</td>
+                    <td data-th="{label2}" class="tableValueR text-right"><span>{value2}</span></td>
+                  </tr>
+                  <!--
+                  <tr class="borderBtm-mobile">
+                    <td class="tableTitleNormal">Cash Balance Plan<br/><small class="paranthetical">(as of Nov 1, 2020)</small></td>
+                    <td data-th="Current Balance" class="tableValueR text-right"><span>$53,185.62</span></td>
+                    <td class="text-right">OR</td>
+                    <td data-th="Monthly Benefit at Age 65" class="tableValueR text-right"><span>$355.21</span></td>
+                  </tr>
+                  <tr class="borderBtm-mobile">
+                    <td class="tableTitleNormal">Raytheon Pension Plan<br/><small class="paranthetical">(as of Sep 30, 2020)</small></td>
+                    <td data-th="Current Balance" class="tableValueR text-right"><span>n/a</span></td>
+                    <td class="text-center">&nbsp;</td>
+                    <td data-th="Monthly Benefit at Age 65" class="tableValueR text-right"><span>$2,084.22</span></td>
+                  </tr>
+                  <tr class="borderBtm-mobile">
+                    <td class="tableTitleNormal">UTC Pension Plan<br/><small class="paranthetical">(as of Sep 30, 2020)</small></td>
+                    <td data-th="Current Balance" class="tableValueR text-right"><span>n/a</span></td>
+                    <td class="text-center">&nbsp;</td>
+                    <td data-th="Monthly Benefit at Age 65" class="tableValueR text-right"><span>$602.95</span></td>
+                  </tr>
+                  -->
+                </tbody>
+              </table>
+            </div>
           </div>
         </div>
+
+        <!-- ==========================   COLUMN 2   ========================== -->
+        <div class="col-12 col-lg-4">
+          <div class="card retirePlan">
+            <div class="card-header">
+              <h4>Retirement Planning</h4>
+            </div>
+  
+            <div class="card-body">
+              <div class="row m-0">
+                <div class="col-12 p-0 dashemphasis card retPlan">You are <span class="boldText" style="font-size: 150%" rbl-value="probReachGoal"></span> likely to have funds that cover your retirement goals.</div>
+                <div class="col-12 p-0 card retPlan alertCard">
+                  <div class="alert alert-notify sideside">
+                    <div class="alertTitle"><img src="resources/images/Icon_Suggestion.png" alt="" /> SUGGESTION</div>
+                    <a class="alertActions" href="htl_sharkfin" rbl-value="suggestions"></a>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+  
+      <div class="row">
+        <div class="col-12 col-lg-8">
+          <div class="card assist trans">
+            <div class="card-body">
+              <h3 class="question">
+                <span class="assistImage"></span>
+  
+                <div class="assistRating">
+                  <span class="">Reminder!</span>
+                </div>
+                <div class="assistResponse">
+                  <p>The Future Estimates shown below illustrate the monthly payments you would get if you quit working at the ages shown and immediately start receiving monthly payments</p>
+                </div>
+              </h3>
+            </div>
+          </div>
         </div>
         <div class="col-12 col-lg-4">
         </div>
-        </div>
-  
-     <div class="row">	
-      <div class="col-12 col-lg-8">		
-    <!-- FUTURE VALUE -->
-    <div class="card">
-      <div class="card-header gradient">
-        <h4 rbl-value="DBFutureHeader"></h4>
-  
-        <div class="dropdown">
-          <a id="showMoreFutureValue" href="#null" class="showMore text-bold btn moreLink push" data-target="#" data-toggle="dropdown" aria-expanded="false"><span title="More" class=" options">+</span></a>
-  
-          <ul class="dropdown-menu showMoreMenu" aria-labelledby="showMoreFutureValue">
-            <li><a href="htl_DBEstimate">Pension Estimate <span class="glyphicons glyphicons-chevron-right"></span></a></li>
-            <li><a href="Wealth/Pension_Profile.html">Pension Profile <span class="glyphicons glyphicons-chevron-right"></span></a></li>
-            <li><a href="javascript:void(0)" data-toggle="modal" data-target="#modal-DB">Learn about your Pension <span class="glyphicons glyphicons-chevron-right"></span></a></li>
-            <li rbl-display="vRetireOnline"><a href="htl_RetOnline">Retire Online <span class="glyphicons glyphicons-chevron-right"></span></a></li>
-          </ul>
-        </div>
-  
       </div>
   
-      <div class="card-body">
-        <div class="text-center">
-          <div rbl-tid="chart-highcharts" rbl-chartdata="DBProjectedBenefitChart" rbl-chartoptions="Bars"></div>
-        </div>
-        <div class="mt-3 table table-condensed table-responsive" rbl-tid="result-table" rbl-tablename="DBProjectedBenefitTable" data-css="w-100"></div>
-  <!--
-      <div class="graphChannelDB"> </div>
-      <div class="d-none d-sm-block d-md-block d-lg-block d-xl-block">
-      <table id="PensionFutureEstimates" class="rwd-table">
-         <thead class="d-none-mobile" > 
-          <tr>
-            <th></th>
-            <th class="borderBtm font-weight-light text-center tableTitleNormal">Age 55</th>
-            <th class="borderBtm font-weight-light text-center tableTitleNormal">Age 60</th>
-            <th class="borderBtm font-weight-light text-center tableTitleNormal">Age 65</th>
-          </tr>
-         </thead> 
-        <tbody>
-          <tr class="borderBtm-mobile">
-              <td data-th="Cash Balance Plan"><span class="glyphicons glyphicons-stop cashbalanceplan"></span>Cash Balance Plan</td>
-            <td data-th="Age 55*" class="borderR text-right tableValueR"><span>$465.87</span></td>
-            <td data-th="Age 60*" class="borderR text-right tableValueR"><span>$601.23</span></td>
-            <td data-th="Age 65*" class="text-right tableValueR"><span>$755.21</span></td>
-          </tr>
-          <tr class="borderBtm-mobile">
-            <td data-th="Raytheon Pension Plan"><span class="glyphicons glyphicons-stop RaytheonPensionPlan"></span>Raytheon Pension Plan</td>
-            <td data-th="Age 55*" class="borderR text-right tableValueR"><span>$2,600.82</span></td>
-            <td data-th="Age 60*" class="borderR text-right tableValueR"><span>$4,031.71</span></td>
-            <td data-th="Age 65*" class="text-right tableValueR"><span>$5,084.22</span></td>
-          </tr>
-          <tr class="borderBtm-mobile">
-            <td data-th="UTC Pension Plan"><span class="glyphicons glyphicons-stop UTCPensionPlan"></span>UTC Pension Plan</td>
-            <td data-th="Age 55*" class="borderR text-right tableValueR"><span>$602.95</span></td>
-            <td data-th="Age 60*" class="borderR text-right tableValueR"><span>$602.95</span></td>
-            <td data-th="Age 65*" class="text-right tableValueR"><span>$602.95</span></td>
-          </tr>
-          <tr class="borderBtm-mobile totalValue">
-            <td class="tableTitleNormal">Total</td>
-            <td data-th="Age 55*" class="text-right tableValueR"><span>$3,669.64</span></td>
-            <td data-th="Age 60*" class="text-right tableValueR"><span>$5,235.89</span></td>
-            <td data-th="Age 65*" class="text-right tableValueR"><span>$6,442.38</span></td>
-          </tr>
-        </tbody>
-      </table>
-      </div>
-      <div class="d-block d-sm-none d-md-none d-lg-none d-xl-none">
-      <table class="rwd-table inline">
-        <tbody>
-          <tr class="tableHeader">
-            <td colspan="2" class="amt">Age 55*</td>
-          </tr>
-          <tr>
-             <td class="indent-2"><span class="glyphicons glyphicons-stop cashbalanceplan"></span>Cash Balance Plan</td>
-             <td>$465.87</td>
-          </tr>
-          <tr>
-             <td class="indent-2"><span class="glyphicons glyphicons-stop RaytheonPensionPlan"></span>Raytheon Pension Plan</td>
-             <td>$2,600.82</td>
-          </tr>
-          <tr>
-             <td class="indent-2"><span class="glyphicons glyphicons-stop UTCPensionPlan"></span>UTC Pension Plan</td>
-             <td>$602.95</td>
-          </tr>
-          <tr class="borderBtm-mobile">
-            <td class="amt">Total</td>
-            <td class="amt">$3,669.64</td>
-          </tr>
-          
-          <tr class="tableHeader">
-            <td colspan="2" class="amt">Age 60*</td>
-          </tr>
-          <tr>
-             <td class="indent-2"><span class="glyphicons glyphicons-stop cashbalanceplan"></span>Cash Balance Plan</td>
-             <td>$601.23</td>
-          </tr>
-          <tr>
-             <td class="indent-2"><span class="glyphicons glyphicons-stop RaytheonPensionPlan"></span>Raytheon Pension Plan</td>
-             <td>$4,031.71</td>
-          </tr>
-          <tr>
-             <td class="indent-2"><span class="glyphicons glyphicons-stop UTCPensionPlan"></span>UTC Pension Plan</td>
-             <td>$483.36</td>
-          </tr>
-          <tr class="borderBtm-mobile">
-            <td class="amt">Total</td>
-            <td class="amt">$5,116.30</td>
-          </tr>
-          
-          <tr class="tableHeader">
-            <td colspan="2" class="amt">Age 65*</td>
-          </tr>
-          <tr>
-             <td class="indent-2"><span class="glyphicons glyphicons-stop cashbalanceplan"></span>Cash Balance Plan</td>
-             <td>$755.21</td>
-          </tr>
-          <tr>
-             <td class="indent-2"><span class="glyphicons glyphicons-stop RaytheonPensionPlan"></span>Raytheon Pension Plan</td>
-             <td>$5,084.22</td>
-          </tr>
-          <tr>
-             <td class="indent-2"><span class="glyphicons glyphicons-stop UTCPensionPlan"></span>UTC Pension Plan</td>
-             <td>$602.95</td>
-          </tr>
-          <tr class="borderBtm-mobile">
-            <td class="amt">Total</td>
-            <td class="amt">$6,442.38</td>
-          </tr>
-          
-        </tbody>
-      </table>
-      </div>
-  -->
-    </div>
+      <div class="row">
+        <div class="col-12 col-lg-8">
+          <!-- FUTURE VALUE -->
+          <div class="card">
+            <div class="card-header gradient">
+              <h4 rbl-value="DBFutureHeader"></h4>
   
-    </div>
+              <div class="dropdown">
+                <a id="showMoreFutureValue" href="#null" class="showMore text-bold btn moreLink push" data-target="#" data-toggle="dropdown" aria-expanded="false"><span title="More" class=" options">+</span></a>
+  
+                <ul class="dropdown-menu showMoreMenu" aria-labelledby="showMoreFutureValue">
+                  <li><a href="htl_DBEstimate">Pension Estimate <span class="glyphicons glyphicons-chevron-right"></span></a></li>
+                  <li><a href="Wealth/Pension_Profile.html">Pension Profile <span class="glyphicons glyphicons-chevron-right"></span></a></li>
+                  <li><a href="#null" data-toggle="modal" data-target="#kat-modal-DB">Learn about your Pension <span class="glyphicons glyphicons-chevron-right"></span></a></li>
+                  <li rbl-display="vRetireOnline"><a href="htl_RetOnline">Retire Online <span class="glyphicons glyphicons-chevron-right"></span></a></li>
+                </ul>
+              </div>
+  
+            </div>
+  
+            <div class="card-body">
+              <div class="text-center">
+                <div rbl-tid="chart-highcharts" rbl-chartdata="DBProjectedBenefitChart" rbl-chartoptions="Bars"></div>
+              </div>
+              <div class="mt-3 table table-condensed table-responsive" rbl-tid="result-table" rbl-tablename="DBProjectedBenefitTable" data-css="w-100"></div>
+            </div>
+          </div>
   
   
-  <div class="card didYouKnow">
-    <div class="row no-gutters">
-      <span rbl-value="profileImage"><img src="resources/images/PENprofile.png" class="card-img" alt="Profile Photo"></span>
-        <div class="card-body">
-          <h5 class="card-title">WHAT THIS MEANS TO YOU </h5>
-          <p>The amount of your pension benefits is based on when you stop working and when you begin taking your pension benefits.</p>
-          <p>The estimated amounts listed above are monthly amounts and assume that you…</p>
-          <ul>
-            <li>stop working at the age indicated</li>
-            <li>begin taking pension benefits at the age(s) indicated</li>
-            <li>choose the Single Life Annuity benefit</li>
-          </ul>
-          <br>
-          <p>Use the <a href="htl_DBEstimate">Pension Estimate</a>  Pension Estimate tool to estimate your pension benefit at different ages or with different forms of payment.</p>
-      </div>
-    </div>
-  </div>	
-  
-  
-  </div>
-  
-      <div class="d-none d-lg-block col-lg-4">
-  
-        <div class="card promoAd">
-          <img src="resources/images/promoAds/adBenefitProj.png" class="card-img-top" alt="Estimate Pension">
-          <h2 class="card-title">Pension Estimate</h2>
-          <div class="card-body">
-            <p class="card-text">Use the Pension Estimate tool to estimate your pension benefit at different ages or with different forms of payment</p>
-            <p><a href="htl_DBEstimate" class="btn btn-primary">Estimate</a></p>
+          <div class="card didYouKnow">
+            <div class="row no-gutters">
+              <span rbl-value="profileImage"><img src="resources/images/PENprofile.png" class="card-img"
+                  alt="Profile Photo"></span>
+              <div class="card-body">
+                <h5 class="card-title">WHAT THIS MEANS TO YOU </h5>
+                <p>The amount of your pension benefits is based on when you stop working and when you begin taking your pension benefits.</p>
+                <p>The estimated amounts listed above are monthly amounts and assume that you…</p>
+                <ul>
+                  <li>stop working at the age indicated</li>
+                  <li>begin taking pension benefits at the age(s) indicated</li>
+                  <li>choose the Single Life Annuity benefit</li>
+                </ul>
+                <br>
+                <p>Use the <a href="htl_DBEstimate">Pension Estimate</a> Pension Estimate tool to estimate your pension benefit at different ages or with different forms of payment.</p>
+              </div>
+            </div>
           </div>
         </div>
-        
-      </div>
-    
-    
   
-  </div>
-  </div>
+        <div class="d-none d-lg-block col-lg-4">
+          <div class="card promoAd">
+            <img src="resources/images/promoAds/adBenefitProj.png" class="card-img-top" alt="Estimate Pension">
+            <h2 class="card-title">Pension Estimate</h2>
+            <div class="card-body">
+              <p class="card-text">Use the Pension Estimate tool to estimate your pension benefit at different ages or with different forms of payment</p>
+              <p><a href="htl_DBEstimate" class="btn btn-primary">Estimate</a></p>
+            </div>
+          </div>
+        </div>
+  
+      </div>
+    </div>
   
   </section>
   <!-- ============================================================================================================= -->
   <!--                                   				END - Pension Amounts	                                       -->
   <!-- ============================================================================================================= -->
-  
-  
-  
-  
-  
   
   
   
@@ -618,153 +408,156 @@
   <section id="savedEstimates" class="savedEstimates section-padding scroll-indicator" data-scroll-indicator-title="Saved Estimates">
   
     <h2 class="title hideme">Saved Estimates</h2>
-    
-    
-    
-    <div class="container">
-      
-    <div class="row">
   
-    <div class="col-12 col-lg-8">
-        
-      <div class="card">
-        <div class="card-header">
-          <h4>Recent Estimates</h4>
-          
-          <div class="dropdown">
-            <a id="showMoreSavedEstimates" href="#null" class="showMore text-bold btn moreLink push" data-target="#" data-toggle="dropdown" aria-expanded="false"><span title="More" class=" options">+</span></a>
+    <div class="container">  
+      <div class="row">  
+        <div class="col-12 col-lg-8">  
+          <div class="card">
+            <div class="card-header">
+              <h4>Recent Estimates</h4>
   
-            <ul class="dropdown-menu showMoreMenu" aria-labelledby="showMoreSavedEstimates">
-              <li><a href="#null">View All Saved Estimates <span class="glyphicons glyphicons-chevron-right"></span></a></li>
-              <li><a href="htl_DBEstimate">Pension Estimate <span class="glyphicons glyphicons-chevron-right"></span></a></li>
-              <li><a href="javascript:void(0)" data-toggle="modal" data-target="#modal-DB">Learn about your Pension <span class="glyphicons glyphicons-chevron-right"></span></a></li>
-            </ul>
-          </div>
-          
-        </div>
-        
-        <div class="card-body">		
-          <div class="row m-0 p-0">
-            <div class="col-2 col-sm-2 dataTitle">
-                Saved Date
+              <div class="dropdown">
+                <a id="showMoreSavedEstimates" href="#null" class="showMore text-bold btn moreLink push" data-target="#" data-toggle="dropdown" aria-expanded="false"><span title="More" class=" options">+</span></a>
+  
+                <ul class="dropdown-menu showMoreMenu" aria-labelledby="showMoreSavedEstimates">
+                  <li><a href="#null">View All Saved Estimates <span class="glyphicons glyphicons-chevron-right"></span></a></li>
+                  <li><a href="htl_DBEstimate">Pension Estimate <span class="glyphicons glyphicons-chevron-right"></span></a></li>
+                  <li><a href="#null" data-toggle="modal" data-target="#kat-modal-DB">Learn about your Pension <span class="glyphicons glyphicons-chevron-right"></span></a></li>
+                </ul>
+              </div>
+  
             </div>
-            <div class="d-none d-sm-block col-sm-2 dataTitle">
-                Stop Working
-            </div>
-            <div class="col-2 col-sm-2 text-right dataTitle">
-                Begin Payment
-            </div>
-            <div class="col-3 col-sm-3 dataTitle">
-              Plan
-          </div>
-          <div class="col-3 col-sm-3 text-right dataTitle">
-                Monthly Amount
-            </div>
-          </div>
-          
-          <hr>
-
-          <div class="d-none" data-calculation-prompt="delete">Are you sure you want to delete this estimate?</div>
-          <div rbl-source="DBSavedEstimate">
-            <div rbl-tid="inline">
+  
+            <div class="card-body">
               <div class="row m-0 p-0">
-                <div class="col-10 col-sm-12 {show-name-calc}">
-                  <a rbl-action-link="PensionEstimates.DocGen" rbl-action-download="true" data-param-fikey="{fi-key}" href="#"><strong>{name-calc}</strong></a>
+                <div class="col-2 col-sm-2 dataTitle">
+                  Saved Date
                 </div>
-                <div class="col-2 col-sm-2">
-                  <a rbl-action-link="PensionEstimates.DocGen" rbl-action-download="true" data-param-fikey="{fi-key}" href="#" class="{show-date-calc}">{date-calc}</a>
-                  <a rbl-action-link="DeleteCalculation" rbl-action-confirm-selector="[data-calculation-prompt='delete']" data-param-fikey="{fi-key}" class="delete-calculation text-danger {show-date-calc}" href="#"><span class="glyphicons glyphicons-remove-circle" title="Delete"></span></a>
+                <div class="d-none d-sm-block col-sm-2 dataTitle">
+                  Stop Working
                 </div>
-                <div class="d-none d-sm-block col-sm-2 text-center">{age-term}</div>
-                <div class="col-2 col-sm-2 text-right">
-                  {date-ben-comm}
+                <div class="col-2 col-sm-2 text-right dataTitle">
+                  Begin Payment
                 </div>
-                <div class="col-3 col-sm-3">
-                  {plan}
+                <div class="col-3 col-sm-3 dataTitle">
+                  Plan
                 </div>
-                <div class="col-3 col-sm-3 text-right">
-                  {monthly-sla}
+                <div class="col-3 col-sm-3 text-right dataTitle">
+                  Monthly Amount
                 </div>
-              </div>  
-              <hr class="{show-div}">
+              </div>
+  
+              <hr>
+  
+              <div class="d-none" data-calculation-prompt="delete">Are you sure you want to delete this estimate?</div>
+              <div rbl-source="DBSavedEstimate">
+                <div rbl-tid="inline">
+                  <div class="row m-0 p-0">
+                    <div class="col-10 col-sm-12 {show-name-calc}">
+                      <a rbl-action-link="PensionEstimates.DocGen" rbl-action-download="true" data-param-fikey="{fi-key}"
+                        href="#"><strong>{name-calc}</strong></a>
+                    </div>
+                    <div class="col-2 col-sm-2">
+                      <a rbl-action-link="PensionEstimates.DocGen" rbl-action-download="true" data-param-fikey="{fi-key}"
+                        href="#" class="{show-date-calc}">{date-calc}</a>
+                      <a rbl-action-link="DeleteCalculation"
+                        rbl-action-confirm-selector="[data-calculation-prompt='delete']" data-param-fikey="{fi-key}"
+                        class="delete-calculation text-danger {show-date-calc}" href="#"><span
+                          class="glyphicons glyphicons-remove-circle" title="Delete"></span></a>
+                    </div>
+                    <div class="d-none d-sm-block col-sm-2 text-center">{age-term}</div>
+                    <div class="col-2 col-sm-2 text-right">
+                      {date-ben-comm}
+                    </div>
+                    <div class="col-3 col-sm-3">
+                      {plan}
+                    </div>
+                    <div class="col-3 col-sm-3 text-right">
+                      {monthly-sla}
+                    </div>
+                  </div>
+                  <hr class="{show-div}">
+                </div>
+              </div>
+  
+              <!--
+            <div class="row m-0 p-0">
+              <div class="col-4 col-sm-3">
+                <a href="#null">10/26/2020</a>
+              </div>
+              <div class="d-none d-sm-block col-sm-3 text-center">
+                  65</br>63
+              </div>
+              <div class="col-4 col-sm-3 text-right">
+                Mar 01, 2038</br>Mar 01, 2033
+              </div>
+              <div class="col-4 col-sm-3 text-right">
+                $2,643.90</br>$1,445.77
+              </div>
             </div>  
-          </div>
-      
-  <!--
-          <div class="row m-0 p-0">
-            <div class="col-4 col-sm-3">
-              <a href="#null">10/26/2020</a>
+            <hr>
+            <div class="row m-0 p-0">
+              <div class="col-4 col-sm-3">
+                <a href="#null">10/12/2020</a>
+              </div>
+              <div class="d-none d-sm-block col-sm-3 text-center">
+                 63
+              </div>
+              <div class="col-4 col-sm-3 text-right">
+                Mar 01, 2036
+              </div>
+              <div class="col-4 col-sm-3 text-right">
+                $1,825.78
+              </div>
             </div>
-            <div class="d-none d-sm-block col-sm-3 text-center">
-                65</br>63
-            </div>
-            <div class="col-4 col-sm-3 text-right">
-              Mar 01, 2038</br>Mar 01, 2033
-            </div>
-            <div class="col-4 col-sm-3 text-right">
-              $2,643.90</br>$1,445.77
-            </div>
-          </div>  
-          <hr>
-          <div class="row m-0 p-0">
-            <div class="col-4 col-sm-3">
-              <a href="#null">10/12/2020</a>
-            </div>
-            <div class="d-none d-sm-block col-sm-3 text-center">
-               63
-            </div>
-            <div class="col-4 col-sm-3 text-right">
-              Mar 01, 2036
-            </div>
-            <div class="col-4 col-sm-3 text-right">
-              $1,825.78
-            </div>
-          </div>
-      
-          <hr>
-      
-          <div class="row m-0 p-0">
-            <div class="col-4 col-sm-3">
-              <a href="#null">5/25/2020</a>
-            </div>
-            <div class="d-none d-sm-block col-sm-3 text-center">
-               59
-            </div>
-            <div class="col-4 col-sm-3 text-right">
-              Mar 01, 2032
-            </div>
-            <div class="col-4 col-sm-3 text-right">
-              $1,024.32
-            </div>
-          </div> 
-  -->		
-      
-          <div class="alert alert-notify mt-5">
-            <div class="alertTitle"><img src="resources/images/Icon_Suggestion.png" alt="Suggestion"/> SUGGESTION</div>
-            <a href="#null" class="alertActions">Pension payments are taxed like ordinary income.  See more information on how all your retirements are taxed.</a>
-          </div>
-  
-        </div><!--End--Card Body-->
         
-      </div> <!-- END card -->
-      
-  
-  </div>
-    
+            <hr>
         
-        
-  <!-- ==========================   COLUMN 2   ========================== -->
-    <div class="col-12 col-lg-4">
+            <div class="row m-0 p-0">
+              <div class="col-4 col-sm-3">
+                <a href="#null">5/25/2020</a>
+              </div>
+              <div class="d-none d-sm-block col-sm-3 text-center">
+                 59
+              </div>
+              <div class="col-4 col-sm-3 text-right">
+                Mar 01, 2032
+              </div>
+              <div class="col-4 col-sm-3 text-right">
+                $1,024.32
+              </div>
+            </div> 
+    -->
   
-      
+              <div class="alert alert-notify mt-5">
+                <div class="alertTitle"><img src="resources/images/Icon_Suggestion.png" alt="Suggestion" /> SUGGESTION
+                </div>
+                <a href="#null" class="alertActions">Pension payments are taxed like ordinary income. See more information
+                  on how all your retirements are taxed.</a>
+              </div>
   
-    </div>
-      
-  </div>		
-      
+            </div>
+            <!--End--Card Body-->
   
-      
-      
+          </div> <!-- END card -->
+  
+  
+        </div>
+  
+  
+  
+        <!-- ==========================   COLUMN 2   ========================== -->
+        <div class="col-12 col-lg-4">
+  
+  
+  
+        </div>
+  
+      </div>
+  
+  
+  
+  
     </div> <!-- end container-fluid -->
   </section>
   <!-- ============================================================================================================= -->
@@ -921,24 +714,12 @@
         
         <div class="col-md-4">	
           <ul class="moreLinks">
-            <li class="moreWindowHeader">
-              <span class="text-bold">Library</span>
-            </li>
-                      <li>
-              <a href="javascript:void(0)" data-toggle="modal" data-target="#modal-DB">Learn about your Pension</a>
-            </li>
-            <li>
-              <a href="#null">Documents &amp; Forms</a>
-            </li>
-            <li>
-              <a href="#null">FAQs</a>
-            </li>
-                      <li>
-              <a href="#null">Glossary</a>
-            </li>
-            <li>
-              <a href="#null">Plan Information</a>
-            </li>
+            <li class="moreWindowHeader"><span class="text-bold">Library</span></li>
+            <li><a href="#null" data-toggle="modal" data-target="#kat-modal-DB">Learn about your Pension</a></li>
+            <li><a href="#null">Documents &amp; Forms</a></li>
+            <li><a href="#null">FAQs</a></li>
+            <li><a href="#null">Glossary</a></li>
+            <li><a href="#null">Plan Information</a></li>
           </ul>
         </div>
       </div>
@@ -949,32 +730,92 @@
   <!--                                   				END - MORE LINKS											   -->
   <!-- ============================================================================================================= -->
   
-  
-  
-    
-    
-    
     
     
   <!-- ============================================================================================================= -->
   <!--                                   				END - BODY CONENT											   -->
   <!-- ============================================================================================================= -->
-  
-  
-  
-  
-  
-  
-  
-  <!-- ============================================================================================================= -->
-  <!--                                   				START - LOCAL PAGE SCRIPTS									   -->
-  <!-- ============================================================================================================= -->    
+    
   <div class="ajaxloader"></div>
 </div>
 
+<!-- ============================================================================================================= -->
+<!--                                   				START - LOCAL MODALS																								 -->
+<!-- ============================================================================================================= -->
+<div id="kat-modal-DB" class="modal fade" tabindex="-1" role="dialog" aria-labelledby="kat-modal-DB" aria-modal="true">
+  <div class="modal-dialog modal-lg" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h4 class="modal-title">All your questions about your pension benefits will be answered here. You will find:</h4>
+        <button type="button" class="close" id="closemodal-DB" data-dismiss="modal" aria-label="Close"><span class="glyphicons glyphicons-remove"></span></button>
+      </div>
+      <div class="modal-body">	
+        <div class="row">
+          <div class="col-md-8 grayBody" rbl-display="vCashBalance">
+            <h4>Cash Balance account features &amp; advantages</h4>
+            <p>It's easy to understand: The Plan allows you to watch your account balance grow over time with the addition of credits based on your pay, your service, and the Plan's interest credits.</p>
+          </div>
+          <div class="col-md-8 grayBody" rbl-display="vRTN vUTC-Frz">
+            <h4>Traditional Pension Plan features &amp; advantages</h4>
+            <p>Learn about the payment amounts and options, and when you can commence. Annuity payments from these plans can act as bedrock against market fluctuations.</p>
+          </div>
+          <div class="col-md-4 removePadding"><img class="img-responsive highLight" src="resources/images/SPOT_cashBalance.png" alt="Man checking cellphone"></div>
+        </div>
+	      <hr>
+        <div class="row">
+          <div class="col-md-4 removePadding"><img class="img-responsive highLight" src="resources/images/SPOT_suppPlan.png" alt="Tablet with data screen"></div>
+            <div class="col-md-8 grayBody">
+              <h4>Retirement Planning</h4>
+              <p>Pension plan benefits will make up a part of your retirement security. See how those fit in with your other retirement assets and Social Security to help you make a plan to get to your retirement goals.</p>
+          </div>
+          <div class="col-md-8 grayBody">
+            <h4>Total Rewards/Accumulated Wealth</h4>
+            <p>Pension plan and savings plan contributions, by your company, make up a substantial portion of your Total Rewards, and in turn, your Accumulated Wealth. See all the elements of your Total Rewards that your company contributes to.</p>
+        </div>
+        </div>
+	      <hr>
+        <div class="row">
+          <div class="col-md-8 grayBody">
+            <h4>What Else? Look for your…</h4>
+            <ul>
+              <li>Beneficiaries can proactively be chosen for your plans</li>
+              <li>Retire Online – If you are ready to retire, we make it easy</li>
+              <li>Your “vesting” status (how much of this benefit you own)</li>
+              <li>Different forms that you can take your pension in (e.g. You can take a slightly reduced pension and provide your spouse continued payments in case you die before her)</li>
+            </ul>
+          </div>
+          <div class="col-md-4 removePadding"><img class="img-responsive highLight" src="resources/images/bebestimage1.jpg" alt="Man checking laptop"></div>
+        </div>
+	      <hr>
+        <h5>We're highlighting what is important to you!</h5>
+        <div class="row">
+          <div class="col-md-4 text-center" rbl-display="vRTN vUTC-Frz">
+            <img class="img-responsive smallImg" src="resources/images/bebestimage3.jpg">
+            <a href="channel_DB.html" class="text-center"><h6>Traditional Plans</h6></a>
+          </div>
+          <div class="col-md-4 text-center" rbl-display="vCashBalance">
+            <img class="img-responsive smallImg" src="resources/images/bebestimage4.jpg">
+            <a href="channel_DB.html" class="text-center"><h6>Cash Balance Plans</h6></a>
+          </div>
+          <div class="col-md-4 text-center">
+            <img class="img-responsive smallImg" src="resources/images/bebestimage2.jpg">
+            <a href="channel_DB.html" class="text-center"><h6>Beneficiaries</h6></a>
+          </div>
+        </div>
+			</div><!-- /.modal-body -->
+			<div class="modal-footer">
+				<a class="btn btn-default btn-sm" data-dismiss="modal">Close</a>
+			</div>
+		</div><!-- /.modal-content -->
+  </div><!-- /.modal-dialog -->
+</div>
+<!-- ============================================================================================================= -->
+<!--                                   				END - LOCAL MODALS																									 -->
+<!-- ============================================================================================================= -->
 
-<script type="text/javascript" src="resources/js/easyScrollDots.min.js"></script>
-<script type="text/javascript" src="resources/js/swiper-bundle.min.js"></script>
+<!-- ============================================================================================================= -->
+<!--                                   				START - LOCAL PAGE SCRIPTS									   -->
+<!-- ============================================================================================================= -->    
 
 <script>
 easyScrollDots({
@@ -982,17 +823,12 @@ easyScrollDots({
   'fixedNavId': '',
   'fixedNavUpward': false
 });
-//ensure header included file loaded first before the containing functions can be use
-$loadedMainScript.done(function() {
-	
-	$(function () {
-		$('.hero').fadeIn('slow');
-		$('#carousel-example-generic').carousel({
-			interval:5000,
-			pause: "false"
-		});
-		
-	});
+$(document).ready(function () {
+  $('.hero').fadeIn('slow');
+  $('#carousel-example-generic').carousel({
+    interval:5000,
+    pause: "false"
+  });
 		
 	$(".carausalbutton").click(function () {
 		if ($(this).attr("id") === "pauseButton") {
@@ -1072,40 +908,8 @@ $loadedMainScript.done(function() {
 		}
 		
 	});
-	
-
-}).fail(function(error) {
-     console.log('one or more scripts failed to load');
 });
 
-var swiper = new Swiper('.swiper-container', {
-  slidesPerView: 1,
-  spaceBetween: 10,
-  // init: false,
-  pagination: {
-    el: '.swiper-pagination',
-    clickable: true,
-  },
-  breakpoints: {
-    '@0.00': {
-      slidesPerView: 1.5,
-      spaceBetween: 10,
-    },
-    '@0.75': {
-      slidesPerView: 2.5,
-      spaceBetween: 10,
-    },
-    '@1.00': {
-      slidesPerView: 3.5,
-      spaceBetween: 10,
-    },
-    '@1.50': {
-      slidesPerView: 3.5,
-      spaceBetween: 10,
-    },
-  }
-});
-	
 $("#option1").click(function() {
 	$("#sourceTable").fadeOut("slow");
 	
@@ -1134,9 +938,6 @@ $("#option2").click(function() {
 	<div class="row">
 		<!-- ==========================   COLUMN 1   ========================== --> 
 		<div class="col-12 col-lg-8">
-
-			
-			
 			<!-- Cash Balance History -->
 			<div class="card">
 				<div class="card-header gradient">
@@ -1149,24 +950,24 @@ $("#option2").click(function() {
 					<table id="AccountActivity" class="rwd-table">
 						<thead>
 						  <tr class="d-none-mobile borderBtm-row text-center">
-							<th class="col-12 col-md-2 tableTitle"><b rbl-value="CBActivities|summary|date-beg"></b><br/>Balance</th>
-							<th class="d-none d-md-table-cell col-md-1"></th>
-							<th class="col-12 col-md-2 tableTitle">Pay Credits &amp; Adjusments</th>
-							<th class="d-none d-md-table-cell col-md-1"></th>
-							<th class="col-12 col-md-2 total tableTitle">Interest</th>
-							<th class="d-none d-md-table-cell col-md-1"></th>
-							<th class="col-12 col-md-2 tableTitle"><b rbl-value="CBActivities|summary|date-end"></b><br/>Balance</th>	
+                <th class="col-12 col-md-2 tableTitle"><b rbl-value="CBActivities|summary|date-beg"></b><br/>Balance</th>
+                <th class="d-none d-md-table-cell col-md-1"></th>
+                <th class="col-12 col-md-2 tableTitle">Pay Credits &amp; Adjusments</th>
+                <th class="d-none d-md-table-cell col-md-1"></th>
+                <th class="col-12 col-md-2 total tableTitle">Interest</th>
+                <th class="d-none d-md-table-cell col-md-1"></th>
+                <th class="col-12 col-md-2 tableTitle"><b rbl-value="CBActivities|summary|date-end"></b><br/>Balance</th>	
 						  </tr>
 						</thead>
 						<tbody>
 						  <tr class="text-center">
-							<td data-th="1/1/2020 Balance" class="col-12 col-md-2 px-0 tableValueR no-indent add-plus amt text-bold"><span class="inherit" rbl-value="CBActivities.summary.bal-beg"></span></td>
-							<td class="d-none d-md-table-cell col-md-1">+</td>
-							<td data-th="Pay Credits &amp; Adjusments" class="col-12 col-md-2 px-0 tableValueR no-indent add-plus cell-40"><span class="inherit" rbl-value="CBActivities.summary.pay-credit"></span></td>
-							<td class="d-none d-md-table-cell col-md-1">+</td>
-							<td data-th="Interest" class="col-12 col-md-2 px-0 tableValueR no-indent borderBtm-mobile"><span class="inherit" rbl-value="CBActivities.summary.int-credit"></span></td>
-							<td class="d-none d-md-table-cell col-md-1">=</td>
-							<td data-th="10/31/2020 Balance" class="col-12 col-md-2 px-0 py-2 tableValueR no-indent borderBtm-mobile amt cell-45" rbl-value="CBActivities.summary.bal-end"><span></span></td>
+                <td data-th="1/1/2020 Balance" class="col-12 col-md-2 px-0 tableValueR no-indent add-plus amt text-bold"><span class="inherit" rbl-value="CBActivities.summary.bal-beg"></span></td>
+                <td class="d-none d-md-table-cell col-md-1">+</td>
+                <td data-th="Pay Credits &amp; Adjusments" class="col-12 col-md-2 px-0 tableValueR no-indent add-plus cell-40"><span class="inherit" rbl-value="CBActivities.summary.pay-credit"></span></td>
+                <td class="d-none d-md-table-cell col-md-1">+</td>
+                <td data-th="Interest" class="col-12 col-md-2 px-0 tableValueR no-indent borderBtm-mobile"><span class="inherit" rbl-value="CBActivities.summary.int-credit"></span></td>
+                <td class="d-none d-md-table-cell col-md-1">=</td>
+                <td data-th="10/31/2020 Balance" class="col-12 col-md-2 px-0 py-2 tableValueR no-indent borderBtm-mobile amt cell-45" rbl-value="CBActivities.summary.bal-end"><span></span></td>
 						  </tr>
 						</tbody>
 					</table>
@@ -1177,20 +978,20 @@ $("#option2").click(function() {
 						<table id="AccountActivityDetails" class="table rwd-table">
 							<thead>
 							  <tr class="d-none-mobile text-center">
-								<th class="col-12 col-md-2" style="order:0" scope="col">Date</th>
-								<th class="col-12 col-md-1 text-right" scope="col">Pay Credits</th>
-								<th class="col-12 col-md-2 text-right" scope="col">Adjustments</th>
-								<th class="col-12 col-md-1 text-right borderR" scope="col">Interest</th>
-								<th class="col-12 col-md-2 text-right" scope="col">Ending Balance</th>
+                  <th class="col-12 col-md-2" style="order:0" scope="col">Date</th>
+                  <th class="col-12 col-md-1 text-right" scope="col">Pay Credits</th>
+                  <th class="col-12 col-md-2 text-right" scope="col">Adjustments</th>
+                  <th class="col-12 col-md-1 text-right borderR" scope="col">Interest</th>
+                  <th class="col-12 col-md-2 text-right" scope="col">Ending Balance</th>
 							  </tr>
 							</thead>
 							<tbody rbl-source="CBActivities.type.detail">
 							  <tr class="borderBtm-mobile" rbl-tid="inline">
-								<td data-th="Date" class="tableValueR"><span class="inherit">{date-eff}</span></td>
-								<td data-th="Pay Credits" class="tableValueR text-right"><span class="inherit">{pay-credit}</span></td>
-								<td data-th="Adjustments" class="tableValueR text-right"><span class="inherit">&nbsp;</span></td>
-								<td data-th="Interest" class="tableValueR text-right borderR"><span class="inherit">{int-credit}</span></td>
-								<td data-th="Ending Balance" class="tableValueR text-right cell-45"><span class="inherit">{bal-end}</span></td>
+                  <td data-th="Date" class="tableValueR"><span class="inherit">{date-eff}</span></td>
+                  <td data-th="Pay Credits" class="tableValueR text-right"><span class="inherit">{pay-credit}</span></td>
+                  <td data-th="Adjustments" class="tableValueR text-right"><span class="inherit">&nbsp;</span></td>
+                  <td data-th="Interest" class="tableValueR text-right borderR"><span class="inherit">{int-credit}</span></td>
+                  <td data-th="Ending Balance" class="tableValueR text-right cell-45"><span class="inherit">{bal-end}</span></td>
                 </tr>
 
               </tbody>
@@ -1201,15 +1002,11 @@ $("#option2").click(function() {
         <p class="mt-3">
           <a href="#pension-dashboard" class="btn btn-primary">Back to Pension Dashboard</a>
         </p>
-			
 			</div>
-			
-			
-			
 		</div>
         
         
-        <div class="col-12 col-lg-4">	
+    <div class="col-12 col-lg-4">	
       <div class="card assist trans">
         <div class="card-body">
           <h3 class="question">
@@ -1221,14 +1018,11 @@ $("#option2").click(function() {
           </h3>
         </div>
       </div>
-      </div>
-	</div>
-	
+    </div>
+	</div>	
 </div>
 
 <div id="pensionProfile" class="container PensionProfile">
-	
-	
 	<div class="row">
 		<!-- ==========================   COLUMN 1   ========================== --> 
 		<div class="col-12 col-lg-8">
@@ -1237,40 +1031,33 @@ $("#option2").click(function() {
 			<!-- RTX CASH BALANCE -->
 			<div id="pensionProfile" class="card">
 			  <div class="card-header gradient">
-				<h4>Pension Profile</h4>
+          <h4>Pension Profile</h4>
 			  </div>
 
 			  <div class="card-body">
 				
-        <h5 class="card-title">Eligibility and Key Dates </h5>
+          <h5 class="card-title">Eligibility and Key Dates </h5>
 
-        <div class="collapse_" id="collapseDetails"> 
-           
-          <table class="rwd-table">
-            <tbody rbl-source="DBProfileDetails">
-              <tr class="{class}" rbl-tid="inline">
-                <td class="{class-text}">{text}</td>
-                <td class="tableValue" rbl-display="vRTN">{value1}</td>
-                <td class="tableValue" rbl-display="vUTC-Frz">{value2}</td>
-                <td class="tableValue" rbl-display="vCashBalance">{value3}</td>
-              </tr>
-						</tbody>
-						
-          </table>
+          <div class="collapse_" id="collapseDetails"> 
+            
+            <table class="rwd-table">
+              <tbody rbl-source="DBProfileDetails">
+                <tr class="{class}" rbl-tid="inline">
+                  <td class="{class-text}">{text}</td>
+                  <td class="tableValue" rbl-display="vRTN">{value1}</td>
+                  <td class="tableValue" rbl-display="vUTC-Frz">{value2}</td>
+                  <td class="tableValue" rbl-display="vCashBalance">{value3}</td>
+                </tr>
+              </tbody>
+              
+            </table>
           </div>
-					
-					
         </div><!--End--Card Body-->
-        <p class="mt-3">
-          <a href="#pension-dashboard" class="btn btn-primary">Back to Pension Dashboard</a>
-        </p>
-				
+        <p class="mt-3"><a href="#pension-dashboard" class="btn btn-primary">Back to Pension Dashboard</a></p>
 			</div>
-
-
 		</div>
         
-        <div class="col-12 col-lg-4">	
+    <div class="col-12 col-lg-4">	
       <div class="card assist trans">
         <div class="card-body">
           <h3 class="question">
@@ -1285,6 +1072,6 @@ $("#option2").click(function() {
           </h3>
         </div>
       </div>
-      </div>        
+    </div>        
 	</div>
 </div> 

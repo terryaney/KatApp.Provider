@@ -32,12 +32,13 @@
   table.document-center tbody tr td {
     border-top: 1px solid #dee2e6;
   }  
+  table.document-center thead tr th.document-center-text5 {
+    min-width: 220px;
+  }
 </style>
 
 <div class="d-none skipRBLe">
 </div>
-
-<script type="text/javascript" src="resources/js/core.js"></script>
 
 <section id="dashboard" class="document-center section-padding scroll-indicator" data-scroll-indicator-title="Document Center">
   <h2 class="title hideme">Document Center</h2>

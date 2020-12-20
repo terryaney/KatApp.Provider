@@ -484,7 +484,7 @@
 		});
     })();
 
-    //# sourceURL=sharkfin_rtx.js
+    //# sourceURL=sharkfin_rtx.kaml
 </script>
 
 <rbl-template tid="input-select"> <!--move some version of this 'simple' select to standard? -->

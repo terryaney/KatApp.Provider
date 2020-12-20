@@ -97,7 +97,6 @@
   <input name="{id}:iAlertType" type="text" id="katapp_{id}_iAlertType" class="iAlertType" val="home"></input>
 </div>
 
-<script type="text/javascript" src="resources/js/core.js"></script>
 <!-- ============================================================================================================= -->
 <!--                                   				START - BODY CONENT																									 -->
 <!-- ============================================================================================================= -->
@@ -669,16 +668,13 @@
         <button type="button" class="close" id="closemodal-Emergency" data-dismiss="modal" aria-label="Close"><span class="glyphicons glyphicons-remove"></span></button>
       </div>
       <div class="modal-body alert-danger">
-
-			<h4>COVID!!!</h4>
-				<div>You have extra time to file claims and report certain life events. Additionally former employees and qualified beneficiaries have extra time to enroll in and pay for COBRA. </div>
-				
+        <h4>COVID!!!</h4>
+				<div>You have extra time to file claims and report certain life events. Additionally former employees and qualified beneficiaries have extra time to enroll in and pay for COBRA. </div>				
 			</div><!-- /.modal-body -->
 			<div class="modal-footer"> <a class="btn btn-default btn-sm" data-dismiss="modal">Close</a></div>
 		</div><!-- /.modal-content -->
   </div><!-- /.modal-dialog -->
 </div><!-- /.modal -->
-
 <div id="kat-modal-DB" class="modal fade" tabindex="-1" role="dialog" aria-labelledby="kat-modal-DB" aria-modal="true">
   <div class="modal-dialog modal-lg" role="document">
     <div class="modal-content">
@@ -690,11 +686,11 @@
         <div class="row">
           <div class="col-md-8 grayBody" rbl-display="vCashBalance">
             <h4>Cash Balance account features &amp; advantages</h4>
-              <p>It's easy to understand: The Plan allows you to watch your account balance grow over time with the addition of credits based on your pay, your service, and the Plan's interest credits.</p>
+            <p>It's easy to understand: The Plan allows you to watch your account balance grow over time with the addition of credits based on your pay, your service, and the Plan's interest credits.</p>
           </div>
           <div class="col-md-8 grayBody" rbl-display="vRTN vUTC-Frz">
             <h4>Traditional Pension Plan features &amp; advantages</h4>
-              <p>Learn about the payment amounts and options, and when you can commence. Annuity payments from these plans can act as bedrock against market fluctuations.</p>
+            <p>Learn about the payment amounts and options, and when you can commence. Annuity payments from these plans can act as bedrock against market fluctuations.</p>
           </div>
           <div class="col-md-4 removePadding"><img class="img-responsive highLight" src="resources/images/SPOT_cashBalance.png" alt="Man checking cellphone"></div>
         </div>
@@ -759,10 +755,6 @@
 <!-- ============================================================================================================= -->
 <!--                                   				START - LOCAL PAGE SCRIPTS																					 -->
 <!-- ============================================================================================================= -->
-
-<script type="text/javascript" src="resources/js/easyScrollDots.min.js"></script>
-<script type="text/javascript" src="resources/js/swiper-bundle.min.js"></script>
-
 <script>
 easyScrollDots({
   'fixedNav': false,
@@ -770,16 +762,13 @@ easyScrollDots({
   'fixedNavUpward': false
 });
 //ensure header included file loaded first before the containing functions can be use
-$loadedMainScript.done(function() {
-	
-	$(function () {
-		$('.hero').fadeIn('slow');
-		$('#carousel-example-generic').carousel({
-			interval:5000,
-			pause: "false"
-		});
-		
-	});
+$(document).ready(function () {
+
+  $('.hero').fadeIn('slow');
+  $('#carousel-example-generic').carousel({
+    interval:5000,
+    pause: "false"
+  });
 		
 	$(".carouselbutton").click(function () {
 		if ($(this).attr("id") === "pauseButton") {
@@ -796,8 +785,6 @@ $loadedMainScript.done(function() {
 	$('.carousel').carousel({
 	  interval: 5000
 	})
-
-	<!-- Initialize Swiper -->
 
 	var swiper = new Swiper('.swiper-container', {
 	  slidesPerView: 1,
@@ -827,8 +814,6 @@ $loadedMainScript.done(function() {
 	  }
 	});
 
-}).fail(function(error) {
-     console.log('one or more scripts failed to load');
 });
 
 $("#member").click(function() {

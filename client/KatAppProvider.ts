@@ -2705,7 +2705,14 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                             // Need bootstraps on every row if already set or this is first row
                             needBootstrapWidthsOnEveryRow = needBootstrapWidthsOnEveryRow || i === 0;
     
-                            const hClass = (columnConfiguration[headerSpanCellName].isTextColumn ? "text" : "value") + " span-" + headerSpanCellName;
+                            const hClass =
+                                "{valueClass} span-{table}-{column}".format(
+                                    {
+                                        table: tableName,
+                                        column: headerSpanCellName,
+                                        valueClass: columnConfiguration[headerSpanCellName].isTextColumn ? "text" : "value"
+                                    }
+                                );
                             rowHtml += that.getCellMarkup(row, headerSpanCellName, element, hClass, tableColumns.length);
                         }
                         else if (span !== "") {
@@ -2721,18 +2728,33 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                                     const colSpanName = parts[p];
                                     const spanConfig = columnConfiguration[colSpanName];
                                     const textCol = spanConfig.isTextColumn;
-    
-                                    let sClass = spanConfig.cssClass ?? "";
-                                    sClass += (textCol ? " text" : " value ");
-    
+
+                                    const sClass =
+                                        "{valueClass} {columnClass} span-{table}-{column}".format(
+                                            {
+                                                table: tableName,
+                                                column: colSpan,
+                                                valueClass: textCol ? "text" : "value",
+                                                columnClass: spanConfig.cssClass ?? ""
+                                            }
+                                        );
+
                                     rowHtml += that.getCellMarkup(row, colSpanName, element, sClass, /* includeBootstrapColumnWidths, */ colSpan);
                                 }
                             }
                         }
     					else {
                             tableColumns.forEach(c => {
-                                let cClass = c.cssClass ?? "";
-                                cClass += (c.isTextColumn ? " text" : " value");
+                                const cClass =
+                                    "{valueClass} {columnClass} {table}-{column}".format(
+                                        {
+                                            table: tableName,
+                                            column: c.name,
+                                            valueClass: c.isTextColumn ? "text" : "value",
+                                            columnClass: c.cssClass ?? ""
+                                        }
+                                    );
+
                                 rowHtml += that.getCellMarkup(row, c.name, element, cClass /*, includeBootstrapColumnWidths && (needBootstrapWidthsOnEveryRow || i === 0) */ );
                             });
                         }    

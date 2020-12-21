@@ -13,7 +13,7 @@
     view.on( "onInitialized.RBLe", function( event, application ) {
     });
   })();
-  //# sourceURL=channel.documentcenter.kaml
+  //# sourceURL=nexgen.documentcenter.kaml
 </script>
 
 

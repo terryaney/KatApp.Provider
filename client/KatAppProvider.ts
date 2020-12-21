@@ -3566,9 +3566,11 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
     class StandardTemplateBuilder implements StandardTemplateBuilderInterface
     {
         application: KatAppPlugIn;
+        isBootstrap3: boolean;
 
         constructor( application: KatAppPlugIn ) {
             this.application = application;   
+            this.isBootstrap3 = $("rbl-config", this.application.element).attr("bootstrap") == "3";
         }
         
         private buildCarousel(el: JQuery): JQuery {
@@ -3919,7 +3921,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
         }
 
         private buildTextBoxes( view: JQuery<HTMLElement> ): void {
-            const isBootstrap3 = $("rbl-config",view).attr("bootstrap") == "3";
+            const isBootstrap3 = this.isBootstrap3;
             $('[rbl-tid="input-textbox"],[rbl-template-type="katapp-textbox"]', view).not('[data-katapp-initialized="true"]').each(function () {
                 const el = $(this);
                 
@@ -4297,8 +4299,8 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
             // Couldn't include the Bootstrap.Tooltips.js file b/c it's selector hits entire page, and we want to be localized to our view.
             const selector = "[data-toggle='tooltip'], [data-toggle='popover'], .tooltip-trigger, .tooltip-text-trigger, .error-trigger";
             const application = this.application;
-            const isBootstrap3 = $("rbl-config", this.application.element).attr("bootstrap") == "3";
             const view = container ?? application.element;
+            const isBootstrap3 = this.isBootstrap3;
 
             if ( typeof $.fn.popover !== "function" && $(selector, view).length > 0 ) {
                 this.application.trace("Bootstrap popover/tooltip javascript is not present.", TraceVerbosity.None);
@@ -4408,33 +4410,34 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                 })
                 .attr("data-katapp-initialized", "true");
 
+            const that = this;
+
             // Code to hide tooltips if you click anywhere outside the tooltip
+            // Combo of http://stackoverflow.com/a/17375353/166231 and https://stackoverflow.com/a/21007629/166231 (and 3rd comment)
+            // This one looked interesting too: https://stackoverflow.com/a/24289767/166231 but I didn't test this one yet
+            const hideVisiblePopover = function(): void {
+                // Just in case the tooltip hasn't been configured
+                const visiblePopover = KatApp[ "visiblePopover" ]; // Going against entire KatApp (all apps)
+                if ( visiblePopover === undefined || $(visiblePopover).data("bs.popover") === undefined ) return;
+    
+                // Call this first b/c popover 'hide' event sets visiblePopover = undefined
+                if ( that.isBootstrap3 ) {
+                    $(visiblePopover).data("bs.popover").inState.click = false
+                }
+                $(visiblePopover).popover("hide");
+            };
+
             if ( application.element.attr("data-katapp-initialized-tooltip") != "true" ) {
-                // Combo of http://stackoverflow.com/a/17375353/166231 and https://stackoverflow.com/a/21007629/166231 (and 3rd comment)
-                // This one looked interesting too: https://stackoverflow.com/a/24289767/166231 but I didn't test this one yet
-                let visiblePopover: Element | undefined = undefined;
-                
-                const hideVisiblePopover = function(): void {
-                    // Just in case the tooltip hasn't been configured
-                    if ( visiblePopover === undefined || $(visiblePopover).data("bs.popover") === undefined ) return;
-
-                    // Call this first b/c popover 'hide' event sets visiblePopover = undefined
-                    if ( isBootstrap3 ) {
-                        $(visiblePopover).data("bs.popover").inState.click = false
-                    }
-                    $(visiblePopover).popover("hide");
-                };
-
-                const app = application;
-
                 application.element
                     .on("show.bs.popover.RBLe", function() { hideVisiblePopover(); })
                     .on("shown.bs.popover.RBLe", function( e ) { 
-                        visiblePopover = e.target; 
+                        KatApp[ "visiblePopover"] = e.target; 
                         $("div.katapp-css[role='tooltip'] [rbl-action-link]").attr("data-katapp-initialized", "false");
-                        app.templateBuilder.processActionLinks($("div.katapp-css[role='tooltip']"));
+                        application.templateBuilder.processActionLinks($("div.katapp-css[role='tooltip']"));
                     })
-                    .on("hide.bs.popover.RBLe", function() { visiblePopover = undefined; })
+                    .on("hide.bs.popover.RBLe", function() { 
+                        KatApp[ "visiblePopover"] = undefined; 
+                    })
                     .on("keyup.RBLe", function( e ) {
                         if (e.keyCode != 27) // esc
                             return;
@@ -4442,6 +4445,16 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                         hideVisiblePopover();
                         e.preventDefault();
                     })
+                    .on("click.RBLe", function( e ) {
+                        return;
+                        if ($(e.target).is(".popover-title, .popover-content")) return; // BS3
+                        if ($(e.target).is(".popover-header, .popover-body")) return; // BS4                        
+                        hideVisiblePopover();
+                    })
+                    .attr("data-katapp-initialized-tooltip", "true");
+            }
+            if ( $("html").attr("data-katapp-initialized-tooltip") != "true" ) {
+                $("html")
                     .on("click.RBLe", function( e ) {
                         if ($(e.target).is(".popover-title, .popover-content")) return; // BS3
                         if ($(e.target).is(".popover-header, .popover-body")) return; // BS4                        

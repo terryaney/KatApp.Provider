@@ -221,7 +221,7 @@
 
   $.fn.KatApp.templateOn("{thisTemplate}", "onInitialized.RBLe", function (event, application) {
     application.trace("Processing onInitialized.RBLe for Template [{thisTemplate}]...", TraceVerbosity.Normal);
-    const templateBuilder = $.fn.KatApp.standardTemplateBuilderFactory(application);
+    const templateBuilder = application.templateBuilder;
     // Could use templateBuilder here...
   });
   //# sourceURL=Standard_Templates.kaml

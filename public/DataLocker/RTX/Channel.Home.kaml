@@ -67,28 +67,11 @@
 
 
 <style>
-	thisClass span.highcharts-title {
+	.thisClass span.highcharts-title {
 		font-family: inherit !important;
 	}
-	
-	thisClass .chart-swatch {
-	width: 20px; height: 20px;
-	}
-	thisClass td.swatch {
-	width: 26px;
-	padding-right: 0px;
-	}
-	thisClass .table > tbody > tr.total > td {
-	font-weight: bold;
-	}
-	thisClass .table > tbody > tr.total > td {
-	text-align: right;
-	}
-	thisClass th.value {
-	    text-align: right;
-	}
-	thisClass td.value {
-	    text-align: right;
+	.thisClass .table > tbody > tr.total > td {
+  	text-align: right;
 	}
 </style>
 

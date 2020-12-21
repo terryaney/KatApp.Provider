@@ -42,8 +42,7 @@
     <div id="rblMarkup" class="rblApplication rblMarkup kat-app-css" style="display: none;">
         <h2 class="title">RETIREMENT PLANNING</h2>
         <div class="container">
-            <div class="row">
-    
+            <div class="row">    
                 <!-- Results -->
                 <div class="col-md-7">
                     <!-- Tab panes -->
@@ -279,7 +278,8 @@
                 $("<a href=\"#\" title=\"Income Replacement Calculator\" class=\"changeLifestyle\"><span class=\"glyphicons glyphicons-list-alt\"></span></a>")
             );
 
-            $(".changeLifestyle", view).click(function () {
+            $(".changeLifestyle", view).click(function (e) {
+                e.preventDefault();
                 if ( $(".irp-modal").length === 0 ) {
                     view.after($('\
                     <div class="katapp-css">\

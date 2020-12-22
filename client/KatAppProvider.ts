@@ -4416,8 +4416,11 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
             // Combo of http://stackoverflow.com/a/17375353/166231 and https://stackoverflow.com/a/21007629/166231 (and 3rd comment)
             // This one looked interesting too: https://stackoverflow.com/a/24289767/166231 but I didn't test this one yet
             const hideVisiblePopover = function(): void {
+                // Going against entire KatApp (all apps) instead of a local variable because I only setup
+                // the HTML click event one time, so the 'that=this' assignment above would be the first application
+                // and might not match up to the 'currently executing' katapp, so had to make this global anyway
+                const visiblePopover = KatApp[ "visiblePopover" ];
                 // Just in case the tooltip hasn't been configured
-                const visiblePopover = KatApp[ "visiblePopover" ]; // Going against entire KatApp (all apps)
                 if ( visiblePopover === undefined || $(visiblePopover).data("bs.popover") === undefined ) return;
     
                 // Call this first b/c popover 'hide' event sets visiblePopover = undefined

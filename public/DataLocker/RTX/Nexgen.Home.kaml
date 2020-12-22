@@ -36,19 +36,19 @@
         }
         else {
           if ( href.includes("channel_DB")) {
-            $(".lnkPension")[0].click();
+            NexgenNav( "DB" );
           }
           else if ( href.includes("Benefits_DB") ) {
-            $(".pensionStartApp").val(".katapp-sharkfin");$(".lnkPension")[0].click();
+            NexgenNav( "DB", "retirementplanning" );
           }
           else if ( href.includes("htl_RetOnline") ) {
-            $(".pensionStartApp").val(".katapp-retireonline");$(".lnkPension")[0].click();
+            NexgenNav( "DB", "retireonline" );
           }
           else if ( href.includes("htl_PensionEstimate") ) {
-            $(".pensionStartApp").val(".katapp-pensionestimates");$(".lnkPension")[0].click();
+            NexgenNav( "DB", "estimate" );
           }
           else if ( href.includes("Benefits_DC") ) {
-            $(".pensionStartApp").val(".katapp-tr");$(".lnkPension")[0].click();
+            NexgenNav( "DB", "totalrewards" );
           }
           
           $("header")[0].scrollIntoView( { behavior: "smooth"});

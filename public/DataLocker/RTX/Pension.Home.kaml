@@ -48,13 +48,13 @@
             $("#showMoreCurrentValue")[0].click();
           }
           else if ( href == "htl_sharkfin" ) {
-            $("li.nav1-sharkfin a").trigger("click");
+            NexgenNav( "DB", "retirementplanning" );
           }
           else if ( href == "htl_DBEstimate" ) {
-            $("li.nav1-pensionestimates a").trigger("click");
+            NexgenNav( "DB", "estimate" );
           }
           else if ( href == "htl_RetOnline" ) {
-            $("li.nav1-retireonline a").trigger("click");
+            NexgenNav( "DB", "retireonline" );
           }
 
           $("header")[0].scrollIntoView( { behavior: "smooth"});

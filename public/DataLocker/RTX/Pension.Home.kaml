@@ -145,7 +145,7 @@
   <input name="{id}:iAlertType" type="text" id="katapp_{id}_iAlertType" class="iAlertType" val="pension"></input>
 </div>
 
-<div class="ajaxContent">
+<div id="dbChannel" class="ajaxContent">
   <h5 class="pageTitle sticky-top absolute"><a href="#top">Pension</a></h5>
   <!-- ============================================================================================================= -->
   <!--                                   				START - BODY CONENT											   -->

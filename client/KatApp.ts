@@ -108,46 +108,6 @@ class KatApp
         );
     };
 
-    static ping( url: string, callback: ( responded: boolean, error?: string | Event )=> void ): void {
-        const ip = url.replace('http://','').replace('https://','').split(/[/?#]/)[0];
-
-        $.ajax({
-            url: "http://" + ip + "/DataLocker/Global/ping.js",
-            timeout: 1000,
-            success: function( /* result */ ){
-                callback(true);
-            },     
-            error: function( /* result */ ){
-                callback(false);
-            }
-         });
-
-        /*
-        // https://stackoverflow.com/a/11941783/166231
-        let inUse = true;
-        const img = new Image();
-        img.onload = function (): void {
-            inUse = false;
-            callback(true);
-        };
-        // onerror is also success, because this means the domain/ip is found, only the image not;
-        img.onerror = function (e): void {
-            if (inUse) {
-                inUse = false;
-                callback(true, e);
-            }
-        };
-        img.src = "http://" + ip;
-        
-        setTimeout(function () {
-            if (inUse) {
-                inUse = false;
-                callback(false);
-            }
-        }, 1000);
-        */
-    }
-
     static trace( application: KatAppPlugInShimInterface | undefined, message: string, verbosity: TraceVerbosity = TraceVerbosity.Normal ): void {
         const verbosityOption = application?.options?.debug?.traceVerbosity ?? KatApp.defaultOptions.debug?.traceVerbosity ?? TraceVerbosity.None;
 
@@ -191,13 +151,35 @@ class KatApp
         }
     }
 
-    // obsolete, this is managed in KatAppProvider now...
+    // ping and getResources duplicated in KatAppProvider now.  This allows for Views of L@W 
+    // (or other clients that have own copy of KatApp.js but are unable to update it) to be served
+    // from local server if enabled.
+    static ping( url: string, callback: ( responded: boolean, error?: string | Event )=> void ): void {
+        const ip = url.replace('http://','').replace('https://','').split(/[/?#]/)[0];
+
+        $.ajax({
+            url: "http://" + ip + "/DataLocker/Global/ping.js",
+            timeout: 1000,
+            success: function( /* result */ ){
+                callback(true);
+            },     
+            error: function( /* result */ ){
+                callback(false);
+            }
+         });
+    }
+
     static getResources( application: KatAppPlugInShimInterface, resources: string, useTestVersion: boolean, isScript: boolean, debugResourcesDomain: string | undefined, getResourcesHandler: PipelineCallback ): void {
         const currentOptions = application.options;
         const url = currentOptions.functionUrl ?? KatApp.defaultOptions.functionUrl ?? KatApp.functionUrl;
         const resourceArray = resources.split(",");
+        const allowLocalServer = application.options.debug?.allowLocalServer ?? KatApp.pageParameters[ "allowlocal"] === "1";
+
+        let localDomain: string | undefined = debugResourcesDomain;
         
-        let localDomain: string | undefined = debugResourcesDomain ?? "http://localhost:8887/DataLocker/";
+        if ( localDomain === undefined && allowLocalServer ) {
+            localDomain = "http://localhost:8887/DataLocker/";
+        }
 
         let useLocalResources = localDomain !== undefined; // global value for all requested resources
         // viewParts[ 0 ], viewParts[ 1 ]
@@ -317,7 +299,37 @@ class KatApp
                                     // and to also conform to using the submitCalculation wrapper by L@W.
                                     $.ajax( ajaxConfig ).done( done ).fail(  fail );
                                 };
-                                    
+                            
+                            const processContent = function( resourceContent: string ): void {
+                                if ( isScript ) {
+                                    // If local script location is provided, doing the $.ajax code automatically 
+                                    // injects/executes the javascript, no need to do it again
+                                    const body = document.querySelector('body');
+
+                                    // Still trying to figure out how to best determine if I inject or not, might have to make a variable
+                                    // at top of code in KatAppProvider, but if it 'ran', then $.fn.KatApp.plugInShims should be undefined.
+                                    // Originally, I just looked to see if debugResourcesDomain was undefined...but if that is set and the domain
+                                    // does NOT match domain of site running (i.e. debugging site in asp.net that uses KatApps and I want it to
+                                    // hit development KatApp resources) then it doesn't inject it.  So can't just check undefined or not.
+                                    if ( body !== undefined && body !== null && $.fn.KatApp.plugInShims !== undefined && resourceContent !== undefined ) {
+
+                                        // Just keeping the markup a bit cleaner by only having one copy of the code
+                                        $("script[rbl-script='true']").remove()
+
+                                        // https://stackoverflow.com/a/56509649/166231
+                                        const script = document.createElement('script');
+                                        script.setAttribute("rbl-script", "true");
+                                        const content = resourceContent;
+                                        script.innerHTML = content;
+                                        body.appendChild(script);
+                                    }
+                                }
+                                else {
+                                    resourceResults[ r ] = resourceContent;
+                                }
+                                getResourcesPipeline(); 
+                            };
+
                             const submitDone: RBLeServiceCallback = function( data ): void {
                                 if ( data == null ) {
                                     // Bad return from L@W
@@ -330,35 +342,7 @@ class KatApp
                                     }
                                     
                                     // data.Content when request from service, just data when local files
-                                    const resourceContent = data.Resources?.[ 0 ].Content ?? data as string;
-
-                                    if ( isScript ) {
-                                        // If local script location is provided, doing the $.ajax code automatically 
-                                        // injects/executes the javascript, no need to do it again
-                                        const body = document.querySelector('body');
-
-                                        // Still trying to figure out how to best determine if I inject or not, might have to make a variable
-                                        // at top of code in KatAppProvider, but if it 'ran', then $.fn.KatApp.plugInShims should be undefined.
-                                        // Originally, I just looked to see if debugResourcesDomain was undefined...but if that is set and the domain
-                                        // does NOT match domain of site running (i.e. debugging site in asp.net that uses KatApps and I want it to
-                                        // hit development KatApp resources) then it doesn't inject it.  So can't just check undefined or not.
-                                        if ( body !== undefined && body !== null && $.fn.KatApp.plugInShims !== undefined && resourceContent !== undefined ) {
-
-                                            // Just keeping the markup a bit cleaner by only having one copy of the code
-                                            $("script[rbl-script='true']").remove()
-
-                                            // https://stackoverflow.com/a/56509649/166231
-                                            const script = document.createElement('script');
-                                            script.setAttribute("rbl-script", "true");
-                                            const content = resourceContent;
-                                            script.innerHTML = content;
-                                            body.appendChild(script);
-                                        }
-                                    }
-                                    else {
-                                        resourceResults[ r ] = resourceContent;
-                                    }
-                                    getResourcesPipeline(); 
+                                    processContent( data.Resources?.[ 0 ].Content ?? data as string );
                                 }
                             };
 
@@ -381,8 +365,23 @@ class KatApp
                                 }
                             };
 
-                            submit( application as KatAppPlugInInterface, params, submitDone, submitFailed );
-                                                    
+                            const localStorageKey = ( folders[ currentFolder ] + ":" + resourceParts[ 1 ] ).toLowerCase();
+                            const localStorageItem = application.options.localStorage?.filter( s => s.ID == localStorageKey ).shift()
+                            if ( localStorageItem != undefined ) {
+                                processContent( 
+                                    localStorageItem.Content
+                                        .replace(/&amp;/g, '&')
+                                        .replace(/&lt;/g, '<')
+                                        .replace(/&gt;/g, '>')
+                                        .replace(/&#39;/g, '\'')
+                                        .replace(/&apos;/g, '\'')
+                                        .replace(/&quot;/g, '"')
+                                        .replace(/&#34;/g, '"')
+                                );
+                            }
+                            else {
+                                submit( application as KatAppPlugInInterface, params, submitDone, submitFailed );
+                            }
                         } catch (error) {
                             pipelineError = "getResources failed trying to request " + r + ":" + error;
                             getResourcesPipeline();

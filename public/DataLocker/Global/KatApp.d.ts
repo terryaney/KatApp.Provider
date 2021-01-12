@@ -17,7 +17,7 @@ declare class KatApp {
     static clone(source: object, replacer?: (this: any, key: string, value: any) => any): object;
     private static copyProperties;
     static generateId: () => string;
-    static ping(url: string, callback: (responded: boolean, error?: string | Event) => void): void;
     static trace(application: KatAppPlugInShimInterface | undefined, message: string, verbosity?: TraceVerbosity): void;
+    static ping(url: string, callback: (responded: boolean, error?: string | Event) => void): void;
     static getResources(application: KatAppPlugInShimInterface, resources: string, useTestVersion: boolean, isScript: boolean, debugResourcesDomain: string | undefined, getResourcesHandler: PipelineCallback): void;
 }

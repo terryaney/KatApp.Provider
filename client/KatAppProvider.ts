@@ -4683,12 +4683,33 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
 
                             let localFolder = folders[ currentFolder ] + "/";
                             const isRelativePath = KatApp.stringCompare( localFolder, "Rel/", true ) == 0;
+                            let resourceUrl = "";
 
                             const submit =
                                 ( !useLocalResource ? currentOptions.submitCalculation : undefined ) ??
                                 function( _app, o, done, fail ): void {
-                                    let resourceUrl = useLocalResource ? localDomain + localFolder + resource : url; // + JSON.stringify( params )
+                                    resourceUrl = useLocalResource 
+                                        ? localDomain + localFolder + resource 
+                                        : url; // + JSON.stringify( params )
 
+                                    if ( !useLocalResource && application.options.localStorage != undefined ) {
+                                        const localStorageKey = ( folders[ currentFolder ] + ":" + resourceParts[ 1 ] ).toLowerCase();
+                                        const localStorageItem = application.options.localStorage.filter( s => s.ID == localStorageKey ).shift()
+                                        if ( localStorageItem != undefined ) {
+                                            processContent( 
+                                                localStorageItem.Content
+                                                    .replace(/&amp;/g, '&')
+                                                    .replace(/&lt;/g, '<')
+                                                    .replace(/&gt;/g, '>')
+                                                    .replace(/&#39;/g, '\'')
+                                                    .replace(/&apos;/g, '\'')
+                                                    .replace(/&quot;/g, '"')
+                                                    .replace(/&#34;/g, '"')
+                                            );
+                                            return;
+                                        }
+                                    }
+            
                                     if ( isRelativePath )
                                     {
                                         resourceUrl = resource;
@@ -4710,7 +4731,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                                     // and to also conform to using the submitCalculation wrapper by L@W.
                                     $.ajax( ajaxConfig ).done( done ).fail(  fail );
                                 };
-                                    
+                            
                             const processContent = function( resourceContent: string ): void {
                                 if ( isScript ) {
                                     // If local script location is provided, doing the $.ajax code automatically 
@@ -4770,29 +4791,13 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                                     submit( application as KatAppPlugInInterface, params, submitDone, submitFailed );
                                 }
                                 else {
-                                    pipelineError = "getResources failed requesting " + r + ":" + textStatus;
+                                    pipelineError = "getResources failed requesting " + r + " from " + resourceUrl + ":" + textStatus;
                                     console.log( _errorThrown );
                                     getResourcesPipeline();
                                 }
                             };
 
-                            const localStorageKey = ( folders[ currentFolder ] + ":" + resourceParts[ 1 ] ).toLowerCase();
-                            const localStorageItem = application.options.localStorage?.filter( s => s.ID == localStorageKey ).shift()
-                            if ( localStorageItem != undefined ) {
-                                processContent( 
-                                    localStorageItem.Content
-                                        .replace(/&amp;/g, '&')
-                                        .replace(/&lt;/g, '<')
-                                        .replace(/&gt;/g, '>')
-                                        .replace(/&#39;/g, '\'')
-                                        .replace(/&apos;/g, '\'')
-                                        .replace(/&quot;/g, '"')
-                                        .replace(/&#34;/g, '"')
-                                );
-                            }
-                            else {
-                                submit( application as KatAppPlugInInterface, params, submitDone, submitFailed );
-                            }
+                            submit( application as KatAppPlugInInterface, params, submitDone, submitFailed );
                         } catch (error) {
                             pipelineError = "getResources failed trying to request " + r + ":" + error;
                             getResourcesPipeline();

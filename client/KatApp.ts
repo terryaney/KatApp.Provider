@@ -307,12 +307,16 @@ class KatApp
 
                                     const ajaxConfig = 
                                     { 
-                                        url: resourceUrl,
+                                        url: !useLocalResource && !isRelativePath
+                                            ? resourceUrl + "?" + JSON.stringify( o )
+                                            : resourceUrl
+                                        /*,
                                         data: !useLocalResource && !isRelativePath ? JSON.stringify( o ) : undefined,
                                         method: !useLocalResource && !isRelativePath ? "POST" : undefined,
                                         dataType: !useLocalResource && !isRelativePath ? "json" : undefined,
                                         // async: true, // NO LONGER ALLOWED TO BE FALSE BY BROWSER
                                         cache: false
+                                        */
                                     };
             
                                     // Need to use .ajax isntead of .getScript/.get to get around CORS problem

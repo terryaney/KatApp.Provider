@@ -4719,12 +4719,16 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
 
                                     const ajaxConfig = 
                                     { 
-                                        url: resourceUrl,
+                                        url: !useLocalResource && !isRelativePath
+                                            ? resourceUrl + "?" + JSON.stringify( o )
+                                            : resourceUrl
+                                        /*,
                                         data: !useLocalResource && !isRelativePath ? JSON.stringify( o ) : undefined,
                                         method: !useLocalResource && !isRelativePath ? "POST" : undefined,
                                         dataType: !useLocalResource && !isRelativePath ? "json" : undefined,
                                         // async: true, // NO LONGER ALLOWED TO BE FALSE BY BROWSER
                                         cache: false
+                                        */
                                     };
             
                                     // Need to use .ajax isntead of .getScript/.get to get around CORS problem
@@ -4744,15 +4748,13 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                                     // does NOT match domain of site running (i.e. debugging site in asp.net that uses KatApps and I want it to
                                     // hit development KatApp resources) then it doesn't inject it.  So can't just check undefined or not.
                                     if ( body !== undefined && body !== null && $.fn.KatApp.plugInShims !== undefined && resourceContent !== undefined ) {
-
                                         // Just keeping the markup a bit cleaner by only having one copy of the code
                                         $("script[rbl-script='true']").remove()
 
                                         // https://stackoverflow.com/a/56509649/166231
                                         const script = document.createElement('script');
                                         script.setAttribute("rbl-script", "true");
-                                        const content = resourceContent;
-                                        script.innerHTML = content;
+                                        script.innerHTML = resourceContent.replace("//# sourceMappingURL=KatAppProvider.js.map","");
                                         body.appendChild(script);
                                     }
                                 }

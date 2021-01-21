@@ -53,13 +53,6 @@ interface KatAppOptions
     view?: string;
     viewTemplates?: string;
     
-    // If the view and all templates are served up by hosting site, they will
-    // be provided here instead of going to content management storage
-    localStorage?: {
-        ID: string;
-        Content: string;
-    }[];
-    
     ajaxLoaderSelector?: string;
 
     // Methods that might be overriden by angular/L@W hosts

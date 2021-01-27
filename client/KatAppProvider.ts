@@ -1692,6 +1692,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
         pushNotification(from: KatAppPlugIn, name: string, information: {} | undefined): void {
             ( $.fn.KatApp.applications as KatAppPlugIn[] ).forEach( a => { 
                 if ( from.id != a.id ) {
+                    // Only trigger event for *other* KatApps
                     this.triggerApplicationEvent( a, "onKatAppNotification", name, information, a );
                 }
             });        
@@ -4714,7 +4715,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
 
                                     const ajaxConfig = 
                                     { 
-                                        url: !tryLocalWebServer && !isResourceInManagementSite
+                                        url: !tryLocalWebServer && isResourceInManagementSite
                                             ? resourceUrl + "?" + JSON.stringify( managementSiteCommand )
                                             : resourceUrl // If just file served up by local web server or hosting site web server, don't pass params
                                     };

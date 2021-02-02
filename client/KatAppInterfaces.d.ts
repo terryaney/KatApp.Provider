@@ -18,6 +18,7 @@ interface KatAppOptions
         useTestView?: boolean; // testView=1 querystring
         useTestPlugin?: boolean; // testPlugIn=1 querystring
         allowLocalServer?: boolean; // allowLocal=1 querystring
+        showInspector?: boolean; // showInspector=1 querystring
     };
 
     sessionUrl?: string;

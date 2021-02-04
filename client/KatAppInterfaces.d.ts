@@ -120,9 +120,6 @@ interface KatAppPlugInShimInterface {
     updateOptions: ( options: KatAppOptions )=> void;
     calculate: ( options?: KatAppOptions )=> void;
     trace: ( message: string, verbosity?: TraceVerbosity )=> void;
-
-    // If multiple KatApps are on one page, a KatApp can broadcast notifications to other KatApps
-    pushNotification: (name: string, information: {} | undefined)=> void;
 }
 
 // This is the actual plug in interface.  Accessible via:
@@ -168,6 +165,8 @@ interface KatAppPlugInInterface extends KatAppPlugInShimInterface {
     refreshCalcEngine: ()=> void;
     // $("selector").KatApp("traceCalcEngine"); - return calc engine tracing from *next successful* calc for all selector items
     traceCalcEngine: ()=> void;
+    // If multiple KatApps are on one page, a KatApp can broadcast notifications to other KatApps
+    pushNotification: (name: string, information: {} | undefined)=> void;
 }
 
 interface GetResourceOptions {

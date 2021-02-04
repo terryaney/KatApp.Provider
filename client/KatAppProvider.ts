@@ -17,7 +17,8 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                 saveFirstCalculationLocation: KatApp.pageParameters[ "save" ],
                 useTestCalcEngine: KatApp.pageParameters[ "test" ] === "1",
                 refreshCalcEngine: KatApp.pageParameters[ "expirece" ] === "1",
-                allowLocalServer: KatApp.pageParameters[ "allowlocal" ] === "1"
+                allowLocalServer: KatApp.pageParameters[ "allowlocal" ] === "1",
+                showInspector: KatApp.pageParameters[ "showInspector" ] === "1"
                 // Set in KatApp.ts
                 // useTestView: KatApp.pageParameters[ "testview"] === "1",
                 // useTestPlugin: KatApp.pageParameters[ "testplugin"] === "1",
@@ -874,7 +875,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
 
 
             this.ui.triggerEvent( "onResultsProcessing", this.results, calculationOptions, this );
-            this.rble.processResults();
+            this.rble.processResults( calculationOptions );
            
             if ( this.calculationInputs?.iConfigureUI === 1 ) {
                 this.ui.triggerEvent( "onConfigureUICalculation", this.results, calculationOptions, this );
@@ -1988,7 +1989,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                 delete currentOptions.defaultInputs.iInputTrigger;
             }
 
-            const inputs: CalculationInputs = application.calculationInputs = KatApp.extend( this.application.ui.getInputs( currentOptions ), currentOptions.defaultInputs, currentOptions.manualInputs );
+            const inputs: CalculationInputs = KatApp.extend( this.application.ui.getInputs( currentOptions ), currentOptions.defaultInputs, currentOptions.manualInputs );
 
             let preCalcs = currentOptions.preCalcs;
 
@@ -2027,6 +2028,8 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
             };
 
             this.application.ui.triggerEvent( "onCalculationOptions", calculationOptions, this );
+
+            application.calculationInputs = KatApp.extend( {}, calculationOptions.Inputs as object, { InputTables: calculationOptions.InputTables } );
 
             const that: RBLeUtilities = this;
 
@@ -2237,7 +2240,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
             }
         }
         
-        processRblValues(): void {
+        processRblValues(showInspector:boolean): void {
             const that: RBLeUtilities = this;
             const application = this.application;
 
@@ -2263,7 +2266,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
             });
         }
 
-        processRblSources(): void {
+        processRblSources(showInspector:boolean): void {
             const that: RBLeUtilities = this;
             const application = this.application;
             
@@ -2271,7 +2274,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
             $("[rbl-source], [rbl-source-table]", application.element).not("rbl-template [rbl-source], rbl-template [rbl-source-table]").each(function () {
                 const el = $(this);
 
-                // TOM - Need some flow documentation here, can't really picture entire thing in my head
+                // Only process element if *not* flagged as a rbl-configui only item or if it actually is a Configuration UI calculation
                 if ( el.attr("rbl-configui") === undefined || application.calculationInputs?.iConfigureUI === 1 ) {
 
                     const elementData = el.data();
@@ -2283,7 +2286,8 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                             ? [ that.getResultValue( rblSourceTableParts[ 0 ], rblSourceTableParts[ 1 ], rblSourceTableParts[ 2 ] ) ?? "unknown" ]
                             : [ that.getResultValueByColumn( rblSourceTableParts[ 0 ], rblSourceTableParts[ 1 ], rblSourceTableParts[ 2 ], rblSourceTableParts[ 3 ] ) ?? "unknown" ];
 
-                    // TOM (don't follow this code) - inline needed for first case?  What does it mean if rbl-tid is blank?  Need a better attribute name instead of magic 'empty' value
+                    // TOM (don't follow this code) - inline needed for first case?  What does it mean if rbl-tid is blank?  
+                    // Need a better attribute name instead of magic 'empty' value
                     const inlineTemplate = tid === undefined ? $("[rbl-tid]", el ) : undefined;
                     const templateContent = tid === undefined
                         ? inlineTemplate === undefined || inlineTemplate.length === 0
@@ -2292,7 +2296,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                         : application.ui.getTemplate( tid, elementData )?.Content; 
 
                     if ( templateContent === undefined ) {
-                        application.trace("<b style='color: Red;'>RBL WARNING</b>: Template content could not be found: [" + tid + "].", TraceVerbosity.Detailed);
+                        application.trace("<b style='color: Red;'>RBL WARNING</b>: Template content could not be found: [" + ( tid ?? "Missing rbl-tid for " + ( el.attr('rbl-source') ?? el.attr('rbl-source-table') ) ) + "].", TraceVerbosity.Detailed);
                     }
                     else if ( rblSourceParts === undefined || rblSourceParts.length === 0) {
                         application.trace("<b style='color: Red;'>RBL WARNING</b>: no rbl-source data", TraceVerbosity.Detailed);
@@ -3088,7 +3092,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
             });
         }
 
-        processResults(): boolean {
+        processResults( calculationOptions: KatAppOptions ): boolean {
             const application = this.application;
             const results = application.results;
 
@@ -3096,6 +3100,8 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
 			// TOM (what does this comment mean): generated content append or prepend (only applicably when preserved content)
 
             if ( results !== undefined ) {
+                var showInspector = application.calculationInputs?.iConfigureUI === 1 && ( calculationOptions.debug?.showInspector ?? false );
+
                 const calcEngineName = results["@calcEngine"];
                 const version = results["@version"];
                 application.trace( "Processing results for " + calcEngineName + "(" + version + ").", TraceVerbosity.Normal );
@@ -3108,8 +3114,8 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                 const outputRows = this.getResultTable<HtmlContentRow>( "ejs-output" )
                 outputRows.forEach( r => { this.createHtmlFromResultRow( r, true ); });
 
-                this.processRblSources();
-                this.processRblValues();
+                this.processRblSources( showInspector );
+                this.processRblValues( showInspector );
 
                 // apply dynamic classes after all html updates 
                 // (TOM: (this was your comment...could this be done with 'non-template' build above)

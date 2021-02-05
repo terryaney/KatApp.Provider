@@ -4721,6 +4721,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
 
                                     const ajaxConfig = 
                                     { 
+                                        ifModified: true,
                                         url: !tryLocalWebServer && isResourceInManagementSite
                                             ? resourceUrl + "?" + JSON.stringify( managementSiteCommand )
                                             : resourceUrl // If just file served up by local web server or hosting site web server, don't pass params

@@ -9,5 +9,5 @@ public/legacy
 public/js
 public/0_Product
 
-KatApp.js
-KatAppProvider.js
+KatApp*.js
+KatAppProvider*.js

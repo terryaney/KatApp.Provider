@@ -1,3 +1,4 @@
+// Local
 const providerVersion = 8.35; // eslint-disable-line @typescript-eslint/no-unused-vars
 
 KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosity.Detailed);
@@ -2247,6 +2248,19 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
             //[rbl-value] inserts text value of referenced tabdef result into .html()
             $("[rbl-value]", application.element).not("rbl-template [rbl-value]").each(function () {
                 const el = $(this);
+
+                if ( showInspector && !el.hasClass("kat-inspector-value") )
+                {
+                    el.addClass("kat-inspector-value");
+                    var inspectorTitle = "[rbl-value={value}]".format( { "value": el.attr('rbl-value') } );
+                    var existingTitle = el.attr("title");
+                    
+                    if ( existingTitle != undefined ) {
+                        inspectorTitle += "\nOriginal Title: " + existingTitle;
+                    }
+                    el.attr("title", inspectorTitle);
+                }
+
                 const rblValueParts = el.attr('rbl-value')!.split('.'); // eslint-disable-line @typescript-eslint/no-non-null-assertion
 
                 const value = that.getRblSelectorValue( "ejs-output", rblValueParts );
@@ -2267,100 +2281,130 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
         }
 
         processRblSources(showInspector:boolean): void {
-            const that: RBLeUtilities = this;
             const application = this.application;
-            
             //[rbl-source] processing templates that use rbl results
-            $("[rbl-source], [rbl-source-table]", application.element).not("rbl-template [rbl-source], rbl-template [rbl-source-table]").each(function () {
-                const el = $(this);
-
-                // Only process element if *not* flagged as a rbl-configui only item or if it actually is a Configuration UI calculation
-                if ( el.attr("rbl-configui") === undefined || application.calculationInputs?.iConfigureUI === 1 ) {
-
-                    const elementData = el.data();
-                    const tid = el.attr('rbl-tid');
-                    const rblSourceTableParts = el.attr('rbl-source-table')?.split('.');
-                    const rblSourceParts = rblSourceTableParts === undefined
-                        ? el.attr('rbl-source')?.split('.')
-                        : rblSourceTableParts.length === 3
-                            ? [ that.getResultValue( rblSourceTableParts[ 0 ], rblSourceTableParts[ 1 ], rblSourceTableParts[ 2 ] ) ?? "unknown" ]
-                            : [ that.getResultValueByColumn( rblSourceTableParts[ 0 ], rblSourceTableParts[ 1 ], rblSourceTableParts[ 2 ], rblSourceTableParts[ 3 ] ) ?? "unknown" ];
-
-                    // TOM (don't follow this code) - inline needed for first case?  What does it mean if rbl-tid is blank?  
-                    // Need a better attribute name instead of magic 'empty' value
-                    const inlineTemplate = tid === undefined ? $("[rbl-tid]", el ) : undefined;
-                    const templateContent = tid === undefined
-                        ? inlineTemplate === undefined || inlineTemplate.length === 0
-                            ? undefined
-                            : $( inlineTemplate.prop("outerHTML").format( elementData ) ).removeAttr("rbl-tid").prop("outerHTML")
-                        : application.ui.getTemplate( tid, elementData )?.Content; 
-
-                    if ( templateContent === undefined ) {
-                        application.trace("<b style='color: Red;'>RBL WARNING</b>: Template content could not be found: [" + ( tid ?? "Missing rbl-tid for " + ( el.attr('rbl-source') ?? el.attr('rbl-source-table') ) ) + "].", TraceVerbosity.Detailed);
-                    }
-                    else if ( rblSourceParts === undefined || rblSourceParts.length === 0) {
-                        application.trace("<b style='color: Red;'>RBL WARNING</b>: no rbl-source data", TraceVerbosity.Detailed);
-                    }
-                    else if ( rblSourceParts.length === 1 || rblSourceParts.length === 3 ) {
-                        
-                        //table in array format.  Clear element, apply template to all table rows and .append
-                        const table = that.getResultTable<JSON>( rblSourceParts[0] );
-                        
-                        if ( table !== undefined && table.length > 0 ) {
-                            
-                            el.children( ":not(.rbl-preserve, [rbl-tid='inline'])" ).remove();
-                            const prepend = el.attr('rbl-prepend') === "true";
-
-                            let i = 1;
-
-                            table.forEach( row => {
-                                
-                                if ( rblSourceParts.length === 1 || row[ rblSourceParts[ 1 ] ] === rblSourceParts[ 2 ] ) {
-                                    const templateData = KatApp.extend( {}, row, { _index0: i - 1, _index1: i++ } )
-
-                                    if ( prepend ) {
-                                        el.prepend( templateContent.format( templateData ) );
-                                    }
-                                    else {
-                                        el.append( templateContent.format( templateData ) );
-                                    }
-                                }
-
-                            });
-                        } else {
-                            application.trace("<b style='color: Red;'>RBL WARNING</b>: no data returned for rbl-source=" + el.attr('rbl-source'), TraceVerbosity.Detailed);
-                        }
-
-                    } else if ( rblSourceParts.length === 2 ) {
-
-                        const row = that.getResultRow( rblSourceParts[0], rblSourceParts[1] );
-                        
-                        if ( row !== undefined ) {
-                            el.html( templateContent.format( row ) );
-                        }
-                        else {
-                            application.trace("<b style='color: Red;'>RBL WARNING</b>: no data returned for rbl-source=" + el.attr('rbl-source'), TraceVerbosity.Detailed);
-                        }
-
-                    }
-                    else if ( rblSourceParts.length === 3 ) {
-                        
-                        const value = that.getResultValue( rblSourceParts[0], rblSourceParts[1], rblSourceParts[2]);
-                        
-                        if ( value !== undefined ) {
-                            el.html( templateContent.format( { "value": value } ) );                                    
-                        }
-                        else {
-                            application.trace("<b style='color: Red;'>RBL WARNING</b>: no data returned for rbl-source=" + el.attr('rbl-source'), TraceVerbosity.Detailed);
-                        }
-
-                    }
-            
-                }
-            });
+            this.processRblSource(this.application.element, showInspector);
         }
 
-        processVisibilities(): void {
+        processRblSource(root: JQuery<HTMLElement>, showInspector: boolean): void {
+            const that: RBLeUtilities = this;
+            const application = this.application;
+
+            $("[rbl-source], [rbl-source-table]", root)
+                .not("rbl-template [rbl-source], rbl-template [rbl-source-table]") // not in templates
+                .not("[rbl-source] [rbl-source], [rbl-source] [rbl-source-table]") // not nested in rbl-source item
+                .not("[rbl-source-table] [rbl-source], [rbl-source-table] [rbl-source-table]") // not nested in rbl-source-table item
+                .each(function () {
+                    const el = $(this);
+
+                    // Only process element if *not* flagged as a rbl-configui only item or if it actually is a Configuration UI calculation
+                    if ( el.attr("rbl-configui") === undefined || application.calculationInputs?.iConfigureUI === 1 ) {
+
+                        const elementData = el.data();
+                        const tid = el.attr('rbl-tid');
+                        const rblSourceTableParts = el.attr('rbl-source-table')?.split('.');
+                        const rblSourceParts = rblSourceTableParts === undefined
+                            ? el.attr('rbl-source')?.split('.')
+                            : rblSourceTableParts.length === 3
+                                ? [ that.getResultValue( rblSourceTableParts[ 0 ], rblSourceTableParts[ 1 ], rblSourceTableParts[ 2 ] ) ?? "unknown" ]
+                                : [ that.getResultValueByColumn( rblSourceTableParts[ 0 ], rblSourceTableParts[ 1 ], rblSourceTableParts[ 2 ], rblSourceTableParts[ 3 ] ) ?? "unknown" ];
+
+                        // TOM (don't follow this code) - inline needed for first case?  What does it mean if rbl-tid is blank?  
+                        // Need a better attribute name instead of magic 'empty' value, and what is: const templateData = KatApp.extend( {}, row, { _index0: i - 1, _index1: i++ } )
+                        const inlineTemplate = tid === undefined ? $("[rbl-tid]", el ) : undefined;
+                        const templateContent = tid === undefined
+                            ? inlineTemplate === undefined || inlineTemplate.length === 0
+                                ? undefined
+                                : $( inlineTemplate.prop("outerHTML").format( elementData ) ).removeAttr("rbl-tid").prop("outerHTML")
+                            : application.ui.getTemplate( tid, elementData )?.Content; 
+
+                        if ( showInspector && !el.hasClass("kat-inspector-source") ) {
+                            el.addClass("kat-inspector-source");
+                            var inspectorName = el.attr("rbl-source") != undefined ? "rbl-source" : "rbl-source-table";
+                            var inspectorData = { 
+                                "name": inspectorName, 
+                                "value": el.attr(inspectorName),
+                                "template": templateContent ?? "[No template found]"
+                            };
+                            var inspectorTitle = "[{name}={value}]\n{template}".format( inspectorData );
+                            var existingTitle = el.attr("title");
+                            
+                            if ( existingTitle != undefined ) {
+                                inspectorTitle += "\nOriginal Title: " + existingTitle;
+                            }
+                            el.attr("title", inspectorTitle);
+                        }
+            
+                        if ( templateContent === undefined ) {
+                            application.trace("<b style='color: Red;'>RBL WARNING</b>: Template content could not be found: [" + ( tid ?? "Missing rbl-tid for " + ( el.attr('rbl-source') ?? el.attr('rbl-source-table') ) ) + "].", TraceVerbosity.Detailed);
+                        }
+                        else if ( rblSourceParts === undefined || rblSourceParts.length === 0) {
+                            application.trace("<b style='color: Red;'>RBL WARNING</b>: no rbl-source data", TraceVerbosity.Detailed);
+                        }
+                        else if ( rblSourceParts.length === 1 || rblSourceParts.length === 3 ) {                        
+                            //table in array format.  Clear element, apply template to all table rows and .append
+                            const table = that.getResultTable<JSON>( rblSourceParts[0] );
+                            
+                            if ( table !== undefined && table.length > 0 ) {
+                                
+                                el.children( ":not(.rbl-preserve, [rbl-tid='inline'])" ).remove();
+                                const prepend = el.attr('rbl-prepend') === "true";
+
+                                let i = 1;
+
+                                table.forEach( row => {
+                                    //Support nested templates
+                                    // $("[rbl-source]",$(formattedContent)).not("[rbl-source] [rbl-source]")
+
+                                    if ( rblSourceParts.length === 1 || row[ rblSourceParts[ 1 ] ] === rblSourceParts[ 2 ] ) {
+                                        const templateData = KatApp.extend( {}, row, { _index0: i - 1, _index1: i++ } )
+                                        const formattedContent = $(templateContent.format( templateData ));
+
+                                        that.processRblSource(formattedContent, showInspector);
+
+                                        if ( prepend ) {
+                                            el.prepend( formattedContent );
+                                        }
+                                        else {
+                                            el.append( formattedContent );
+                                        }
+                                    }
+
+                                });
+                            } else {
+                                application.trace("<b style='color: Red;'>RBL WARNING</b>: no data returned for rbl-source=" + el.attr('rbl-source'), TraceVerbosity.Detailed);
+                            }
+
+                        } else if ( rblSourceParts.length === 2 ) {
+
+                            const row = that.getResultRow( rblSourceParts[0], rblSourceParts[1] );
+                            
+                            if ( row !== undefined ) {
+                                el.html( templateContent.format( row ) );
+                            }
+                            else {
+                                application.trace("<b style='color: Red;'>RBL WARNING</b>: no data returned for rbl-source=" + el.attr('rbl-source'), TraceVerbosity.Detailed);
+                            }
+
+                        }
+                        else if ( rblSourceParts.length === 3 ) {
+                            
+                            const value = that.getResultValue( rblSourceParts[0], rblSourceParts[1], rblSourceParts[2]);
+                            
+                            if ( value !== undefined ) {
+                                el.html( templateContent.format( { "value": value } ) );                                    
+                            }
+                            else {
+                                application.trace("<b style='color: Red;'>RBL WARNING</b>: no data returned for rbl-source=" + el.attr('rbl-source'), TraceVerbosity.Detailed);
+                            }
+
+                        }
+                
+                    }
+                });
+        }
+
+        processVisibilities(showInspector: boolean): void {
             const that: RBLeUtilities = this;
             const application = this.application;
 
@@ -2369,6 +2413,20 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
             //Should this be rbl-state ? i.e. other states visibility, disabled, delete
             $("[rbl-display]", application.element).not("rbl-template [rbl-display]").each(function () {
                 const el = $(this);
+
+                if ( showInspector && !el.hasClass("kat-inspector-display") )
+                {
+                    el.addClass("kat-inspector-display");
+                    var inspectorTitle = "[rbl-display={value}]".format( { value: el.attr('rbl-display') } );
+                    var existingTitle = el.attr("title");
+                    
+                    if ( existingTitle != undefined ) {
+                        inspectorTitle += el.hasClass( "kat-inspector-value" )
+                            ? "\n" + existingTitle
+                            : "\nOriginal Title: " + existingTitle;
+                    }
+                    el.attr("title", inspectorTitle);
+                }
 
                 //legacy table is ejs-visibility but might work a little differently
                 const rblDisplayParts = el.attr('rbl-display')!.split('.'); // eslint-disable-line @typescript-eslint/no-non-null-assertion
@@ -3148,7 +3206,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
 
                 // These all need to be after processUI so if any inputs are built
                 // from results, they are done by the time these run (i.e. after processUI)
-                this.processVisibilities();
+                this.processVisibilities( showInspector );
                 this.processSliders()
                 this.processRBLSkips();
                 this.processListControls();
@@ -3262,8 +3320,16 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
 			else if (this.stringCompare(value, "false", true) === 0) return false;
 			else if (value.startsWith("json:")) return JSON.parse(value.substring(5));
 			else if (value.startsWith("var ")) {
-				const v = value.substring(4);
+                // Not sure this is ever used because it doesn't appear to work.
+                // It assigns a function() to the property instead of the value.
+                // Introduced eval method to immediately eval the text
+                const v = value.substring(4);
 				return function (): any { return eval(v); } // eslint-disable-line @typescript-eslint/no-explicit-any
+			}
+			else if (value.startsWith("eval ")) {
+                const v = value.substring(5);
+                
+                return eval(v);
 			}
 			else if (value.startsWith("function ")) {
 				const f = this.removeRBLEncoding("function f() {value} f.call(this);".format( { value: value.substring(value.indexOf("{")) } ));
@@ -4665,7 +4731,8 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                         let tryLocalWebServer = useLocalWebServer; // value for current requested resource
 
                         try {
-                            const resourceParts = resourceKey.split(":");
+                            const relativeTemplatePath = currentOptions.relativePathTemplates?.[ resourceKey ];
+                            const resourceParts = relativeTemplatePath != undefined ? relativeTemplatePath.split(":") : resourceKey.split(":");
                             let resourceName = resourceParts[ 1 ];
                             const managementFolders = resourceParts[ 0 ];
                             let localWebServerFolderPosition = 0;

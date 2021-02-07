@@ -40,6 +40,8 @@ interface KatAppOptions
     resultTabs?: string[];
     preCalcs?: string;
     
+    relativePathTemplates?: ResourceResults;
+
     inputSelector?: string;
     // This is normally used internally by the Provider code.  If there are some inputs that should
     // always be passed in on a calculation but aren't available in the UI, they can be assigned here.

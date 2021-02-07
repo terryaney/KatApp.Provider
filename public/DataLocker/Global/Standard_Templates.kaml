@@ -229,6 +229,16 @@
 
 <!-- Core styling -->
 <style>
+	.kat-inspector-value {
+    box-shadow: 0 0 0 2px orange;
+	}
+	.kat-inspector-source {
+    box-shadow: 0 0 0 2px #0053ff;
+	}
+  .kat-inspector-display {
+    outline: dashed 2px rgb(39, 39, 38);    
+  }
+
   input {
     text-align: left;
   }

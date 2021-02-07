@@ -247,7 +247,8 @@ class KatApp
                         let tryLocalWebServer = useLocalWebServer; // value for current requested resource
 
                         try {
-                            const resourceParts = resourceKey.split(":");
+                            const relativeTemplatePath = currentOptions.relativePathTemplates?.[ resourceKey ];
+                            const resourceParts = relativeTemplatePath != undefined ? relativeTemplatePath.split(":") : resourceKey.split(":");
                             let resourceName = resourceParts[ 1 ];
                             const managementFolders = resourceParts[ 0 ];
                             let localWebServerFolderPosition = 0;

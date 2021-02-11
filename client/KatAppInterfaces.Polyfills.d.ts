@@ -25,7 +25,9 @@ interface Function {
     // Debugging...let's me restore the original shim factory if I'm going to rebuild UI or script locations
     debugApplicationFactory( id: string, element: JQuery, options: KatAppOptions): KatAppPlugInShimInterface;    
     templateOn( templateName: string, events: string, fn: TemplateOnDelegate ): void;
-
+    getResources( application: KatAppPlugInShimInterface, resources: string, useTestVersion: boolean, isScript: boolean, debugResourcesDomain: string | undefined, getResourcesHandler: PipelineCallback ): void;
+    ping( url: string, callback: ( responded: boolean, error?: string | Event )=> void ): void;
+    
     templatesUsedByAllApps: { 
         [ key: string ]: { 
             requested: boolean; 

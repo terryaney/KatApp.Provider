@@ -35,11 +35,9 @@ interface KatAppOptions
     requestIP?: string;
     environment?: string;
     currentUICulture?: string;
-    calcEngine?: string;
-    inputTab?: string;
-    resultTabs?: string[];
-    preCalcs?: string;
-    
+
+    calcEngines?: CalcEngine[];
+
     relativePathTemplates?: ResourceResults;
 
     inputSelector?: string;
@@ -169,6 +167,13 @@ interface KatAppPlugInInterface extends KatAppPlugInShimInterface {
     traceCalcEngine: ()=> void;
     // If multiple KatApps are on one page, a KatApp can broadcast notifications to other KatApps
     pushNotification: (name: string, information: {} | undefined)=> void;
+}
+
+interface CalcEngine {
+    name: string;
+    inputTab?: string;
+    resultTabs?: string[];
+    preCalcs?: string;
 }
 
 interface GetResourceOptions {

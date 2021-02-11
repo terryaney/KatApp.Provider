@@ -158,6 +158,11 @@ class KatApp
         const ip = url.replace('http://','').replace('https://','').split(/[/?#]/)[0];
 
         $.ajax({
+            converters: {
+                'text script': function (text: string) {
+                    return text;
+                }
+            },
             url: "http://" + ip + "/DataLocker/Global/ping.js",
             timeout: 1000,
             success: function( /* result */ ){
@@ -208,6 +213,7 @@ class KatApp
         // TODO: Figure out how to make this asynchronous
         pipeline = 
             [
+                // Ping local domain
                 function(): void {
                     if ( localWebServer !== undefined ) {
                         if ( application.element.data("kat-local-domain-reachable") == undefined ) {
@@ -220,21 +226,15 @@ class KatApp
                                 else {
                                     application.element.data("kat-local-domain-reachable", true);
                                 }
-                                getResourcesPipeline(); // Now start downloading resources
                             });
                         }
-                        else {
-                            if ( !( application.element.data("kat-local-domain-reachable") as boolean ) ) {
-                                // Already pinged and no return
-                                localWebServer = undefined;
-                                useLocalWebServer = false;
-                            }
-                            getResourcesPipeline(); // Now start downloading resources
-                        }                        
+                        else if ( !( application.element.data("kat-local-domain-reachable") as boolean ) ) {
+                            // Already pinged and no return
+                            localWebServer = undefined;
+                            useLocalWebServer = false;
+                        }
                     }
-                    else {
-                        getResourcesPipeline(); // Now start downloading resources
-                    }
+                    getResourcesPipeline(); // Now start downloading resources
                 }
             ].concat(
                 resourceArray.map( resourceKey => {
@@ -291,9 +291,13 @@ class KatApp
                             // the failure handler can log it.
                             let resourceUrl = "";
 
-                            const submit =
-                                ( !tryLocalWebServer ? currentOptions.submitCalculation : undefined ) ??
-                                function( _app, managementSiteCommand, done, fail ): void {
+                            const submit: SubmitCalculationDelegate =
+                                function( app, options, done, fail ): void {
+                                    if (!tryLocalWebServer && currentOptions.submitCalculation != undefined ) {
+                                        currentOptions.submitCalculation( app, options, done, fail );
+                                        return;
+                                    }
+
                                     resourceUrl = tryLocalWebServer 
                                         ? localWebServer + localWebServerFolder + localWebServerResource 
                                         : !isResourceInManagementSite
@@ -304,9 +308,14 @@ class KatApp
 
                                     const ajaxConfig = 
                                     { 
-                                        ifModified: true,
+                                        converters: {
+                                            'text script': function (text: string) {
+                                                return text;
+                                            }
+                                        },
+                                        ifModified: !tryLocalWebServer,
                                         url: !tryLocalWebServer && isResourceInManagementSite
-                                            ? resourceUrl + "?" + JSON.stringify( managementSiteCommand )
+                                            ? resourceUrl + "?" + JSON.stringify( options )
                                             : resourceUrl // If just file served up by local web server or hosting site web server, don't pass params
                                     };
             
@@ -315,39 +324,10 @@ class KatApp
                                     $.ajax( ajaxConfig ).done( done ).fail(  fail );
                                 };
                             
-                            const processContent = function( resourceContent: string ): void {
-                                if ( isScript ) {
-                                    // If local script location is provided, doing the $.ajax code automatically 
-                                    // injects/executes the javascript, no need to do it again
-                                    const body = document.querySelector('body');
-
-                                    // Still trying to figure out how to best determine if I inject or not, might have to make a variable
-                                    // at top of code in KatAppProvider, but if it 'ran', then $.fn.KatApp.plugInShims should be undefined.
-                                    // Originally, I just looked to see if debugResourcesDomain was undefined...but if that is set and the domain
-                                    // does NOT match domain of site running (i.e. debugging site in asp.net that uses KatApps and I want it to
-                                    // hit development KatApp resources) then it doesn't inject it.  So can't just check undefined or not.
-                                    if ( body !== undefined && body !== null && $.fn.KatApp.plugInShims !== undefined && resourceContent !== undefined ) {
-                                        // Just keeping the markup a bit cleaner by only having one copy of the code
-                                        $("script[rbl-script='true']").remove()
-
-                                        // https://stackoverflow.com/a/56509649/166231
-                                        const script = document.createElement('script');
-                                        script.setAttribute("rbl-script", "true");
-                                        script.innerHTML = resourceContent.replace("//# sourceMappingURL=KatAppProvider.js.map","");
-                                        body.appendChild(script);
-                                    }
-                                }
-                                else {
-                                    resourceResults[ resourceKey ] = resourceContent;
-                                }
-                                getResourcesPipeline(); 
-                            };
-
                             const submitDone: RBLeServiceCallback = function( data ): void {
                                 if ( data == null ) {
                                     // Bad return from L@W
                                     pipelineError = "getResources failed requesting " + resourceKey + " from L@W.";
-                                    getResourcesPipeline();
                                 }
                                 else {
                                     if ( data.payload !== undefined ) {
@@ -355,8 +335,34 @@ class KatApp
                                     }
                                     
                                     // data.Content when request from service, just data when local files
-                                    processContent( data.Resources?.[ 0 ].Content ?? data as string );
+                                    const resourceContent = data.Resources?.[ 0 ].Content ?? data as string;
+
+                                    if ( isScript ) {
+                                        // If local script location is provided, doing the $.ajax code automatically 
+                                        // injects/executes the javascript, no need to do it again
+                                        const body = document.querySelector('body');
+    
+                                        // Still trying to figure out how to best determine if I inject or not, might have to make a variable
+                                        // at top of code in KatAppProvider, but if it 'ran', then $.fn.KatApp.plugInShims should be undefined.
+                                        // Originally, I just looked to see if debugResourcesDomain was undefined...but if that is set and the domain
+                                        // does NOT match domain of site running (i.e. debugging site in asp.net that uses KatApps and I want it to
+                                        // hit development KatApp resources) then it doesn't inject it.  So can't just check undefined or not.
+                                        if ( body !== undefined && body !== null && $.fn.KatApp.plugInShims !== undefined && resourceContent !== undefined ) {
+                                            // Just keeping the markup a bit cleaner by only having one copy of the code
+                                            $("script[rbl-script='true']").remove()
+    
+                                            // https://stackoverflow.com/a/56509649/166231
+                                            const script = document.createElement('script');
+                                            script.setAttribute("rbl-script", "true");
+                                            script.innerHTML = resourceContent.replace("//# sourceMappingURL=KatAppProvider.js.map","");
+                                            body.appendChild(script);
+                                        }
+                                    }
+                                    else {
+                                        resourceResults[ resourceKey ] = resourceContent;
+                                    }
                                 }
+                                getResourcesPipeline();
                             };
 
                             const submitFailed: JQueryFailCallback = function( _jqXHR, textStatus, _errorThrown ): void {
@@ -378,7 +384,9 @@ class KatApp
                                 }
                             };
 
+                            // Make original submit to attempt to get the kat app resource
                             submit( application as KatAppPlugInInterface, managementUrlOptions, submitDone, submitFailed );
+
                         } catch (error) {
                             pipelineError = "getResources failed trying to request " + resourceKey + ":" + error;
                             getResourcesPipeline();
@@ -388,12 +396,7 @@ class KatApp
                     [
                         // Last function
                         function(): void {
-                            if ( pipelineError !== undefined ) {
-                                getResourcesHandler( pipelineError );
-                            }
-                            else {
-                                getResourcesHandler( undefined, resourceResults );
-                            }
+                            getResourcesHandler( pipelineError, resourceResults );
                         }
                     ]
                 )

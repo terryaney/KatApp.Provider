@@ -284,13 +284,22 @@
                     
                     const options = KatApp.extend( {}, KatApp.defaultOptions, { 
                         view: currentView,
-                        calcEngine: calcEngine
+                        getData: ($(".SampleData").val() || "" ) != ""
+                            ? function( application, _options, done ) {    
+                                application.trace("Using sample data from Debugger.kaml", TraceVerbosity.Normal);
+                                done(JSON.parse($(".SampleData").val()));
+                            }
+                            : KatApp.defaultOptions.getData
                     } );
+
+                    if ( calcEngine != undefined ) {
+                        options.calcEngines = [ { name: calcEngine } ];
+                    }
 
                     $.fn.KatApp.reset();
 
-                    $(".logo-left").html("KatApp Test Harness: " + $(".CustomView").val());
-                    $(selector).attr("rbl-trace-id", $(".CustomView").val().split(":")[1]).KatApp(options);
+                    $(".logo-left").html("KatApp Test Harness: " + currentView);
+                    $(selector).attr("rbl-trace-id", currentView.split(":")[1]).KatApp(options);
                 }
                 else {
                     $(selector).KatApp("updateOptions", { debug: debugOptions });

@@ -112,16 +112,38 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
         }
     
         init( options: KatAppOptions ): void {
+
+            // MULTIPLE CE: Need to support nested config element of multiple calc engines I guess
+            //              Problem.. if passed in options has calcEngine(s) specified or if there is config
+            //              specified on this.element, how do match those up to what could be possibly multiple
+            //              CalcEngines defined in view
+
+            // MULTIPLE CE: Test if extend uses options passed in to replace
+
             // Transfer data attributes over if present...
-            const attrResultTabs = this.element.attr("rbl-result-tabs");
+            const attrCalcEngine = this.element.attr("rbl-calcengine");
+            const calcEngine: CalcEngine | undefined = attrCalcEngine != undefined
+                ? {
+                    name: attrCalcEngine,
+                    inputTab: this.element.attr("rbl-input-tab"),
+                    resultTabs: this.element.attr("rbl-result-tabs")?.split(","),
+                    preCalcs: this.element.attr("rbl-precalcs")
+                }
+                : undefined;
 
             const attributeOptions: KatAppOptions = {
-                calcEngine: this.element.attr("rbl-calcengine") ?? KatApp.defaultOptions.calcEngine,
-                inputTab: this.element.attr("rbl-input-tab") ?? KatApp.defaultOptions.inputTab,
-                resultTabs: attrResultTabs != undefined ? attrResultTabs.split(",") : KatApp.defaultOptions.resultTabs,
+                calcEngines: calcEngine != undefined ? [ calcEngine ] : KatApp.defaultOptions.calcEngines,
                 view: this.element.attr("rbl-view"),
                 viewTemplates: this.element.attr("rbl-view-templates")
             };
+
+            // Backwards compatability when options had a 'calcEngine' property instead of calcEngines
+            if ( options[ "calcEngine" ] != undefined ) {
+                options.calcEngines = [
+                    { name: options[ "calcEngine" ] }
+                ];
+                delete options[ "calcEngine" ];
+            }
 
             // Take a copy of the options they pass in so same options aren't used in all plugin targets
             // due to a 'reference' to the object.
@@ -259,10 +281,33 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                                     that.trace("View " + viewId + " is missing rbl-config element.", TraceVerbosity.Quiet);
                                 }
 
-                                that.options.calcEngine = that.options.calcEngine ?? rblConfig?.attr("calcengine");
-                                that.options.inputTab = that.options.inputTab ?? rblConfig?.attr("input-tab") ?? "RBLInput";
-                                that.options.resultTabs = that.options.resultTabs ?? rblConfig?.attr("result-tabs")?.split(",") ?? ["RBLResult"];
-                                that.options.preCalcs = that.options.preCalcs ?? rblConfig?.attr("precalcs");
+                                const attrCalcEngine = rblConfig?.attr("calcengine");
+                                if ( attrCalcEngine != undefined ) {
+                                    // Only use CalcEngine settings in view if not already provided by:
+                                    // - options from .KatApp( options )
+                                    // - attributes/elements defined on katapp element
+                                    // - options set in defaultOptions
+                                    if ( that.options.calcEngines == undefined ) {
+                                        const calcEngine: CalcEngine = {
+                                            name: attrCalcEngine,
+                                            inputTab: rblConfig?.attr("input-tab"),
+                                            resultTabs: rblConfig?.attr("result-tabs")?.split(","),
+                                            preCalcs: rblConfig?.attr("precalcs")
+                                        };
+                                        that.options.calcEngines = [ calcEngine ];
+                                    }
+                                    else {
+                                        // MULTIPLE CE: Will need to figure out how to make this work when I really support multiple CEs
+                                        //              The calcEngine can be overridden by attributes on kat app element (or in debugger.kaml)
+                                        //              but they want to use the same tabs as original view's CalcEngine.  Currently I'm just updating
+                                        //              first (only) CalcEngine, but might need to figure out if I support this or not b/c could be 
+                                        //              hard to match up CalcEngines if either the view or the options or both had multiple calcengines defined
+                                        const calcEngine = that.options.calcEngines[ 0 ];
+                                        calcEngine.inputTab = calcEngine.inputTab ?? rblConfig?.attr("input-tab");
+                                        calcEngine.resultTabs = calcEngine.resultTabs ?? rblConfig?.attr("result-tabs")?.split(",");
+                                        calcEngine.preCalcs = calcEngine.preCalcs ?? rblConfig?.attr("precalcs");
+                                    }
+                                }
                                 
                                 const toFetch = rblConfig?.attr("templates");
                                 if ( toFetch !== undefined ) {
@@ -540,7 +585,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                 this.options.sharedDataLastRequested = _sharedData.lastRequested;
             }
 
-            if ( this.options.calcEngine === undefined ) {
+            if ( this.options.calcEngines === undefined ) {
                 return;
             }
 
@@ -1110,11 +1155,8 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
 
             if ( readViewOptions || true ) {
                 // Clear these out and read from the view
-                this.options.calcEngine = undefined;
+                this.options.calcEngines = undefined;
                 this.options.viewTemplates = undefined;
-                this.options.preCalcs = undefined;
-                this.options.inputTab = undefined;
-                this.options.resultTabs = undefined;
             }
             
             const that = this;
@@ -1756,7 +1798,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
 
         bindCalculationInputs(): void {
             const application = this.application;
-            if ( application.options.inputSelector !== undefined && application.options.calcEngine !== undefined ) {
+            if ( application.options.inputSelector !== undefined && application.options.calcEngines !== undefined ) {
                 // Store for later so I can unregister no matter what the selector is at time of 'destroy'
                 application.element.data("katapp-input-selector", application.options.inputSelector);
                 
@@ -1902,16 +1944,18 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                 function( _app, _o, done, fail ): void
                 {
                     const traceCalcEngine = application.element.data("katapp-trace-calcengine") === "1";
+                    const calcEngine = currentOptions.calcEngines![ 0 ]; // eslint-disable-line @typescript-eslint/no-non-null-assertion
+
                     const calculationOptions: SubmitCalculationOptions = {
                         Data: data,
                         Configuration: {
                             AuthID: data.AuthID as string,
                             AdminAuthID: undefined,
                             Client: data.Client as string,
-                            CalcEngine: currentOptions.calcEngine,
+                            CalcEngine: calcEngine.name,
                             TraceEnabled: traceCalcEngine ? 1 : 0,
-                            InputTab: currentOptions.inputTab as string,
-                            ResultTabs: currentOptions.resultTabs as string[],
+                            InputTab: calcEngine.inputTab ?? "RBLInput",
+                            ResultTabs: calcEngine.resultTabs ?? [ "RBLResult" ],
                             TestCE: currentOptions.debug?.useTestCalcEngine ?? false,
                             CurrentPage: currentOptions.currentPage ?? "Unknown",
                             RequestIP: currentOptions.requestIP ?? "1.1.1.1",
@@ -1992,7 +2036,9 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
 
             const inputs: CalculationInputs = KatApp.extend( this.application.ui.getInputs( currentOptions ), currentOptions.defaultInputs, currentOptions.manualInputs );
 
-            let preCalcs = currentOptions.preCalcs;
+            const calcEngine = currentOptions.calcEngines![ 0 ]; // eslint-disable-line @typescript-eslint/no-non-null-assertion
+
+            let preCalcs = calcEngine.preCalcs;
 
 			if (inputs.iInputTrigger !== undefined) {
 				const rblOnChange = $("." + inputs.iInputTrigger).data("rbl-on-change") as string ?? "";
@@ -2007,11 +2053,11 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                 Inputs: inputs,
                 InputTables: this.application.ui.getInputTables(), 
                 Configuration: {
-                    CalcEngine: currentOptions.calcEngine,
+                    CalcEngine: calcEngine.name,
                     Token: ( currentOptions.registerDataWithService ?? true ) ? currentOptions.registeredToken : undefined,
                     TraceEnabled: traceCalcEngine ? 1 : 0,
-                    InputTab: currentOptions.inputTab as string,
-                    ResultTabs: currentOptions.resultTabs as string[],
+                    InputTab: calcEngine.inputTab ?? "RBLInput",
+                    ResultTabs: calcEngine.resultTabs ?? [ "RBLResult" ],
                     SaveCE: saveCalcEngineLocation,
                     RefreshCalcEngine: refreshCalcEngine || ( currentOptions.debug?.refreshCalcEngine ?? false ),
                     PreCalcs: preCalcs,
@@ -2241,7 +2287,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
             }
         }
         
-        processRblValues(showInspector:boolean): void {
+        processRblValues(showInspector: boolean): void {
             const that: RBLeUtilities = this;
             const application = this.application;
 
@@ -2252,8 +2298,8 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                 if ( showInspector && !el.hasClass("kat-inspector-value") )
                 {
                     el.addClass("kat-inspector-value");
-                    var inspectorTitle = "[rbl-value={value}]".format( { "value": el.attr('rbl-value') } );
-                    var existingTitle = el.attr("title");
+                    let inspectorTitle = "[rbl-value={value}]".format( { "value": el.attr('rbl-value') } );
+                    const existingTitle = el.attr("title");
                     
                     if ( existingTitle != undefined ) {
                         inspectorTitle += "\nOriginal Title: " + existingTitle;
@@ -2280,8 +2326,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
             });
         }
 
-        processRblSources(showInspector:boolean): void {
-            const application = this.application;
+        processRblSources(showInspector: boolean): void {
             //[rbl-source] processing templates that use rbl results
             this.processRblSource(this.application.element, showInspector);
         }
@@ -2320,14 +2365,14 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
 
                         if ( showInspector && !el.hasClass("kat-inspector-source") ) {
                             el.addClass("kat-inspector-source");
-                            var inspectorName = el.attr("rbl-source") != undefined ? "rbl-source" : "rbl-source-table";
-                            var inspectorData = { 
+                            const inspectorName = el.attr("rbl-source") != undefined ? "rbl-source" : "rbl-source-table";
+                            const inspectorData = { 
                                 "name": inspectorName, 
                                 "value": el.attr(inspectorName),
                                 "template": templateContent ?? "[No template found]"
                             };
-                            var inspectorTitle = "[{name}={value}]\n{template}".format( inspectorData );
-                            var existingTitle = el.attr("title");
+                            let inspectorTitle = "[{name}={value}]\n{template}".format( inspectorData );
+                            const existingTitle = el.attr("title");
                             
                             if ( existingTitle != undefined ) {
                                 inspectorTitle += "\nOriginal Title: " + existingTitle;
@@ -2417,8 +2462,8 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                 if ( showInspector && !el.hasClass("kat-inspector-display") )
                 {
                     el.addClass("kat-inspector-display");
-                    var inspectorTitle = "[rbl-display={value}]".format( { value: el.attr('rbl-display') } );
-                    var existingTitle = el.attr("title");
+                    let inspectorTitle = "[rbl-display={value}]".format( { value: el.attr('rbl-display') } );
+                    const existingTitle = el.attr("title");
                     
                     if ( existingTitle != undefined ) {
                         inspectorTitle += el.hasClass( "kat-inspector-value" )
@@ -3158,7 +3203,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
 			// TOM (what does this comment mean): generated content append or prepend (only applicably when preserved content)
 
             if ( results !== undefined ) {
-                var showInspector = application.calculationInputs?.iConfigureUI === 1 && ( calculationOptions.debug?.showInspector ?? false );
+                const showInspector = application.calculationInputs?.iConfigureUI === 1 && ( calculationOptions.debug?.showInspector ?? false );
 
                 const calcEngineName = results["@calcEngine"];
                 const version = results["@version"];
@@ -4561,6 +4606,9 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
     };
 
     $.fn.KatApp.reset = function(): void {
+        KatApp[ "getResources" ] = $.fn.KatApp.getResources;
+        KatApp[ "ping" ] = $.fn.KatApp.ping;
+    
         // This is deleted each time the 'real' Provider js runs, so rebuild it
         $.fn.KatApp.plugInShims = [];
         $.fn.KatApp.applications = [];
@@ -4633,10 +4681,18 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
 
     // Overwrite the implementation of getResources with latest version so that it can support
     // improvements made (i.e. checking local web server first)
+    $.fn.KatApp.getResources = $.fn.KatApp.getResources ?? KatApp[ "getResources" ];
+    $.fn.KatApp.ping = $.fn.KatApp.ping ?? KatApp[ "ping" ];
+
     KatApp[ "ping" ] = function( url: string, callback: ( responded: boolean, error?: string | Event )=> void ): void {
         const ip = url.replace('http://','').replace('https://','').split(/[/?#]/)[0];
 
         $.ajax({
+            converters: {
+                'text script': function (text: string) {
+                    return text;
+                }
+            },
             url: "http://" + ip + "/DataLocker/Global/ping.js",
             timeout: 1000,
             success: function( /* result */ ){
@@ -4686,6 +4742,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
         // TODO: Figure out how to make this asynchronous
         pipeline = 
             [
+                // Ping local domain
                 function(): void {
                     if ( localWebServer !== undefined ) {
                         if ( application.element.data("kat-local-domain-reachable") == undefined ) {
@@ -4698,21 +4755,15 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                                 else {
                                     application.element.data("kat-local-domain-reachable", true);
                                 }
-                                getResourcesPipeline(); // Now start downloading resources
                             });
                         }
-                        else {
-                            if ( !( application.element.data("kat-local-domain-reachable") as boolean ) ) {
-                                // Already pinged and no return
-                                localWebServer = undefined;
-                                useLocalWebServer = false;
-                            }
-                            getResourcesPipeline(); // Now start downloading resources
-                        }                        
+                        else if ( !( application.element.data("kat-local-domain-reachable") as boolean ) ) {
+                            // Already pinged and no return
+                            localWebServer = undefined;
+                            useLocalWebServer = false;
+                        }
                     }
-                    else {
-                        getResourcesPipeline(); // Now start downloading resources
-                    }
+                    getResourcesPipeline(); // Now start downloading resources
                 }
             ].concat(
                 resourceArray.map( resourceKey => {
@@ -4769,9 +4820,13 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                             // the failure handler can log it.
                             let resourceUrl = "";
 
-                            const submit =
-                                ( !tryLocalWebServer ? currentOptions.submitCalculation : undefined ) ??
-                                function( _app, managementSiteCommand, done, fail ): void {
+                            const submit: SubmitCalculationDelegate =
+                                function( app, options, done, fail ): void {
+                                    if (!tryLocalWebServer && currentOptions.submitCalculation != undefined ) {
+                                        currentOptions.submitCalculation( app, options, done, fail );
+                                        return;
+                                    }
+
                                     resourceUrl = tryLocalWebServer 
                                         ? localWebServer + localWebServerFolder + localWebServerResource 
                                         : !isResourceInManagementSite
@@ -4782,9 +4837,14 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
 
                                     const ajaxConfig = 
                                     { 
-                                        ifModified: true,
+                                        converters: {
+                                            'text script': function (text: string) {
+                                                return text;
+                                            }
+                                        },
+                                        ifModified: !tryLocalWebServer,
                                         url: !tryLocalWebServer && isResourceInManagementSite
-                                            ? resourceUrl + "?" + JSON.stringify( managementSiteCommand )
+                                            ? resourceUrl + "?" + JSON.stringify( options )
                                             : resourceUrl // If just file served up by local web server or hosting site web server, don't pass params
                                     };
             
@@ -4793,39 +4853,10 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                                     $.ajax( ajaxConfig ).done( done ).fail(  fail );
                                 };
                             
-                            const processContent = function( resourceContent: string ): void {
-                                if ( isScript ) {
-                                    // If local script location is provided, doing the $.ajax code automatically 
-                                    // injects/executes the javascript, no need to do it again
-                                    const body = document.querySelector('body');
-
-                                    // Still trying to figure out how to best determine if I inject or not, might have to make a variable
-                                    // at top of code in KatAppProvider, but if it 'ran', then $.fn.KatApp.plugInShims should be undefined.
-                                    // Originally, I just looked to see if debugResourcesDomain was undefined...but if that is set and the domain
-                                    // does NOT match domain of site running (i.e. debugging site in asp.net that uses KatApps and I want it to
-                                    // hit development KatApp resources) then it doesn't inject it.  So can't just check undefined or not.
-                                    if ( body !== undefined && body !== null && $.fn.KatApp.plugInShims !== undefined && resourceContent !== undefined ) {
-                                        // Just keeping the markup a bit cleaner by only having one copy of the code
-                                        $("script[rbl-script='true']").remove()
-
-                                        // https://stackoverflow.com/a/56509649/166231
-                                        const script = document.createElement('script');
-                                        script.setAttribute("rbl-script", "true");
-                                        script.innerHTML = resourceContent.replace("//# sourceMappingURL=KatAppProvider.js.map","");
-                                        body.appendChild(script);
-                                    }
-                                }
-                                else {
-                                    resourceResults[ resourceKey ] = resourceContent;
-                                }
-                                getResourcesPipeline(); 
-                            };
-
                             const submitDone: RBLeServiceCallback = function( data ): void {
                                 if ( data == null ) {
                                     // Bad return from L@W
                                     pipelineError = "getResources failed requesting " + resourceKey + " from L@W.";
-                                    getResourcesPipeline();
                                 }
                                 else {
                                     if ( data.payload !== undefined ) {
@@ -4833,8 +4864,34 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                                     }
                                     
                                     // data.Content when request from service, just data when local files
-                                    processContent( data.Resources?.[ 0 ].Content ?? data as string );
+                                    const resourceContent = data.Resources?.[ 0 ].Content ?? data as string;
+
+                                    if ( isScript ) {
+                                        // If local script location is provided, doing the $.ajax code automatically 
+                                        // injects/executes the javascript, no need to do it again
+                                        const body = document.querySelector('body');
+    
+                                        // Still trying to figure out how to best determine if I inject or not, might have to make a variable
+                                        // at top of code in KatAppProvider, but if it 'ran', then $.fn.KatApp.plugInShims should be undefined.
+                                        // Originally, I just looked to see if debugResourcesDomain was undefined...but if that is set and the domain
+                                        // does NOT match domain of site running (i.e. debugging site in asp.net that uses KatApps and I want it to
+                                        // hit development KatApp resources) then it doesn't inject it.  So can't just check undefined or not.
+                                        if ( body !== undefined && body !== null && $.fn.KatApp.plugInShims !== undefined && resourceContent !== undefined ) {
+                                            // Just keeping the markup a bit cleaner by only having one copy of the code
+                                            $("script[rbl-script='true']").remove()
+    
+                                            // https://stackoverflow.com/a/56509649/166231
+                                            const script = document.createElement('script');
+                                            script.setAttribute("rbl-script", "true");
+                                            script.innerHTML = resourceContent.replace("//# sourceMappingURL=KatAppProvider.js.map","");
+                                            body.appendChild(script);
+                                        }
+                                    }
+                                    else {
+                                        resourceResults[ resourceKey ] = resourceContent;
+                                    }
                                 }
+                                getResourcesPipeline();
                             };
 
                             const submitFailed: JQueryFailCallback = function( _jqXHR, textStatus, _errorThrown ): void {
@@ -4856,7 +4913,9 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                                 }
                             };
 
+                            // Make original submit to attempt to get the kat app resource
                             submit( application as KatAppPlugInInterface, managementUrlOptions, submitDone, submitFailed );
+
                         } catch (error) {
                             pipelineError = "getResources failed trying to request " + resourceKey + ":" + error;
                             getResourcesPipeline();
@@ -4866,12 +4925,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                     [
                         // Last function
                         function(): void {
-                            if ( pipelineError !== undefined ) {
-                                getResourcesHandler( pipelineError );
-                            }
-                            else {
-                                getResourcesHandler( undefined, resourceResults );
-                            }
+                            getResourcesHandler( pipelineError, resourceResults );
                         }
                     ]
                 )

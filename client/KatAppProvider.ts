@@ -4522,12 +4522,6 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                         hideVisiblePopover();
                         e.preventDefault();
                     })
-                    .on("click.RBLe", function( e ) {
-                        return;
-                        if ($(e.target).is(".popover-title, .popover-content")) return; // BS3
-                        if ($(e.target).is(".popover-header, .popover-body")) return; // BS4                        
-                        hideVisiblePopover();
-                    })
                     .attr("data-katapp-initialized-tooltip", "true");
             }
             if ( $("html").attr("data-katapp-initialized-tooltip") != "true" ) {

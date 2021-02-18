@@ -710,7 +710,8 @@
                         });
                     }
                 } );
-            delete options.calcEngine; // So it doesn't use parent CE
+            delete options.calcEngine; // *legacy until latest provider published*
+            delete options.calcEngines; // So it doesn't use parent CE
 			$(".irp-modal .katapp-irp").KatApp( "ensure", options );
 			$(".irp-modal").css("display", "block");
 		});

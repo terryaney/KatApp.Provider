@@ -1,29 +1,97 @@
-<rbl-config calcengine="Buck_DecisionSupportIRP_SE" templates="Standard_Templates" bootstrap="3"></rbl-config>
+<rbl-config calcengine="Buck_DecisionSupportIRP_SE" templates="Standard_Templates"></rbl-config>
+
+<script>
+	(function() {
+		const view = $("{thisView}");
+
+		if ( view.data("debugger" ) == true ) {
+			debugger;
+		}
+
+		view.on( "onInitialized.RBLe", function( event, application ) {
+			let ws = $("<a class='ws-info wsiAnnualFuturePayIncreaseRate' role='button' tabindex='0' title='Click for Advanced Assumptions Worksheet' href='#' data-toggle='modal' data-target='#iAnnualFuturePayIncreaseRate-worksheet'><span class='glyphicon glyphicon glyphicon-list-alt'></span></a>");
+			ws.insertBefore($(".liAnnualFuturePayIncreaseRate", view));
+			ws = $("<a class='ws-info wsiMedicalCostInflation' role='button' tabindex='0' title='Click for Advanced Assumptions Worksheet' href='#' data-toggle='modal' data-target='#iMedicalCostInflation-worksheet'><span class='glyphicon glyphicon glyphicon-list-alt'></span></a>");
+			ws.insertBefore($(".liMedicalCostInflation", view));
+
+			$(".assumptionType_{id}", view).on('change', function () {
+				var nav = $(this).val();
+				$(".tabAssumption_{id}:not(" + nav + ")", view).hide();
+				$(nav).show();
+				if ( $.fn.matchHeight !== undefined ) {
+					$.fn.matchHeight._update();
+				}
+			}).trigger("change");
+
+			// Since IRP KatApp is being shown in a 'modal/blocker' with position of absolute, 
+			// I need to set this z-index so that it doesn't appear behind the blocker: 
+			$(".learnMoreModal, .modelingDefaultsModal, #iMedicalCostInflation-worksheet, #iAnnualFuturePayIncreaseRate-worksheet", view).on("shown.bs.modal", function() {
+				$(".modal-backdrop.fade.in").css("z-index", "-1");
+			});
+
+			$("#iAnnualFuturePayIncreaseRate-worksheet", view).on('hidden.bs.modal', function (e) {
+				$(".iAnnualFuturePayIncreaseRate", view).trigger("change");
+			});
+
+			$("#iMedicalCostInflation-worksheet").on('hidden.bs.modal', function (e) {
+				$(".iMedicalCostInflation", view).trigger("change");
+			});
+
+			$(".modelingDefaultsModal", view).on('hidden.bs.modal', function (e) {
+				$(".iAnnualPay", view).trigger("change"); // Run calc
+			});
+
+            const selectPickerAvailable = typeof $.fn.selectpicker === "function";
+
+            if ( selectPickerAvailable ) {
+				$(".assumptionType_{id}", view).selectpicker();
+            }
+			
+			if ( $.fn.matchHeight !== undefined ) {
+				$(".match-height", view).matchHeight({ property: 'height' });
+				$.fn.matchHeight._maintainScroll = true;
+			}
+
+			view.on( "onCalculation.RBLe", function( event, calculationResults, calcOptions, application ) {
+				const irpValue = $(".irpValue", view).html() || "0";
+				application.calculationInputs["iReplaceRatio"] = Number(irpValue.replace(" %", "").replace("%", "")) / 100;
+				if ( $.fn.matchHeight !== undefined ) {
+					// Doesn't look like I can only call 'update' to match height items within my view, so this will update
+					// all and any match heights applied on page, but my bindings were set scoped to my view, so it should
+					// not have adverse affects.  The project page mentioned that match heights can be achieved in modern
+					// browsers by using CSS Flexbox and CSS Grid instead.  So could look at that.
+					$.fn.matchHeight._update();
+				}
+			});
+		});
+	})();
+	//# sourceURL=IRP.kaml
+</script>
 
 <style>
-    thisView div.chart { height: 350px; }
+    .thisClass div.chart { height: 350px; }
     @media (max-width: 767px) {
         .irp-modal div.chart { height: 250px; }
     }
-    thisView .ws-info {
+    .thisClass .ws-info {
         padding-right: 5px;
         text-decoration: none;
         outline: none;
     }
-    thisView a.ws-info:focus {
+    .thisClass a.ws-info:focus {
         border: 0;
         outline: none;
     }
-	thisView .IRPResults {
+	.thisClass .IRPResults {
         margin-top: 100px;
     }
-	thisView .irp-buttons button {
+	.thisClass .irp-buttons button {
 		width: 200px;
 	}
-	thisView .wsiAnnualFuturePayIncreaseRate, thisView .wsiMedicalCostInflation {
+	.thisClass .wsiAnnualFuturePayIncreaseRate, .thisClass .wsiMedicalCostInflation {
 		display: none;
 	}
-	thisView .noUi-handle div {display: none;}
+	.thisClass .noUi-handle div {display: none;}
 
 </style>
 
@@ -214,71 +282,3 @@
 		</div>
 	</div>
 </div>
-
-<script>
-	(function() {
-		const view = $("{thisView}");
-
-		if ( view.data("debugger" ) == true ) {
-			debugger;
-		}
-
-		view.on( "onInitialized.RBLe", function( event, application ) {
-			let ws = $("<a class='ws-info wsiAnnualFuturePayIncreaseRate' role='button' tabindex='0' title='Click for Advanced Assumptions Worksheet' href='#' data-toggle='modal' data-target='#iAnnualFuturePayIncreaseRate-worksheet'><span class='glyphicon glyphicon glyphicon-list-alt'></span></a>");
-			ws.insertBefore($(".liAnnualFuturePayIncreaseRate", view));
-			ws = $("<a class='ws-info wsiMedicalCostInflation' role='button' tabindex='0' title='Click for Advanced Assumptions Worksheet' href='#' data-toggle='modal' data-target='#iMedicalCostInflation-worksheet'><span class='glyphicon glyphicon glyphicon-list-alt'></span></a>");
-			ws.insertBefore($(".liMedicalCostInflation", view));
-
-			$(".assumptionType_{id}", view).on('change', function () {
-				var nav = $(this).val();
-				$(".tabAssumption_{id}:not(" + nav + ")", view).hide();
-				$(nav).show();
-				if ( $.fn.matchHeight !== undefined ) {
-					$.fn.matchHeight._update();
-				}
-			}).trigger("change");
-
-			// Since IRP KatApp is being shown in a 'modal/blocker' with position of absolute, 
-			// I need to set this z-index so that it doesn't appear behind the blocker: 
-			$(".learnMoreModal, .modelingDefaultsModal, #iMedicalCostInflation-worksheet, #iAnnualFuturePayIncreaseRate-worksheet", view).on("shown.bs.modal", function() {
-				$(".modal-backdrop.fade.in").css("z-index", "-1");
-			});
-
-			$("#iAnnualFuturePayIncreaseRate-worksheet", view).on('hidden.bs.modal', function (e) {
-				$(".iAnnualFuturePayIncreaseRate", view).trigger("change");
-			});
-
-			$("#iMedicalCostInflation-worksheet").on('hidden.bs.modal', function (e) {
-				$(".iMedicalCostInflation", view).trigger("change");
-			});
-
-			$(".modelingDefaultsModal", view).on('hidden.bs.modal', function (e) {
-				$(".iAnnualPay", view).trigger("change"); // Run calc
-			});
-
-            const selectPickerAvailable = typeof $.fn.selectpicker === "function";
-
-            if ( selectPickerAvailable ) {
-				$(".assumptionType_{id}", view).selectpicker();
-            }
-			
-			if ( $.fn.matchHeight !== undefined ) {
-				$(".match-height", view).matchHeight({ property: 'height' });
-				$.fn.matchHeight._maintainScroll = true;
-			}
-
-			view.on( "onCalculation.RBLe", function( event, calculationResults, calcOptions, application ) {
-				const irpValue = $(".irpValue", view).html() || "0";
-				application.calculationInputs["iReplaceRatio"] = Number(irpValue.replace(" %", "").replace("%", "")) / 100;
-				if ( $.fn.matchHeight !== undefined ) {
-					// Doesn't look like I can only call 'update' to match height items within my view, so this will update
-					// all and any match heights applied on page, but my bindings were set scoped to my view, so it should
-					// not have adverse affects.  The project page mentioned that match heights can be achieved in modern
-					// browsers by using CSS Flexbox and CSS Grid instead.  So could look at that.
-					$.fn.matchHeight._update();
-				}
-			});
-		});
-	})();
-	//# sourceURL=IRP.kaml
-</script>

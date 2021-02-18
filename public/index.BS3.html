@@ -29,8 +29,8 @@
 
     <div class="page-content">
         <div class="container">
-            <div class='KatAppDebugger' rbl-view='Debugger.BS3' rbl-trace-id='Debugger' data-selector='.KatApp'>Loading KatApp Debugger...</div>
-            <div class='KatApp' rbl-view="Global:None" rbl-trace-id="1">Loading KatApp...</div>
+            <div class='KatAppDebugger' rbl-view='Debugger.BS3' rbl-trace-id='Debugger' data-selector='.katapp'>Loading KatApp Debugger...</div>
+            <div class='katapp' rbl-view="Global:None" rbl-trace-id="1">Loading KatApp...</div>
         </div>
     </div>
 
@@ -43,7 +43,7 @@
         }
     </style>
     <!-- 3rd party cdn -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/2.2.4/jquery.js" integrity="sha256-iT6Q9iMJYuQiMWNd9lDyBUStIq/8PuOW33aOqmvFpqI=" crossorigin="anonymous"></script>    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.5.1/jquery.js" crossorigin="anonymous"></script>    
     <script src="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.3.7/js/bootstrap.js" integrity="sha256-Cr6N6zNN4bp0OwTQOZ6Z66M2r+2dpy/EwKMCyZ+SOMg=" crossorigin="anonymous"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-datepicker/1.9.0/js/bootstrap-datepicker.min.js" integrity="sha256-bqVeqGdJ7h/lYPq6xrPv/YGzMEb6dNxlfiTUHSgRCp8=" crossorigin="anonymous"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-select/1.13.12/js/bootstrap-select.min.js" integrity="sha256-+o/X+QCcfTkES5MroTdNL5zrLNGb3i4dYdWPWuq6whY=" crossorigin="anonymous"></script>
@@ -93,7 +93,7 @@
             };
 
             $(".KatAppDebugger").KatApp(debuggerOptions);             
-            $(".KatApp").KatApp();
+            $(".katapp").KatApp();
         });
     </script>
 

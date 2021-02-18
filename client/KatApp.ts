@@ -159,22 +159,71 @@ class KatApp
 
         $.ajax({
             converters: {
-                'text script': function (text: string) {
+                'text script': function (text: string): string {
                     return text;
                 }
             },
             url: "http://" + ip + "/DataLocker/Global/ping.js",
             timeout: 1000,
-            success: function( /* result */ ){
+            success: function( /* result */ ): void {
                 callback(true);
             },     
-            error: function( /* result */ ){
+            error: function( /* result */ ): void {
                 callback(false);
             }
          });
     }
 
-    static getResources( application: KatAppPlugInShimInterface, resources: string, useTestVersion: boolean, isScript: boolean, debugResourcesDomain: string | undefined, getResourcesHandler: PipelineCallback ): void {
+    static getResource( url: string, tryLocalWebServer: boolean, isInManagementSite: boolean, folder: string, name: string, version: string ): GetResourceXHR {
+        const resource: KatAppResource = { Resource: name, Folder: folder, Version: version };
+        const command = { 
+            "Command": "KatAppResource", 
+            "Resources": [ resource ] 
+        };
+
+        const ajaxUrl = !tryLocalWebServer && isInManagementSite
+            ? url + "?" + JSON.stringify( command )
+            : url; // If just file served up by local web server or hosting site web server, don't pass params
+        
+        const resourceResult: KatAppResourceResult = { Resource: name, Folder: folder, Version: version, Url: ajaxUrl };
+
+        const requestConfig = {
+            converters: {
+                'text script': function (text: string): string {
+                    return text;
+                }
+            },
+            url: ajaxUrl
+        };
+
+        if ( !tryLocalWebServer ) {
+            // https://stackoverflow.com/a/38690731/166231
+            // requestConfig[ "ifModified" ] = true; // !tryLocalWebServer;
+            requestConfig[ "headers" ] = { 'Cache-Control': 'max-age=0' };
+        }
+
+        const p = $.ajax(requestConfig);
+        
+        const result: GetResourceXHR = {
+            ...p,
+            done( s: ajaxGetResourceSuccessCallbackSpread ) {
+                p.done(function (...args) {
+                    s.call(p, ...args, resourceResult);
+                });
+                return result;
+            },
+            fail( f: ajaxGetResourceFailCallbackSpread ) {
+                p.fail(function (...args) {
+                    f.call(p, ...args, resourceResult);
+                });
+                return result;
+            }
+        };
+        
+        return result;
+    };
+    
+    static getResources( application: KatAppPlugInShimInterface, resources: string, useTestVersion: boolean, isScript: boolean, debugResourcesDomain: string | undefined, getResourcesHandler: GetResourcesCallback ): void {
         const currentOptions = application.options;
         const managementUrl = currentOptions.functionUrl ?? KatApp.defaultOptions.functionUrl ?? KatApp.functionUrl;
         const resourceArray = resources.split(",");
@@ -210,31 +259,26 @@ class KatApp
         const resourceResults: ResourceResults = {};
 
         // Build a pipeline of functions for each resource requested.
-        // TODO: Figure out how to make this asynchronous
         pipeline = 
             [
                 // Ping local domain
                 function(): void {
-                    if ( localWebServer !== undefined ) {
-                        if ( application.element.data("kat-local-domain-reachable") == undefined ) {
-                            KatApp.ping(localWebServer, function( responded: boolean ) { 
-                                if ( !responded ) {
-                                    localWebServer = undefined;
-                                    useLocalWebServer = false;
-                                    application.element.data("kat-local-domain-reachable", false);
-                                }
-                                else {
-                                    application.element.data("kat-local-domain-reachable", true);
-                                }
-                            });
-                        }
-                        else if ( !( application.element.data("kat-local-domain-reachable") as boolean ) ) {
-                            // Already pinged and no return
-                            localWebServer = undefined;
-                            useLocalWebServer = false;
-                        }
+                    if ( localWebServer === undefined || application.element.data("kat-local-domain-reachable") !== undefined ) {
+                        getResourcesPipeline();
                     }
-                    getResourcesPipeline(); // Now start downloading resources
+                    else {
+                        KatApp.ping(localWebServer, function( responded: boolean ) { 
+                            if ( !responded ) {
+                                localWebServer = undefined;
+                                useLocalWebServer = false;
+                                application.element.data("kat-local-domain-reachable", false);
+                            }
+                            else {
+                                application.element.data("kat-local-domain-reachable", true);
+                            }
+                            getResourcesPipeline();
+                        });
+                    }
                 }
             ].concat(
                 resourceArray.map( resourceKey => {
@@ -255,9 +299,19 @@ class KatApp
                             const currentLocalWebServerFolders = managementFolders.split("|");
                             const version = resourceParts.length > 2 ? resourceParts[ 2 ] : ( useTestVersion ? "Test" : "Live" ); // can provide a version as third part of name if you want
             
-                            // Template names often don't use .xhtml syntax
-                            if ( !resourceName.endsWith( ".kaml" ) && !isScript ) {
-                                resourceName += ".kaml";
+                            if ( !isScript ) {
+                                const resourceNameParts = resourceName.split( "?" );
+                                const resourceNameBase = resourceNameParts[ 0 ];
+
+                                // Template names often don't use .kaml syntax
+                                if ( !resourceNameBase.endsWith( ".kaml" ) ) {
+                                    resourceName = resourceNameBase + ".kaml";
+
+                                    if ( resourceNameParts.length == 2 ) {
+                                        // cache buster
+                                        resourceName += "?" + resourceNameParts[ 1 ];
+                                    }
+                                }
                             }
             
                             let localWebServerFolder = currentLocalWebServerFolders[ localWebServerFolderPosition ] + "/";
@@ -306,6 +360,19 @@ class KatApp
     
                                     KatApp.trace(application, "Downloading " + resourceName + " from " + resourceUrl, TraceVerbosity.Diagnostic );
 
+                                    // Need to use .ajax isntead of .getScript/.get to get around CORS problem
+                                    // and to also conform to using the submitCalculation wrapper by L@W.
+                                    KatApp.getResource(
+                                        resourceUrl,
+                                        tryLocalWebServer,
+                                        isResourceInManagementSite,
+                                        managementFolders,
+                                        resourceName,
+                                        version )
+                                    .done( done )
+                                    .fail( fail );
+
+                                    /*
                                     const ajaxConfig = 
                                     { 
                                         converters: {
@@ -318,15 +385,16 @@ class KatApp
                                             ? resourceUrl + "?" + JSON.stringify( options )
                                             : resourceUrl // If just file served up by local web server or hosting site web server, don't pass params
                                     };
-            
-                                    // Need to use .ajax isntead of .getScript/.get to get around CORS problem
-                                    // and to also conform to using the submitCalculation wrapper by L@W.
-                                    $.ajax( ajaxConfig ).done( done ).fail(  fail );
+                                    $.ajax( ajaxConfig ).done( done ).fail( fail );
+                                    */
                                 };
                             
-                            const submitDone: RBLeServiceCallback = function( data ): void {
+                            const submitDone: ajaxGetResourceSuccessCallback = function( data, statusText, jqXHR ): void {
+                                if ( statusText == "notmodified" ) {
+                                    console.log(statusText);
+                                }
+
                                 if ( data == null ) {
-                                    // Bad return from L@W
                                     pipelineError = "getResources failed requesting " + resourceKey + " from L@W.";
                                 }
                                 else {
@@ -365,7 +433,7 @@ class KatApp
                                 getResourcesPipeline();
                             };
 
-                            const submitFailed: JQueryFailCallback = function( _jqXHR, textStatus, _errorThrown ): void {
+                            const submitFailed: ajaxGetResourceFailCallback = function( _jqXHR, textStatus, _errorThrown, resource ): void {
                                 // If local resources, syntax like LAW.CLIENT|LAW:sharkfin needs to try client first, 
                                 // then if not found, try generic.
                                 if ( tryLocalWebServer && localWebServerFolderPosition < currentLocalWebServerFolders.length - 1 ) {
@@ -378,7 +446,7 @@ class KatApp
                                     submit( application as KatAppPlugInInterface, managementUrlOptions, submitDone, submitFailed );
                                 }
                                 else {
-                                    pipelineError = "getResources failed requesting " + resourceKey + " from " + resourceUrl + ":" + textStatus;
+                                    pipelineError = "getResources failed requesting " + resource.Folder + ":" + resource.Resource + " from " + resource.Url + ":" + textStatus;
                                     console.log( _errorThrown );
                                     getResourcesPipeline();
                                 }

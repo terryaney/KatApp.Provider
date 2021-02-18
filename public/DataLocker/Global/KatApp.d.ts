@@ -19,5 +19,6 @@ declare class KatApp {
     static generateId: () => string;
     static trace(application: KatAppPlugInShimInterface | undefined, message: string, verbosity?: TraceVerbosity): void;
     static ping(url: string, callback: (responded: boolean, error?: string | Event) => void): void;
-    static getResources(application: KatAppPlugInShimInterface, resources: string, useTestVersion: boolean, isScript: boolean, debugResourcesDomain: string | undefined, getResourcesHandler: PipelineCallback): void;
+    static getResource(url: string, tryLocalWebServer: boolean, isInManagementSite: boolean, folder: string, name: string, version: string): GetResourceXHR;
+    static getResources(application: KatAppPlugInShimInterface, resources: string, useTestVersion: boolean, isScript: boolean, debugResourcesDomain: string | undefined, getResourcesHandler: GetResourcesCallback): void;
 }

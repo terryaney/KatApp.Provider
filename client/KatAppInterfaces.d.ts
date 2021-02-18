@@ -140,7 +140,7 @@ interface KatAppPlugInShimInterface {
 // for clients to be able to reference.
 interface KatAppPlugInInterface extends KatAppPlugInShimInterface {
     templateBuilder: StandardTemplateBuilderInterface;
-    results?: JSON;
+    results?: TabDef[];
     exception?: RBLeServiceResults;
     resultRowLookups?: ResultRowLookupsInterface;
     getResultTable<T>( tableName: string): Array<T>;
@@ -170,6 +170,7 @@ interface KatAppPlugInInterface extends KatAppPlugInShimInterface {
 }
 
 interface CalcEngine {
+    key: string;
     name: string;
     inputTab?: string;
     resultTabs?: string[];
@@ -178,48 +179,59 @@ interface CalcEngine {
 
 interface GetResourceOptions {
     Command: string;
-    Resources:
-        {
-            Resource: string;
-            Folder: string;
-            Version: string;
-        }[];        
+    Resources: KatAppResource[];        
 }
-
+interface KatAppResource {
+    Resource: string;
+    Folder: string;
+    Version: string;
+}
+interface KatAppResourceResult extends KatAppResource {
+    Url: string;
+}
 interface ResourceResults { 
     [ key: string ]: string; 
 }
 
+interface RegisterDataOptions
+{
+    Registration: string;
+    TransactionPackage: string; // JSON.stringify( TransactionPackage )
+    
+    Configuration: {
+        TraceEnabled: number;
+    };
+}
+
 interface SubmitCalculationOptions
 {
-    Data?: RBLeRESTServiceResult; // Passed in during registration or if non-session calcs being used
+    Data?: RBLeRESTServiceResult; // Passed in if non-session calcs being used
     
-    Inputs?: CalculationInputs; // Empty during Registration submissions
-    InputTables?: CalculationInputTable[];
+    Inputs: CalculationInputs;
+    InputTables: CalculationInputTable[] | undefined;
 
     Configuration: {
         // Used only in submit for session based calcs
         Token?: string;
 
-        // Used in both submit and registration
         InputTab: string;
         ResultTabs: string[];
-        CalcEngine?: string;
-        Comment?: string;
-        TestCE?: boolean;
+        CalcEngine: string;
+        Comment?: string; // currently never passed
+        TestCE: boolean;
         TraceEnabled: number;
-        SaveCE?: string;
-        PreCalcs?: string;
+        SaveCE: string;
+        PreCalcs: string | undefined;
 
-        // Used in registration or non-session calc only
-        AuthID?: string;
-        Client?: string;
-        AdminAuthID?: string;
-        RefreshCalcEngine?: boolean;
-        CurrentPage?: string;
-        RequestIP?: string;
-        CurrentUICulture?: string;
-        Environment?: string;
+        // Used in non-session calc only
+        AuthID: string;
+        Client: string;
+        AdminAuthID: string | undefined;
+        RefreshCalcEngine: boolean;
+        CurrentPage: string;
+        RequestIP: string;
+        CurrentUICulture: string;
+        Environment: string;
     };
 }
 
@@ -235,19 +247,51 @@ interface RBLeRESTServiceResultCallback {
     ( data: RBLeRESTServiceResult ): void;
 }
 
-
 // Generic callback when I make pipelines to handle several async events
 // but want a pipeline pattern to make them 'look' synchronous in code
-interface PipelineCallback {
-    ( errorMessage?: string, data?: RBLeRESTServiceResult | ResourceResults ): void;
+interface GetResourcesCallback {
+    ( errorMessage?: string, data?: ResourceResults ): void;
+}
+interface RegisterDataCallback {
+//    ( errorMessage?: string, data?: RBLeRESTServiceResult ): void;
+    ( errorMessage?: string ): void;
+}
+interface SubmitCalculationCallback {
+    ( errorMessage?: string, results?: RBLResult ): void;
 }
 // JQuery Callback signatures used during pipeline calls to $.get(), $.getScript()
 interface JQueryFailCallback {
     ( jqXHR: JQuery.jqXHR, textStatus: string, errorThrown: string ): void;
 }
+// Because ajaxGetResourceSuccessCallback/ajaxGetResourceFailCallback use spread operator, all params
+// have to be optional... https://stackoverflow.com/a/46228488/166231
+interface ajaxGetResourceSuccessCallbackSpread {
+    ( data?: any, textStatus?: string, jqXHR?: JQuery.jqXHR, resource?: KatAppResourceResult ): void;
+}
+interface ajaxGetResourceFailCallbackSpread {
+    ( jqXHR?: JQuery.jqXHR, textStatus?: string, errorThrown?: string, resource?: KatAppResourceResult ): void;
+}
+// And here is implementation so I don't have to check undefined or not
+interface ajaxGetResourceSuccessCallback {
+    ( data: any, textStatus: string, jqXHR: JQuery.jqXHR, resource: KatAppResourceResult ): void;
+}
+interface ajaxGetResourceFailCallback {
+    ( jqXHR: JQuery.jqXHR, textStatus: string, errorThrown: string, resource: KatAppResourceResult ): void;
+}
+
+interface SubmitCalculationSuccess
+{ 
+    calcEngine: CalcEngine;
+    result: RBLResult;
+}
+interface SubmitCalculationFailure
+{ 
+    calcEngine: CalcEngine;
+    errorMessage: string;
+}
 
 interface SubmitCalculationDelegate {
-    ( application: KatAppPlugInInterface, options: SubmitCalculationOptions | GetResourceOptions, done: RBLeServiceCallback, fail: JQueryFailCallback ): void;
+    ( application: KatAppPlugInInterface, options: GetResourceOptions | SubmitCalculationOptions, done: RBLeServiceCallback | ajaxGetResourceSuccessCallback, fail: JQueryFailCallback | ajaxGetResourceFailCallback ): void;
 }
 interface GetDataDelegate {
     ( application: KatAppPlugInInterface, options: KatAppOptions, done: RBLeRESTServiceResultCallback, fail: JQueryFailCallback ): void;
@@ -312,50 +356,3 @@ interface HighChartsOptionRow {
 interface StandardTemplateBuilderInterface {
     processUI( container?: JQuery<HTMLElement> ): void;
 }
-
-// Made the following an interface/factory just so that I could put the
-// implementation of this code below the implementation of the KatAppPlugIn
-// so it was easier to read/maintain the code inside the Provider file (i.e.
-// expecting to find the 'plugin' implementation first). If I didn't have an
-// interface and I put plugin code above helper implementations, then eslint
-// complained that I used a class before it was declared.  Downside is that for 
-// any public methods I want to expose, I need to add to this interface as well
-// and if I try to navigate (f12) to a method in the code it jumps to the interface
-// instead of implementation.  I might remove this and tell eslint to ignore. 
-// Not sure yet.
-// 
-// Original code simply had each of these classes before KatAppPlugIn and made
-// a constant (scoped to closure) like - const ui = new UIUtilities()
-/*
-interface StandardTemplateBuilderInterface {
-    buildSlider( element: JQuery ): void;
-    buildCarousel( element: JQuery ): void;
-    buildHighcharts( element: JQuery ): void;
-    processInputs( application: KatAppPlugIn ): void;
-}
-interface UIUtilitiesInterface {
-    getInputName(input: JQuery): string;
-    getInputValue(input: JQuery): string;
-    getInputs(application: KatAppPlugInInterface, customOptions: KatAppOptions ): JSON;
-    getInputTables(application: KatAppPlugInInterface): CalculationInputTable[] | undefined;
-    triggerEvent(application: KatAppPlugInInterface, eventName: string, ...args: ( object | string | undefined )[]): void;
-    bindEvents( application: KatAppPlugInInterface ): void;
-    unbindEvents( application: KatAppPlugInInterface ): void;
-}
-interface RBLeUtilitiesInterface {
-    setResults( application: KatAppPlugInInterface, results: JSON | undefined ): void;
-    getData( application: KatAppPlugInInterface, currentOptions: KatAppOptions, next: PipelineCallback ): void;
-    registerData( application: KatAppPlugInInterface, currentOptions: KatAppOptions, data: RBLeRESTServiceResult, next: PipelineCallback ): void;
-    submitCalculation( application: KatAppPlugInInterface, currentOptions: KatAppOptions, next: PipelineCallback ): void;
-    getResultRow<T>( application: KatAppPlugInInterface, table: string, key: string, columnToSearch?: string ): T | undefined;
-    getResultValue( application: KatAppPlugInInterface, table: string, key: string, column: string, defaultValue?: string ): string | undefined;
-    getResultValueByColumn( application: KatAppPlugInInterface, table: string, keyColumn: string, key: string, column: string, defaultValue?: string ): string | undefined;
-    getResultTable<T>( application: KatAppPlugInInterface, tableName: string): Array<T>;
-    processTemplate( application: KatAppPlugInInterface, templateId: string, data: JQuery.PlainObject ): string;
-    createHtmlFromResultRow( application: KatAppPlugInInterface, resultRow: HtmlContentRow ): void;
-    processRblValues( application: KatAppPlugInInterface ): void;
-    processRblSources( application: KatAppPlugInInterface ): void;
-    processVisibilities(application: KatAppPlugInInterface): void;
-    processResults( application: KatAppPlugInInterface ): boolean;
-}
-*/

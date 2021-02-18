@@ -1,3 +1,9 @@
+interface Deferred extends JQuery.Deferred<any, any, any> { // eslint-disable-line @typescript-eslint/no-explicit-any
+    // made this interface to just put the one lint comment and not have to put lint every place I use it
+}
+interface GetResourceXHR extends JQuery.jqXHR<any> { // eslint-disable-line @typescript-eslint/no-explicit-any
+    // made this interface to just put the one lint comment and not have to put lint every place I use it
+}
 // Prototypes / polyfills
 interface String {
     format(json: JQuery.PlainObject): string;
@@ -17,6 +23,15 @@ interface JQuery {
 
     datepicker( options: any ): JQuery; // eslint-disable-line @typescript-eslint/no-explicit-any
 }
+interface JQueryStatic {
+    whenAllDone( deferreds: ( Deferred )[] ): Deferred;
+}
+
+interface PromiseStatus {
+    status: string;
+    reason?: any;
+    value?: any;
+}
 interface Function {
     plugInShims?: KatAppPlugInShimInterface[]; // applications when they are in 'shim' format
     applications?: KatAppPlugInShimInterface[]; // applications when they are in 'real' format
@@ -25,9 +40,10 @@ interface Function {
     // Debugging...let's me restore the original shim factory if I'm going to rebuild UI or script locations
     debugApplicationFactory( id: string, element: JQuery, options: KatAppOptions): KatAppPlugInShimInterface;    
     templateOn( templateName: string, events: string, fn: TemplateOnDelegate ): void;
-    getResources( application: KatAppPlugInShimInterface, resources: string, useTestVersion: boolean, isScript: boolean, debugResourcesDomain: string | undefined, getResourcesHandler: PipelineCallback ): void;
+    getResources( application: KatAppPlugInShimInterface, resources: string, useTestVersion: boolean, isScript: boolean, debugResourcesDomain: string | undefined, getResourcesHandler: GetResourcesCallback ): void;
+    getResource( url: string, tryLocalServer: boolean, isInManagementSite: boolean, folder: string, name: string, version: string ): GetResourceXHR;
     ping( url: string, callback: ( responded: boolean, error?: string | Event )=> void ): void;
-    
+
     templatesUsedByAllApps: { 
         [ key: string ]: { 
             requested: boolean; 
@@ -48,7 +64,8 @@ interface Function {
         callbacks: Array<( errorMessage: string | undefined )=> void>; 
     };
     
-    // Didn't want to use interface (see comments at bottom of file for the negative parts) and couldn't use
+    // Didn't want to use interface (would have to keep an interface in sync with implementation - every method
+    // add, I'd have to add interface and implementation.  Also, f12 goto would always come to this file) and couldn't use
     // the 'class' implementation because that code only existed in closure.  So just use any.
     standardTemplateBuilderFactory( application: KatAppPlugInInterface ): any /*StandardTemplateBuilderInterface*/; // eslint-disable-line @typescript-eslint/no-explicit-any
     highchartsBuilderFactory( application: KatAppPlugInInterface ): any /*StandardTemplateBuilderInterface*/; // eslint-disable-line @typescript-eslint/no-explicit-any

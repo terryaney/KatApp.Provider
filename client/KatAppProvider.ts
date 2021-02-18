@@ -1,5 +1,15 @@
-// Local
-const providerVersion = 8.35; // eslint-disable-line @typescript-eslint/no-unused-vars
+/*
+Multi CEs:
+calcEngines: [
+    { Key, Name, }
+]
+<div rbl-value="test"/>
+<div rbl-ce="ce" rbl-value="test"/>
+<div rbl-ce="ce" rbl-tab="tab" rbl-value="test"/>
+<div rbl-tab="tab" rbl-value="test"/>
+*/
+
+const providerVersion = 8.36; // eslint-disable-line @typescript-eslint/no-unused-vars
 
 KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosity.Detailed);
 
@@ -79,7 +89,6 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
             }
         } as KatAppOptions, KatApp.defaultOptions /* default options already set */ );
 
-
     class KatAppPlugIn /* implements KatAppPlugInInterface */ {
         // Helper classes, see comment in interfaces class
         rble: RBLeUtilities/*Interface*/;
@@ -91,10 +100,8 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
         options: KatAppOptions = { };
         id: string;
         displayId: string;
-        calculationResults?: JSON;
         exception?: RBLeServiceResults | undefined;
-        results?: JSON | undefined;
-        resultRowLookups?: ResultRowLookupsInterface;
+        results?: TabDef[] | undefined;
         calculationInputs?: CalculationInputs | undefined;
         
         constructor(id: string, element: JQuery, options: KatAppOptions)
@@ -104,9 +111,9 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
             this.displayId = element.attr("rbl-trace-id") ?? id;
             // re-assign the KatAppPlugIn to replace shim with actual implementation
             this.element[ 0 ].KatApp = this;
-            this.ui = $.fn.KatApp.ui( this );
-            this.rble = $.fn.KatApp.rble( this );
-            this.templateBuilder = $.fn.KatApp.standardTemplateBuilderFactory( this );
+            this.ui = new UIUtilities( this );
+            this.rble = new RBLeUtilities( this );
+            this.templateBuilder = new StandardTemplateBuilder( this );
 
             this.init( options );
         }
@@ -124,6 +131,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
             const attrCalcEngine = this.element.attr("rbl-calcengine");
             const calcEngine: CalcEngine | undefined = attrCalcEngine != undefined
                 ? {
+                    key: "default",
                     name: attrCalcEngine,
                     inputTab: this.element.attr("rbl-input-tab"),
                     resultTabs: this.element.attr("rbl-result-tabs")?.split(","),
@@ -140,7 +148,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
             // Backwards compatability when options had a 'calcEngine' property instead of calcEngines
             if ( options[ "calcEngine" ] != undefined ) {
                 options.calcEngines = [
-                    { name: options[ "calcEngine" ] }
+                    { key: "default", name: options[ "calcEngine" ] }
                 ];
                 delete options[ "calcEngine" ];
             }
@@ -256,7 +264,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
             // simply a delegate added to the pipeline array.
             const loadView = function(): void { 
                 if ( viewId !== undefined ) {
-                    that.trace(viewId + " requested from CMS.", TraceVerbosity.Detailed);
+                    that.trace(viewId + " requested from CMS", TraceVerbosity.Detailed);
                     
                     const debugResourcesDomain = that.options.debug?.debugResourcesDomain;
 
@@ -265,47 +273,73 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
 
                             pipelineError = errorMessage;
 
-                            if ( pipelineError === undefined ) {
-                                that.trace(viewId + " returned from CMS.", TraceVerbosity.Normal);
+                            if ( pipelineError === undefined && results != undefined ) {
+                                that.trace(viewId + " returned from CMS", TraceVerbosity.Normal);
 
-                                const thisClassCss = ".katapp-" + that.id;
-                                const data = 
-                                    results![ viewId! ] // eslint-disable-line @typescript-eslint/no-non-null-assertion
-                                        .format( { thisView: "[rbl-application-id='" + that.id + "']", id: that.id, thisClass: thisClassCss });
+                                const data = results[ viewId ];
 
                                 // Process as view - get info from rbl-config and inject markup
-                                const view = $("<div class='katapp-css'>" + data.replace( /\.thisClass/g, thisClassCss ).replace( /thisClass/g, thisClassCss )  + "</div>");
+                                const thisClassCss = ".katapp-" + that.id;
+                                const content = 
+                                    data
+                                        .replace( /{thisView}/g, "[rbl-application-id='" + that.id + "']" )
+                                        .replace( /{id}/g, that.id )
+                                        .replace( /{thisClass}/g, thisClassCss )
+                                        .replace( /\.thisClass/g, thisClassCss )
+                                        .replace( /thisClass/g, thisClassCss );
+
+                                const view = $("<div class='katapp-css'>" + content  + "</div>");
                                 const rblConfig = $("rbl-config", view).first();
-        
+                                // Not sure if I need to manually add script or if ie will load them
+                                // https://www.danielcrabtree.com/blog/25/gotchas-with-dynamically-adding-script-tags-to-html
+                                // IE is not loading scripts of my test harness at the moment
+                                // const scripts = $("script", view);
+                                // $("script", view).remove();
+                                // alert(scripts.length);
                                 if ( rblConfig.length !== 1 ) {
-                                    that.trace("View " + viewId + " is missing rbl-config element.", TraceVerbosity.Quiet);
+                                    that.trace("View " + viewId + " is missing rbl-config element", TraceVerbosity.Quiet);
                                 }
 
-                                const attrCalcEngine = rblConfig?.attr("calcengine");
+                                const attrCalcEngine = rblConfig.attr("calcengine");
+                                const viewCalcEngines: CalcEngine[] = [];
                                 if ( attrCalcEngine != undefined ) {
-                                    // Only use CalcEngine settings in view if not already provided by:
-                                    // - options from .KatApp( options )
-                                    // - attributes/elements defined on katapp element
-                                    // - options set in defaultOptions
-                                    if ( that.options.calcEngines == undefined ) {
-                                        const calcEngine: CalcEngine = {
+                                    viewCalcEngines.push(
+                                        {
+                                            key: "default",
                                             name: attrCalcEngine,
                                             inputTab: rblConfig?.attr("input-tab"),
                                             resultTabs: rblConfig?.attr("result-tabs")?.split(","),
                                             preCalcs: rblConfig?.attr("precalcs")
-                                        };
-                                        that.options.calcEngines = [ calcEngine ];
-                                    }
-                                    else {
-                                        // MULTIPLE CE: Will need to figure out how to make this work when I really support multiple CEs
-                                        //              The calcEngine can be overridden by attributes on kat app element (or in debugger.kaml)
-                                        //              but they want to use the same tabs as original view's CalcEngine.  Currently I'm just updating
-                                        //              first (only) CalcEngine, but might need to figure out if I support this or not b/c could be 
-                                        //              hard to match up CalcEngines if either the view or the options or both had multiple calcengines defined
-                                        const calcEngine = that.options.calcEngines[ 0 ];
+                                        }                                        
+                                    );
+                                }
+                                $("calc-engine", rblConfig).each(function ( i, c ) {
+                                    const ce = $(c);
+                                    viewCalcEngines.push(
+                                        {
+                                            key: ce.attr("key") ?? ce.attr("name") ?? "UNAVAILABLE",
+                                            name: ce.attr("name") ?? "UNAVAILABLE",
+                                            inputTab: ce.attr("input-tab"),
+                                            resultTabs: ce.attr("result-tabs")?.split(","),
+                                            preCalcs: ce.attr("precalcs")
+                                        }                                        
+                                    );
+                                });
+
+                                // If any calcengines configured in view config...
+                                if ( viewCalcEngines.length > 0 ) {
+                                    if ( that.options.calcEngines?.length == 1 && viewCalcEngines.length == 1 ) {
+                                        // Backward support a bit, if only one calc engine in options/katapp attributes 
+                                        // and only one in view config, then 'merge' input/result/precalc from view config 
+                                        // if not provided already
+                                        const calcEngine = that.options.calcEngines[ 0 ]; // The CE configured in options/katapp attributes
                                         calcEngine.inputTab = calcEngine.inputTab ?? rblConfig?.attr("input-tab");
                                         calcEngine.resultTabs = calcEngine.resultTabs ?? rblConfig?.attr("result-tabs")?.split(",");
                                         calcEngine.preCalcs = calcEngine.preCalcs ?? rblConfig?.attr("precalcs");
+                                    }
+                                    else if ( that.options.calcEngines == undefined ) {
+                                        // otherwise if option calcengines *not* passed in, then I can use view calcengines
+                                        that.options.calcEngines = viewCalcEngines;
                                     }
                                 }
                                 
@@ -348,18 +382,18 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
 
                         _templatesUsedByAllApps[ r ].callbacks.push(
                             function( errorMessage ) {
-                                that.trace("Template: " + r + " is now ready.", TraceVerbosity.Detailed);
+                                that.trace("Template: " + r + " is now ready", TraceVerbosity.Detailed);
 
                                 // only process (moving to finish or next step) if not already assigned an error
                                 if ( pipelineError === undefined ) {
                                     if ( errorMessage === undefined ) {
                                         otherResourcesNeeded--;
                                         if ( otherResourcesNeeded === 0 ) {
-                                            that.trace("No more templates needed, process 'inject templates' pipeline.", TraceVerbosity.Diagnostic);
+                                            that.trace("No more templates needed, process 'inject templates' pipeline", TraceVerbosity.Diagnostic);
                                             initPipeline( 0 ); // move to next step if not waiting for anything else
                                         }
                                         else {
-                                            that.trace("Waiting for " + otherResourcesNeeded + " more templates.", TraceVerbosity.Diagnostic);
+                                            that.trace("Waiting for " + otherResourcesNeeded + " more templates", TraceVerbosity.Diagnostic);
                                         }
                                     }
                                     else {
@@ -387,7 +421,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                 if ( toFetch.length > 0 ) {
 
                     const toFetchList = toFetch.join(",");
-                    that.trace(toFetchList + " requested from CMS.", TraceVerbosity.Detailed);
+                    that.trace(toFetchList + " requested from CMS", TraceVerbosity.Detailed);
 
                     const debugResourcesDomain = that.options.debug?.debugResourcesDomain;
 
@@ -397,15 +431,15 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
 
                             if ( errorMessage === undefined ) {
                                 resourceResults = data as ResourceResults;
-                                that.trace(toFetchList + " returned from CMS.", TraceVerbosity.Normal);
+                                that.trace(toFetchList + " returned from CMS", TraceVerbosity.Normal);
                                 
                                 // Only move on if not waiting on any more resources from other apps
                                 if ( otherResourcesNeeded === 0 ) {
-                                    that.trace("No more templates needed, process 'inject templates' pipeline.", TraceVerbosity.Diagnostic);
+                                    that.trace("No more templates needed, process 'inject templates' pipeline", TraceVerbosity.Diagnostic);
                                     initPipeline( 0 );
                                 }
                                 else {
-                                    that.trace("Can't move to next step because waiting on templates.", TraceVerbosity.Diagnostic);
+                                    that.trace("Can't move to next step because waiting on templates", TraceVerbosity.Diagnostic);
                                 }
                             }
                             else {
@@ -444,7 +478,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
 
                         t.appendTo(rblKatApps);
 
-                        that.trace( r + " injected into markup.", TraceVerbosity.Normal );
+                        that.trace( r + " injected into markup", TraceVerbosity.Normal );
 
                         // Should only ever get template results for templates that I can request
                         _templatesUsedByAllApps[ r ].data = data;
@@ -477,7 +511,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                             _templateDelegates
                                 .filter( d => d.Template.toLowerCase() == t.toLowerCase() )
                                 .forEach( d => {
-                                    that.trace( "[" + d.Events + "] events from template [" + d.Template + "] hooked up.", TraceVerbosity.Normal );
+                                    that.trace( "[" + d.Events + "] events from template [" + d.Template + "] hooked up", TraceVerbosity.Normal );
                                     that.element.on( d.Events, function( ...args ): void {
                                         d.Delegate.apply( this, args );
                                     } );
@@ -579,17 +613,25 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
 
             // Shouldn't change 'share' option with a customOptions object, so just use original options to check
             const shareDataWithOtherApplications = this.options.shareDataWithOtherApplications ?? false;
+            
             if ( shareDataWithOtherApplications ) {
                 this.options.registeredToken = _sharedData.registeredToken;
                 this.options.data = _sharedData.data;
                 this.options.sharedDataLastRequested = _sharedData.lastRequested;
             }
 
-            if ( this.options.calcEngines === undefined ) {
+            this.exception = undefined; // Should I set results to undefined too?
+
+            // Build up complete set of options to use for this calculation call
+            const currentOptions = KatApp.extend(
+                {}, // make a clone of the options
+                this.options, // original options
+                customOptions, // override options
+            ) as KatAppOptions;
+
+            if ( currentOptions.calcEngines === undefined ) {
                 return;
             }
-
-            this.exception = undefined; // Should I set results to undefined too?
 
             const cancelCalculation = !this.ui.triggerEvent( "onCalculateStart", this );
 
@@ -599,14 +641,6 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
             }
 
             const that: KatAppPlugIn = this;
-
-            // Build up complete set of options to use for this calculation call
-            const currentOptions = KatApp.extend(
-                {}, // make a clone of the options
-                that.options, // original options
-                customOptions, // override options
-            ) as KatAppOptions;
-
             const pipeline: Array<()=> void> = [];
             const pipelineNames: Array<string> = [];
             let pipelineIndex = 0;
@@ -639,49 +673,29 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
             // Made all pipeline functions variables just so that I could search on name better instead of 
             // simply a delegate added to the pipeline array.
 
-            // Calc Failed - 0, Success - 3, Unhandled Error - 3
-            const submitCalculation = function(): void { 
-                try {
-                    that.rble.submitCalculation( 
-                        currentOptions, 
-                        // If failed, let it do next job (getData, register, resubmit), otherwise, jump to finish
-                        errorMessage => { 
-                            pipelineError = errorMessage; 
-
-                            const offset = currentOptions.registeredToken === undefined && currentOptions.data === undefined 
-                                ? 0 
-                                : 3;
-
-                            calculatePipeline( offset );
-                        } 
-                    );
-                } catch (error) {
-                    pipelineError = "Submit.Pipeline exception: " + error;
-                    calculatePipeline( 3 );
-                }
-            };
-
-            // Success = 1, Error - 2, Need Register - 0
+            // Success = submitCalculation
+            // Error - processResults
+            // Need Register - registerData
             const getCalculationData = function(): void {
                 try {
                     pipelineError = undefined; // Was set in previous pipeline calculate attempt, but clear out and try flow again
 
                     if ( shareDataWithOtherApplications && _sharedData.requesting ) {
-                        that.trace("Need to wait for already requested data.", TraceVerbosity.Detailed);
+                        that.trace("Need to wait for already requested data", TraceVerbosity.Detailed);
                         // Wait for callback...
 
                         _sharedData.callbacks.push( function( errorMessage ) {
                             if ( errorMessage === undefined ) {
                                 // When called back, it'll be after getting data *or* after
                                 // registration if options call for it, so just jump to resubmit
-                                that.trace("Data is now ready.", TraceVerbosity.Detailed);
+                                that.trace("Data is now ready", TraceVerbosity.Detailed);
                                 that.options.data = currentOptions.data = _sharedData.data;
                                 that.options.registeredToken = currentOptions.registeredToken = _sharedData.registeredToken;
                                 that.options.sharedDataLastRequested = _sharedData.lastRequested;
                                 calculatePipeline( 1 ); 
                             }
                             else {
-                                that.trace("Data retrieval failed in other application.", TraceVerbosity.Detailed);
+                                that.trace("Data retrieval failed in other application", TraceVerbosity.Detailed);
                                 pipelineError = errorMessage;
                                 calculatePipeline( 2 ); // If error, jump to finish
                             }                  
@@ -702,14 +716,14 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                         //
                         // So, if Sharing data, and the shared request date > application.shared request date, then
                         // just grab the data from _shared and move on to resubmit.
-                        that.trace("Using existing shared data.", TraceVerbosity.Detailed);
+                        that.trace("Using existing shared data", TraceVerbosity.Detailed);
                         that.options.data = currentOptions.data = _sharedData.data;
                         that.options.registeredToken = currentOptions.registeredToken = _sharedData.registeredToken;
                         that.options.sharedDataLastRequested = _sharedData.lastRequested;
                         calculatePipeline( 1 ); 
                     }
                     else {
-                        that.trace("Requesting data.", TraceVerbosity.Detailed);
+                        that.trace("Requesting data", TraceVerbosity.Detailed);
                         try {
                             if ( shareDataWithOtherApplications ) {
                                 _sharedData.requesting = true;
@@ -718,42 +732,44 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                             }
                             that.options.data = currentOptions.data = undefined;
                             that.options.registeredToken = currentOptions.registeredToken = undefined;
-                
-                            that.rble.getData( 
+
+                            // If failed, then I am unable to register data, so just jump to finish, 
+                            // otherwise continue to registerData or submit
+                            currentOptions.getData!(  // eslint-disable-line @typescript-eslint/no-non-null-assertion
+                                that,
                                 currentOptions, 
-                                // If failed, then I am unable to register data, so just jump to finish, 
-                                // otherwise continue to registerData or submit
-                                ( errorMessage, data ) => { 
-                                    if ( errorMessage !== undefined ) {
-                                        pipelineError = errorMessage;
+                                data => { 
+                                    that.options.data = currentOptions.data = data as RBLeRESTServiceResult;
 
-                                        if ( shareDataWithOtherApplications ) {
-                                            callSharedCallbacks( errorMessage );
+                                    if ( shareDataWithOtherApplications ) {
+                                        _sharedData.data = that.options.data;
+
+                                        // If don't need to register, then let any applications waiting for data know that it is ready
+                                        if ( !that.options.registerDataWithService ) {
+                                            callSharedCallbacks( undefined );
                                         }
+                                    }
 
-                                        calculatePipeline( 2 ); // If error, jump to finish
+                                    if ( !that.options.registerDataWithService ) {
+                                        calculatePipeline( 1 ); // If not registering data, jump to submit
                                     }
                                     else {
-                                        that.options.data = currentOptions.data = data as RBLeRESTServiceResult;
+                                        calculatePipeline( 0 ); // Continue to register data
+                                    }                                        
+                                },
+                                ( _jqXHR, textStatus ) => {
+                                    that.trace("getData AJAX Error Status: " + textStatus, TraceVerbosity.Quiet);
 
-                                        if ( shareDataWithOtherApplications ) {
-                                            _sharedData.data = that.options.data;
+                                    pipelineError = "getData AJAX Error Status: " + textStatus;
 
-                                            // If don't need to register, then let any applications waiting for data know that it is ready
-                                            if ( !that.options.registerDataWithService ) {
-                                                callSharedCallbacks( undefined );
-                                            }
-                                        }
-
-                                        if ( !that.options.registerDataWithService ) {
-                                            calculatePipeline( 1 ); // If not registering data, jump to submit
-                                        }
-                                        else {
-                                            calculatePipeline( 0 ); // Continue to register data
-                                        }                                        
+                                    if ( shareDataWithOtherApplications ) {
+                                        callSharedCallbacks( pipelineError );
                                     }
+
+                                    calculatePipeline( 2 ); // If error, jump to finish
                                 } 
-                            );                                        
+                            );  
+
                         } catch (error) {
                             if ( shareDataWithOtherApplications ) {
                                 callSharedCallbacks( error );
@@ -767,7 +783,8 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                 }
             };
 
-            // Success = 0, Error - 1
+            // Success - resubmitCalculation
+            // Error - processResults
             const registerData = function(): void {
                 try {
                     that.rble.registerData( 
@@ -801,26 +818,72 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                 }
             };
 
-            // Always go 0
-            const resubmitCalculation = function(): void {
-                try {
-                    that.rble.submitCalculation( 
-                        currentOptions,
-                        // If failed, let it do next job (getData), otherwise, jump to finish
-                        errorMessage => { 
-                            pipelineError = errorMessage; 
-                            calculatePipeline( 0 );
-                        } 
-                    );
-                } catch (error) {
-                    pipelineError = "ReSubmit.Pipeline exception: " + error;
-                    calculatePipeline( 0 );
-                }
+            // Always go processResults
+            const submitCalculation = function(): void {
+                
+                const calculations = currentOptions.calcEngines != undefined && currentOptions.calcEngines.length > 0
+                    ? currentOptions.calcEngines.map( c => {
+                        const d = $.Deferred();
+
+                        try {
+                            that.rble.submitCalculation( 
+                                c,
+                                currentOptions,
+                                ( errorMessage, result ) => { 
+                                    if ( errorMessage != undefined ) {
+                                        d.reject( { "calcEngine": c, "errorMessage": errorMessage } );
+                                    }
+                                    else {
+                                        d.resolve( { "calcEngine": c, "result": result } );
+                                    }
+                                } 
+                            );
+                        } catch (error) {
+                            d.reject( { "calcEngine": c, "errorMessage": "ReSubmit.Pipeline exception: " + error } );
+                        }
+
+                        return d;
+                    })
+                    : [
+                        function(): Deferred {
+                            const d = $.Deferred();
+                            d.reject( { "calcEngine": "Unspecified", "errorMessage": "No CalcEngines configured to run" } );
+                            return d;
+                        }()
+                    ];
+
+                $.whenAllDone( calculations ).then(
+                    function( ... results: PromiseStatus[] ) {
+                        let tabDefs: TabDef[] = [];
+                        const failures = results.filter( p => p.status == "rejected" );
+
+                        if ( failures.length > 0 ) {
+                            failures.forEach( p => {
+                                const failure = p.reason as SubmitCalculationFailure;
+                                that.trace( "Error during calculation for " + failure.calcEngine.name + ": " + failure.errorMessage, TraceVerbosity.None );
+                            });
+
+                            pipelineError = failures[ 0 ].reason.errorMessage; 
+                        }
+                        else {
+                            results
+                                .forEach( p => {
+                                    const success = p.value as SubmitCalculationSuccess;
+                                    const tabDef = success.result.Profile.Data.TabDef;
+                                    tabDefs = tabDefs.concat( tabDef != undefined && !Array.isArray( tabDef ) ? [ tabDef ] : tabDef );
+                                });
+                            that.setResults( tabDefs, currentOptions );
+                        }
+
+                        calculatePipeline( 0 );
+                    }
+                );
             };
 
-            // Success - 1, Error - 1 (checks pipeline error before processing)
+            // Success - updateData
+            // Error - calculateEnd (checks pipeline error before processing)
             const processResults = function(): void {
-                that.trace("Processing results from calculation.", TraceVerbosity.Detailed);
+                that.trace("Processing results from calculation", TraceVerbosity.Detailed);
                 
                 try {
                     if ( pipelineError === undefined ) {
@@ -831,48 +894,55 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                         throw new Error(pipelineError);
                     }
                 } catch (error) {
-                    that.rble.setResults( undefined );
+                    that.setResults( undefined );
                     that.trace( "Error during result processing: " + error, TraceVerbosity.None );
                     that.ui.triggerEvent( "onCalculationErrors", "RunCalculation", error, that.exception, currentOptions, that );
                     calculatePipeline( 1 );
                 }
             };
 
-            // Always go 0
+            // Always go calculateEnd
             const updateData = function(): void {
-                that.trace("Posting jwt update data from results.", TraceVerbosity.Detailed);
+                that.trace("Posting jwt update data from results", TraceVerbosity.Detailed);
 
                 try {
                     const uploadUrl = that.options.rbleUpdatesUrl;
+
                     const jwtToken = {
-                        Tokens: that.getResultTable<JSON>( "jwt-data").map( r => ({ Name: r[ "@id"], Token: r[ "value" ] }) )
+                        Tokens: that.getResultTable<JSON>( "jwt-data").map( r => ({ Name: r[ "@id"], Token: r[ "value" ] }) ),
                     };
-
+    
 					if (jwtToken.Tokens.filter( t => t.Name == "data-updates" ).length > 0 && uploadUrl !== undefined ) {
-						const jsonParams = {
-							url: uploadUrl,
-							type: "POST",
-							processData: false,
-							data: JSON.stringify(jwtToken),
-							dataType: "json"
-						};
+                        const fd = new FormData();
+                        fd.append("KatAppCommand", "SaveRBLeUpdates");
+                        fd.append("KatAppView", that.options.view ?? "Unknown" );
+                        fd.append("KatAppInputs", JSON.stringify(that.calculationInputs));
+                        fd.append("KatAppConfiguration", JSON.stringify(currentOptions));
+                        fd.append("KatAppDataTokens", JSON.stringify(jwtToken));
 
-						$.ajax(jsonParams)
-							.done(function (data) {
-								if (data.Status != 1) {
-									console.log("Unable to save data: " + data.Message);
-                                    that.ui.triggerEvent( "onDataUpdateErrors", data.Message, that.exception, currentOptions, that );
-                                }
-                                else {
-                                    that.ui.triggerEvent( "onDataUpdate", that.results, currentOptions, that );
-                                }
-                                calculatePipeline( 0 );
-							})
-							.fail(function (_jqXHR, textStatus) {
-								console.log("Unable to save data: " + textStatus);
-                                that.ui.triggerEvent( "onDataUpdateErrors", textStatus, that.exception, currentOptions, that );
-                                calculatePipeline( 0 );
-							});
+                        $.ajax({
+                            url: uploadUrl,  
+                            type: 'POST',
+                            data: fd,
+                            cache: false,
+                            contentType: false,
+                            processData: false
+                        }).done(function (response) {
+                            const data = JSON.parse( response );
+                            if (data.Status != 1) {
+                                console.log("Unable to save data: " + data.Message);
+                                that.ui.triggerEvent( "onDataUpdateErrors", data.Message, that.exception, currentOptions, that );
+                            }
+                            else {
+                                that.ui.triggerEvent( "onDataUpdate", that.results, currentOptions, that );
+                            }
+                            calculatePipeline( 0 );
+                        })
+                        .fail(function (_jqXHR, textStatus) {
+                            console.log("Unable to save data: " + textStatus);
+                            that.ui.triggerEvent( "onDataUpdateErrors", textStatus, that.exception, currentOptions, that );
+                            calculatePipeline( 0 );
+                        });
                     }
                     else
                     {
@@ -890,20 +960,25 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                 calculatePipeline( 0 );
             };
 
+            const needsData = currentOptions.registeredToken === undefined && currentOptions.data === undefined;
+            
+            if ( needsData && currentOptions.getData != undefined ) {
+                pipeline.push(getCalculationData);
+                pipelineNames.push("calculatePipeline.getCalculationData");
+            }
+            if ( needsData ) {
+                // Sometimes the register function 'gets data' on server and returns registration token
+                pipeline.push(registerData);
+                pipelineNames.push("calculatePipeline.registerData");
+            }
             pipeline.push( 
                 submitCalculation,
-                getCalculationData,
-                registerData,
-                resubmitCalculation,
                 processResults,
                 updateData,
                 calculateEnd
             )
             pipelineNames.push( 
                 "calculatePipeline.submitCalculation",
-                "calculatePipeline.getCalculationData",
-                "calculatePipeline.registerData",
-                "calculatePipeline.resubmitCalculation",
                 "calculatePipeline.processResults",
                 "calculatePipeline.updateData",
                 "calculatePipeline.calculateEnd"
@@ -1011,6 +1086,49 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
             if ( this.blockerCount < 0 ) {
                 this.blockerCount = 0;
             }
+        }
+
+        setResults( results: TabDef[] | undefined, calculationOptions: KatAppOptions = this.options ): void {
+            const calcEngines = calculationOptions.calcEngines;
+            if ( calcEngines !== undefined && results !== undefined ) {
+                const defaultCEName = calcEngines[ 0 ].name;
+                results.forEach( t => {
+                    // Breakpoint to test tabDef name
+                    t._resultKeys = Object.keys(t).filter( k => !k.startsWith( "@" ) );
+                    
+                    const ceName = t["@calcEngine"].split(".")[ 0 ].replace("_Test", "");
+                    
+                    // Is this tab part of defaultCalcEngine?
+                    t._defaultCalcEngine = ceName == defaultCEName;
+                    
+                    // Put every key that ce is associated with, in case client override uses 1 CE to
+                    // implement all functionality for view that might have been configured for two CEs...
+                    /*
+                        [
+                            { key: "ce1", name: "clientCe"},
+                            { key: "ce2", name: "clientCe"}
+                        ]
+                    */                    
+                    calcEngines.filter( c => c.name == ceName ).forEach( c => {
+                        t[ "_" +  c.key ] = true;
+                    });
+
+                    t._name = t["@name"];
+                    t._fullName = ceName + "." + t._name;
+
+                    // Ensure that all tables are an array
+                    t._resultKeys.forEach( k => {
+                        const table = t[ k ];
+    
+                        if (!(table instanceof Array) && table != null ) {
+                            t[ k ] = [table];
+                        }
+                    });
+    
+                } );
+            }
+
+            this.results = results;
         }
 
         apiAction( commandName: string, customOptions?: KatAppActionOptions, actionLink?: JQuery<HTMLElement> ): void {
@@ -1124,17 +1242,17 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
         }
 
         // Result helper
-        getResultTable<T>( tableName: string): Array<T> {
-            return this.rble.getResultTable<T>( tableName );
+        getResultTable<T>( tableName: string, tabDef?: string, calcEngine?: string): Array<T> {
+            return this.rble.getResultTable<T>( this.rble.getTabDef( tabDef, calcEngine ), tableName );
         }
-        getResultRow<T>(table: string, id: string, columnToSearch?: string ): T | undefined { 
-            return this.rble.getResultRow<T>( table, id, columnToSearch ); 
+        getResultRow<T>(table: string, id: string, columnToSearch?: string, tabDef?: string, calcEngine?: string ): T | undefined { 
+            return this.rble.getResultRow<T>( this.rble.getTabDef( tabDef, calcEngine ), table, id, columnToSearch ); 
         }
-        getResultValue( table: string, id: string, column: string, defautlValue?: string ): string | undefined { 
-            return this.rble.getResultValue( table, id, column, defautlValue ); 
+        getResultValue( table: string, id: string, column: string, defautlValue?: string, tabDef?: string, calcEngine?: string ): string | undefined { 
+            return this.rble.getResultValue( this.rble.getTabDef( tabDef, calcEngine ), table, id, column, defautlValue ); 
         }
-        getResultValueByColumn( table: string, keyColumn: string, key: string, column: string, defautlValue?: string ): string | undefined { 
-            return this.rble.getResultValueByColumn( table, keyColumn, key, column, defautlValue ); 
+        getResultValueByColumn( table: string, keyColumn: string, key: string, column: string, defautlValue?: string, tabDef?: string, calcEngine?: string ): string | undefined { 
+            return this.rble.getResultValueByColumn( this.rble.getTabDef( tabDef, calcEngine ), table, keyColumn, key, column, defautlValue ); 
         }
         setDefaultValue( id: string, value: string | undefined): void {
             this.rble.setDefaultValue(id, value);
@@ -1183,7 +1301,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                 try {
                     that.processResults(rebuildOptions);
                 } catch (error) {
-                    // this.rble.setResults( undefined );
+                    // this.setResults( undefined );
                     that.trace( "Error during result processing: " + error, TraceVerbosity.None );
                     that.ui.triggerEvent( "onCalculationErrors", "RunCalculation", error, that.exception, that.options, that );
                 }
@@ -1752,6 +1870,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
             try {
                 application.trace("Calling " + eventName + " delegate: Starting...", TraceVerbosity.Diagnostic);
                 
+                // Make application.element[0] be 'this' in the event handler
                 const handlerResult = application.options[ eventName ]?.apply(application.element[0], args );
 
                 if ( handlerResult != undefined && !handlerResult ) {
@@ -1885,88 +2004,29 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
             */
         }
     }
-    $.fn.KatApp.ui = function( application: KatAppPlugIn ): UIUtilities {
-        return new UIUtilities( application );
-    };
-
     class RBLeUtilities /* implements RBLeUtilitiesInterface */ {
         private application: KatAppPlugIn;
-
+    
         constructor( application: KatAppPlugIn ) {
             this.application = application;  
         }
-
-        setResults( results: JSON | undefined ): void {
-            if ( results !== undefined ) {
-                const propertyNames = results["@resultKeys"] = Object.keys(results).filter( k => !k.startsWith( "@" ) );
-
-                // Ensure that all tables are an array
-                propertyNames.forEach( k => {
-                    const table = results[ k ];
-
-                    if (!(table instanceof Array) && table != null ) {
-                        results[ k ] = [table];
-                    }
-                });
-            }
-
-            this.application.results = results;
-            this.application.resultRowLookups = undefined;
-        }
-
-        getData( currentOptions: KatAppOptions, getDataHandler: PipelineCallback ): void {
-        
-            if ( currentOptions.getData === undefined ) 
-            {
-                getDataHandler( "getData handler does not exist." );
-                return;
-            }
     
-            currentOptions.getData( 
-                this.application,
-                currentOptions, 
-                data => { 
-                    getDataHandler( undefined, data ); 
-                },
-                ( _jqXHR, textStatus ) => {
-                    this.application.trace("getData AJAX Error Status: " + textStatus, TraceVerbosity.Quiet);
-                    getDataHandler( "getData AJAX Error Status: " + textStatus );
-                }
-            );  
-        }
-    
-        registerData( currentOptions: KatAppOptions, data: RBLeRESTServiceResult, registerDataHandler: PipelineCallback ): void {
+        registerData( currentOptions: KatAppOptions, data: RBLeRESTServiceResult, registerDataHandler: RegisterDataCallback ): void {
             const that: RBLeUtilities = this;
             const application = this.application;;
-
+    
             const register: RegisterDataDelegate =
                 currentOptions.registerData ??
                 function( _app, _o, done, fail ): void
                 {
                     const traceCalcEngine = application.element.data("katapp-trace-calcengine") === "1";
-                    const calcEngine = currentOptions.calcEngines![ 0 ]; // eslint-disable-line @typescript-eslint/no-non-null-assertion
-
-                    const calculationOptions: SubmitCalculationOptions = {
-                        Data: data,
-                        Configuration: {
-                            AuthID: data.AuthID as string,
-                            AdminAuthID: undefined,
-                            Client: data.Client as string,
-                            CalcEngine: calcEngine.name,
-                            TraceEnabled: traceCalcEngine ? 1 : 0,
-                            InputTab: calcEngine.inputTab ?? "RBLInput",
-                            ResultTabs: calcEngine.resultTabs ?? [ "RBLResult" ],
-                            TestCE: currentOptions.debug?.useTestCalcEngine ?? false,
-                            CurrentPage: currentOptions.currentPage ?? "Unknown",
-                            RequestIP: currentOptions.requestIP ?? "1.1.1.1",
-                            CurrentUICulture: currentOptions.currentUICulture ?? "en-US",
-                            Environment: currentOptions.environment ?? "PITT.PROD"                                
-                        }
-                    };
-                
-                    const json = {
+    
+                    const json: RegisterDataOptions = {
                         Registration: KatApp.generateId(),
-                        TransactionPackage: JSON.stringify(calculationOptions)
+                        TransactionPackage: JSON.stringify( { Data: data } ),
+                        Configuration: {
+                            TraceEnabled: traceCalcEngine ? 1 : 0
+                        }
                     };
     
                     const jsonParams = {
@@ -1995,7 +2055,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                 if ( payload.Exception === undefined ) {
                     application.options.registeredToken = currentOptions.registeredToken = payload.registeredToken;
                     application.options.data = currentOptions.data = undefined;
-
+    
                     that.application.ui.triggerEvent( "onRegistration", currentOptions, application );
                     registerDataHandler();
                 }
@@ -2009,20 +2069,14 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
             register( application, currentOptions, registerDone, registerFailed );
         }
     
-        submitCalculation( currentOptions: KatAppOptions, submitCalculationHandler: PipelineCallback ): void {
-
-            if ( currentOptions.registeredToken === undefined && currentOptions.data === undefined ) {
-                submitCalculationHandler( "submitCalculation no registered token." );
-                return;
-            }
-            
+        submitCalculation( calcEngine: CalcEngine, currentOptions: KatAppOptions, submitCalculationHandler: SubmitCalculationCallback ): void {
             const application = this.application;
             const saveCalcEngineLocation = application.element.data("katapp-save-calcengine");
             const traceCalcEngine = application.element.data("katapp-trace-calcengine") === "1";
             const refreshCalcEngine = application.element.data("katapp-refresh-calcengine") === "1";
-
+    
             // TODO Should make a helper that gets options (for both submit and register)            
-
+    
             if ( currentOptions.defaultInputs !== undefined )
             {
                 // Currently can't pass this in.  Not sure ever needed, but if so, multi page
@@ -2033,21 +2087,19 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                 // in the inputs and it just called a load over and over
                 delete currentOptions.defaultInputs.iInputTrigger;
             }
-
+    
             const inputs: CalculationInputs = KatApp.extend( this.application.ui.getInputs( currentOptions ), currentOptions.defaultInputs, currentOptions.manualInputs );
-
-            const calcEngine = currentOptions.calcEngines![ 0 ]; // eslint-disable-line @typescript-eslint/no-non-null-assertion
-
+    
             let preCalcs = calcEngine.preCalcs;
-
-			if (inputs.iInputTrigger !== undefined) {
-				const rblOnChange = $("." + inputs.iInputTrigger).data("rbl-on-change") as string ?? "";
-				const triggerPreCalc = rblOnChange.indexOf("update-tp") > -1;
+    
+            if (inputs.iInputTrigger !== undefined) {
+                const rblOnChange = $("." + inputs.iInputTrigger).data("rbl-on-change") as string ?? "";
+                const triggerPreCalc = rblOnChange.indexOf("update-tp") > -1;
                 preCalcs = triggerPreCalc 
                     ? $("." + inputs.iInputTrigger).data("rbl-update-tp-params") || preCalcs 
                     : preCalcs;
-			}
-
+            }
+    
             const calculationOptions: SubmitCalculationOptions = {
                 Data: !( currentOptions.registerDataWithService ?? true ) ? currentOptions.data : undefined,
                 Inputs: inputs,
@@ -2062,32 +2114,30 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                     RefreshCalcEngine: refreshCalcEngine || ( currentOptions.debug?.refreshCalcEngine ?? false ),
                     PreCalcs: preCalcs,
                     
-                    // Non-session submission
-                    AuthID: currentOptions.data?.AuthID,
+                    // In case a non-session submission, pass these along
+                    // TODO: should we be using JWT for AuthID, AdminAuthID, Client?
+                    AuthID: currentOptions.data?.AuthID ?? "NODATA",
                     AdminAuthID: undefined,
-                    Client: currentOptions.data?.Client,
+                    Client: currentOptions.data?.Client ?? "KatApp",
                     TestCE: currentOptions.debug?.useTestCalcEngine ?? false,
-                    CurrentPage: currentOptions.currentPage ?? "Unknown",
-                    RequestIP: "1.1.1.1",
-                    CurrentUICulture: "en-US",
-                    Environment: "PITT.PROD"
+                    CurrentPage: currentOptions.currentPage ?? "KatApp:" + ( currentOptions.view ?? "UnknownView" ),
+                    RequestIP: currentOptions.requestIP ?? "1.1.1.1",
+                    CurrentUICulture: currentOptions.currentUICulture ?? "en-US",
+                    Environment: currentOptions.environment ?? "PITT.PROD"
                 }
             };
-
+    
             this.application.ui.triggerEvent( "onCalculationOptions", calculationOptions, this );
-
+    
             application.calculationInputs = KatApp.extend( {}, calculationOptions.Inputs as object, { InputTables: calculationOptions.InputTables } );
-
-            const that: RBLeUtilities = this;
-
+    
             const submitDone: RBLeServiceCallback = function( payload ): void {
                 if ( payload.payload !== undefined ) {
                     payload = JSON.parse(payload.payload);
                 }
     
                 if ( payload.Exception === undefined ) {
-                    that.setResults( payload.RBL?.Profile.Data.TabDef );
-                    submitCalculationHandler();
+                    submitCalculationHandler( undefined, payload.RBL );
                 }
                 else {
                     application.exception = payload;
@@ -2118,99 +2168,126 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
     
             submit( application, calculationOptions, submitDone, submitFailed );
         }
-
-        getResultRow<T>( table: string, key: string, columnToSearch?: string ): T | undefined { 
-            const application = this.application;
-            const rows = application.results?.[table];
-
-            if (rows === undefined) return undefined;
-
-            const rowLookups = application.resultRowLookups || ( application.resultRowLookups = {} );
-
+    
+        getTabDef( tabDef?: string | null, calcEngine?: string | null ): TabDef | undefined {
+            // Had to include | null because sometimes I call this with el.getAttribute(): string | null
+            // instead of only $.attr(): string | undefined
+            const results = this.application?.results;
+            
+            /*
+                Have a little problem here...if view is coded with CE in markup...a mapping can be configured to match it...and it might look like:
+    
+                [
+                    { key: "ce1", name: "clientCe"},
+                    { key: "ce2", name: "clientCe"}
+                ]
+    
+                With this, if view had ce1/ce2 as two sep CE's but client wanted to just implement with one custom one, they could do this.
+                (NOTE: need to figure out how to not call two calcs)  The problem is if the tab names don't match up...if view had...
+    
+                ce1.tab1, ce2.tab2
+    
+                If client made one clientCe.tab1 to handle everything, all the tab2 references would not work, so would have to introduce
+                some form of tab mapping as well.  Leaving off for now.
+            */
+            if ( results != undefined ) {
+                return calcEngine != undefined && tabDef != undefined ? results?.find( t => t["_" + calcEngine] == true && t._name == tabDef ) :
+                    calcEngine != undefined ? results?.find( t => t["_" + calcEngine] == true ) :
+                    tabDef != undefined ? results?.find( t => t._defaultCalcEngine && t._name == tabDef ) :
+                    results?.[ 0 ];
+            }
+        
+            return undefined;
+        }
+    
+        getResultRow<T>( tabDef: TabDef | undefined, table: string, key: string, columnToSearch?: string ): T | undefined { 
+            const rows = tabDef?.[table];
+    
+            if (tabDef === undefined || rows === undefined) return undefined;
+    
+            const rowLookups = tabDef?._resultRowLookups || ( tabDef._resultRowLookups = {} );
+    
             const lookupKey = table + (columnToSearch ?? "");
             const lookupColumn = columnToSearch ?? "@id";
             
             let lookupInfo = rowLookups[ lookupKey ];
-
+    
             if (lookupInfo === undefined) {
                 rowLookups[lookupKey] = lookupInfo = {
                     LastRowSearched: 0,
                     Mapping: {}
                 };
             }
-
+    
             let rowIndex = lookupInfo.Mapping[key];
-
+    
             if (rowIndex === undefined) {
                 for (let i = lookupInfo.LastRowSearched; i < rows.length; i++) {
                     const rowId = rows[i][lookupColumn];
                     lookupInfo.Mapping[rowId] = i;
                     lookupInfo.LastRowSearched++;
-
+    
                     if (rowId === key) {
                         rowIndex = i;
                         break;
                     }
                 }
             }
-
+    
             if (rowIndex !== undefined) {
                 return rows[ rowIndex ];
             }
-
+    
             return undefined;
         }
-
-        getResultValue( table: string, key: string, column: string, defaultValue?: string ): string | undefined { 
-            return this.getResultRow<JSON>( table, key )?.[ column ] ?? defaultValue;
+    
+        getResultValue( tabDef: TabDef | undefined, table: string, key: string, column: string, defaultValue?: string ): string | undefined { 
+            return this.getResultRow<JSON>( tabDef, table, key, undefined )?.[ column ] ?? defaultValue;
         }
-
-        getResultValueByColumn( table: string, keyColumn: string, key: string, column: string, defaultValue?: string ): string | undefined {
-            return this.getResultRow<JSON>( table, key, keyColumn)?.[ column ] ?? defaultValue;
+    
+        getResultValueByColumn( tabDef: TabDef | undefined, table: string, keyColumn: string, key: string, column: string, defaultValue?: string ): string | undefined {
+            return this.getResultRow<JSON>( tabDef, table, key, keyColumn)?.[ column ] ?? defaultValue;
         };
-
-		getResultTable<T>( tableName: string): Array<T> {
-            const application = this.application;
-            if ( application?.results === undefined ) return [];
-
+    
+        getResultTable<T>( tabDef: TabDef | undefined, tableName: string): Array<T> {
+            if ( tabDef === undefined || tabDef._resultKeys === undefined ) return [];
+    
             let tableKey = tableName;
-
-			const resultKeys = application.results["@resultKeys"] as string[];
-
-			if (tableKey === "*") {
-				const result: T[] = [];
-
-				resultKeys.forEach(key => {
-					let table = application.results?.[key];
-
-					if (table instanceof Array) {
-						table = $.merge(result, table);
-					}
-				});
-
-				return result;
-			}
-
-			if (application.results[tableKey] === undefined) {
-				// Find property name case insensitive
-				resultKeys.forEach(key => {
-					if (key.toUpperCase() === tableName.toUpperCase()) {
-						tableKey = key;
-						return false;
-					}
-				});
-			}
-
-			return application.results[tableKey] as Array<T> ?? [];
-		}
-
+    
+            if (tableKey === "*") {
+                const result: T[] = [];
+    
+                tabDef._resultKeys.forEach(key => {
+                    let table = tabDef[key];
+    
+                    if (table instanceof Array) {
+                        table = $.merge(result, table);
+                    }
+                });
+    
+                return result;
+            }
+    
+            if (tabDef[tableKey] === undefined) {
+                // Find property name case insensitive
+                tabDef._resultKeys.forEach(key => {
+                    if (key.toUpperCase() === tableName.toUpperCase()) {
+                        tableKey = key;
+                        return false;
+                    }
+                });
+            }
+    
+            return tabDef[tableKey] as Array<T> ?? [];
+        }
+    
         injectTemplate( target: JQuery<HTMLElement>, template: { Content: string; Type: string | undefined } | undefined ): void {
             // rbl-template-type is to enable the creation of templates with different ids/names but still
             // fall in a category of type.  For example, you may want to make a certain style/template of
             // sliders (while still keeping main slider template usable) that is then capable of applying
             // all the KatApp programming (data-* attributes applying ranges, and configurations).
             target.removeAttr("rbl-template-type");
-
+    
             if ( template === undefined ) {
                 target.html("");
             }
@@ -2226,17 +2303,17 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
             const view = this.application.element;
             let content = resultRow.content ?? resultRow.html ?? resultRow.value ?? "";
             const selector = this.application.ui.getJQuerySelector( resultRow.selector ) ?? this.application.ui.getJQuerySelector( resultRow["@id"] ) ?? "";
-
+    
             if (( processBlank || content.length > 0 ) && selector.length > 0) {
-
+    
                 let target = $(selector, view);
-
+    
                 if ( target.length > 0 ) {
-
+    
                     if ( target.length === 1 ) {
                         target = this.application.ui.getAspNetCheckboxLabel( target ) ?? target;
                     }
-
+    
                     if ( content.startsWith("&") ) {
                         content = content.substr(1);
                     }
@@ -2264,37 +2341,45 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                 }
             }
         }
-
-        getRblSelectorValue( tableName: string, selectorParts: string[] ): string | undefined {
-            if ( selectorParts.length === 1 ) 
-            {
-                return this.getResultValue( tableName, selectorParts[0], "value") ??
-                    ( this.getResultRow<JSON>( tableName, selectorParts[0] ) !== undefined ? "" : undefined );
+    
+        getRblSelectorValue( tabDef: TabDef | undefined, tableName: string, selectorParts: string[] ): string | undefined {
+            if ( tabDef != undefined ) {
+                if ( selectorParts.length === 1 ) 
+                {
+                    return this.getResultValue( tabDef, tableName, selectorParts[0], "value") ??
+                        ( this.getResultRow<JSON>( tabDef, tableName, selectorParts[0] ) !== undefined ? "" : undefined );
+                }
+                else if (selectorParts.length === 2) 
+                {
+                    return this.getResultValue( tabDef, selectorParts[0], selectorParts[1], "value") ??
+                        ( this.getResultRow<JSON>( tabDef, selectorParts[0], selectorParts[1] ) !== undefined ? "" : undefined );
+                }
+                else if (selectorParts.length === 3) 
+                {
+                    return this.getResultValue( tabDef, selectorParts[0], selectorParts[1], selectorParts[2]) ??
+                        ( this.getResultRow<JSON>( tabDef, selectorParts[0], selectorParts[1] ) !== undefined ? "" : undefined );
+                }
+                else if (selectorParts.length === 4) 
+                {
+                    return this.getResultValueByColumn( tabDef, selectorParts[0], selectorParts[1], selectorParts[2], selectorParts[3]) ??
+                        ( this.getResultRow<JSON>( tabDef, selectorParts[0], selectorParts[2], selectorParts[1] ) !== undefined ? "" : undefined );
+                }
+                else {
+                    this.application.trace( "Invalid selector length for [" + tabDef._fullName + "." + selectorParts.join(".") + "]", TraceVerbosity.Quiet );
+                }
             }
-            else if (selectorParts.length === 3) 
-            {
-                return this.getResultValue( selectorParts[0], selectorParts[1], selectorParts[2]) ??
-                    ( this.getResultRow<JSON>( selectorParts[0], selectorParts[1] ) !== undefined ? "" : undefined );
-            }
-            else if (selectorParts.length === 4) 
-            {
-                return this.getResultValueByColumn( selectorParts[0], selectorParts[1], selectorParts[2], selectorParts[3]) ??
-                    ( this.getResultRow<JSON>( selectorParts[0], selectorParts[2], selectorParts[1] ) !== undefined ? "" : undefined );
-            }
-            else {
-                this.application.trace( "Invalid selector length for [" + selectorParts.join(".") + "].", TraceVerbosity.Quiet );
-                return undefined;
-            }
+    
+            return undefined;
         }
         
         processRblValues(showInspector: boolean): void {
             const that: RBLeUtilities = this;
             const application = this.application;
-
+    
             //[rbl-value] inserts text value of referenced tabdef result into .html()
             $("[rbl-value]", application.element).not("rbl-template [rbl-value]").each(function () {
                 const el = $(this);
-
+    
                 if ( showInspector && !el.hasClass("kat-inspector-value") )
                 {
                     el.addClass("kat-inspector-value");
@@ -2306,54 +2391,57 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                     }
                     el.attr("title", inspectorTitle);
                 }
-
+    
                 const rblValueParts = el.attr('rbl-value')!.split('.'); // eslint-disable-line @typescript-eslint/no-non-null-assertion
-
-                const value = that.getRblSelectorValue( "ejs-output", rblValueParts );
-
+                const tabDef = that.getTabDef( el.attr('rbl-tab'), el.attr('rbl-ce') )
+                const value = that.getRblSelectorValue( tabDef, "ejs-output", rblValueParts );
+    
                 if ( value != undefined ) {
                     let target = $(this);
-
+    
                     if ( target.length === 1 ) {
                         target = application.ui.getAspNetCheckboxLabel( target ) ?? target;
                     }
-
+    
                     target.html( value );
                 }
                 else {
-                    application.trace("<b style='color: Red;'>RBL WARNING</b>: no data returned for rbl-value=" + el.attr('rbl-value'), TraceVerbosity.Detailed);
+                    application.trace("<b style='color: Red;'>RBL WARNING</b>: no data returned for tab=" + tabDef?._fullName + ", rbl-value=" + el.attr('rbl-value'), TraceVerbosity.Detailed);
                 }
             });
         }
-
+    
         processRblSources(showInspector: boolean): void {
             //[rbl-source] processing templates that use rbl results
             this.processRblSource(this.application.element, showInspector);
         }
-
+    
         processRblSource(root: JQuery<HTMLElement>, showInspector: boolean): void {
             const that: RBLeUtilities = this;
             const application = this.application;
-
+    
             $("[rbl-source], [rbl-source-table]", root)
                 .not("rbl-template [rbl-source], rbl-template [rbl-source-table]") // not in templates
                 .not("[rbl-source] [rbl-source], [rbl-source] [rbl-source-table]") // not nested in rbl-source item
                 .not("[rbl-source-table] [rbl-source], [rbl-source-table] [rbl-source-table]") // not nested in rbl-source-table item
                 .each(function () {
                     const el = $(this);
-
+    
                     // Only process element if *not* flagged as a rbl-configui only item or if it actually is a Configuration UI calculation
                     if ( el.attr("rbl-configui") === undefined || application.calculationInputs?.iConfigureUI === 1 ) {
-
+    
                         const elementData = el.data();
                         const tid = el.attr('rbl-tid');
                         const rblSourceTableParts = el.attr('rbl-source-table')?.split('.');
+                        const tabDef = that.getTabDef( el.attr('rbl-tab'), el.attr('rbl-ce') )
+                        const tabDefName = tabDef?._fullName ?? ( el.attr( "rbl-ce" ) ?? "default" ) + "." + ( el.attr( "rbl-tab" ) ?? "default" );
+    
                         const rblSourceParts = rblSourceTableParts === undefined
                             ? el.attr('rbl-source')?.split('.')
                             : rblSourceTableParts.length === 3
-                                ? [ that.getResultValue( rblSourceTableParts[ 0 ], rblSourceTableParts[ 1 ], rblSourceTableParts[ 2 ] ) ?? "unknown" ]
-                                : [ that.getResultValueByColumn( rblSourceTableParts[ 0 ], rblSourceTableParts[ 1 ], rblSourceTableParts[ 2 ], rblSourceTableParts[ 3 ] ) ?? "unknown" ];
-
+                                ? [ that.getResultValue( tabDef, rblSourceTableParts[ 0 ], rblSourceTableParts[ 1 ], rblSourceTableParts[ 2 ] ) ?? "unknown" ]
+                                : [ that.getResultValueByColumn( tabDef, rblSourceTableParts[ 0 ], rblSourceTableParts[ 1 ], rblSourceTableParts[ 2 ], rblSourceTableParts[ 3 ] ) ?? "unknown" ];
+    
                         // TOM (don't follow this code) - inline needed for first case?  What does it mean if rbl-tid is blank?  
                         // Need a better attribute name instead of magic 'empty' value, and what is: const templateData = KatApp.extend( {}, row, { _index0: i - 1, _index1: i++ } )
                         const inlineTemplate = tid === undefined ? $("[rbl-tid]", el ) : undefined;
@@ -2362,7 +2450,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                                 ? undefined
                                 : $( inlineTemplate.prop("outerHTML").format( elementData ) ).removeAttr("rbl-tid").prop("outerHTML")
                             : application.ui.getTemplate( tid, elementData )?.Content; 
-
+    
                         if ( showInspector && !el.hasClass("kat-inspector-source") ) {
                             el.addClass("kat-inspector-source");
                             const inspectorName = el.attr("rbl-source") != undefined ? "rbl-source" : "rbl-source-table";
@@ -2381,32 +2469,32 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                         }
             
                         if ( templateContent === undefined ) {
-                            application.trace("<b style='color: Red;'>RBL WARNING</b>: Template content could not be found: [" + ( tid ?? "Missing rbl-tid for " + ( el.attr('rbl-source') ?? el.attr('rbl-source-table') ) ) + "].", TraceVerbosity.Detailed);
+                            application.trace("<b style='color: Red;'>RBL WARNING</b>: Template content could not be found. Tab = " + tabDefName + " [" + ( tid ?? "Missing rbl-tid for " + ( el.attr('rbl-source') ?? el.attr('rbl-source-table') ) ) + "]", TraceVerbosity.Detailed);
                         }
                         else if ( rblSourceParts === undefined || rblSourceParts.length === 0) {
-                            application.trace("<b style='color: Red;'>RBL WARNING</b>: no rbl-source data", TraceVerbosity.Detailed);
+                            application.trace("<b style='color: Red;'>RBL WARNING</b>: no rbl-source data in tab " + tabDefName, TraceVerbosity.Detailed);
                         }
                         else if ( rblSourceParts.length === 1 || rblSourceParts.length === 3 ) {                        
                             //table in array format.  Clear element, apply template to all table rows and .append
-                            const table = that.getResultTable<JSON>( rblSourceParts[0] );
+                            const table = that.getResultTable<JSON>( tabDef, rblSourceParts[0] );
                             
                             if ( table !== undefined && table.length > 0 ) {
                                 
                                 el.children( ":not(.rbl-preserve, [rbl-tid='inline'])" ).remove();
                                 const prepend = el.attr('rbl-prepend') === "true";
-
+    
                                 let i = 1;
-
+    
                                 table.forEach( row => {
                                     //Support nested templates
                                     // $("[rbl-source]",$(formattedContent)).not("[rbl-source] [rbl-source]")
-
+    
                                     if ( rblSourceParts.length === 1 || row[ rblSourceParts[ 1 ] ] === rblSourceParts[ 2 ] ) {
                                         const templateData = KatApp.extend( {}, row, { _index0: i - 1, _index1: i++ } )
                                         const formattedContent = $(templateContent.format( templateData ));
-
+    
                                         that.processRblSource(formattedContent, showInspector);
-
+    
                                         if ( prepend ) {
                                             el.prepend( formattedContent );
                                         }
@@ -2414,51 +2502,51 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                                             el.append( formattedContent );
                                         }
                                     }
-
+    
                                 });
                             } else {
-                                application.trace("<b style='color: Red;'>RBL WARNING</b>: no data returned for rbl-source=" + el.attr('rbl-source'), TraceVerbosity.Detailed);
+                                application.trace("<b style='color: Red;'>RBL WARNING</b>: no data returned for tab=" + tabDefName + ", rbl-source=" + el.attr('rbl-source'), TraceVerbosity.Detailed);
                             }
-
+    
                         } else if ( rblSourceParts.length === 2 ) {
-
-                            const row = that.getResultRow( rblSourceParts[0], rblSourceParts[1] );
+    
+                            const row = that.getResultRow( tabDef, rblSourceParts[0], rblSourceParts[1] );
                             
                             if ( row !== undefined ) {
                                 el.html( templateContent.format( row ) );
                             }
                             else {
-                                application.trace("<b style='color: Red;'>RBL WARNING</b>: no data returned for rbl-source=" + el.attr('rbl-source'), TraceVerbosity.Detailed);
+                                application.trace("<b style='color: Red;'>RBL WARNING</b>: no data returned for tab=" + tabDefName + ", rbl-source=" + el.attr('rbl-source'), TraceVerbosity.Detailed);
                             }
-
+    
                         }
                         else if ( rblSourceParts.length === 3 ) {
                             
-                            const value = that.getResultValue( rblSourceParts[0], rblSourceParts[1], rblSourceParts[2]);
+                            const value = that.getResultValue( tabDef, rblSourceParts[0], rblSourceParts[1], rblSourceParts[2]);
                             
                             if ( value !== undefined ) {
                                 el.html( templateContent.format( { "value": value } ) );                                    
                             }
                             else {
-                                application.trace("<b style='color: Red;'>RBL WARNING</b>: no data returned for rbl-source=" + el.attr('rbl-source'), TraceVerbosity.Detailed);
+                                application.trace("<b style='color: Red;'>RBL WARNING</b>: no data returned for tab=" + tabDefName + ", rbl-source=" + el.attr('rbl-source'), TraceVerbosity.Detailed);
                             }
-
+    
                         }
                 
                     }
                 });
         }
-
-        processVisibilities(showInspector: boolean): void {
+    
+        processVisibilities( showInspector: boolean): void {
             const that: RBLeUtilities = this;
             const application = this.application;
-
+    
             // toggle visibility
             //[rbl-display] controls display = none|block(flex?).  
             //Should this be rbl-state ? i.e. other states visibility, disabled, delete
             $("[rbl-display]", application.element).not("rbl-template [rbl-display]").each(function () {
                 const el = $(this);
-
+    
                 if ( showInspector && !el.hasClass("kat-inspector-display") )
                 {
                     el.addClass("kat-inspector-display");
@@ -2472,23 +2560,25 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                     }
                     el.attr("title", inspectorTitle);
                 }
-
+    
                 //legacy table is ejs-visibility but might work a little differently
                 const rblDisplayParts = el.attr('rbl-display')!.split('.'); // eslint-disable-line @typescript-eslint/no-non-null-assertion
-
+                const tabDef = that.getTabDef( el.attr('rbl-tab'), el.attr('rbl-ce') )
+                const tabDefName = tabDef?._fullName ?? ( el.attr( "rbl-ce" ) ?? "default" ) + "." + ( el.attr( "rbl-tab" ) ?? "default" );
+    
                 //check to see if there's an "=" for a simple equality expression
                 const expressionParts = rblDisplayParts[ rblDisplayParts.length - 1].split('=');
                 rblDisplayParts[ rblDisplayParts.length - 1] = expressionParts[0];
                 
                 let visibilityValue = 
-                    that.getRblSelectorValue( "ejs-visibility", rblDisplayParts ) ??
-                    that.getRblSelectorValue( "ejs-output", rblDisplayParts ); // Should remove this and only check ejs-visibility as the 'default'
-
+                    that.getRblSelectorValue( tabDef, "ejs-visibility", rblDisplayParts ) ??
+                    that.getRblSelectorValue( tabDef, "ejs-output", rblDisplayParts ); // Should remove this and only check ejs-visibility as the 'default'
+    
                 if (visibilityValue != undefined) {
                     if ( expressionParts.length > 1) {
                         visibilityValue = ( visibilityValue == expressionParts[1] ) ? "1" : "0"; //allows table.row.value=10
                     }
-
+    
                     if (visibilityValue === "0" || visibilityValue.toLowerCase() === "false" || visibilityValue === "") {
                         el.hide();
                     }
@@ -2497,41 +2587,27 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                     }
                 }
                 else {
-                    application.trace("<b style='color: Red;'>RBL WARNING</b>: no data returned for rbl-display=" + el.attr('rbl-display'), TraceVerbosity.Detailed);
-                }
-            });
-
-            // Legacy, might not be needed
-            const visibilityRows = this.getResultTable<RBLeDefaultRow>( "ejs-visibility" );
-            visibilityRows.forEach( row => {
-                const selector = application.ui.getJQuerySelector( row["@id"] );
-                if ( selector !== undefined ) {
-                    if (row.value === "1") {
-                        $(selector, application.element).show();
-                    }
-                    else {
-                        $(selector, application.element).hide();
-                    }
+                    application.trace("<b style='color: Red;'>RBL WARNING</b>: no data returned for tab=" + tabDefName + ", rbl-display=" + el.attr('rbl-display'), TraceVerbosity.Detailed);
                 }
             });
         }
-
-        processRblDatas(): void {
+    
+        processRblDatas( tabDef: TabDef ): void {
             // Legacy, might not be needed
-            const dataRows = this.getResultTable<RBLeRowWithId>( "ejs-rbl-data" );
+            const dataRows = this.getResultTable<RBLeRowWithId>( tabDef, "ejs-rbl-data" );
             const application = this.application;
-
+    
             if ( dataRows.length > 0 ) {
                 const propertyNames = Object.keys(dataRows[ 0 ]).filter( k => !k.startsWith( "@" ) );
-
+    
                 dataRows.forEach( row => {
                     const selector = application.ui.getJQuerySelector( row["@id"] );
-
+    
                     if ( selector !== undefined ) {
                         const el = $(selector, application.element);
                         propertyNames.forEach( a => {
                             const value = row[ a ];
-
+    
                             if (value ?? "" !== "") {
                                 el.data("rbl-" + a, value);
                             }
@@ -2543,12 +2619,12 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                 });
             }
         }
-
-        processRBLSkips(): void {
+    
+        processRBLSkips( tabDef: TabDef ): void {
             // Legacy, might not be needed (what class do you want me to drop in there)
-            const skipRows = this.getResultTable<RBLeRowWithId>( "skip-RBLe" );
+            const skipRows = this.getResultTable<RBLeRowWithId>( tabDef, "skip-RBLe" );
             const application = this.application;
-
+    
             skipRows.forEach( row => {
                 const selector = application.ui.getJQuerySelector( row["key"] || row["@id"] );
                 if ( selector !== undefined ) {
@@ -2556,15 +2632,15 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                     
                     el.addClass("skipRBLe").off(".RBLe");
                     $(":input", el).off(".RBLe");
-
+    
                     application.ui.getNoUiSlider(selector.substring(1), application.element)?.off('set.RBLe');
                 }
             });
         }
-
+    
         setDefaultValue( id: string, value: string | undefined ): void {
             const selector = this.application.ui.getJQuerySelector( id );
-
+    
             if ( selector !== undefined ) {
                 value = value ?? "";
                 $(selector + "DisplayOnly", this.application.element).html(value);
@@ -2575,7 +2651,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                 const aspCheckbox = this.application.ui.getAspNetCheckboxInput(input);
                 const radioButtons = isRadioList ? $("input", listControl) : $("input[type='radio']", input);
                 const noUiSlider = this.application.ui.getNoUiSlider(id, this.application.element);
-
+    
                 if ( noUiSlider !== undefined ) {
                     const sliderContainer = this.application.ui.getNoUiSliderContainer(id, this.application.element);
                     if ( sliderContainer !== undefined )
@@ -2592,7 +2668,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                 else if ( isCheckboxList ) {
                     // turn all off first
                     $("input", listControl).prop("checked", false);
-
+    
                     const values = value.split(",");
                     for (let k = 0; k < values.length; k++) {
                         const checkKey = values[k].trim();
@@ -2610,7 +2686,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                 }
                 else if ( input.length > 0 ) {
                     input.val( input[ 0 ].hasAttribute( "multiple" ) ? value.split("^") : value );
-
+    
                     // In case it is bootstrap-select
                     const isSelectPicker = input.attr("data-kat-bootstrap-select-initialized") !== undefined;
                     if (isSelectPicker) {
@@ -2620,22 +2696,22 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
             }
         }
     
-        processDefaults(): void {
-            const defaultRows = this.getResultTable<RBLeDefaultRow>( "ejs-defaults" );
-
+        processDefaults( tabDef: TabDef ): void {
+            const defaultRows = this.getResultTable<RBLeDefaultRow>( tabDef, "ejs-defaults" );
+    
             defaultRows.forEach( row => {
                 const id = row["@id"];
                 this.setDefaultValue(id, row.value);
             });
         }
-
-        processDisabled(): void {
-            const disabledRows = this.getResultTable<RBLeDefaultRow>( "ejs-disabled" );
+    
+        processDisabled( tabDef: TabDef ): void {
+            const disabledRows = this.getResultTable<RBLeDefaultRow>( tabDef, "ejs-disabled" );
             const application = this.application;
-
+    
             disabledRows.forEach( row => {
                 const selector = this.application.ui.getJQuerySelector( row["@id"] );
-
+    
                 if ( selector !== undefined ) {
                     // @id - regular input
                     // @id input - checkbox and list controls
@@ -2643,7 +2719,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                     const value = row.value ?? "";
                     const input = $(selector + ", " + selector + " input", application.element);
                     const slider = this.application.ui.getNoUiSliderContainer( row["@id"], application.element );
-
+    
                     if (slider !== undefined) {
                         if (value === "1") {
                             slider.attr("disabled", "true").removeAttr("kat-disabled");
@@ -2667,7 +2743,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                 }
             });
         }
-
+    
         private createResultTableElement(value: string, elementName: string, cssClass?: string): string {
             return "<{name}{class}>{value}</{nameClose}>".format(
                 {
@@ -2679,7 +2755,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                 }
             );
         }
-
+    
         private getResultTableValue( row: ResultTableRow, columnName: string ): string {
             // For the first row of a table, if there was a width row in CE, then each 'column' has text and @width attribute,
             // so row[columnName] is no longer a string but a { #text: someText, @width: someWidth }.  This happens during process
@@ -2688,16 +2764,16 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                 ? row[columnName]["#text"] ?? ""
                 : row[columnName] ?? ""
         }
-
+    
         private getCellMarkup(row: ResultTableRow, columnName: string, element: string, columnClass: string, colSpan?: number): string {
             const value = this.getResultTableValue( row, columnName );
-
+    
             if (colSpan !== undefined) {
                 element += " colspan=\"" + colSpan + "\"";
             }
             return this.createResultTableElement(value, element, columnClass);
         };
-
+    
         // If only one cell with value and it is header, span entire row
         private getHeaderSpanCellName(row: ResultTableRow): string | undefined {
             const keys = Object.keys(row);
@@ -2705,38 +2781,42 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                 .filter(k => k.startsWith("text") || k.startsWith("value"))
                 .map(k => ({ Name: k, Value: this.getResultTableValue(row, k) }))
                 .filter(c => c.Value !== "");
-
+    
             return values.length === 1 ? values[0].Name : undefined;
         };
-
+    
         processTables(): void {
             const application = this.application;
             const view = application.element;
             const that: RBLeUtilities = this;
-
+    
             $("[rbl-tid='result-table']", view).not("rbl-template [rbl-tid='result-table']").each(function ( i, r ) {
                 const tableName = r.getAttribute( "rbl-tablename" ) ?? r.getAttribute( "rbl-source" );
                 const templateCss = r.getAttribute( "data-css" );
-
+    
                 if ( tableName !== null ) {
-                    const configRow = application.getResultTable<ContentsRow>( "contents" ).filter( r => r.section === "1" && KatApp.stringCompare( r.type, "table", true ) === 0 && r.item === tableName ).shift();
+                    const tabDef = that.getTabDef( r.getAttribute('rbl-tab'), r.getAttribute('rbl-ce') )
+                    const contentRows = application.rble.getResultTable<ContentsRow>( tabDef, "contents" );
+                    const configRow = 
+                        contentRows.find( row => row.section === "1" && KatApp.stringCompare( row.type, "table", true ) === 0 && row.item === tableName );
+    
                     const configCss = configRow?.class;
                     let tableCss = 
                         configCss != undefined ? "rbl " + tableName + " " + configCss :
                         templateCss != undefined ? "rbl " + tableName + " " + templateCss :
                         "table table-striped table-bordered table-condensed rbl " + tableName;
                         
-                    const tableRows = application.getResultTable<ResultTableRow>( tableName );
-
+                    const tableRows = application.rble.getResultTable<ResultTableRow>( tabDef, tableName );
+    
                     if ( tableRows.length === 0 ) {
                         return;
                     }
-
+    
                     const tableConfigRow = tableRows[ 0 ];
                     const includeAllColumns = false; // This is a param in RBLe.js
                     const hasResponsiveTable = tableCss.indexOf("table-responsive") > -1;
                     tableCss = tableCss.replace("table-responsive", "");
-
+    
                     const tableColumns = 
                         Object.keys(tableConfigRow)
                             .filter(k => k.startsWith("text") || k.startsWith("value") || (includeAllColumns && k !== "@name"))
@@ -2766,14 +2846,14 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                     tableColumns.forEach( c => {
                         columnConfiguration[ c.name ] = c;
                     });
-
+    
                     const hasBootstrapTableWidths = tableColumns.filter(c => c.xsColumns !== undefined || c.smColumns !== undefined || c.mdColumns !== undefined || c.lgColumns !== undefined).length > 0;
-
+    
                     let colGroupDef: string | undefined = undefined; // This was an optional param in RBLe
-
+    
                     if ( colGroupDef === undefined ) {
                         colGroupDef = "";
-
+    
                         tableColumns.forEach(c => {
                             const isFixedWidth = !hasBootstrapTableWidths || hasResponsiveTable;
     
@@ -2796,26 +2876,26 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                             );
                         });
                     }
-
+    
                     const colGroup = that.createResultTableElement(colGroupDef, "colgroup");
-
+    
                     let headerHtml = "";
                     let bodyHtml = "";
-
+    
                     let needBootstrapWidthsOnEveryRow = false;
                     // const includeBootstrapColumnWidths = hasBootstrapTableWidths && !hasResponsiveTable;
-
+    
                     tableRows.forEach( row => {
                         const code = row["code"] ?? "";
                         const id = row["@id"] ?? "";
                         const isHeaderRow = 
                             (code === "h" || code.startsWith("header") || code.startsWith("hdr") ) ||
                             (id === "h" || id.startsWith("header") || id.startsWith("hdr"));
-
+    
                         const element = isHeaderRow ? "th" : "td";
                         const rowClass = row["@class"] ?? row["class"];
                         const span = that.getResultTableValue(row, "span");
-
+    
                         let rowHtml = "";
                         let headerSpanCellName: string | undefined = "";
     
@@ -2836,7 +2916,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                         else if (span !== "") {
                             // Need bootstraps on every row if already set or this is first row
                             needBootstrapWidthsOnEveryRow = needBootstrapWidthsOnEveryRow || i === 0;
-
+    
                             const parts = span.split(":");
                             
                             for (let p = 0; p < parts.length; p++) {
@@ -2846,7 +2926,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                                     const colSpanName = parts[p];
                                     const spanConfig = columnConfiguration[colSpanName];
                                     const textCol = spanConfig.isTextColumn;
-
+    
                                     const sClass =
                                         "{valueClass} {columnClass} span-{table}-{column}".format(
                                             {
@@ -2856,12 +2936,12 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                                                 columnClass: spanConfig.cssClass ?? ""
                                             }
                                         );
-
+    
                                     rowHtml += that.getCellMarkup(row, colSpanName, element, sClass, /* includeBootstrapColumnWidths, */ colSpan);
                                 }
                             }
                         }
-    					else {
+                        else {
                             tableColumns.forEach(c => {
                                 const cClass =
                                     "{valueClass} {columnClass} {table}-{column}".format(
@@ -2872,11 +2952,11 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                                             columnClass: c.cssClass ?? ""
                                         }
                                     );
-
+    
                                 rowHtml += that.getCellMarkup(row, c.name, element, cClass /*, includeBootstrapColumnWidths && (needBootstrapWidthsOnEveryRow || i === 0) */ );
                             });
                         }    
-
+    
                         if (isHeaderRow && bodyHtml === "") {
                             headerHtml += that.createResultTableElement(rowHtml, "tr", rowClass);
                         }
@@ -2898,39 +2978,39 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                     const html = hasResponsiveTable
                         ? that.createResultTableElement(tableHtml, "div", "table-responsive")
                         : tableHtml;
-
+    
                     $(r).empty().append($(html));
                 }
             });
         }
-
+    
         processCharts(): void {
             const view = this.application.element;
-            const highchartsBuilder: HighchartsBuilder = $.fn.KatApp.highchartsBuilderFactory( this.application );
-
+            const highchartsBuilder: HighchartsBuilder = new HighchartsBuilder( this.application );
+    
             if ( typeof Highcharts !== "object" && $('[rbl-tid="chart-highcharts"], [rbl-template-type="katapp-highcharts"]', view).length > 0 ) {
-                this.application.trace("Highcharts javascript is not present.", TraceVerbosity.None);
+                this.application.trace("Highcharts javascript is not present", TraceVerbosity.None);
                 return;
             }            
-
+    
             $('[rbl-tid="chart-highcharts"], [rbl-template-type="katapp-highcharts"]', view).each(function () {
                 highchartsBuilder.buildChart( $(this) );
             });
         }
-
+    
         private addValidationItem(summary: JQuery<HTMLElement>, input: JQuery<HTMLElement> | undefined, message: string): void {
             let ul = $("ul", summary);
             if (ul.length === 0) {
                 summary.append("<ul></ul>");
                 ul = $("ul", summary);
             }
-
+    
             // Backward compat to remove validation with same id as input, but have changed it to 
             // id + Error so that $(id) doesn't get confused picking the li item.
             const inputName = input !== undefined ? this.application.ui.getInputName(input) : "undefined";
             $("ul li." + inputName + ", ul li." + inputName + "Error", summary).remove();
             ul.append("<li class=\"rble " + inputName + "Error\">" + message + "</li>");
-
+    
             if ( input !== undefined ) {
                 const isWarning = summary.hasClass("ModelerWarnings");
                 const validationClass = isWarning ? "warning" : "error";
@@ -2946,107 +3026,109 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                     .appendTo(errorSpan);
             }
         };
-
+    
         processValidationRows(summary: JQuery<HTMLElement>, errors: ValidationRow[]): void {
-			// Remove all RBLe client side created errors since they would be added back
-			$("ul li.rble", summary).remove();
-
-			if (errors.length > 0) {
+            if (errors.length > 0) {
                 errors.forEach( r => {
                     const selector = this.application.ui.getJQuerySelector( r["@id"] );
                     const input = selector !== undefined ? $(selector, this.application.element) : undefined;
-					this.addValidationItem(summary, input, r.text);
+                    this.addValidationItem(summary, input, r.text);
                 });
-
-				if ($("ul li", summary).length === 0) {
-					summary.hide();
-				}
-				else {
-                    summary.show();
-					$("div:first", summary).show();
-				}
-			}
-			else if ($("ul li:not(.rble)", summary).length === 0) {
-                // Some server side calcs add error messages..if only errors are those from client calcs, I can remove them here
-                summary.hide();
-                $("div:first", summary).hide();
-			}
+            }
         }
-
-        processValidations(): void {
-            const view = this.application.element;
-            const warnings = this.getResultTable<ValidationRow>( "warnings" );
-            const errors = this.getResultTable<ValidationRow>( "errors" );
+    
+        initializeValidationSummaries(): void {
+            const view = this.application.element;            
             const errorSummary = $("#" + this.application.id + "_ModelerValidationTable", view);
             let warningSummary = $("#" + this.application.id + "_ModelerWarnings", view);
-
+    
             // TODO: See Bootstrap.Validation.js - need to process server side validation errors to highlight the input correctly
-
-            if (warnings.length > 0 && warningSummary.length === 0 && errorSummary.length > 0 ) {
-                    // Warning display doesn't exist yet, so add it right before the error display...shouldn't have errors and warnings at same time currently...
-                    warningSummary = $("<div class=\"ModelerWarnings\"><div class=\"alert alert-warning\" role=\"alert\"><p><span class=\"glyphicon glyphicon glyphicon-warning-sign\" aria-hidden=\"true\"></span> <span class=\"sr-only\">Warnings</span> Please review the following warnings: </p></div></div>");
-                    $(warningSummary).insertBefore(errorSummary);
+    
+            if (warningSummary.length === 0 && errorSummary.length > 0 ) {
+                // Warning display doesn't exist yet, so add it right before the error display...shouldn't have errors and warnings at same time currently...
+                warningSummary = $("<div id='" + this.application.id + "_ModelerWarnings' style='display: none;' class='ModelerWarnings'><div class='alert alert-warning' role='alert'><p><span class='glyphicon glyphicon glyphicon-warning-sign' aria-hidden='true'></span> <span class='sr-only'>Warnings</span> Please review the following warnings: </p></div></div>");
+                $(warningSummary).insertBefore(errorSummary);
             }            
-
+    
             $('.validator-container.error:not(.server)', view).removeClass('error');
             $('.validator-container.warning:not(.server)', view).removeClass('warning');
-
-            this.processValidationRows(warningSummary, warnings);
-            this.processValidationRows(errorSummary, errors);
-
+    
+            [ warningSummary, errorSummary ].forEach( summary => {
+                // Remove all RBLe client side created errors since they would be added back
+                $("ul li.rble", summary).remove();
+            });
+        }
+        finalizeValidationSummaries(): void {
+            const view = this.application.element;            
+            const errorSummary = $("#" + this.application.id + "_ModelerValidationTable", view);
+            const warningSummary = $("#" + this.application.id + "_ModelerWarnings", view);
+    
+            [ warningSummary, errorSummary ].forEach( summary => {
+                // Some server side calcs add error messages..if only errors are those from client calcs, 
+                // I can remove them here
+                if ($("ul li:not(.rble)", summary).length === 0) {
+                    summary.hide();
+                    $("div:first", summary).hide();
+                }
+                else {
+                    summary.show();
+                    $("div:first", summary).show();
+                }
+            });
+    
             if ( this.application.calculationInputs?.iConfigureUI === 1 ) {
             /*
                 // Scroll target will probably need some work
-				if ($(".ModelerWarnings.alert ul li", view).length > 0 && warnings.length > 0) {
-					$('html, body').animate({
-						scrollTop: $(".ModelerWarnings.alert", view).offset().top - 30
-					}, 1000);
-				}
-				else if ($("#" + this.application.id + "_ModelerValidationTable.alert ul li", view).length > 0 && errors.length > 0) {
-					$('html, body').animate({
-						scrollTop: $("#" + this.application.id + "_ModelerValidationTable.alert", view).offset().top - 30
-					}, 1000);
-				}
+                if ($(".ModelerWarnings.alert ul li", view).length > 0 && warnings.length > 0) {
+                    $('html, body').animate({
+                        scrollTop: $(".ModelerWarnings.alert", view).offset().top - 30
+                    }, 1000);
+                }
+                else if ($("#" + this.application.id + "_ModelerValidationTable.alert ul li", view).length > 0 && errors.length > 0) {
+                    $('html, body').animate({
+                        scrollTop: $("#" + this.application.id + "_ModelerValidationTable.alert", view).offset().top - 30
+                    }, 1000);
+                }
             */
             }
         }
-
-        processSliders(): void {
-            const sliderRows = this.getResultTable<SliderConfigurationRow>( "ejs-sliders" );
+    
+        processValidations( tabDef: TabDef ): void {
+            const view = this.application.element;            
+            const errorSummary = $("#" + this.application.id + "_ModelerValidationTable", view);
+            const warningSummary = $("#" + this.application.id + "_ModelerWarnings", view);
+    
+            const warnings = this.getResultTable<ValidationRow>( tabDef, "warnings" );
+            const errors = this.getResultTable<ValidationRow>( tabDef, "errors" );
+            this.processValidationRows(warningSummary, warnings);
+            this.processValidationRows(errorSummary, errors);
+        }
+    
+        processSliders( tabDef: TabDef ): void {
+            const sliderRows = this.getResultTable<SliderConfigurationRow>( tabDef, "ejs-sliders" );
             const application = this.application;
             
-            if ( application.calculationInputs?.iConfigureUI === 1 ) {
-                const configIds: ( string | null )[] = sliderRows.map( r => r["@id"]);
-                $('[rbl-tid="input-slider"],[rbl-template-type="katapp-slider"]', application.element)
-                    .filter( ( i, r ) => {
-                        return configIds.indexOf( r.getAttribute( "data-inputname" ) ) < 0;
-                    })
-                    .each( ( i, r ) => {
-                        application.trace("<b style='color: Red;'>RBL WARNING</b>: No slider configuration can be found for " + r.getAttribute( "data-inputname" ) + ".", TraceVerbosity.Detailed);
-                    });
-            }
-
             if ( typeof noUiSlider !== "object" && sliderRows.length > 0 ) {
-                application.trace("noUiSlider javascript is not present.", TraceVerbosity.None);
+                application.trace("noUiSlider javascript is not present for " + tabDef._fullName, TraceVerbosity.None);
                 return;
             }
-
+    
             sliderRows.forEach( config => {
                 const id = config["@id"];
-
+    
                 const sliderJQuery = $(".slider-" + id, application.element);
-
+    
                 if ( sliderJQuery.length !== 1 ) {
-                    application.trace("<b style='color: Red;'>RBL WARNING</b>: No slider div can be found for " + id + ".", TraceVerbosity.Detailed);
+                    application.trace("<b style='color: Red;'>RBL WARNING</b>: No slider div can be found for " + id, TraceVerbosity.Detailed);
                 }
                 else {
                     const minValue = Number( config.min );
                     const maxValue = Number( config.max );
         
                     const input = $("." + id, application.element);
-        
+    
                     const defaultConfigValue =
-                        this.getResultValue("ejs-defaults", id, "value") || // what is in ejs-defaults
+                        this.getResultValue( tabDef, "ejs-defaults", id, "value") || // what is in ejs-defaults
                         config.default || // what was in ejs-slider/default
                         input.val() || // what was put in the text box
                         config.min; //could/should use this
@@ -3117,7 +3199,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
         
                         // Hook up this event so that the label associated with the slider updates *whenever* there is a change.
                         // https://refreshless.com/nouislider/events-callbacks/
-
+    
                         instance.on('update.RBLe', function ( this: noUiSlider.noUiSlider ) {
                             const value = Number( this.get() as string );
         
@@ -3164,20 +3246,20 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                 }
             });
         }
-
-        processListControls(): void {
+    
+        processListControls( tabDef: TabDef ): void {
             const application = this.application;
             const ui = this.application.ui;
-            const configRows = this.getResultTable<ListControlRow>( "ejs-listcontrol" );
-
+            const configRows = this.getResultTable<ListControlRow>( tabDef, "ejs-listcontrol" );
+    
             configRows.forEach( row => {
-				const tableName = row.table;
+                const tableName = row.table;
                 const controlName = row["@id"];
                 
-				const dropdown = $("." + controlName + ":not(div)", application.element);
+                const dropdown = $("." + controlName + ":not(div)", application.element);
                 const listControl = $("div." + controlName + "[data-itemtype]", application.element);
-                const listRows = this.getResultTable<ListRow>( tableName );
-
+                const listRows = this.getResultTable<ListRow>( tabDef, tableName );
+    
                 if ( listControl.length === 1 ) {
                     ui.processListItems(
                         listControl,
@@ -3194,86 +3276,124 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                 }
             });
         }
-
+    
         processResults( calculationOptions: KatAppOptions ): boolean {
             const application = this.application;
             const results = application.results;
-
-			// TOM (what does this comment mean): element content can be preserved with a class flag
-			// TOM (what does this comment mean): generated content append or prepend (only applicably when preserved content)
-
+    
+            // TOM (what does this comment mean): element content can be preserved with a class flag
+            // TOM (what does this comment mean): generated content append or prepend (only applicably when preserved content)
+    
             if ( results !== undefined ) {
                 const showInspector = application.calculationInputs?.iConfigureUI === 1 && ( calculationOptions.debug?.showInspector ?? false );
-
-                const calcEngineName = results["@calcEngine"];
-                const version = results["@version"];
-                application.trace( "Processing results for " + calcEngineName + "(" + version + ").", TraceVerbosity.Normal );
-
-                // Need two passes to support "ejs-markup" because the markup might render something that is then
-                // processed by subsequent flow controls (ouput, sources, or values)
-                const markUpRows = this.getResultTable<HtmlContentRow>( "ejs-markup" )
-                markUpRows.forEach( r => { this.createHtmlFromResultRow( r, false ); });
-                
-                const outputRows = this.getResultTable<HtmlContentRow>( "ejs-output" )
-                outputRows.forEach( r => { this.createHtmlFromResultRow( r, true ); });
-
+                this.initializeValidationSummaries();
+    
+                results.forEach(tabDef => {
+                    application.trace( "Processing results for " + tabDef._fullName + "(" + tabDef["@version"] + ")", TraceVerbosity.Normal );
+    
+                    // Need two passes to support "ejs-markup" because the markup might render something that 
+                    // is then processed by subsequent flow controls (ouput, sources, or values)
+                    const markUpRows = this.getResultTable<HtmlContentRow>( tabDef, "ejs-markup" )
+                    markUpRows.forEach( r => { this.createHtmlFromResultRow( r, false ); });
+                    
+                    const outputRows = this.getResultTable<HtmlContentRow>( tabDef, "ejs-output" )
+                    outputRows.forEach( r => { this.createHtmlFromResultRow( r, true ); });
+    
+                    this.processRblDatas( tabDef );
+                });
+    
+                // Run all *pull* logic outside of tabdef loop, this has to be after all markup
+                // rows have been processed and all ejs-output in case they injected 'rbl-' items
+                // in markup that has to be processed
+                application.trace( "Processing all results 'pull' logic", TraceVerbosity.Normal );
                 this.processRblSources( showInspector );
                 this.processRblValues( showInspector );
-
-                // apply dynamic classes after all html updates 
-                // (TOM: (this was your comment...could this be done with 'non-template' build above)
-                markUpRows.forEach( r => {
-                    if ( r.selector !== undefined ) {
-                        if ( r.addclass !== undefined && r.addclass.length > 0 ) {
-                            const el = $(r.selector, application.element);
-                            el.addClass(r.addclass);
-
-                            if ( r.addclass.indexOf("skipRBLe") > -1 || r.addclass.indexOf("rbl-nocalc") > -1 ) {
-                                el.off(".RBLe");
-                                $(":input", el).off(".RBLe");
-                                this.application.ui.getNoUiSlider(r.selector.substring(1), application.element)?.off('set.RBLe');
-                            }
-                        }
-    
-                        if ( r.removeclass !== undefined && r.removeclass.length > 0 ) {
-                            $(r.selector, application.element).removeClass(r.removeclass);
-                        }
-                    }
-                });
-
-                this.processRblDatas();
                 this.processTables();
                 this.processCharts();
-
+    
                 // Need to re-run processUI here in case any 'templates/inputs' were injected from 
                 // results and need their initial data-* attributes/events processed.
                 this.application.templateBuilder.processUI();
-
+    
                 // These all need to be after processUI so if any inputs are built
                 // from results, they are done by the time these run (i.e. after processUI)
                 this.processVisibilities( showInspector );
-                this.processSliders()
-                this.processRBLSkips();
-                this.processListControls();
-                this.processDefaults();
-                this.processDisabled();
-                this.processValidations();
-
-                application.trace( "Finished processing results for " + calcEngineName + "(" + version + ").", TraceVerbosity.Normal );
-
+    
+                let sliderConfigIds: ( string | null )[] = [];
+    
+                // Now loop again to run rest of 'push' items from each tab.  This has to
+                // be after all html updates from prior loop and from any possible template 
+                // processing thta happens in rbl-source processing
+                results.forEach(tabDef => {
+                    const markUpRows = this.getResultTable<HtmlContentRow>( tabDef, "ejs-markup" )
+                    // apply dynamic classes after all html updates 
+                    markUpRows.forEach( r => {
+                        if ( r.selector !== undefined ) {
+                            if ( r.addclass !== undefined && r.addclass.length > 0 ) {
+                                const el = $(r.selector, application.element);
+                                el.addClass(r.addclass);
+    
+                                if ( r.addclass.indexOf("skipRBLe") > -1 || r.addclass.indexOf("rbl-nocalc") > -1 ) {
+                                    el.off(".RBLe");
+                                    $(":input", el).off(".RBLe");
+                                    this.application.ui.getNoUiSlider(r.selector.substring(1), application.element)?.off('set.RBLe');
+                                }
+                            }
+        
+                            if ( r.removeclass !== undefined && r.removeclass.length > 0 ) {
+                                $(r.selector, application.element).removeClass(r.removeclass);
+                            }
+                        }
+                    });
+    
+                    // Legacy, might not be needed
+                    const visibilityRows = this.getResultTable<RBLeDefaultRow>( tabDef, "ejs-visibility" );
+                    visibilityRows.forEach( row => {
+                        const selector = application.ui.getJQuerySelector( row["@id"] );
+                        if ( selector !== undefined ) {
+                            if (row.value === "1") {
+                                $(selector, application.element).show();
+                            }
+                            else {
+                                $(selector, application.element).hide();
+                            }
+                        }
+                    });
+    
+                    if ( application.calculationInputs?.iConfigureUI === 1 ) {
+                        sliderConfigIds = sliderConfigIds.concat( this.getResultTable<SliderConfigurationRow>( tabDef, "ejs-sliders" ).map( r => r["@id"]) );
+                    }                
+        
+                    this.processSliders( tabDef )
+                    this.processRBLSkips( tabDef );
+                    this.processListControls( tabDef );
+                    this.processDefaults( tabDef );
+                    this.processDisabled( tabDef );
+                    this.processValidations( tabDef );
+                    application.trace( "Finished processing results for " + tabDef._fullName, TraceVerbosity.Normal );
+                });
+    
+                if ( application.calculationInputs?.iConfigureUI === 1 ) {
+                    $('[rbl-tid="input-slider"],[rbl-template-type="katapp-slider"]', application.element)
+                        .filter( ( i, r ) => {
+                            return sliderConfigIds.indexOf( r.getAttribute( "data-inputname" ) ) < 0;
+                        })
+                        .each( ( i, r ) => {
+                            application.trace("<b style='color: Red;'>RBL WARNING</b>: No slider configuration can be found for " + r.getAttribute( "data-inputname" ) + ".", TraceVerbosity.Detailed);
+                        });
+                }                
+    
+                this.finalizeValidationSummaries();
+    
                 return true;
             }
             else {
-                application.trace( "Results not available.", TraceVerbosity.Quiet );
+                application.trace( "Results not available", TraceVerbosity.Quiet );
                 return false;
             }
         }
     }
-    $.fn.KatApp.rble = function( application: KatAppPlugIn ): RBLeUtilities {
-        return new RBLeUtilities( application );
-    };
-    class HighchartsBuilder
-    {
+    class HighchartsBuilder {
         highchartsOptions?: HighChartsOptionRow[];
         highchartsOverrides?: HighChartsOverrideRow[];
         highchartsData?: HighChartsDataRow[];
@@ -3306,8 +3426,8 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
 
         getHighchartsConfigValue( configurationName: string ): string | undefined {            
             // Look in override table first, then fall back to 'regular' options table
-            return this.highchartsOverrides?.filter(r => this.stringCompare(r.key, configurationName, true) === 0).shift()?.value ??
-                   this.highchartsOptions?.filter(r => this.stringCompare(r.key, configurationName, true) === 0).shift()?.value;
+            return this.highchartsOverrides?.find(r => this.stringCompare(r.key, configurationName, true) === 0)?.value ??
+                   this.highchartsOptions?.find(r => this.stringCompare(r.key, configurationName, true) === 0)?.value;
         }
 
         // Associated code with this variable might belong in template html/js, but putting here for now.
@@ -3317,7 +3437,10 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
             if ( this.firstHighcharts ){
                 this.firstHighcharts = false;
 
-                const culture = this.application.getResultValue("variable","culture","value") ?? "en-";
+                // Culture *has* to be returned on first/driver CE
+                const tabDef = this.application.rble.getTabDef()
+                const culture = this.application.rble.getResultValue( tabDef, "variable","culture","value") ?? "en-";
+
                 if ( !culture.startsWith( "en-" ) ) {
                     Highcharts.setOptions(
                         {
@@ -3354,7 +3477,6 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
 				.replace(/&quot;/g, "\"")
 				.replace(/&amp;nbsp;/g, "&nbsp;");
 		}
-
 
 		getHighChartsOptionValue(value: string): string | boolean | number | (()=> void) | undefined {
 			const d = Number(value);
@@ -3514,12 +3636,12 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
             }
 
             // Get the 'format' configuration row to look for specified format, otherwise return c0 as default
-            const configFormat = chartConfigurationRows.filter(c => c.category === "config-format").shift();
+            const configFormat = chartConfigurationRows.find(c => c.category === "config-format");
 
             const seriesFormats = seriesColumns
-                        // Ensure the series/column is visible
-                        .filter( seriesName => chartConfigurationRows.filter(c => c.category === "config-visible" && c[seriesName] === "0").length === 0 )
-                        .map( seriesName => configFormat?.[seriesName] as string || "c0" );
+                // Ensure the series/column is visible
+                .filter( seriesName => chartConfigurationRows.filter(c => c.category === "config-visible" && c[seriesName] === "0").length === 0 )
+                .map( seriesName => configFormat?.[seriesName] as string || "c0" );
 
             return {
                 formatter: function ( this: HighchartsTooltipFormatterContextObject ) {
@@ -3638,11 +3760,12 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
             if ( this.highChartsDataName !== undefined && this.highChartsOptionsName !== undefined ) {
                 this.ensureHighchartsCulture();
                 const application = this.application;
-                this.highchartsOverrides = application.getResultTable<HighChartsOverrideRow>("HighCharts-Overrides").filter( r => this.stringCompare(r["@id"], this.highChartsDataName, true) === 0);
-                this.highchartsOptions = application.getResultTable<HighChartsOptionRow>("HighCharts-" + this.highChartsOptionsName + "-Options");
-                this.highchartsData = application.getResultTable<HighChartsDataRow>("HighCharts-" + this.highChartsDataName + "-Data");
+                const tabDef = application.rble.getTabDef( el.attr('rbl-tab'), el.attr('rbl-ce') )
+                this.highchartsOverrides = application.rble.getResultTable<HighChartsOverrideRow>( tabDef,"HighCharts-Overrides").filter( r => this.stringCompare(r["@id"], this.highChartsDataName, true) === 0);
+                this.highchartsOptions = application.rble.getResultTable<HighChartsOptionRow>( tabDef, "HighCharts-" + this.highChartsOptionsName + "-Options");
+                this.highchartsData = application.rble.getResultTable<HighChartsDataRow>( tabDef, "HighCharts-" + this.highChartsDataName + "-Data");
 
-                const firstDataRow = this.highchartsData.filter(r => !(r.category || "").startsWith("config-")).shift();
+                const firstDataRow = this.highchartsData.find(r => !(r.category || "").startsWith("config-"));
 
                 if ( this.highchartsData.length > 0 ) {
                     const container = $(".chart", el);
@@ -3669,7 +3792,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                     try {
                         container.highcharts(chartOptions);
                     } catch (error) {
-                        this.application.trace("Error during highchart creation.", TraceVerbosity.None);
+                        this.application.trace("Error during highchart creation", TraceVerbosity.None);
                         throw error;                        
                     }
                 }
@@ -3678,9 +3801,6 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
             return el;
         }
     }
-    $.fn.KatApp.highchartsBuilderFactory = function( application: KatAppPlugIn ): HighchartsBuilder {
-        return new HighchartsBuilder( application );
-    };
 
     class StandardTemplateBuilder implements StandardTemplateBuilderInterface
     {
@@ -4303,7 +4423,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
             const that = this;
 
             if ( !selectPickerAvailable && dropdowns.length > 0 ) {
-                this.application.trace("bootstrap-select javascript is not present.", TraceVerbosity.None);
+                this.application.trace("bootstrap-select javascript is not present", TraceVerbosity.None);
             }
 
             dropdowns.not('[data-katapp-initialized="true"]').each( function() {
@@ -4393,16 +4513,6 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                     }
                 }
     
-                // May need to build slider anyway if enough information is provided in the data-* values?
-    
-                /* Don't think I need this since I push out info from CE
-                const config = this.application.getResultRow<SliderConfigurationRow>("ejs-sliders", id);
-    
-                if (config == undefined) return el;
-    
-                this.processSliderConfiguration( el, id, config );
-                */
-
                 el.attr("data-katapp-initialized", "true");
             });
         }
@@ -4422,7 +4532,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
             const isBootstrap3 = this.isBootstrap3;
 
             if ( typeof $.fn.popover !== "function" && $(selector, view).length > 0 ) {
-                this.application.trace("Bootstrap popover/tooltip javascript is not present.", TraceVerbosity.None);
+                this.application.trace("Bootstrap popover/tooltip javascript is not present", TraceVerbosity.None);
                 return;
             }
 
@@ -4592,7 +4702,6 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
 
         private processInputs( container?: JQuery<HTMLElement> ): void {
             const view = container ?? this.application.element;
-
             this.buildDropdowns( view );
             this.buildTextBoxes( view );
             this.buildFileUploads( view );
@@ -4601,14 +4710,12 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
             this.buildSliders( view );
         }
     }
-    $.fn.KatApp.standardTemplateBuilderFactory = function( application: KatAppPlugIn ): StandardTemplateBuilder/*Interface*/ {
-        return new StandardTemplateBuilder( application );
-    };
 
     $.fn.KatApp.reset = function(): void {
         KatApp[ "getResources" ] = $.fn.KatApp.getResources;
         KatApp[ "ping" ] = $.fn.KatApp.ping;
-    
+        KatApp[ "getResource" ] = $.fn.KatApp.getResource;
+
         // This is deleted each time the 'real' Provider js runs, so rebuild it
         $.fn.KatApp.plugInShims = [];
         $.fn.KatApp.applications = [];
@@ -4678,32 +4785,192 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
             return lastIndex !== -1 && lastIndex === position;
         };
     }
+    if (!Array.prototype.find) {
+        Object.defineProperty(Array.prototype, 'find', {
+            value: function (predicate: any) {
+                // 1. Let O be ? ToObject(this value).
+                if (this == null) {
+                    throw TypeError('"this" is null or not defined');
+                }
+
+                var o = Object(this);
+
+                // 2. Let len be ? ToLength(? Get(O, "length")).
+                var len = o.length >>> 0;
+
+                // 3. If IsCallable(predicate) is false, throw a TypeError exception.
+                if (typeof predicate !== 'function') {
+                    throw TypeError('predicate must be a function');
+                }
+
+                // 4. If thisArg was supplied, let T be thisArg; else let T be undefined.
+                var thisArg = arguments[1];
+
+                // 5. Let k be 0.
+                var k = 0;
+
+                // 6. Repeat, while k < len
+                while (k < len) {
+                    // a. Let Pk be ! ToString(k).
+                    // b. Let kValue be ? Get(O, Pk).
+                    // c. Let testResult be ToBoolean(? Call(predicate, T, « kValue, k, O »)).
+                    // d. If testResult is true, return kValue.
+                    var kValue = o[k];
+                    if (predicate.call(thisArg, kValue, k, o)) {
+                        return kValue;
+                    }
+                    // e. Increase k by 1.
+                    k++;
+                }
+
+                // 7. Return undefined.
+                return undefined;
+            },
+            configurable: true,
+            writable: true
+        });
+    }
 
     // Overwrite the implementation of getResources with latest version so that it can support
-    // improvements made (i.e. checking local web server first)
+    // improvements made (i.e. checking local web server first), store copy of original function
+    // from katapp.js so that if they call reset() I can restore that and not run functions in
+    // this file that is going to be re-injected into debug page
     $.fn.KatApp.getResources = $.fn.KatApp.getResources ?? KatApp[ "getResources" ];
     $.fn.KatApp.ping = $.fn.KatApp.ping ?? KatApp[ "ping" ];
+    $.fn.KatApp.getResource = $.fn.KatApp.getResource ?? KatApp[ "getResource" ];
+
+    $.whenAllDone = function ( deferredParams: Deferred[] ): Deferred {
+		// Update, made this more like Promises.allSettled
+        // Understanding promises
+		//	https://www.taniarascia.com/how-to-promisify-an-ajax-call/
+		//	https://blackninjadojo.com/javascript/2019/02/27/using-jquery-promises-and-deferreds.html
+		// whenAllDone - https://stackoverflow.com/a/15094263/166231 - current implementation
+		// whenAll - https://stackoverflow.com/a/7881733/166231 - another implementation I might want to look at
+
+        const deferreds: Deferred[] = [];
+        const result = $.Deferred();
+
+        // arguments - all the deferreds passed in to whenAllDone call
+        $.each(deferredParams, function (i, current) {
+            const currentDeferred = $.Deferred();
+            current.then(function (...args) {
+                currentDeferred.resolve(true, args);
+            }, function (...args) {
+                currentDeferred.resolve(false, args);
+            });
+            deferreds.push(currentDeferred);
+        });
+
+        const jqueryWhenUsesSubordinate = deferreds.length == 1;
+        
+        // call when on each deferred in the deferreds array, and it is always
+        // going to be a .then because the deferred items in the array always
+        // calls resolve (instead of reject) and passes true/false for status of failure
+        $.when.apply($, deferreds).then(function (...args) {
+            const settled: PromiseStatus[] = [];
+            
+            // arguments - the arguments passed on resolve/reject calls on any deferred items passed to whenAllDone
+            // Hack to deal with jquery.when: function( subordinate /* , ..., subordinateN */ ) { ...
+            // It has a line like: 
+            //
+            //  // If resolveValues consist of only a single Deferred, just use that.
+            //  deferred = remaining === 1 ? subordinate : jQuery.Deferred(),
+            //
+            // And this changes the shape of the arguments, so I had to put it back to common state regardless of how many
+            // deferred objects were passed in.
+            const deferredArgs = jqueryWhenUsesSubordinate
+                ? [[ args[ 0 ], args[ 1 ] ]]
+                : args
+            
+            $.each(deferredArgs, function (i, resolvedArgs) {
+                // If we resolved with `true` as the first parameter, it is success, otherwise failure
+                const status = !resolvedArgs[ 0 ] ? "rejected" : "fulfilled";
+                // Push either all arguments or the only one
+                const data = resolvedArgs[1].length === 1 ? resolvedArgs[1][0] : resolvedArgs[1];
+                const reason = !resolvedArgs[ 0 ] ? data : undefined;
+                const result = resolvedArgs[ 0 ] ? data : undefined;
+                settled.push( { status: status, reason: reason, value: result } );
+            });
+
+            return result.resolve.apply(result, settled);
+        });
+
+        return result;
+    }
 
     KatApp[ "ping" ] = function( url: string, callback: ( responded: boolean, error?: string | Event )=> void ): void {
         const ip = url.replace('http://','').replace('https://','').split(/[/?#]/)[0];
 
         $.ajax({
             converters: {
-                'text script': function (text: string) {
+                'text script': function (text: string): string {
                     return text;
                 }
             },
             url: "http://" + ip + "/DataLocker/Global/ping.js",
             timeout: 1000,
-            success: function( /* result */ ){
+            success: function( /* result */ ): void {
                 callback(true);
             },     
-            error: function( /* result */ ){
+            error: function( /* result */ ): void {
                 callback(false);
             }
          });
-    }
-    KatApp[ "getResources" ] = function( application: KatAppPlugInShimInterface, resources: string, useTestVersion: boolean, isScript: boolean, debugResourcesDomain: string | undefined, getResourcesHandler: PipelineCallback ): void {
+    };
+
+    KatApp[ "getResource" ] = function( url, tryLocalWebServer, isInManagementSite, folder, name, version ): GetResourceXHR {
+        // https://stackoverflow.com/a/66187724/166231
+        // This link showed me how to get custom parameter sent back in call back
+        
+        const resource: KatAppResource = { Resource: name, Folder: folder, Version: version };
+        const command = { 
+            "Command": "KatAppResource", 
+            "Resources": [ resource ] 
+        };
+
+        const ajaxUrl = !tryLocalWebServer && isInManagementSite
+            ? url + "?" + JSON.stringify( command )
+            : url; // If just file served up by local web server or hosting site web server, don't pass params
+        
+        const resourceResult: KatAppResourceResult = { Resource: name, Folder: folder, Version: version, Url: ajaxUrl };
+
+        const requestConfig = {
+            converters: {
+                'text script': function (text: string): string {
+                    return text;
+                }
+            },
+            url: ajaxUrl
+        };
+
+        if ( !tryLocalWebServer ) {
+            // https://stackoverflow.com/a/38690731/166231
+            // requestConfig[ "ifModified" ] = true; // !tryLocalWebServer;
+            requestConfig[ "headers" ] = { 'Cache-Control': 'max-age=0' };
+        }
+
+        const p = $.ajax(requestConfig);
+        
+        const result: GetResourceXHR = {
+            ...p,
+            done( s: ajaxGetResourceSuccessCallbackSpread ) {
+                p.done(function (...args) {
+                    s.call(p, ...args, resourceResult);
+                });
+                return result;
+            },
+            fail( f: ajaxGetResourceFailCallbackSpread ) {
+                p.fail(function (...args) {
+                    f.call(p, ...args, resourceResult);
+                });
+                return result;
+            }
+        };
+        
+        return result;
+    };
+
+    KatApp[ "getResources" ] = function( application: KatAppPlugInShimInterface, resources: string, useTestVersion: boolean, isScript: boolean, debugResourcesDomain: string | undefined, getResourcesHandler: GetResourcesCallback ): void {
         const currentOptions = application.options;
         const managementUrl = currentOptions.functionUrl ?? KatApp.defaultOptions.functionUrl ?? KatApp.functionUrl;
         const resourceArray = resources.split(",");
@@ -4739,31 +5006,26 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
         const resourceResults: ResourceResults = {};
 
         // Build a pipeline of functions for each resource requested.
-        // TODO: Figure out how to make this asynchronous
         pipeline = 
             [
                 // Ping local domain
                 function(): void {
-                    if ( localWebServer !== undefined ) {
-                        if ( application.element.data("kat-local-domain-reachable") == undefined ) {
-                            KatApp.ping(localWebServer, function( responded: boolean ) { 
-                                if ( !responded ) {
-                                    localWebServer = undefined;
-                                    useLocalWebServer = false;
-                                    application.element.data("kat-local-domain-reachable", false);
-                                }
-                                else {
-                                    application.element.data("kat-local-domain-reachable", true);
-                                }
-                            });
-                        }
-                        else if ( !( application.element.data("kat-local-domain-reachable") as boolean ) ) {
-                            // Already pinged and no return
-                            localWebServer = undefined;
-                            useLocalWebServer = false;
-                        }
+                    if ( localWebServer === undefined || application.element.data("kat-local-domain-reachable") !== undefined ) {
+                        getResourcesPipeline();
                     }
-                    getResourcesPipeline(); // Now start downloading resources
+                    else {
+                        KatApp.ping(localWebServer, function( responded: boolean ) { 
+                            if ( !responded ) {
+                                localWebServer = undefined;
+                                useLocalWebServer = false;
+                                application.element.data("kat-local-domain-reachable", false);
+                            }
+                            else {
+                                application.element.data("kat-local-domain-reachable", true);
+                            }
+                            getResourcesPipeline();
+                        });
+                    }
                 }
             ].concat(
                 resourceArray.map( resourceKey => {
@@ -4784,9 +5046,19 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                             const currentLocalWebServerFolders = managementFolders.split("|");
                             const version = resourceParts.length > 2 ? resourceParts[ 2 ] : ( useTestVersion ? "Test" : "Live" ); // can provide a version as third part of name if you want
             
-                            // Template names often don't use .xhtml syntax
-                            if ( !resourceName.endsWith( ".kaml" ) && !isScript ) {
-                                resourceName += ".kaml";
+                            if ( !isScript ) {
+                                const resourceNameParts = resourceName.split( "?" );
+                                const resourceNameBase = resourceNameParts[ 0 ];
+
+                                // Template names often don't use .kaml syntax
+                                if ( !resourceNameBase.endsWith( ".kaml" ) ) {
+                                    resourceName = resourceNameBase + ".kaml";
+
+                                    if ( resourceNameParts.length == 2 ) {
+                                        // cache buster
+                                        resourceName += "?" + resourceNameParts[ 1 ];
+                                    }
+                                }
                             }
             
                             let localWebServerFolder = currentLocalWebServerFolders[ localWebServerFolderPosition ] + "/";
@@ -4835,6 +5107,18 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
     
                                     KatApp.trace(application, "Downloading " + resourceName + " from " + resourceUrl, TraceVerbosity.Diagnostic );
 
+                                    KatApp.getResource(
+                                        resourceUrl,
+                                        tryLocalWebServer,
+                                        isResourceInManagementSite,
+                                        managementFolders,
+                                        resourceName,
+                                        version )
+                                    .done( done )
+                                    .fail( fail );
+                                    // Need to use .ajax isntead of .getScript/.get to get around CORS problem
+                                    // and to also conform to using the submitCalculation wrapper by L@W.
+                                    /*
                                     const ajaxConfig = 
                                     { 
                                         converters: {
@@ -4847,15 +5131,16 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                                             ? resourceUrl + "?" + JSON.stringify( options )
                                             : resourceUrl // If just file served up by local web server or hosting site web server, don't pass params
                                     };
-            
-                                    // Need to use .ajax isntead of .getScript/.get to get around CORS problem
-                                    // and to also conform to using the submitCalculation wrapper by L@W.
-                                    $.ajax( ajaxConfig ).done( done ).fail(  fail );
+                                    $.ajax( ajaxConfig ).done( done ).fail( fail );
+                                    */
                                 };
                             
-                            const submitDone: RBLeServiceCallback = function( data ): void {
+                            const submitDone: ajaxGetResourceSuccessCallback = function( data, statusText, jqXHR ): void {
+                                if ( statusText == "notmodified" ) {
+                                    console.log(statusText);
+                                }
+
                                 if ( data == null ) {
-                                    // Bad return from L@W
                                     pipelineError = "getResources failed requesting " + resourceKey + " from L@W.";
                                 }
                                 else {
@@ -4894,7 +5179,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                                 getResourcesPipeline();
                             };
 
-                            const submitFailed: JQueryFailCallback = function( _jqXHR, textStatus, _errorThrown ): void {
+                            const submitFailed: ajaxGetResourceFailCallback = function( _jqXHR, textStatus, _errorThrown, resource ): void {
                                 // If local resources, syntax like LAW.CLIENT|LAW:sharkfin needs to try client first, 
                                 // then if not found, try generic.
                                 if ( tryLocalWebServer && localWebServerFolderPosition < currentLocalWebServerFolders.length - 1 ) {
@@ -4907,7 +5192,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                                     submit( application as KatAppPlugInInterface, managementUrlOptions, submitDone, submitFailed );
                                 }
                                 else {
-                                    pipelineError = "getResources failed requesting " + resourceKey + " from " + resourceUrl + ":" + textStatus;
+                                    pipelineError = "getResources failed requesting " + resource.Folder + ":" + resource.Resource + " from " + resource.Url + ":" + textStatus;
                                     console.log( _errorThrown );
                                     getResourcesPipeline();
                                 }
@@ -4954,7 +5239,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
 
         $.fn.KatApp.templateOn = function( templateName: string, events: string, fn: TemplateOnDelegate ): void {
             $.fn.KatApp.templateDelegates.push( { Template: templateName.ensureGlobalPrefix(), Delegate: fn, Events: events } );
-            KatApp.trace( undefined, "Template event(s) [" + events + "] registered for [" + templateName + "].", TraceVerbosity.Normal );
+            KatApp.trace( undefined, "Template event(s) [" + events + "] registered for [" + templateName + "]", TraceVerbosity.Normal );
         };
 
         $.fn.KatApp.sharedData = { requesting: false, callbacks: [] };

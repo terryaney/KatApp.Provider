@@ -117,16 +117,27 @@ interface RBLeServiceResults {
     }[];
 
     // RBL is only present after successful calculation
-    RBL?: {
-        Profile: {
-            Data: {
-                TabDef: JSON;
-            };
-        };
-    };
+    RBL?: RBLResult;
 
     // RegisteredToken is only present after successful registration
     registeredToken?: string;
+}
+
+interface TabDef extends JSON
+{
+    _name: string;
+    _fullName: string;
+    _defaultCalcEngine: boolean;
+    _resultKeys: string[];
+    _resultRowLookups?: ResultRowLookupsInterface;
+}
+
+interface RBLResult {
+    Profile: {
+        Data: {
+            TabDef: TabDef[];
+        }
+    }
 }
 interface RBLeServiceCallback {
     ( data: RBLeServiceResults ): void;

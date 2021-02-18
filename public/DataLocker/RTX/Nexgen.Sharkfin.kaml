@@ -1,0 +1,423 @@
+<!-- KatApp view
+    -standard structure to view:
+        <rbl-config/> 
+        <style>custom<style> (global katapp styles?  i.e. hide rbl-template)
+        <div>markup</div>
+        <script>with debugger line as placeholder/sample</script>
+-->
+
+<rbl-config calcengine="Conduent_ABC_Sharkfin_SE" bootstrap="4" templates="Standard_Templates,Input_TemplatesBS4" precalcs="Conduent_ABC_DBCalc_SE"></rbl-config>
+
+<style>
+    .thisClass .recalc-notice, 
+    .thisClass .ModelerValidationTable, 
+    .thisClass .saveError, 
+    .thisClass .saveSuccess, 
+    .thisClass .katapp-sharkfin .control-label > span:nth-of-type(2) {
+        display: none;
+    }
+    
+    .thisClass #alert-recalc {
+        position: relative; 
+        left: 50%;
+        top: 50%;
+        transform: translate(-50%, -50%);
+        z-index: 1000;
+    }
+    .thisClass .chart {padding: 0;}
+    .thisClass .glyphicons, thisClass .glyphicon  {
+        font-family: "Glyphicons Regular";
+    }
+    .thisClass .glyphicons-question-sign:before, thisClass .glyphicon-info-sign:before { content: "\E195";}
+    .thisClass .nav-pills .nav-link { border-radius: 2rem;}
+</style>
+
+<div class="d-none skipRBLe">
+    <input name="{id}:iSaveInputs" type="text" id="katapp_{id}_iSaveInputs" class="iSaveInputs"/>
+    <input name="{id}:iSalScale" type="text" id="katapp_{id}_iSalScale" class="iSalScale"/>
+    <input name="{id}:iAgeCommStart" type="text" id="katapp_{id}_iAgeCommStart" class="iAgeCommStart" val="1"/>
+</div>
+
+<section id="sharkfin" class="sharkfin section-padding scroll-indicator" data-scroll-indicator-title="RETIREMENT PLANNING">
+    <div id="rblMarkup" class="rblApplication rblMarkup kat-app-css" style="display: none;">
+        <h2 class="title">RETIREMENT PLANNING</h2>
+        <div class="container">
+            <div class="row">    
+                <!-- Results -->
+                <div class="col-md-7">
+                    <!-- Tab panes -->
+                    <div class="row ml-1 mr-1">
+                        <div class="card mt-4">
+                            <div class="card-header">
+                                <div class="row ml-1 mt-1">
+                                    <ul class="nav nav-pills ml-0 mb-2" role="tablist">
+                                        <li class="nav-item-active" role="presentation">
+                                            <a class="nav-link active" id="pills-tab1-tab" data-toggle="pill" href="#pills-tab1" role="tab" aria-controls="pills-tab1" aria-selected="true">
+                                              Income</a>
+                                        </li>
+                                        <li class="nav-item" role="presentation">
+                                            <a class="nav-link" id="pills-tab2-tab" data-toggle="pill" href="#pills-tab2" role="tab" aria-controls="pills-tab2" aria-selected="false">
+                                              Account Balance</a>
+                                        </li>
+                                        <li class="nav-item" role="presentation">
+                                            <a class="nav-link" id="pills-tab3-tab" data-toggle="pill" href="#pills-tab3" role="tab" aria-controls="pills-tab3" aria-selected="false">
+                                                Assumptions</a>
+                                        </li>
+                                    </ul>
+                                    <hr/>
+                                </div>        
+                            </div>
+                            <div class="card-body">
+                                <div class="tab-content" style="width: 100%;">
+                                    <div class="tab-pane fade show active" id="pills-tab1" role="tabpanel" aria-labelledby="pills-tab1-tab">
+                                        <div rbl-tid="chart-highcharts" rbl-chartdata="RetirementIncomeChart"></div>
+                                    </div>
+                                    <div class="tab-pane fade" id="pills-tab2" role="tabpanel" aria-labelledby="pills-tab2-tab">
+                                        <div rbl-tid="chart-highcharts" rbl-chartdata="BalanceChart"></div>
+                                    </div>
+                                    <div class="tab-pane fade" id="pills-tab3" role="tabpanel" aria-labelledby="pills-tab3-tab">
+                                        <div rbl-tid="result-table" rbl-tablename="Assumptions"></div>
+                                    </div>   
+                                    <div class="ajaxloader"></div>
+                                </div> 
+            
+                                <div class="mt-4">
+                                    <div class="row m-0 card-group">
+                                      <div class="col-12 col-md-6 p-0 dashemphasis card">
+                                          Using these assumptions, you are <span class="boldText" style="font-size: 150%" rbl-value="probReachGoal"></span> likely to have funds that cover your retirement goals. 
+                                      </div>
+                                      <div class="col-12 col-md-6 p-0">
+                                        <div class="alert alert-notify sideside">
+                                            <div class="alertTitle"><img src="resources/images/Icon_Suggestion.png" alt=""/> SUGGESTION</div>
+                                            <p class="alertActions" rbl-value="suggestions"></p>
+                                        </div>
+                                      </div>
+                                    </div>
+                                </div>    
+                            </div>
+                        </div>
+                          
+                        <div class="recalc-notice">
+                            <div id="alert-recalc" class="alert alert-danger" role="alert" style="width:50%">
+                                <h4 class="alert-heading">Please Note</h4>
+                                <p rbl-value="lRecalcNotice">Important! Your change will not be reflected until you click the Recalculate button</p>
+                                <hr>
+                                <p><a class="recalcButton lRecalcButton btn btn-primary btn-sm" href="#" data-action="recalc">Recalculate</a></p>
+                            </div>
+                        </div>
+            
+                        <div class="row" style="min-height: 0;">
+                            <div class="col-xs-12">
+                                <div class="ModelerValidationTable alert alert-danger" role="alert"
+                                    title="Please review the following issues:" style="display: none;">
+                                    <p><strong>Please review the following issues:</strong></p>
+                                    <div style="display: none;"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>    
+                    
+                <!-- Inputs -->
+                <div class="col-md-5 pl-0 pr-0">
+                    <div class="card mt-4">
+                        <div class="ajaxloader"></div>
+                        <div class="card-header">
+                            <h4>Retirement Goals and Assumptions</h4>
+                        </div>
+                        <div class="card-body pb-0">
+                            <div class="row">
+                                <div class="col-sm-12" rbl-tid="input-slider" data-inputname="iRetAge"></div>
+                                <div class="col-sm-12" rbl-tid="input-slider" data-inputname="iReplaceRatio"></div>
+                                <hr class="w-100" />
+                                <div class="col-sm-12" rbl-tid="input-slider" data-inputname="iContribRatePct"></div>
+                                <div class="col-sm-12" rbl-tid="input-slider" data-inputname="iReturn"></div>
+                            </div>
+                        
+                            <div class="row">
+                                <hr class="w-100" />
+                                <div class="col-12 mb-3">
+                                    <a class="btn btn-primary btn-sm w-100 advanced-assumptions" href="#">
+                                        <span class="toggle-advanced">Show </span>
+                                        <span class="toggle-advanced" style="display: none;">Hide </span>Advanced Inputs and Assumptions</a>
+                                </div>
+                            </div>
+                            <div class="advanced-assumptions" style="display: none;">
+                                <div class="row mt-3">
+                                    <div class="col-sm-12 col-md-6" rbl-tid="input-textbox" data-inputname="iSalary" data-prefix="$"></div>
+                                    <div class="col-sm-12 col-md-6" rbl-tid="input-slider" data-inputname="iBonusTarget"></div>
+                                    <div class="col-sm-12 col-md-6" rbl-tid="input-slider" data-inputname="iSalaryIncrease"></div>
+                                    <div class="col-sm-12" rbl-display="vRecalcMessage" style="display: none;">
+                                        <p rbl-value="lRecalcMessage" class="text-danger">Changing Annual Salary, Bonus Target and Annual Salary Increase will require recalculation of the DB benefit.</p>
+                                    </div>
+                                    <div class="col-sm-12 col-md-6" rbl-tid="input-textbox" data-inputname="iNumeric1UserDef" data-suffix="%"></div>
+                                </div>
+                                <hr class="w-100" />
+                                <div class="row">
+                                    <div class="col-sm-12 col-md-6" rbl-tid="input-slider" data-inputname="iSSRetAge"></div>
+                                    <div class="col-sm-12 col-md-6" rbl-tid="input-textbox" data-inputname="iSSOverride" data-prefix="$"></div>
+                                </div>
+                                <hr class="w-100" />
+                                <div class="row">
+                                    <div class="col-sm-12 col-md-6" rbl-tid="input-textbox" data-inputname="iPersonalSavings" data-prefix="$">
+                                    </div>
+                                    <div class="col-sm-12 col-md-6" rbl-tid="input-slider" data-inputname="iPersonalContrib"></div>
+                                    <div class="col-sm-12 col-md-6" rbl-tid="input-textbox" data-inputname="iAnnuities" data-prefix="$"></div>
+                                </div>
+                                <div style="display:none">
+                                    <input name="iCalculationType" type="text" id="iCalculationType" class="iCalculationType"
+                                        value="retirement-planning">
+                                    <div class="liEnableRecalc">1</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="alert alert-notify mt-4 ml-3 mr-3">
+                            <div class="alertTitle">
+                                <img src="resources/images/Icon_Suggestion.png" alt="Suggestion"/>
+                                <span> SUGGESTION</span>
+                            </div>
+                            <p class="mt-1" rbl-value="lSaveMessage">
+                                <span>Save your inputs for use on you next visit!  Use the advanced assumptions to enter personal savings and outside annuities.</span><br/>
+                            </p>
+                            <p>
+                                <a class="saveButton rblButton_ btn btn-primary btn-sm" href="#" rbl-value="lSaveButton" data-action="save">Save Inputs</a>    
+                            </p>
+                            <div class="row">
+                                <div class="col-12">
+                                    <div class="alert alert-danger saveError" role="alert" title="Please review the following issues:">
+                                        <p><strong>Save is not successful. Please try again.</strong></p>
+                                    </div>
+                                    <div class="alert alert-success saveSuccess" role="alert" title="Please review the following issues:">
+                                        <p><strong>Data is saved successfully.</strong></p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>    
+                    </div>
+                </div>    
+            </div>
+        
+            <div class="ajaxerror alert alert-danger" role="alert" style="display: none;">
+                <p><strong><br>Please review the following issues:</strong></p>
+                <div>
+                    <ul>
+                        <li>An error has occured in the calculation. Please refresh the page.</li>
+                        <li class="liAjaxError">If problems persist please contact technical support.</li>
+                    </ul>
+                    <p class="text-center"><a class="btn btn-primary btn-sm rblButton" data-action="error" onclick="initSharkfinApp()">Refresh</a></p>
+                </div>
+            </div>
+            <div class="vIneligible" style="display: none;">
+                <div class="row justify-content-md-center">
+                    <div class="col col-xs-12 col-md-8">
+                        <div class="alert alert-danger" role="alert">
+                            <h4 rbl-value="lIneligibleHeader">Notice</h4>
+                            <p rbl-value="lIneligibleMessage">You are ineligible for this feature of the system. Please
+                                contact HR if you have any questions.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>    
+        </div>
+    </div>    
+</section>
+
+<script >
+    if ( $("{thisView}").data("debugger" ) == true ) debugger;
+
+    (function() {
+        var view = $("{thisView}");
+        var application = view.KatApp();
+        
+        view.on( "onInitialized.RBLe", function( event, application ) {
+            //attach click event
+            $(".recalcButton", view).on('click', function (e) {
+                recalcDB();
+                return false;
+            });
+            $(".saveButton", view).on('click', function (e) {
+                saveAssumptions();
+                return false;
+            });
+            $(".testRecalc", view).on('click', function (e) {
+                showRecalc();
+                return false;
+            });
+
+        });
+
+        view.on( "onCalculation.RBLe", function( event, results, options, application ) {
+            application.options.preCalcs = undefined;
+        });
+        view.on( "onDataUpdate.RBLe", function( event, results, options, application ) {
+            $(".saveSuccess", view).show(500).delay(7000).hide(500);
+        });
+        view.on( "onDataUpdateErrors.RBLe", function( event, message, exception, options, application ) {
+            $(".saveError", view).show(500).delay(3000).hide(500);
+        });
+
+        view.on( "onConfigureUICalculation.RBLe", function( event, results, options, application ) {
+            $("a.advanced-assumptions", view).bind("click", function(e) {
+                e.preventDefault();
+                if ( $("div.advanced-assumptions").is(":visible") ) {
+                    $('span.toggle-advanced').hide();
+                    $('span.toggle-advanced:contains(Show)').show();
+                    $('div.advanced-assumptions').slideUp()
+                }
+                else {
+                    $('span.toggle-advanced').hide();
+                    $('span.toggle-advanced:contains(Hide)').show();
+                    $('div.advanced-assumptions').slideDown()
+                }
+            });
+            
+            // vsiReplaceRatio
+            $("[rbl-display=vsiReplaceRatio]", view).after(
+                $("<a href=\"#\" title=\"Income Replacement Calculator\" class=\"changeLifestyle\"><span class=\"glyphicons glyphicons-list-alt\"></span></a>")
+            );
+
+            $(".changeLifestyle", view).click(function (e) {
+                e.preventDefault();
+                if ( $(".irp-modal").length === 0 ) {
+                    view.after($('\
+                    <div class="katapp-css">\
+                        <div class="irp-modal katapp-modal">\
+                            <div class="katapp-content">\
+                                <h4>Income Replacement Percentage (IRP) Calculator</h4>\
+                                <div>\
+                                    <div class="katapp-irp"></div>\
+                                </div>\
+                                <hr/>\
+                                <div class="row irp-buttons rounded" style="text-align: center">\
+                                    <button type="button" class="btn btn-default closeIRP">Close</button>\
+                                    <button type="button" class="btn btn-primary useIRP mr-1">Use IRP Value</button>\
+                                </div>\
+                            </div>\
+                        </div>\
+                    </div>\
+                    '));
+
+                    $(".irp-modal button.useIRP").click(function () {
+                        $(".irp-modal").hide();
+                        
+                        var inputs = $(".irp-modal .katapp-irp").KatApp().calculationInputs;
+                        
+                        application.setInputs({
+                            "iRetAge": inputs["iRetirementAge"],
+                            "iSalScale": inputs["iAnnualFuturePayIncreaseRate"],
+                            "iReplaceRatio": Math.round(Number(inputs["iReplaceRatio"]) * 100 / 5) * 5
+                        });
+                    });
+                    $(".irp-modal button.closeIRP").click(function () {
+                        $(".irp-modal").hide();
+                    });
+                }
+
+                var options = 
+                    KatApp.extend( {}, 
+                    application.options, 
+                    {
+                        view: "DST:IRP",
+                        debug: {
+                            saveFirstCalculationLocation: undefined
+                        },
+                        defaultInputs: {
+                            iInputsFromModeler: 1,
+                            iCurrentAge: application.getResultValue("variable", "iCurrentAge", "value") * 1,
+                            iAnnualFuturePayIncreaseRate: $(".iSalScale").val(),
+                            iAnnualPay: $(".iSalary").val(),
+                            iRetirementAge: $(".iRetAge").val(),
+                            iRetirementSavingsPct: application.getResultValue("variable", "iRetirementSavingsPct", "value") * 1
+                        },
+                        onConfigureUICalculation: function( results, options, application ) {
+                            // Only run the DBCalc CE for iConfigureUI calc and then CE will flag other required inputs
+                            application.options.preCalcs = undefined;
+
+                            //wire up slider controls to show values under
+                            $(".slider-control", application.element).each(function(index) {
+                                var slider = $(this)[0];
+                                var formGroup = $(this).closest(".form-group");
+                                var svLabel = $("[class*=svi]", formGroup);
+                                slider.noUiSlider.on('set', function() {
+                                    $(".noUi-handle", slider).html("<div>" + svLabel.html().replace(" ", "") + "</div>");
+                                });
+                                slider.noUiSlider.on('slide', function() {
+                                    $(".noUi-handle", slider).html("<div>" + svLabel.html().replace(" ", "") + "</div>");
+                                });
+                                $(".noUi-handle", slider).html("<div>" + svLabel.html().replace(" ", "") + "</div>");                
+                            });
+                        }
+                    } );
+
+                delete options.calcEngine; // *legacy until latest provider published*
+                delete options.calcEngines; // So it doesn't use parent CE
+                $(".irp-modal .katapp-irp").KatApp( "ensure", options );
+                $(".irp-modal").css("display", "block");
+            });
+
+            $(":input.rbl-nocalc, :input.skipRBLe", view).bind("change", function() {
+                showRecalc();
+            }).prev(".slider-control").each(function(index) {
+                var slider = $(this)[0];
+                slider.noUiSlider.on('set', function() {
+                    showRecalc();
+                });
+            });
+
+            $(".loader", view).hide();
+            $(".rblMarkup", view).show();
+        });
+
+        function recalcDB() {
+            var currentInputs = view.KatApp().getInputs();
+            $(".recalc-notice", view).hide();
+            //$.ajax({
+            //    url: pURL('/rks/benefits/services/sharkfin/db/reregister.htm'),
+            //    data: JSON.stringify(currentInputs),
+            //    method: 'POST',
+            //    headers: { 'Content-Type': 'application/json' }
+            //}).done( function( data ) {
+            //    view.KatApp().setRegisteredToken(data.payload);
+            //    view.KatApp("calculate");
+            //    $(".ajaxloader", view).hide(); //may not need this
+            //});
+            application.options.preCalcs = "Conduent_ABC_DBCalc_SE";
+            view.KatApp("calculate");
+        };
+
+        function saveAssumptions() {
+            $(".saveError, .saveSuccess", view).hide();
+            if ($(".ModelerValidationTable", view).is(':visible') || $(".ajaxloader", view).is(':visible')) {
+                $(".saveError", view).show(500).delay(3000).hide(500);
+            } else {
+                $(".iSaveInputs", view ).val(1);
+                view.KatApp("calculate");
+                /*
+                var currentInputs = view.KatApp().getInputs();
+                $.ajax({
+                    url: pURL('/rks/benefits/services/sharkfin/db/save.htm'),
+                    data: JSON.stringify(currentInputs),
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' }
+                }).done( function( data ) {
+                    debugger;
+                    if (data.payload.returnCode == 0) {
+                        $(".saveSuccess", view).show(500).delay(7000).hide(500);
+                    } else {
+                        $(".saveError", view).show(500).delay(7000).hide(500);
+                    }
+                });
+                */
+            }
+       };
+        
+        function showRecalc() {
+            $(".ajaxloader", view).show();
+            $(".recalc-notice", view).show();
+        };
+    })();
+
+    //# sourceURL=nexgen.sharkfin.kaml
+</script>

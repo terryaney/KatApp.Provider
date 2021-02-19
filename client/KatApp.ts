@@ -208,13 +208,15 @@ class KatApp
             ...p,
             done( s: ajaxGetResourceSuccessCallbackSpread ) {
                 p.done(function (...args) {
-                    s.call(p, ...args, resourceResult);
+                    // s.call(p, ...args, resourceResult);
+                    s.call(p, args[ 0 ], args[ 1 ], args[ 2 ], resourceResult);
                 });
                 return result;
             },
             fail( f: ajaxGetResourceFailCallbackSpread ) {
                 p.fail(function (...args) {
-                    f.call(p, ...args, resourceResult);
+                    // f.call(p, ...args, resourceResult);
+                    f.call(p, args[ 0 ], args[ 1 ], args[ 2 ], resourceResult);
                 });
                 return result;
             }

@@ -1559,7 +1559,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
             }
         }
 
-        processListItems(container: JQuery<HTMLElement>, rebuild: boolean, listItems: { Value: string | null | undefined; Text: string | null | undefined; Help: string | undefined; Class: string | undefined; Selected: boolean; Visible: boolean; Disabled: boolean }[] ): void {
+        processListItems(container: JQuery<HTMLElement>, rebuild: boolean, listItems: { Value: string | null | undefined; Text: string | null | undefined; Help: string | undefined; Selected: boolean; Visible: boolean; Disabled: boolean }[] ): void {
             const isBootstrap3 = $("rbl-config", this.application.element).attr("bootstrap") == "3";
             const inputName: string = container.data( "inputname" );
             const id: string = container.data( "id" );
@@ -2646,7 +2646,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                 if ( selector !== undefined ) {
                     const el = $(selector, application.element);
                     
-                    el.addClass("skipRBLe").off(".RBLe");
+                    el.addClass("rbl-nocalc skipRBLe").off(".RBLe");
                     $(":input", el).off(".RBLe");
     
                     application.ui.getNoUiSlider(selector.substring(1), application.element)?.off('set.RBLe');
@@ -3293,7 +3293,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                     ui.processListItems(
                         listControl,
                         row.rebuild == "1",
-                        listRows.map( r => ({ Value:  r.key, Text: r.text, Class: r.class, Help: r.html, Selected: false, Visible: r.visible != "0", Disabled: r.disabled == "1" }))
+                        listRows.map( r => ({ Value:  r.key, Text: r.text, Help: r.help, Selected: false, Visible: r.visible != "0", Disabled: r.disabled == "1" }))
                     );
                 }
                 else if ( dropdown.length === 1 ) {
@@ -4443,7 +4443,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                     // Need to fix this
                     const options =
                         $("rbl-template[tid='lookup-tables'] DataTable[id='" + lookuptable + "'] TableItem")
-                            .map( ( index, ti ) => ({ Value: ti.getAttribute("key"), Text: ti.getAttribute( "name"), Class: undefined, Help: undefined, Selected: index == 0, Visible: true, Disabled: false }));
+                            .map( ( index, ti ) => ({ Value: ti.getAttribute("key"), Text: ti.getAttribute( "name"), Help: undefined, Selected: index == 0, Visible: true, Disabled: false }));
 
                     that.application.ui.processListItems(container, false, options.toArray());
                 }
@@ -4990,13 +4990,15 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
             ...p,
             done( s: ajaxGetResourceSuccessCallbackSpread ) {
                 p.done(function (...args) {
-                    s.call(p, ...args, resourceResult);
+                    // s.call(p, ...args, resourceResult);
+                    s.call(p, args[ 0 ], args[ 1 ], args[ 2 ], resourceResult);
                 });
                 return result;
             },
             fail( f: ajaxGetResourceFailCallbackSpread ) {
                 p.fail(function (...args) {
-                    f.call(p, ...args, resourceResult);
+                    // f.call(p, ...args, resourceResult);
+                    f.call(p, args[ 0 ], args[ 1 ], args[ 2 ], resourceResult);
                 });
                 return result;
             }

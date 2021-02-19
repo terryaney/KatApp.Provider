@@ -183,12 +183,14 @@ When building Kaml Views, dynamic content and visiblity is managed via the follo
 
 Attribute | Description
 ---|---
-`rbl-ce` | If multiple CalcEngines are used, can provide a `key` to a CE to indicate which CalcEngine to pull value from.
-`rbl-tab` | If multiple tabs are returned from a CalcEngine, can provide a name which tab to pull value from.
-`rbl-value` | Inserts a value from RBLe Service
-`rbl-source`<br/>`rbl-source-table` | Indicates row(s) from an RBLe result table used to process a template.  Pairs with rbl-tid<br/>&nbsp;
-`rbl-tid` | Indicates what RBL template to apply to the given source rows.  Results from template and data replace element content.
-`rbl-display` | Reference to boolean RBLe result data that toggles display style (uses `jQuery.show()` and `jQuery.hide()` ).
+rbl-ce | If multiple CalcEngines are used, can provide a `key` to a CE to indicate which CalcEngine to pull value from.
+rbl-tab | If multiple tabs are returned from a CalcEngine, can provide a name which tab to pull value from.
+rbl-value | Inserts a value from RBLe Service
+rbl-source<br/>rbl&#x2011;source&#x2011;table | Indicates row(s) from an RBLe result table used to process a template.  Pairs with rbl-tid<br/>&nbsp;
+rbl-tid | Indicates what RBL template to apply to the given source rows.  Results from template and data replace element content.
+rbl-display | Reference to boolean RBLe result data that toggles display style (uses `jQuery.show()` and `jQuery.hide()` ).
+
+<br/>
 
 ### RBLe Selector Paths
 There are two ways to use `rbl-value` attribute.  You can provide simply an 'id' that will look inside the `ejs-output` table.  Or you can provide a 'selector path'.  Both mechanisms can be used in conjunction with `rbl-ce` and `rbl-tab`.
@@ -248,24 +250,107 @@ The original RBLe Service processing was a _push_ pattern.  So instead of elemen
 
 Kaml Views still supports legacy _push_ processing for values and visibility, but using the binding attributes is the preferred mechanism as it expresses clear intent of which elements are bound to the CalcEngine and where the data should be pulled from.
 
-Table &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; | Purpose
+Table | Purpose
 ---|---
-`ejs-output` | Simplified functionality of `rbl-value` processing.  For each row in the table, use the `value` column to set the content for any element with a CSS class that matches the `id` column.
-`ejs-visibility` | Simplified functionality of the `rbl-display` processing.  For each row in the table, hide any element with a CSS class that matches the `id` column if the `value` column equals `0`.
+ejs&#x2011;output | Simplified functionality of `rbl-value` processing.  For each row in the table, use the `value` column to set the content for any element with a CSS class that matches the `id` column.
+ejs&#x2011;visibility | Simplified functionality of the `rbl-display` processing.  For each row in the table, hide any element with a CSS class that matches the `id` column if the `value` column equals `0`.
+
+<br/>
 
 ### CalcEngine Table _Push_ Processing
 
-Even though we mentioned above to prefer _pull_ over _push_ for content and visibility, there are still some tables that either require push processing or a much better suited for this pattern.  In these cases, the source tables in the CalcEngines are usually very focused; only turned on during the initial configuration calculation and/or have a very limited number of rows.  By paying attention to the scope of processing of these tables (only returning information when needed and minimizing the rows), you can ensure that Kaml Views remain performant.
+Even though it is preferrable to have _pull_ over _push_ for content and visibility, there are still some tables that either require push processing or are much better suited for a _push_ pattern.  In these cases, the source tables in the CalcEngines are usually very focused; only turned on during the initial configuration calculation and/or have a very limited number of rows.  By paying attention to the processing scope of these tables (only returning information when needed and minimizing the rows), you can ensure that Kaml Views remain performant.
 
-**ejs-listcontrol** - Find and populate a 'list' control (dropdown, radio button list, or checkbox list) with a CSS class that matches the `id` column.
+**ejs-defaults** - Set input values for any input on Kaml View.
 
-Table &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; | Purpose
+Column | Description
 ---|---
-ejs-listcontrol | Using the `id` column, find a 'list' control (dropdown, radio button list, or checkbox list) 
+id | The name of the input in your Kaml View (i.e. iMaritalStatus). 
+value | The value to set.  
+
+Input&nbsp;Type | Description
+---|---
+Checkbox List | `value` should be a `,` delimitted list of values that match the `key` of each list item to be checked.  When processed, all items will be unchecked first.
+Radio Button List | `value` matches the radio item to be selected (all others will be unselected).
+Checkbox | `value` is `1` or `0`.  If `1`, the input will be checked.
+Dropdown | If the dropdown is single select, `value` matches the item to be selected (all others will be unselected).  if the dropdown is _multi-select_, `value` should be a `^` delimitted list of values that match the `key` of each item to be selected.
+Slider | `value` should be a numerical value within the configured `min` and `max`.
+Text | `value` is simply applied.
+
+\
+**ejs-listcontrol** - Find and populate 'list' controls (dropdown, radio button list, or checkbox list) that have a CSS class matching the `id` column.
+
+Column | Description
+---|---
+id | The name of the input in your Kaml View (i.e. iMaritalStatus). 
+table | The name of the data source table that provides the list items for the control specified by id. 
+
+\
+**ejs-listcontrol data source** - Typically, `ejs-listcontrol` and its data tables are only returned during a configuration calculation to initialize the user interface.  However, if the list control items are dynamic based on employee data or other inputs, the typical pattern is to return all list items possible for all situations during the configuration calculation, and then use the `visible` column to show and hide which items to show.  During subsequent calculations, when items are simply changing visibility, for performance enhancements, the only rows returned in the data source table should be the rows that have dynamic visiblity.
+
+Column | Description
+---|---
+key | The data value for current list item (i.e. MN for Minnesota). 
+text<br/>&nbsp; | The display text for the current list item.<br/>For **dropdown** controls, if text is `/data-divider` a bootstrap enabled select input is able to simple render a divider bar.
+rebuild | If `rebuild` is `1` all current list items will be cleared and the control will be rebuilt from provided items.
+visible | If `visible` is `0`, the list item is hidden<sup>1</sup>, otherwise it is shown.
+disabled | If `disabled` is `1`, the list item is disabled<sup>1</sup>, otherwise it is enabled.
+help | For _radio button and checkbox lists_, if `help` is provided, a help icon and popup text will be generated.
+class<sup>2</sup> | Class to be applied to the option element of a bootstrap enabled select input.
+html<sup>2</sup> | Custom Html to use instead of the `text` value.
+subtext<sup>2</sup> | Add subtext to an option.
+
+<sup>1</sup> When hiding and disabling list items, ensure that you perform validation in the CalcEngine during any save events to ensure invalid values were not maliciously sent.  
+<sup>2</sup> For a bootstrap enabled dropdown inputs, additional properties can be applied to create an enhanced UI experience.  See https://developer.snapappointments.com/bootstrap-select/examples/ for documentation on `class`, `html`, and `subtext`.
+
+\
+**ejs-sliders** - Find and configure slider inputs that have a CSS class matching the `id` column.
+
+Column | Description
+---|---
+id | The name of the slider in your Kaml View (i.e. iRetAge).
+min | The minimum value allowed.
+max | The maximum value allowed.
+default<sup>1</sup> | The default value to assign.
+step | The change interval to use.
+format<sup>2</sup><br/>decimals | Whether to display the as percent or number (`p` or `n`).<br/>The number decimal places to display.
+pips&#x2011;mode<sup>3</sup> | When generating points along the slider, this determines where to place the pips (`range`, `steps`, `positions`, `count` or `values`).
+pips&#x2011;values | When `pips-mode` is `values`, you can provide a comma delimitted list of values for the large pip values.  Default is 0, 25, 50, 75, 100.
+pips&#x2011;density | Pre-scale the number of pips.  The `pips-density` value controls how many pips are placed on one percent of the slider range. With the default value of 1, there is one pip per percent. For a value of 2, a pip is placed for every 2 percent. A value below one will place more than one pip per percentage.
+
+<sup>1</sup> Default value has a few ways to be assigned and the precedence is as follows:
+1. The default selector path of `ejs-defaults.{id}.value`.
+2. The `default` column in the `ejs-slider` row.
+3. The current value of the hidden slider html input (if set directly via markup).
+4. The `min` column in the `ejs-slider` row.
+
+<sup>2</sup> The slider value is displayed in the element that has a CSS class of `sv{id}`.  
+<sup>3</sup> See https://refreshless.com/nouislider/pips/ for documentation on using `pips-*` values.
+
+\
+**ejs-disabled** - Find and enable or disable inputs that have a CSS class matching the `id` column.
+
+Column | Description
+---|---
+id | The name of the input in your Kaml View (i.e. iMaritalStatus). 
+value | Whether or not to enable or disable the input.  If `value` is `1`, the input will be disabled, otherwise enabled.
+
+\
+**skip-RBLe** - Find and prevent inputs in Kaml View from triggering a calculation upon change.  This table is legacy support that is equivalent to `rbl-nocalc` and can only be used to _prevent an input from triggering a calculation_.  You can not use it to turn calculations back on for an input.  This table allows for the business logic of knowing which inputs trigger a calculation and which do not to be left inside the CalcEngine.  Using this table has the same effect as applying attributes manually in the Kaml View.
+
+Column | Description
+---|---
+id<br/>key&nbsp;(legacy) | The name of the input in your Kaml View (i.e. iMaritalStatus) to disable triggering a calculation. 
+
+\
+**errors/warnings** - Errors and warnings are returned from CalcEngine when invalid inputs are sent to the CalcEngine.
+
+Column | Description
+---|---
+id | The name of the input with a validation error.  `id` is optional.  If provided, the input will be highlighted in the UI to indicate an error.
+text | The error message to display in the validation summary.  If `id` is provided, the highlighted input will have an error icon that displays a popup of the error message.
 
 TODO - ejs-markup, [rbl-tid='result-table'], [rbl-tid="chart-highcharts"], [rbl-template-type="katapp-highcharts"]
-, ejs-sliders, skip-RBLe, ejs-listcontrol, ejs-defaults, ejs-disabled, errors/warnings
-
 
 
 ## Templates
@@ -353,11 +438,11 @@ unless there's a 'preserve' for nested template
 
 By decorating elements with specific CSS class names<sup>1</sup>, RBLe Service functionality can be controlled.
 
-Class &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; | Purpose
+Class | Purpose
 ---|---
-`rbl-nocalc`<br/>`skipRBLe`<sup>2</sup> | By default, changing any `<input>` value in the view will sumbit a calc to the RBLe service.  Use this class to supress submitting a calc.  Note this input will still be included in calcuations, but that changing it does not initate a calc.
-`rbl-exclude`<br/>`notRBLe`<sup>2</sup> | By default, all inputs in the view are sent to RBLe calculation.  Use this class to exclude an input from the calc.  This will also prevent this input from initating a calc on change.
-`rbl-preserve` | Use this class in child elements beneath `[rbl-source]` so that when the element is cleared on each calculation, an element with class 'rbl-preserve' will not be deleted.
+rbl&#x2011;nocalc<br/>skipRBLe<sup>2</sup> | By default, changing any `<input>` value in the view will sumbit a calc to the RBLe service.  Use this class to supress submitting a calc.  Note this input will still be included in calcuations, but that changing it does not initate a calc.
+rbl&#x2011;exclude<br/>notRBLe<sup>2</sup> | By default, all inputs in the view are sent to RBLe calculation.  Use this class to exclude an input from the calc.  This will also prevent this input from initating a calc on change.
+rbl&#x2011;preserve | Use this class in child elements beneath `[rbl-source]` so that when the element is cleared on each calculation, an element with class 'rbl-preserve' will not be deleted.
  
 \
 <sup>1</sup> Future versions of KatApp's may move these classes to attributes.  

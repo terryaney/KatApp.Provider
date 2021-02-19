@@ -996,6 +996,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
 
 
             this.ui.triggerEvent( "onResultsProcessing", this.results, calculationOptions, this );
+            
             this.rble.processResults( calculationOptions );
            
             if ( this.calculationInputs?.iConfigureUI === 1 ) {
@@ -2191,10 +2192,10 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                 some form of tab mapping as well.  Leaving off for now.
             */
             if ( results != undefined ) {
-                return calcEngine != undefined && tabDef != undefined ? results?.find( t => t["_" + calcEngine] == true && t._name == tabDef ) :
-                    calcEngine != undefined ? results?.find( t => t["_" + calcEngine] == true ) :
-                    tabDef != undefined ? results?.find( t => t._defaultCalcEngine && t._name == tabDef ) :
-                    results?.[ 0 ];
+                return calcEngine != undefined && tabDef != undefined ? results.find( t => t["_" + calcEngine] == true && t._name == tabDef ) :
+                    calcEngine != undefined ? results.find( t => t["_" + calcEngine] == true ) :
+                    tabDef != undefined ? results.find( t => t._defaultCalcEngine && t._name == tabDef ) :
+                    results[ 0 ];
             }
         
             return undefined;
@@ -2342,12 +2343,12 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
             }
         }
     
-        getRblSelectorValue( tabDef: TabDef | undefined, tableName: string, selectorParts: string[] ): string | undefined {
+        getRblSelectorValue( tabDef: TabDef | undefined, defaultTableName: string, selectorParts: string[] ): string | undefined {
             if ( tabDef != undefined ) {
                 if ( selectorParts.length === 1 ) 
                 {
-                    return this.getResultValue( tabDef, tableName, selectorParts[0], "value") ??
-                        ( this.getResultRow<JSON>( tabDef, tableName, selectorParts[0] ) !== undefined ? "" : undefined );
+                    return this.getResultValue( tabDef, defaultTableName, selectorParts[0], "value") ??
+                        ( this.getResultRow<JSON>( tabDef, defaultTableName, selectorParts[0] ) !== undefined ? "" : undefined );
                 }
                 else if (selectorParts.length === 2) 
                 {
@@ -2394,7 +2395,9 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
     
                 const rblValueParts = el.attr('rbl-value')!.split('.'); // eslint-disable-line @typescript-eslint/no-non-null-assertion
                 const tabDef = that.getTabDef( el.attr('rbl-tab'), el.attr('rbl-ce') )
-                const value = that.getRblSelectorValue( tabDef, "ejs-output", rblValueParts );
+                const value = 
+                    that.getRblSelectorValue( tabDef, "rbl-value", rblValueParts ) ??
+                    that.getRblSelectorValue( tabDef, "ejs-output", rblValueParts );
     
                 if ( value != undefined ) {
                     let target = $(this);
@@ -2546,48 +2549,61 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
             //Should this be rbl-state ? i.e. other states visibility, disabled, delete
             $("[rbl-display]", application.element).not("rbl-template [rbl-display]").each(function () {
                 const el = $(this);
-    
-                if ( showInspector && !el.hasClass("kat-inspector-display") )
-                {
-                    el.addClass("kat-inspector-display");
-                    let inspectorTitle = "[rbl-display={value}]".format( { value: el.attr('rbl-display') } );
-                    const existingTitle = el.attr("title");
-                    
-                    if ( existingTitle != undefined ) {
-                        inspectorTitle += el.hasClass( "kat-inspector-value" )
-                            ? "\n" + existingTitle
-                            : "\nOriginal Title: " + existingTitle;
+                const rblDisplay = el.attr('rbl-display');
+
+                if ( rblDisplay != undefined ) {
+                    if ( showInspector && !el.hasClass("kat-inspector-display") )
+                    {
+                        el.addClass("kat-inspector-display");
+                        let inspectorTitle = "[rbl-display={value}]".format( { value: rblDisplay } );
+                        const existingTitle = el.attr("title");
+                        
+                        if ( existingTitle != undefined ) {
+                            inspectorTitle += el.hasClass( "kat-inspector-value" )
+                                ? "\n" + existingTitle
+                                : "\nOriginal Title: " + existingTitle;
+                        }
+                        el.attr("title", inspectorTitle);
                     }
-                    el.attr("title", inspectorTitle);
-                }
-    
-                //legacy table is ejs-visibility but might work a little differently
-                const rblDisplayParts = el.attr('rbl-display')!.split('.'); // eslint-disable-line @typescript-eslint/no-non-null-assertion
-                const tabDef = that.getTabDef( el.attr('rbl-tab'), el.attr('rbl-ce') )
-                const tabDefName = tabDef?._fullName ?? ( el.attr( "rbl-ce" ) ?? "default" ) + "." + ( el.attr( "rbl-tab" ) ?? "default" );
-    
-                //check to see if there's an "=" for a simple equality expression
-                const expressionParts = rblDisplayParts[ rblDisplayParts.length - 1].split('=');
-                rblDisplayParts[ rblDisplayParts.length - 1] = expressionParts[0];
-                
-                let visibilityValue = 
-                    that.getRblSelectorValue( tabDef, "ejs-visibility", rblDisplayParts ) ??
-                    that.getRblSelectorValue( tabDef, "ejs-output", rblDisplayParts ); // Should remove this and only check ejs-visibility as the 'default'
-    
-                if (visibilityValue != undefined) {
-                    if ( expressionParts.length > 1) {
-                        visibilityValue = ( visibilityValue == expressionParts[1] ) ? "1" : "0"; //allows table.row.value=10
+        
+                    // totalReturned=0
+                    const rblDisplayParts = rblDisplay.split('.');
+                    const tabDef = that.getTabDef( el.attr('rbl-tab'), el.attr('rbl-ce') )
+                    let  tabDefName = tabDef?._fullName ?? ( el.attr( "rbl-ce" ) ?? "default" ) + "." + ( el.attr( "rbl-tab" ) ?? "default" );
+
+                    if ( tabDef != undefined ) {
+                        //check to see if there's an "=" for a simple equality expression
+                        // If rblDisplay = table.id.col=value, rblDisplayParts is: table, id, col=value
+                        // so split the last item and if expression is present, change the last displayParts
+                        // from col=value to just col.  Then get the value.
+                        const expressionParts = rblDisplayParts[ rblDisplayParts.length - 1].split('=');
+                        rblDisplayParts[ rblDisplayParts.length - 1] = expressionParts[0];
+                        
+                        let visibilityValue = 
+                            that.getRblSelectorValue( tabDef, "rbl-display", rblDisplayParts )
+                            that.getRblSelectorValue( tabDef, "ejs-visibility", rblDisplayParts ) ??
+                            that.getRblSelectorValue( tabDef, "ejs-output", rblDisplayParts ); // Should remove this and only check ejs-visibility as the 'default'
+            
+                        if (visibilityValue != undefined) {
+
+                            // Reassign the value you are checking to 1/0 if they tried to compare with
+                            // an expression of col=value.
+                            if ( expressionParts.length > 1) {
+                                visibilityValue = ( visibilityValue == expressionParts[1] ) ? "1" : "0";
+                            }
+            
+                            if (visibilityValue === "0" || visibilityValue.toLowerCase() === "false" || visibilityValue === "") {
+                                el.hide();
+                            }
+                            else {
+                                el.show();
+                            }
+
+                            return;
+                        }
                     }
-    
-                    if (visibilityValue === "0" || visibilityValue.toLowerCase() === "false" || visibilityValue === "") {
-                        el.hide();
-                    }
-                    else {
-                        el.show();
-                    }
-                }
-                else {
-                    application.trace("<b style='color: Red;'>RBL WARNING</b>: no data returned for tab=" + tabDefName + ", rbl-display=" + el.attr('rbl-display'), TraceVerbosity.Detailed);
+
+                    application.trace("<b style='color: Red;'>RBL WARNING</b>: no data returned for tab=" + tabDefName + ", rbl-display=" + rblDisplay, TraceVerbosity.Detailed);
                 }
             });
         }
@@ -2693,6 +2709,9 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                         input.selectpicker("refresh");
                     }
                 }
+                else {
+                    this.application.trace("<b style='color: Red;'>RBL WARNING</b>: No ejs-default input can be found for " + id, TraceVerbosity.Detailed);
+                }
             }
         }
     
@@ -2710,7 +2729,8 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
             const application = this.application;
     
             disabledRows.forEach( row => {
-                const selector = this.application.ui.getJQuerySelector( row["@id"] );
+                const id = row["@id"];
+                const selector = this.application.ui.getJQuerySelector( id );
     
                 if ( selector !== undefined ) {
                     // @id - regular input
@@ -2718,7 +2738,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                     // slider-@id - noUiSlider
                     const value = row.value ?? "";
                     const input = $(selector + ", " + selector + " input", application.element);
-                    const slider = this.application.ui.getNoUiSliderContainer( row["@id"], application.element );
+                    const slider = this.application.ui.getNoUiSliderContainer( id, application.element );
     
                     if (slider !== undefined) {
                         if (value === "1") {
@@ -2728,7 +2748,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                             slider.removeAttr("disabled");
                         }
                     }
-                    else {
+                    else if ( input.length > 0 ) {
                         if (value === "1") {
                             input.prop("disabled", true).removeAttr("kat-disabled");
                         }
@@ -2739,6 +2759,9 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                         if (input.hasClass("bootstrap-select")) {
                             input.selectpicker('refresh');
                         }
+                    }
+                    else {
+                        application.trace("<b style='color: Red;'>RBL WARNING</b>: No ejs-disabled input can be found for " + id, TraceVerbosity.Detailed);
                     }
                 }
             });
@@ -3100,8 +3123,14 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
     
             const warnings = this.getResultTable<ValidationRow>( tabDef, "warnings" );
             const errors = this.getResultTable<ValidationRow>( tabDef, "errors" );
-            this.processValidationRows(warningSummary, warnings);
-            this.processValidationRows(errorSummary, errors);
+
+            if ( errors.length + warnings.length > 0 && errorSummary.length == 0 ) {
+                this.application.trace("<b style='color: Red;'>RBL WARNING</b>: No validation summary is found to process the errors/warnings rows from " + tabDef._fullName, TraceVerbosity.Detailed);
+            }
+            else {
+                this.processValidationRows(warningSummary, warnings);
+                this.processValidationRows(errorSummary, errors);
+            }
         }
     
         processSliders( tabDef: TabDef ): void {
@@ -3267,12 +3296,15 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                         listRows.map( r => ({ Value:  r.key, Text: r.text, Class: r.class, Help: r.html, Selected: false, Visible: r.visible != "0", Disabled: r.disabled == "1" }))
                     );
                 }
-                else {
+                else if ( dropdown.length === 1 ) {
                     ui.processDropdownItems(
                         dropdown, 
                         row.rebuild == "1",
                         listRows.map( r => ({ Value:  r.key, Text: r.text, Class: r.class, Subtext: r.subtext, Html: r.html, Selected: false, Visible: r.visible != "0" }))
                     );
+                }
+                else {
+                    application.trace("<b style='color: Red;'>RBL WARNING</b>: No ejs-listcontrol can be found for " + controlName, TraceVerbosity.Detailed);
                 }
             });
         }
@@ -3296,6 +3328,8 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                     const markUpRows = this.getResultTable<HtmlContentRow>( tabDef, "ejs-markup" )
                     markUpRows.forEach( r => { this.createHtmlFromResultRow( r, false ); });
                     
+                    // Legacy support, hopefully ejs-output would be removed from CalcEngine
+                    // to speed up processing
                     const outputRows = this.getResultTable<HtmlContentRow>( tabDef, "ejs-output" )
                     outputRows.forEach( r => { this.createHtmlFromResultRow( r, true ); });
     
@@ -3370,6 +3404,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                     this.processDefaults( tabDef );
                     this.processDisabled( tabDef );
                     this.processValidations( tabDef );
+
                     application.trace( "Finished processing results for " + tabDef._fullName, TraceVerbosity.Normal );
                 });
     

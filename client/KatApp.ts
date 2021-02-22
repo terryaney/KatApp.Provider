@@ -193,7 +193,8 @@ class KatApp
                     return text;
                 }
             },
-            url: ajaxUrl
+            url: ajaxUrl,
+            cache: !tryLocalWebServer
         };
 
         if ( !tryLocalWebServer ) {

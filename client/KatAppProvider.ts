@@ -2438,7 +2438,10 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                         const rblSourceTableParts = el.attr('rbl-source-table')?.split('.');
                         const tabDef = that.getTabDef( el.attr('rbl-tab'), el.attr('rbl-ce') )
                         const tabDefName = tabDef?._fullName ?? ( el.attr( "rbl-ce" ) ?? "default" ) + "." + ( el.attr( "rbl-tab" ) ?? "default" );
-    
+
+                        // rbl-source-table - if provided, is a standard selector path in then form of
+                        // table.id.valueColumn or table.columnToSearch.id.valueColumn and can be used to 
+                        // return dynamic table name for rbl-source from CalcEngine
                         const rblSourceParts = rblSourceTableParts === undefined
                             ? el.attr('rbl-source')?.split('.')
                             : rblSourceTableParts.length === 3
@@ -2472,7 +2475,10 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                         }
             
                         if ( templateContent === undefined ) {
-                            application.trace("<b style='color: Red;'>RBL WARNING</b>: Template content could not be found. Tab = " + tabDefName + " [" + ( tid ?? "Missing rbl-tid for " + ( el.attr('rbl-source') ?? el.attr('rbl-source-table') ) ) + "]", TraceVerbosity.Detailed);
+                            // Result tables are processed later
+                            if ( el.attr("rbl-tid") !== "result-table" ) {
+                                application.trace("<b style='color: Red;'>RBL WARNING</b>: Template content could not be found. Tab = " + tabDefName + " [" + ( tid ?? "Missing rbl-tid for " + ( el.attr('rbl-source') ?? el.attr('rbl-source-table') ) ) + "]", TraceVerbosity.Detailed);
+                            }
                         }
                         else if ( rblSourceParts === undefined || rblSourceParts.length === 0) {
                             application.trace("<b style='color: Red;'>RBL WARNING</b>: no rbl-source data in tab " + tabDefName, TraceVerbosity.Detailed);
@@ -2486,16 +2492,12 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                                 el.children( ":not(.rbl-preserve, [rbl-tid='inline'])" ).remove();
                                 const prepend = el.attr('rbl-prepend') === "true";
     
-                                let i = 1;
-    
-                                table.forEach( row => {
-                                    //Support nested templates
-                                    // $("[rbl-source]",$(formattedContent)).not("[rbl-source] [rbl-source]")
-    
+                                table.forEach( ( row, index ) => {
                                     if ( rblSourceParts.length === 1 || row[ rblSourceParts[ 1 ] ] === rblSourceParts[ 2 ] ) {
-                                        const templateData = KatApp.extend( {}, row, { _index0: i - 1, _index1: i++ } )
+                                        const templateData = KatApp.extend( {}, row, { _index0: index, _index1: index + 1 } )
                                         const formattedContent = $(templateContent.format( templateData ));
     
+                                        // Recursive call to support nested templates
                                         that.processRblSource(formattedContent, showInspector);
     
                                         if ( prepend ) {
@@ -3017,7 +3019,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
             }            
     
             $('[rbl-tid="chart-highcharts"], [rbl-template-type="katapp-highcharts"]', view).each(function () {
-                highchartsBuilder.buildChart( $(this) );
+                highchartsBuilder.renderChart( $(this) );
             });
         }
     
@@ -3313,9 +3315,6 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
             const application = this.application;
             const results = application.results;
     
-            // TOM (what does this comment mean): element content can be preserved with a class flag
-            // TOM (what does this comment mean): generated content append or prepend (only applicably when preserved content)
-    
             if ( results !== undefined ) {
                 const showInspector = application.calculationInputs?.iConfigureUI === 1 && ( calculationOptions.debug?.showInspector ?? false );
                 this.initializeValidationSummaries();
@@ -3429,12 +3428,6 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
         }
     }
     class HighchartsBuilder {
-        highchartsOptions?: HighChartsOptionRow[];
-        highchartsOverrides?: HighChartsOverrideRow[];
-        highchartsData?: HighChartsDataRow[];
-        highChartsDataName?: string;
-        highChartsOptionsName?: string;
-
         application: KatAppPlugIn;
 
         constructor( application: KatAppPlugIn ) {
@@ -3459,15 +3452,53 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
             }
         };
 
-        getHighchartsConfigValue( configurationName: string ): string | undefined {            
-            // Look in override table first, then fall back to 'regular' options table
-            return this.highchartsOverrides?.find(r => this.stringCompare(r.key, configurationName, true) === 0)?.value ??
-                   this.highchartsOptions?.find(r => this.stringCompare(r.key, configurationName, true) === 0)?.value;
-        }
+		removeRBLEncoding(value: string | undefined): string | undefined {
+			if (value === undefined) return value;
+
+			// http://stackoverflow.com/a/1144788/166231
+			/*
+			function escapeRegExp(string) {
+				return string.replace(/([.*+?^=!:${}()|\[\]\/\\])/g, "\\$1");
+			}
+			*/
+			return value.replace(/<</g, "<")
+				.replace(/&lt;&lt;/g, "<")
+				.replace(/>>/g, ">")
+				.replace(/&gt;&gt;/g, ">")
+				.replace(/&quot;/g, "\"")
+				.replace(/&amp;nbsp;/g, "&nbsp;");
+		}
+
+		getValue(value: string): string | boolean | number | (()=> void) | undefined {
+			const d = Number(value);
+
+			if (value === undefined || this.stringCompare(value, "null", true) === 0) return undefined;
+			else if (!isNaN(d) && value !== "") return d;
+			else if (this.stringCompare(value, "true", true) === 0) return true;
+			else if (this.stringCompare(value, "false", true) === 0) return false;
+			else if (value.startsWith("json:")) return JSON.parse(value.substring(5));
+			else if (value.startsWith("var ")) {
+                // Not sure this is ever used because it doesn't appear to work.
+                // It assigns a function() to the property instead of the value.
+                // Introduced eval method to immediately eval the text
+                const v = value.substring(4);
+				return function (): any { return eval(v); } // eslint-disable-line @typescript-eslint/no-explicit-any
+			}
+			else if (value.startsWith("eval ")) {
+                const v = value.substring(5);
+                
+                return eval(v);
+			}
+			else if (value.startsWith("function ")) {
+				const f = this.removeRBLEncoding("function f() {value} f.call(this);".format( { value: value.substring(value.indexOf("{")) } ));
+				return function (): any { return eval(f!); } // eslint-disable-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-non-null-assertion
+			}
+			else return this.removeRBLEncoding(value);
+		}
 
         // Associated code with this variable might belong in template html/js, but putting here for now.
         firstHighcharts = true;
-        ensureHighchartsCulture(): void {
+        ensureCulture(): void {
             // Set some default highcharts culture options globally if this is the first chart I'm processing
             if ( this.firstHighcharts ){
                 this.firstHighcharts = false;
@@ -3496,54 +3527,10 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
             }
         }
 
-		removeRBLEncoding(value: string | undefined): string | undefined {
-			if (value === undefined) return value;
-
-			// http://stackoverflow.com/a/1144788/166231
-			/*
-			function escapeRegExp(string) {
-				return string.replace(/([.*+?^=!:${}()|\[\]\/\\])/g, "\\$1");
-			}
-			*/
-			return value.replace(/<</g, "<")
-				.replace(/&lt;&lt;/g, "<")
-				.replace(/>>/g, ">")
-				.replace(/&gt;&gt;/g, ">")
-				.replace(/&quot;/g, "\"")
-				.replace(/&amp;nbsp;/g, "&nbsp;");
-		}
-
-		getHighChartsOptionValue(value: string): string | boolean | number | (()=> void) | undefined {
-			const d = Number(value);
-
-			if (value === undefined || this.stringCompare(value, "null", true) === 0) return undefined;
-			else if (!isNaN(d) && value !== "") return d;
-			else if (this.stringCompare(value, "true", true) === 0) return true;
-			else if (this.stringCompare(value, "false", true) === 0) return false;
-			else if (value.startsWith("json:")) return JSON.parse(value.substring(5));
-			else if (value.startsWith("var ")) {
-                // Not sure this is ever used because it doesn't appear to work.
-                // It assigns a function() to the property instead of the value.
-                // Introduced eval method to immediately eval the text
-                const v = value.substring(4);
-				return function (): any { return eval(v); } // eslint-disable-line @typescript-eslint/no-explicit-any
-			}
-			else if (value.startsWith("eval ")) {
-                const v = value.substring(5);
-                
-                return eval(v);
-			}
-			else if (value.startsWith("function ")) {
-				const f = this.removeRBLEncoding("function f() {value} f.call(this);".format( { value: value.substring(value.indexOf("{")) } ));
-				return function (): any { return eval(f!); } // eslint-disable-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-non-null-assertion
-			}
-			else return this.removeRBLEncoding(value);
-		}
-
-        setHighChartsOption(optionsContainer: HighchartsOptions | HighchartsSeriesOptions, name: string, value: string): void {
+        setApiOption(optionsContainer: HighchartsOptions | HighchartsSeriesOptions, name: string, value: string): void {
 			let optionJson = optionsContainer;
 			const optionNames = name.split(".");
-			const optionValue = this.getHighChartsOptionValue(value);
+			const optionValue = this.getValue(value);
 
 			// Build up a json object...
 			// chart.title.text, Hello = { chart: { title: { text: "Hello } } }
@@ -3600,7 +3587,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
 			}
 		}
 
-        getHighChartsXAxisOptions( existingOptions: HighchartsAxisOptions | undefined, chartData: HighChartsDataRow[] ): HighchartsAxisOptions {
+        getXAxisOptions( existingOptions: HighchartsAxisOptions | undefined, chartData: HighChartsDataRow[] ): HighchartsAxisOptions {
             const xAxis = existingOptions as HighchartsAxisOptions ?? {};
             xAxis.categories = chartData.map(d => this.removeRBLEncoding(d.category) ?? "");
 
@@ -3663,117 +3650,77 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
             return xAxis;
         }
 
-        getHighchartsTooltipOptions( seriesColumns: string[], chartConfigurationRows: HighChartsDataRow[] ): HighchartsTooltipOptions | undefined {
-            const tooltipFormat = this.removeRBLEncoding(this.getHighchartsConfigValue("config-tooltipFormat"));
-            
+        getTooltipOptions( tooltipFormat: string | undefined, seriesColumns: string[], seriesConfigurationRows: HighChartsDataRow[] ): HighchartsTooltipOptions | undefined {
             if ( tooltipFormat === undefined ) {
                 return undefined;
             }
 
-            // Get the 'format' configuration row to look for specified format, otherwise return c0 as default
-            const configFormat = chartConfigurationRows.find(c => c.category === "config-format");
+            // Get the series 'format' row to look for specified format, otherwise return c0 as default
+            const configFormat = seriesConfigurationRows.find(c => c.category === "config-format");
 
             const seriesFormats = seriesColumns
                 // Ensure the series/column is visible
-                .filter( seriesName => chartConfigurationRows.filter(c => c.category === "config-visible" && c[seriesName] === "0").length === 0 )
+                .filter( seriesName => seriesConfigurationRows.filter(c => c.category === "config-visible" && c[seriesName] === "0").length === 0 )
                 .map( seriesName => configFormat?.[seriesName] as string || "c0" );
 
             return {
                 formatter: function ( this: HighchartsTooltipFormatterContextObject ) {
                     let s = "";
                     let t = 0;
-                    const template = Sys.CultureInfo.CurrentCulture.name.startsWith("fr")
+                    const pointTemplate = Sys.CultureInfo.CurrentCulture.name.startsWith("fr")
                         ? "<br/>{name} : {value}"
                         : "<br/>{name}: {value}";
 
-                    this.points.forEach(point => {
+                    this.points.forEach( ( point, index ) => {
                         if (point.y > 0) {
 
-                            s += template.format( { name: point.series.name, value: String.localeFormat("{0:" + seriesFormats[0] + "}", point.y) });
+                            s += pointTemplate.format( { name: point.series.name, value: String.localeFormat("{0:" + seriesFormats[index] + "}", point.y) });
                             t += point.y;
                         }
                     });
-                    return tooltipFormat
-                        .replace(new RegExp("\\{x\\}", "g"), String(this.x))
-                        .replace(new RegExp("\\{stackTotal\\}", "g"), String.localeFormat("{0:" + seriesFormats[0] + "}", t))
-                        .replace(new RegExp("\\{seriesDetail\\}", "g"), s);
-
+                    return tooltipFormat.format( { x: this.x, stackTotal: String.localeFormat("{0:" + seriesFormats[0] + "}", t), seriesDetail: s});
                 },
                 shared: true
             } as HighchartsTooltipOptions;
         }
 
-        getHighchartsOptions( firstDataRow: HighChartsDataRow | undefined ): HighchartsOptions {            
-            const chartOptions: HighchartsOptions = {};
+        getSeriesDataRow(row: HighChartsDataRow, allColumnNames: string[], seriesName: string, isXAxisChart: boolean): HighchartsDataPoint {
 
-            // If chart has at least 1 data row and options/overrides arrays have been initialized
-            if ( this.highchartsData !== undefined && this.highchartsOptions !== undefined && this.highchartsOverrides !== undefined ) {
-
-                // First set all properties from the options/overrides rows
-                const overrideProperties = this.highchartsOverrides.filter( r => !r.key.startsWith("config-"));
-                this.highchartsOptions.concat(overrideProperties).forEach(optionRow => {
-                    this.setHighChartsOption(chartOptions, optionRow.key, optionRow.value);
-                });
-
-                // Get series data
-                const allChartColumns = firstDataRow != undefined ? Object.keys(firstDataRow) : [];
-                const seriesColumns = allChartColumns.filter( k => k.startsWith( "series" ) );
-                const chartConfigurationRows = this.highchartsData.filter(e => e.category.startsWith("config-"));
-                const chartData = this.highchartsData.filter(e => !e.category.startsWith("config-"));
-
-                const chartType = this.getHighchartsConfigValue("chart.type");
-                const isXAxisChart = chartType !== "pie" && chartType !== "solidgauge" && chartType !== "scatter3d" && chartType !== "scatter3d";
-
-                chartOptions.series = this.getHighChartsSeries(allChartColumns, seriesColumns, chartConfigurationRows, chartData, isXAxisChart);
-
-                if (isXAxisChart) {
-                    chartOptions.xAxis = this.getHighChartsXAxisOptions( chartOptions.xAxis as HighchartsAxisOptions | undefined, chartData );
-                }
-
-                chartOptions.tooltip = this.getHighchartsTooltipOptions( seriesColumns, chartConfigurationRows ) ?? chartOptions.tooltip;
-            }
-
-            return chartOptions;
-        }
-
-        getHighChartsSeriesDataRow(row: HighChartsDataRow, allColumnNames: string[], seriesName: string, isXAxisChart: boolean): HighchartsDataPoint {
-			// id: is for annotations so that points can reference a 'point name/id'
+            // id: is for annotations so that points can reference a 'point name/id'
 			// name: is for pie chart's built in highcharts label formatter and it looks for '.name' on the point
-
 			const dataRow = { y: +row[seriesName], id: seriesName + "." + row.category } as HighchartsDataPoint;
 
 			if (!isXAxisChart) {
 				dataRow.name = row.category;
 			}
 
-            // Get all the 'data point' configuration values for the current chart data row
-            // TODO: Get documentation here of some samples of when this is needed
+            // Get all the 'data point' property values for the current chart data row
 			const pointColumnHeader = "point." + seriesName + ".";
             allColumnNames.filter( k => k.startsWith(pointColumnHeader) ).forEach( k => {
-                dataRow[k.substring(pointColumnHeader.length)] = this.getHighChartsOptionValue(row[k]);
+                dataRow[k.substring(pointColumnHeader.length)] = this.getValue(row[k]);
 			});
 
 			return dataRow;
 		}
 
-		getHighChartsSeries(allColumns: string[], seriesColumns: string[], chartConfigurationRows: HighChartsDataRow[], chartData: HighChartsDataRow[], isXAxisChart: boolean): HighchartsSeriesOptions[] {
+		buildSeries(allColumns: string[], seriesColumns: string[], seriesConfigurationRows: HighChartsDataRow[], chartData: HighChartsDataRow[], isXAxisChart: boolean): HighchartsSeriesOptions[] {
 			const seriesInfo: HighchartsSeriesOptions[] = [];
 
 			seriesColumns.forEach(seriesName => {
-				const isVisible = chartConfigurationRows.filter(c => c.category === "config-visible" && c[seriesName] === "0").length === 0;
+				const isVisible = seriesConfigurationRows.filter(c => c.category === "config-visible" && c[seriesName] === "0").length === 0;
 				// Don't want series on chart or legend but want it in tooltip/chart data
-				const isHidden = chartConfigurationRows.filter(c => c.category === "config-hidden" && c[seriesName] === "1").length > 0;
+				const isHidden = seriesConfigurationRows.filter(c => c.category === "config-hidden" && c[seriesName] === "1").length > 0;
 
 				if (isVisible) {
 					const series: HighchartsSeriesOptions = {};
-					const properties = chartConfigurationRows
+					const properties = seriesConfigurationRows
 						.filter(c => ["config-visible", "config-hidden", "config-format"].indexOf(c.category) === -1 && c[seriesName] !== undefined)
 						.map(c => ({ key: c.category.substring(7), value: c[seriesName] } as HighChartsOptionRow));
 
-					series.data = chartData.map(d => this.getHighChartsSeriesDataRow(d, allColumns, seriesName, isXAxisChart));
+					series.data = chartData.map(d => this.getSeriesDataRow(d, allColumns, seriesName, isXAxisChart));
 
 					properties.forEach(c => {
-						this.setHighChartsOption(series, c.key, c.value);
+						this.setApiOption(series, c.key, c.value);
 					});
 
 					if (isHidden) {
@@ -3788,50 +3735,91 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
 			return seriesInfo;
 		}
 
-        buildChart(el: JQuery<HTMLElement>): JQuery {
-            this.highChartsDataName = el.attr("rbl-chartdata");
-            this.highChartsOptionsName = el.attr("rbl-chartoptions") ?? this.highChartsDataName;
+        buildChart( chartType: string | undefined, tooltipFormat: string | undefined, dataRows: HighChartsDataRow[], optionRows: HighChartsOptionRow[], overrideRows: HighChartsOverrideRow[], seriesConfigurationRows: HighChartsDataRow[] ): HighchartsOptions {
+            const chartOptions: HighchartsOptions = {};
 
-            if ( this.highChartsDataName !== undefined && this.highChartsOptionsName !== undefined ) {
-                this.ensureHighchartsCulture();
+            const firstDataRow = dataRows[ 0 ];
+
+            // First set all API properties from the options/overrides rows (options first, then overrides to replace/append)
+            const apiOptions = 
+                optionRows.concat( overrideRows )
+                    .filter( r => !r.key.startsWith("config-") );
+
+            apiOptions.forEach(optionRow => {
+                this.setApiOption(chartOptions, optionRow.key, optionRow.value);
+            });
+
+            // Get series data
+            const allChartColumns = Object.keys(firstDataRow);
+            const seriesColumns = allChartColumns.filter( k => k.startsWith( "series" ) );
+            const isXAxisChart = chartType !== "pie" && chartType !== "solidgauge" && chartType !== "scatter3d" && chartType !== "scatter3d";
+
+            chartOptions.series = this.buildSeries(allChartColumns, seriesColumns, seriesConfigurationRows, dataRows, isXAxisChart);
+
+            if (isXAxisChart) {
+                chartOptions.xAxis = this.getXAxisOptions( chartOptions.xAxis as HighchartsAxisOptions | undefined, dataRows );
+            }
+
+            chartOptions.tooltip = this.getTooltipOptions( tooltipFormat, seriesColumns, seriesConfigurationRows ) ?? chartOptions.tooltip;
+
+            return chartOptions;
+        }
+
+        renderChart(el: JQuery<HTMLElement>): JQuery {
+            const dataName = el.attr("rbl-chartdata");
+            const optionsName = el.attr("rbl-chartoptions") ?? dataName;
+
+            if ( dataName !== undefined && optionsName !== undefined ) {
+
                 const application = this.application;
                 const tabDef = application.rble.getTabDef( el.attr('rbl-tab'), el.attr('rbl-ce') )
-                this.highchartsOverrides = application.rble.getResultTable<HighChartsOverrideRow>( tabDef,"HighCharts-Overrides").filter( r => this.stringCompare(r["@id"], this.highChartsDataName, true) === 0);
-                this.highchartsOptions = application.rble.getResultTable<HighChartsOptionRow>( tabDef, "HighCharts-" + this.highChartsOptionsName + "-Options");
-                this.highchartsData = application.rble.getResultTable<HighChartsDataRow>( tabDef, "HighCharts-" + this.highChartsDataName + "-Data");
+                const overrideRows = application.rble.getResultTable<HighChartsOverrideRow>( tabDef,"HighCharts-Overrides").filter( r => this.stringCompare(r["@id"], dataName, true) === 0);
+                const optionRows = application.rble.getResultTable<HighChartsOptionRow>( tabDef, "HighCharts-" + optionsName + "-Options");
+                const allDataRows = application.rble.getResultTable<HighChartsDataRow>( tabDef, "HighCharts-" + dataName + "-Data");
+                const dataRows = allDataRows.filter(e => !(e.category || "").startsWith("config-"));
+                const seriesConfigurationRows = allDataRows.filter(e => (e.category || "").startsWith("config-"));
 
-                const firstDataRow = this.highchartsData.find(r => !(r.category || "").startsWith("config-"));
+                if ( dataRows.length > 0 ) {
+                    this.ensureCulture();
 
-                if ( this.highchartsData.length > 0 ) {
+                    const builder = this;
+                    const getOptionValue = function( configurationName: string ): string | undefined {
+                        // Look in override table first, then fall back to 'regular' options table
+                        return overrideRows?.find(r => builder.stringCompare(r.key, configurationName, true) === 0)?.value ??
+                               optionRows?.find(r => builder.stringCompare(r.key, configurationName, true) === 0)?.value;
+                    }
+    
+                    const chartType = getOptionValue("chart.type");
+                    const tooltipFormat = this.removeRBLEncoding(getOptionValue("config-tooltipFormat"));
+                    const chartOptions = this.buildChart( chartType, tooltipFormat, dataRows, optionRows, overrideRows, seriesConfigurationRows );
+    
                     const container = $(".chart", el);
 
-                    let renderStyle = container.attr("style") ?? "";
-                    const configStyle = this.getHighchartsConfigValue("config-style");
-        
+                    const configStyle = getOptionValue("config-style");
                     if (configStyle !== undefined) {
+                        let renderStyle = container.attr("style") ?? "";
                         if (renderStyle !== "" && !renderStyle.endsWith(";")) {
                             renderStyle += ";";
                         }
                         container.attr("style", renderStyle + configStyle);
                     }
                     
+                    // Key automatically added to container for identifying this chart
                     const highchartKey = container.attr('data-highcharts-chart');
                     const highchart = Highcharts.charts[ highchartKey ?? -1 ] as unknown as HighchartsChartObject;
     
                     if ( highchart !== undefined ) {
                         highchart.destroy();                    
                     }
-    
-                    const chartOptions = this.getHighchartsOptions( firstDataRow );
-    
+
                     try {
                         container.highcharts(chartOptions);
                     } catch (error) {
-                        this.application.trace("Error during highchart creation", TraceVerbosity.None);
+                        application.trace("Error during highchart creation", TraceVerbosity.None);
                         throw error;                        
                     }
                 }
-        }
+            }
 
             return el;
         }
@@ -4975,7 +4963,8 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                     return text;
                 }
             },
-            url: ajaxUrl
+            url: ajaxUrl,
+            cache: !tryLocalWebServer
         };
 
         if ( !tryLocalWebServer ) {

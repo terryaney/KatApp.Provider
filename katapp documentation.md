@@ -32,6 +32,7 @@
     - [Automatically Processed Templates](#Automatically-Processed-Templates)
         - [ResultBuilder Framework Tables](#ResultBuilder-Framework-Tables)
         - [ResultBuilder Framework Charts](#ResultBuilder-Framework-Charts)
+    - [Building Common Controls](#Building-Common-Controls)
 - [ResultBuilder Framework](#ResultBuilder-Framework)
     - [Table Template Processing](#Table-Template-Processing)
         - [colgroup processing](#colgroup-Processing)
@@ -42,12 +43,18 @@
     - [Highcharts Template Processing](#Highcharts-Template-Processing)
         - [CalcEngine Table Layouts](#CalcEngine-Table-Layouts)
             - [Highcharts-{rbl-chartoptions}-Options](#Highcharts-{rbl-chartoptions}-Options)
-            - [Highcharts-{rbl-chartoptions}-Data](#Highcharts-{rbl-chartoptions}-Data)
+            - [Highcharts-{rbl-chartdata}-Data](#Highcharts-{rbl-chartoptions}-Data)
             - [Highcharts-Overrides](#Highcharts-Overrides)
         - [Custom Chart Options](#Custom-Chart-Options)
-        - [Chart Options](#Chart-Options)
-        - [Language Support](#Language-Support)        
-
+        - [Standard Chart Options](#Standard-Chart-Options)
+        - [Custom Series Options](#Custom-Series-Options)
+        - [Standard Series Options](#Standard-Series-Options)
+        - [Property Value Parsing](#Property-Value-Parsing)
+        - [Language Support](#Language-Support)
+- [Advanced Configuration](#Advanced-Configuration)
+    - [RBLe Service Attributes / Classes](#RBLe-Service-Attributes-/-Classes)
+    - [Precalc Pipelines](#Precalc-Pipelines)
+    - [KatApp API](#KatApp-API)
 # Overview
 A KatApp is a dynamic html application delivered to a host platform such as Life@Work.  Conceptually, its like a CMS, but instead of static content, it provides for dynamic content containing potentially complex business logic and controls and data and results.
 
@@ -423,7 +430,7 @@ value | Whether or not to enable or disable the input.  If `value` is `1`, the i
 <br/>
 
 ### **skip-RBLe**
-Find and prevent inputs in Kaml View from triggering a calculation upon change.  This table is legacy support that is equivalent to `rbl-nocalc` and can only be used to _prevent an input from triggering a calculation_.  You can not use it to turn calculations back on for an input.  This table allows for the business logic of knowing which inputs trigger a calculation and which do not to be left inside the CalcEngine.  Using this table has the same effect as applying attributes manually in the Kaml View.
+Find and prevent inputs in Kaml View from triggering a calculation upon change.  This table is legacy support that is equivalent to `rbl-nocalc` (see [RBLe Service Attributes / Classes](#RBLe-Service-Attributes-/-Classes)) and can only be used to _prevent an input from triggering a calculation_.  You can not use it to turn calculations back on for an input.  This table allows for the business logic of knowing which inputs trigger a calculation and which do not to be left inside the CalcEngine.  Using this table has the same effect as applying attributes manually in the Kaml View.
 
 Column | Description
 ---|---
@@ -718,6 +725,52 @@ Template&nbsp;Attribute | Description
 rbl&#x2011;chartdata | The name of the RBLe Service table that provides the data for the chart.  In the CalcEngine, the table name will be `HighCharts-{table}-Data`.
 rbl&#x2011;chartoptions | Optional name of the RBLe Service table that provides the options/configuration for the chart.  In the CalcEngine, the table name will be `HighCharts-{table}-Options`.  If not provided, the `rbl-chartdata` table will be used as the identifier.
 
+## Building Common Controls
+
+Templates are also used to build controls in an Kaml View that may have repetitive or complex markup.  This is accomplished by passing static data to the template that is used to create markup.  This use of templates generally does not use RBLe results, but rather static data.
+
+### Example: Creating a slider
+```xml
+<!-- create a slider for control 'iRetireAge' using 'standard' template -->
+<div rbl-tid="slider-control" data-inputname="iRetireAge">
+```
+
+The above markup uses the predefined "slider-control" template and the result is this markup:
+
+```xml
+<div class="form-group slider-control-group">
+    <div class="validator-container">
+        <a style="display: none;" class="vhiRetireAge" role="button" tabindex="0" data-toggle="popover"
+        data-trigger="click" data-content-selector=".hiRetireAge" data-placement="top">
+        <span class="glyphicon glyphicon-info-sign help-icon"></span>
+        </a>
+        <a style="display: none;" class="vsiRetireAge" role="button" tabindex="0" data-placement="top">
+        <span class="glyphicon glyphicon glyphicon-volume-up"></span>
+        </a>
+        <div class="slider-control slider-iRetireAge" data-slider-type="nouislider"></div>
+        <input name="iRetireAge" type="text" id_="iRetireAge" class="form-control iRetireAge" style="display: none" />
+        <span class="error-msg" data-toggle="tooltip" data-placement="top"></span>
+    </div>
+    <div class="hiRetireAgeTitle" style="display: none;"></div>
+    <div class="hiRetireAge" style="display: none;"></div>
+    <h6 class="text-center">
+        <span class="liRetireAge" style="text-transform: uppercase">iRetireAge Label</span>
+        <span class="sviRetireAge" style="font-weight: bold"></span>
+    </h6>
+</div>
+```
+
+In this manner, if two more sliders are needed for inputs iInvestmentReturn and iBonusPercentage, the Kaml View markup would be:
+
+```html
+<!-- sliders -->
+<div rbl-tid="slider-control" data-inputname="iRetireAge">
+<div rbl-tid="slider-control" data-inputname="iInvestmentReturn">
+<div rbl-tid="slider-control" data-inputname="iBonusPercentage">
+```
+
+This is more accurate than repeating the complex markup for every slider needed and replacing all instances of 'iRetireAge'. 
+
 # ResultBuilder Framework
 
 ## Table Template Processing
@@ -833,7 +886,7 @@ To see all the options available for charts and series, please refer to the [Hig
 
 ### CalcEngine Table Layouts
 
-The tables used to produce Highcharts in a Kaml view are mostly 'key/value pair' tables.
+The tables used to produce Highcharts in a Kaml view are mostly 'key/value pair' tables.  The three tables in use are `Highcharts-{rbl-chartoptions}-Options`, `Highcharts-{rbl-chartdata}-Data`, and `Highcharts-Overrides`.  Note that if `rbl-chartoptions` attribute is not provided, `rbl-chartdata` will be used as the 'name' for both the options and the data table.
 
 #### Highcharts-{rbl-chartoptions}-Options
 
@@ -846,7 +899,7 @@ value | The value of the option.  See [Property Value Parsing](#Property-Value-P
 
 <br/>
 
-#### Highcharts-{rbl-chartoptions}-Data
+#### Highcharts-{rbl-chartdata}-Data
 
 Provides the data and _series configuration_ to build the chart.  If the category name starts with `config-`, it is a row that provides [Standard Highchart Series Options](#Standard-Highchart-Series-Options) for each series in the chart, otherwise, the category name represents the data values for each series in the chart.
 
@@ -883,7 +936,15 @@ config-tooltipFormat | When tooltips are enabled, there is a default `tooltip.fo
 
 ### Standard Chart Options
 
-Standard chart option names provided by `key` columns are a `period` delimitted value meant to represent the Highcharts API object hierarchy.  For example, given `id: chart.title.text` and `value: My Chart`, the following object would be created.
+Standard chart option names provided by `key` columns are a `period` delimitted value meant to represent the Highcharts API object hierarchy.  
+
+For example, given:
+id | value
+---|---
+chart.title.text | My Chart
+
+<br/>
+The following Hicharts configuration would be created:
 
 ```javascript
 {
@@ -895,22 +956,169 @@ Standard chart option names provided by `key` columns are a `period` delimitted 
 }
 ```
 
-setApiOption has some interesting stuff
-WealthChart	plotOptions.pie.colors[0]
+If the Highcharts API object property is an array, you can set specific array elements as well using an `[]` syntax.  
 
+For example, given:
+id | value
+---|---
+plotOptions.pie.colors[0] | Red
+plotOptions.pie.colors[1] | Blue
+
+<br/>
+The following Hicharts configuration would be created:
+
+```javascript
+{
+    plotOptions: {
+        pie: {
+            colors: [
+                "Red",
+                "Blue"
+            ]
+        }
+    }
+}
+```
+
+Another example assigning [annotations](https://api.highcharts.com/highcharts/annotations):
+
+For example, given:
+id | value
+---|---
+annotations[0].labels[0] | json:{ point: 'series1.69', text: 'Life Exp' }
+
+<br/>
+The following Hicharts configuration would be created:
+
+```javascript
+{
+    annotations: [
+        {
+            labels: [
+                { 
+                    point: 'series1.69', 
+                    text: 'Life Exp' 
+                }
+            ]
+        }
+    ]
+}
+```
 
 ### Custom Series Options
 
-series: config-visible (turned off essentially, same as on row), config-hidden (not shown in chart or legend (but can be used in tooltips)), config-format, config-* where * is 'option.option' applied to series
+There are some configuration options that are explicitly handled by the ResultBuilder Framework for Highchart series, meaning, they do not map to the Highcharts API.
+
+Series options are created by having a row in the `Highcharts-{rbl-chartdata}-Data` table with a `category` column value starting with `config-`.  Then the values in every `seriesN` column in the row represent the configuration setting for _that_ series.
+
+Configuration&nbsp;Setting | Description
+---|---
+config-visible | You can disable a series from being processed by setting its `config-visible` value to `0`.
+config-hidden | Similar to `config-visible` except, if hidden, the series is _processed_ in the chart rendering, but it is not displayed in the chart or the legend.  Hidden series are essentially only available for tooltip processing.
+config-format | Specify a format to use when display date or number values for this series in the tooltip.  See Microsoft documentation for available [date](https://docs.microsoft.com/en-us/dotnet/standard/base-types/custom-date-and-time-format-strings) and [number](https://docs.microsoft.com/en-us/dotnet/standard/base-types/standard-numeric-format-strings) format strings.
+
+<br/>
+
+An example of how these might look in a CalcEngine result table.
+
+category | series1 | series2 | series3 | series4
+---|---|---|---|---
+config-visible | 1 | 1 | 1 | 0
+config-hidden | 0 | 0 | 1 | 1
+config-format | c2 | c2 | c2 | c2
+
+<br/> 
+
+This table would result a chart with `series1`, `series2`, and `series3` being processed.  `series3` would not be visible in the chart or legend, but would be displayed in the tooltip.  Each of the processed series would display values in $0.00 format.
 
 ### Standard Series Options
 
-config-* where * is 'option.option' applied to series
+In addition to the Custom Series Options, if you need to apply any Highcharts API options to the series in the chart, you accomplish it in the following manner.
 
+Configuration&nbsp;Setting | Description
+---|---
+config-* | Every row that starts with `config-` but is not `config-visible`, `config-hidden` or `config-format` is assumed to be an option to assign to the Highcharts API for the given series.  `*` represents a `period` delimitted list of property names.  See [Standard Chart Options](#Standard-Chart-Options) for more information on API property naming.
+
+Example of settings used for KatApp Sharkfin Income chart.
+
+category | series1 | series2 | series3 | series4 | series5 | series6
+---|---|---|---|---|---
+config-name | Shortfall | 401(k) Plan | Non Qualified Savings Plan | HSA | Personal Savings | Retirement Income  Needed
+config-color | #FFFFFF | #006BD6 | #DDDDDD | #6F743A | #FD9F13 | #D92231
+config-type | areaspline | column | column | column | column | spline
+config-fillOpacity | 0 |||||			
+config-showInLegend | 0 | 1 | 1 | 1 | 1 | 1
+
+<br/>
+
+The following Hicharts configuraiton would be created:
+
+```javascript
+{
+    series: [
+        {
+            name: "Shortfall",
+            color: "#FFFFFF",
+            type: "areaspline",
+            fillOpacity: 0,
+            showInLegend: 0,
+            data: [ /* filled in from data rows */ ]
+        },
+        {
+            name: "401(k) Plan",
+            color: "#006BD6",
+            type: "column",
+            showInLegend: 1,
+            data: [ /* filled in from data rows */ ]
+        },
+        {
+            name: "Non Qualified Savings Plan",
+            color: "#DDDDDD",
+            type: "column",
+            showInLegend: 1,
+            data: [ /* filled in from data rows */ ]
+        },
+        {
+            name: "HSA",
+            color: "#6F743A",
+            type: "column",
+            showInLegend: 1,
+            data: [ /* filled in from data rows */ ]
+        },
+        {
+            name: "Personal Savings",
+            color: "#FD9F13",
+            type: "column",
+            showInLegend: 1,
+            data: [ /* filled in from data rows */ ]
+        },
+        {
+            name: "Retirement Income Needed",
+            color: "#D92231",
+            type: "spline",
+            showInLegend: 1,
+            data: [ /* filled in from data rows */ ]
+        }
+    ]
+}
+```
+
+See [series](https://api.highcharts.com/highcharts/series) documentation to learn more about available series properties for each chart type.
 
 ### Property Value Parsing
 
-config-tooltipFormat    function () { return String.localeFormat("{0:c0}", this.y); }
+Value columns used to set the Highcharts API option values allow for several different formats of data that are then converted into different types of properties values.
+
+Value | API Value Type | Description
+---|---|---
+`blank` or `null` | `undefined` | If no value or value of `null` (case insensitive) is returned, `undefined` will be assigned to the property value.
+numeric | numeric | If the value returned can be parsed into a number, a numeric value will be assigned to the property value.
+`true` or `false` | boolean |  If a value of `true` or `false` (case insensitive) is returned, a `boolean` value will be assigned to the property value.
+`json:{ name: value }` | object | If a value starting with `json:` is returned, the json text will be parsed and the resulting object will be assigned to the property value.
+`eval [1,2]` | any | If a value starting with `eval ` is returned, the text following the `eval` prefix is _parsed and evaluated_ as Javascript and the resulting value (can be any type) is assigned to the property value.  In the example shown here, an integer array of `[1,2]` would be assigned to the property.  Assigning properties of type array are most common use of this syntax.
+`function () { return String.localeFormat("{0:c0}", this.y); }` | function: any | For API properties that can be assigned a function, if a value starting with `function ` is returned, it will be parsed as a valid function and assigned to the property.
+
+<br/>
 
 ### Language Support
 
@@ -918,7 +1126,7 @@ The 'culture' of the table can be set via the CalcEngine.  If the results have a
 
 # Advanced Configuration
 
-TODO: Nested inline templates
+KatApps have advanced features that can be configured that manage input handling (via attributes), CalcEngines (via Precalc Pipelines) and hooking into the calculation lifecycle events.
 
 ## RBLe Service Attributes / Classes
 
@@ -968,226 +1176,504 @@ Configure two CalcEngines with different tabs to run in the pipeline before the 
     rbl-precalcs="LAW_Wealth_Helper1_CE|RBLInput|RBLHelperResults,LAW_Wealth_Helper2_CE"></div>
 ```
 
+# KatApp API
+
+This section describes all the properties, methods and events of the KatApp API.  All methods and property getters can be called via jQuery plugin sytnax or by obtaining a reference to the KatApp and accessing them directly from the object.  jQuery plugin syntax is when you provide the method/property name as the first param to the plugin method.
+
+When using the jQuery plugin syntax, if a method that has no return value is being called, it will be called on every KatApp that matches the selector.  If a property or method that returns data is being called, it will execute the property or method on the _first_ KatApp that matches the supplied selector.
+
+When calling the plugin method with no parameters `.KatApp()`, if the _first_ KatApp matching the supplied selector has already been initialized, the plugin method will _return_ the KatApp object of the _first_ matching KatApp.  Otherwise, it will attempt to initialize all matching KatApps using the default options.
+
+```javascript
+// jQuery plugin syntax 
+var results = $(".katapp").KatApp("results");
+
+// direct object access
+var application = $(".katapp").KatApp(); // reference to the KatApp object
+var results = application.results;
+
+// or get result for first KatApp matching the .katapp selector
+var results = $(".katapp").KatApp().results;
+
+// jQuery plugin syntax
+$(".katapp").KatApp("saveCalcEngine", "first.last");
+
+// direct object access
+$(".katapp").KatApp().saveCalcEngine("first.last");
+```
+
+## KatApp Object Properties
+
+Property | Type | Description
+---|---|---
+id | string | The unique id generated for KatApp.
+element | DOM Element | The Document Object Model (DOM) element that represents the KatApp.  All input and result processing are scoped to this DOM Element.  CSS style should be scoped as well.
+options | [KatAppOptions](#KatAppOptions-Object) | The options currently in use by the KatApp.
+results | [TabDef](#TabDef-Object)[] | Contains the results from the last calculation submission.  If an error occurs during submission, this will be set to `undefined`
+calculationInputs | [CalculationInputs](#CalculationInputs-Object) | Contains all the input and input tables used during the last calculation submission.
+exception | [CalculationException](#CalculationException-Object) | If an exception occurs inside the RBLe Service, a `CalculationException` object is returned with exception details.
+
+<br/>
+
+### KatAppOptions Object
+
+When a KatApp is initialized via `$(".katapp").KatApp( options );`, the `options` object has the following settings.
+
+Property | Type | Description
+---|---|---
+debug | [DebugOptions Object](#DebugOptions-Object) | Assign properties that control debugging capabilities.
+view | string | Assign the Kaml View to use in this KatApp in the form of `Folder:View`.
+inputSelector | string | A jQuery selector that specifies which inputs inside the view are considers RBLe Calculation Service inputs.  By default, _all_ inputs are selected via a selector of `input, textarea, select`.
+viewTemplates | string | A `comma` delimitted list of Kaml Template Files to use in the form of `Folder:Template,Folder:Template,...`.
+ajaxLoaderSelector | string | A jQuery selector that indicates an item to show at the start of calculations and hide upon completion.  By default, `.ajaxloader` is used.
+calcEngines | [CalcEngine](#CalcEngine-Object)[] | An array of CalcEngine objects specifying which CalcEngine(s) should drive the current Kaml View.
+manualInputs | [OptionInputs](#OptionInputs-Object) | Provide inputs that should _always_ be passed in on a calculation but aren't available in the UI, they can be assigned here.
+defaultInputs | [OptionInputs](#OptionInputs-Object) | Provide default inputs to use when the KatApp is initialized or updated via [method calls](#KatApp-Methods) .  `defaultInputs` are only applied one time.
+registerDataWithService | boolean | Whether or not data will be registered with the RBLe Service.  Default value is `true`.  If true, usually the `registeredToken` is passed in, but it can be created via an event handler triggered during the calculation lifecycle.  If false, the `data` property is usually passed in, but it can be created via an event handler triggered during the calculation lifecycle.
+registeredToken | string | If the participant data was registered by hosting site, it will provide the `registeredToken` to the KatApp so that it can pass that to the RBLe Service during calculation ajax calls.
+data | [KatAppData](#KatAppData-Object) | Participant data to pass to RBLe Service for calculations.
+shareDataWithOtherApplications | boolean | If multiple KatApps on are on page, one data source can be shared across all KatApps by setting this to `true`.
+sessionUrl | url | When `registerDataWithService` is `true`, this url will be called for calculation ajax calls.  Default value is `https://btr.lifeatworkportal.com/services/evolution/Calculation.ashx`.
+functionUrl | url | This url is used for all resource requests and also, if `registerDataWithService` is `false`, all calculation ajax calls.  Default value is `https://btr.lifeatworkportal.com/services/evolution/CalculationFunction.ashx`.
+rbleUpdatesUrl | url | Base end-point url that is used for data updates, file uploads, server calculations, DocGen generation, etc.
+currentPage | string | String identifier for the current page.  This value is passed to CalcEngines in the `iCurrentPage` input.
+requestIP | string | IP Address of client browser.  Used during calculation job logging.
+environment | string | The environment the current Kaml View is running in.  This value is passed to CalcEngines in the `iEnvironment` input.
+currentUICulture | string | The current culture the Kaml View is being rendered under.  This value is passed to CalcEngines in the `iCurrentUICulture` input.
+relativePathTemplates | [RelativePathTemplates](#RelativePathTemplates-Object) | Configure views and relative paths when Kaml View files are located in the hosting site instead of the Kaml View CMS
+
+<br/>
+
+### DebugOptions Object
+
+Property | Type | Description
+---|---|---
+traceVerbosity | TraceVerbosity | Set the minimum allowed trace level to be displayed.  Values are : `None`, `Quiet`, `Minimal`, `Normal`, `Detailed`, or `Diagnostic`.
+debugResourcesDomain | string | Set the base domain/url to use if `allowLocalServer` is `true` when attempting to find local resource files.  Default value is `http://localhost:8887/DataLocker/`.
+saveFirstCalculationLocation | string | Signals to the RBLe Service that the first calculation should save a debug CalcEngine to this location.  By default, the `save` querystring will set this.
+refreshCalcEngine | boolean | If `true`, it signals to the RBLe Service to check for new CalcEngines from the CalcEngine CMS immediately instead of waiting for cache to expire.  By default, the `expireCE=1` querystring will set this to true.
+useTestCalcEngine | boolean | Whether or not the RBLe Service should use the test version of a CalcEngine (if it is present).  By default, the `test=1` querystring will set this to true.
+useTestView | boolean | Whether or not the Kaml View CMS should use the test version of a Kaml View (if it is present).  By default, the `testView=1` querystring will set this to true.  If `relativePathTemplates` is configured in the [KatAppOptions Object](#KatAppOptions-Object), this setting is ignored.
+useTestPlugin | boolean | Whether or not the Kaml View CMS should use the test version of the KatAppProvider.js file (if it is present).  By default, the `testPlugin=1` querystring will set this to true.
+allowLocalServer | boolean | Whether or not resource files (provider, views, and templates) should attempt to be loaded from the `debugResourcesDomain`.  By default, the `allowLocal=1` querystring sets this to true.
+showInspector | boolean | Whether or not the Kaml View will highlight elements that have `rbl-value`, `rbl-source`, and `rbl-display` attributes to aid in debugging.  By default, the `showInspector=1` querystring sets this to true.
+
+<br/>
+
+### CalcEngine Object
+
+Property | Type | Description
+---|---|---
+key | string | Unique identifier for a CalcEngine that can be used in the `rbl-ce` attribute of elements.  The first CalcEngine configured will default to `default` if no `key` is provided.  All subsequent CalcEngines require a `key` property.
+name | string | The name of the CalcEngine.
+inputTab | string | The name of the input tab to process during calculations.  The default value is `RBLInput`.
+resultTabs | string[] | The names of the result tabs to process during the calculations.  The default value is `[ "RBLResult" ]`.
+preCalcs | string | The [Precalc Pipelines](#Precalc-Pipelines) configuration for the CalcEngine.
+
+<br/>
+
+### OptionInputs Object
+
+The OptionInputs object is just a json object with multiple key/value properties configured.  The `key` matches an input name on the Kaml View.
+
+```javascript
+// Sample configuration with manualInputs set.
+{
+    manualInputs: {
+        iInput1: "Input1 Value",
+        iInput2: "Input2 Value"
+    }
+}
+```
+
+### KatAppData Object
+
+The KatAppData object is a json object representing all the data for the current participant.
+
+```javascript
+// Sample configuration with data set.
+{
+    data: {
+        AuthID: "11111111",
+        Client: "Conduent",
+        Profile: {
+            nameFirst: "John",
+            nameLast: "Smith",
+            dateBirth: "1973-05-09"
+        },
+        History: {
+            Pay: [
+                { id: 2020, amount: 120000 },
+                { id: 2022, amount: 140000 }
+            ],
+            Status: [
+                { id: 2020, status: AC },
+                { id: 2022, status: RT }
+            ]
+        } 
+    }
+}
+```
+
+### RelativePathTemplates Object
+
+The RelativePathTemplates object is usually configured by the hosting site if Kaml View files are present locally instead of in the Kaml View CMS.  It is just a json object with multiple key/value properties configured.  The `key` is the name of the Kaml View while the `value` is the relative path.
+
+```javascript
+// Sample configuration with relativePathTemplates set.
+{    
+    relativePathTemplates: {
+        {"Nexgen:Nexgen.Templates":"Rel:KatApp/Nexgen/Nexgen.Templates.kaml?c=20210222223426"}
+    }
+}
+```
+
+Note the `Rel:` prefix on the path.  That indicates to the KatApp provider that the Kaml View is a relative path to the hosting site instead of the `Folder:Name` used to query the Kaml View CMS.  When relativePathTemplates are configured, the `view` must also be set to a relative path.
+
+### TabDef Object
+
+A TabDef is a json object representation of all the tables exported from a RBLResult tab.
+
+```javascript
+{
+    "@calcEngine": "Conduent_CalcEngine_SE.xlsm",
+    "@version": "1.0047",
+    "@name": "RBLResult", // TabDef name
+    "@GlobalTables.Version": "1.0",
+    "@Helpers.Version": "1.0",
+    "@type": "ResultXml", // Always ResultXml for KatApp calculations
+    "rbl-value": [
+        { id: "outputId1", value: "Text to display" },
+        { id: "outputId2", value: "Different text to display" }
+    ],
+    ... // More tables
+}
+```
+
+### CalculationInputs Object
+
+The CalcualtionInputs object extends the OptionInputs object simply by adding a `InputTables` property.
+
+```javascript
+// Sample configuration with manualInputs set.
+{
+    InputTables: [
+        { 
+            "Name": "tableName", 
+            "Rows": [
+                { index: "1", value1: "200", value2: "300"  }, 
+                { index: "2", value1: "300", value2: "400"  }, 
+                { index: "3", value1: "400", value2: "500"  }
+            ]
+        },
+        ... // More tables as needed
+    ],
+    iInput1: "Input1 Value",
+    iInput2: "Input2 Value"
+}
+```
+
+### CalculationException Object
+
+A CalculationException is a json object representation of any exception that occurs inside the RBLe Service.
+
+```javascript
+{
+    Exception: {
+        Message: "String message explaining the exception.",
+        StackTrace: "The call stack trace at the moment when the exception was thrown."
+    }
+}
+```
+
+## KatApp Methods
+
+Once you have a reference to a KatApp Object, the following methods are available.
+
+**`.destroy()`**
+
+Removes the KatApp implementation from the targetted DOM element.  All event handlers registered by the KatApp and DOM attributes added by the KatApp are removed.
+
+```javascript
+$(".katapp").KatApp("destroy");
+application.destroy();
+```
+
+**`.rebuild( options?: KatAppOptions )`**
+
+Merge the optional [KatAppOptions](#KatAppOptions-Object) `options` parameter with existing KatApp options, then completely destroy and re-initialize the KatApp (possibly using new view/templates) given the newly merged options.
+
+When `.KatApp(options)` is called, if the selector returns items that already had KatApp created on it, the plugin will call this method.
+
+```javascript
+$(".katapp").KatApp("rebuild", customOptions);
+application.rebuild( customOptions);
+
+// or, if no new options needed...
+$(".katapp").KatApp("rebuild");
+application.rebuild();
+```
+
+**`.updateOptions( options: KatAppOptions )`**
+
+Merge the [KatAppOptions](#KatAppOptions-Object) `options` parameter with existing KatApp options.  This will not load new view or templates, but the CalcEngine or any other options could be updated.
+
+If `.KatApp("ensure", options)` is called, items that did _not_ have a KatApp already created will go through normal creation and initialization process.  However, items that already had a KatApp created, will simply delegate to this method.
+
+`updateOptions` _will_ apply `options.defaultInputs`, if present, immediately one time.
+
+```javascript
+$(".katapp").KatApp("updateOptions", updatedOptions);
+application.updateOptions(updatedOptions);
+```
+
+**`.calculate( calculationOptions?: KatAppOptions )`**
+
+Manually invoke a calculation with the optional [KatAppOptions](#KatAppOptions-Object) `calculationOptions` parameter merged with the existing KatApp options for a one time use.
+
+Note: The `calculationOptions` is _only_ used for this single calculation.
+
+```javascript
+$(".katapp").KatApp("calculate", calculationOptions);
+application.calculate(calculationOptions);
+
+// or, if no new options needed...
+$(".katapp").KatApp("calculate");
+application.calculate();
+```
+
+**`.configureUI( calculationOptions?: KatAppOptions )`**
+
+Manually invoke a ConfigureUI calculation (`iConfigureUI=1` and `iDataBind=1` will be passed to the CalcEngine) with the optional [KatAppOptions](#KatAppOptions-Object) `calculationOptions` parameter merged with the existing KatApp options for a one time use.
+
+`calculationOptions` is _only_ used for this single calculation.
+
+```javascript
+$(".katapp").KatApp("configureUI", calculationOptions);
+application.configureUI(calculationOptions);
+
+// or, if no new options needed...
+$(".katapp").KatApp("configureUI");
+application.configureUI();
+```
+
+**`.getInputs(): CalculationInputs`**
+
+Returns a [CalculationInputs Object](#CalculationInputs-Object) representing all the inputs and input tables of the KatApp.
+
+```javascript
+var inputs = $(".katapp").KatApp("getInputs");
+var inputs = application.getInputs();
+```
+
+**`setInputs( inputs: OptionInputs, calculate?: boolean )`**
+
+Applys all input values of the [OptionInputs](#OptionInputs-Object) `inputs` parameter to the KatApp.  If `calculate` is true, a calculation will be triggered after all inputs have been set.  By default, `calculate` is `true`.
+
+```javascript
+$(".katapp").KatApp("setInputs", newInputs);
+application.setInputs(newInputs);
+
+// or, to disable a calculation after applying values...
+$(".katapp").KatApp("setInputs", newInputs, false);
+application.setInputs(newInputs, false);
+```
+
+**`setInput( id: string, value: number | string | undefined, calculate?: boolean )`**
+
+Set the value of the input identified by `id` with the `value` parameter.  If `calculate` is true, a calculation will be triggered after all inputs have been set.  **By default, `calculate` is `false`.**
+
+```javascript
+$(".katapp").KatApp("setInput", "iRetireAge", 65);
+application.setInput("iRetireAge", 65);
+
+// or, to trigger a calculation after setting value...
+$(".katapp").KatApp("setInput", "iRetireAge", 65, true);
+application.setInput("iRetireAge", 65, true);
+```
+
+**`getResultTable( tableName: string, tabDef?: string, calcEngine?: string): Array<JSON>`**
+
+Get an array of `tableName` json objects representing each row returned in the calculation results.  `tabDef` and `calcEngine` can be provided if there are multiple result tabs or CalcEngines in the Kaml View.  If not provided, the `tableName` from the _first_ result tab and _first_ CalcEngine will be returned.
+
+```javascript
+var payRows = $(".katapp").KatApp("getResultTable", "pay");
+var payRows = application.getResultTable("pay");
+
+// or, to get rows from the RBLPayResults tab on the first/only CalcEngine
+var payRows = $(".katapp").KatApp("getResultTable", "pay", "RBLPayResults");
+var payRows = application.getResultTable("pay", "RBLPayResults");
+
+// or, to get rows from the RBLPayResults tab on the CalcEngine with a key=PayCE
+var payRows = $(".katapp").KatApp("getResultTable", "pay", "RBLPayResults", "PayCE");
+var payRows = application.getResultTable("pay", "RBLPayResults", "PayCE");
+```
+
+**`getResultRow( table: string, key: string, columnToSearch?: string, tabDef?: string, calcEngine?: string ): JSON`**
+
+Get a json object representing a row from the `tableName` in the calculation results.  `tabDef` and `calcEngine` can be provided if there are multiple result tabs or CalcEngines in the Kaml View.  If not provided, the `tableName` from the _first_ result tab and _first_ CalcEngine will be returned.
+
+If `columnToSearch` is `undefined` or not provided, the row with its id column matching `key` will be returned.  Otherwise, the row with its `columnToSearch` column matching `key` will be returned.
+
+```javascript
+// to get the row with id = 2021
+var payRows = $(".katapp").KatApp("getResultRow", "pay", "2021");
+var payRows = application.getResultRow("pay", "2021");
+
+// or, to get the row with year = 2021
+var payRows = $(".katapp").KatApp("getResultRow", "pay", "2021", "year");
+var payRows = application.getResultRow("pay", "2021", "year");
+
+// or, to get row with year = 2021 from the RBLPayResults on the first/only CalcEngine
+var payRows = $(".katapp").KatApp("getResultRow", "pay", "2021", "year", "RBLPayResults");
+var payRows = application.getResultRow("pay", "2021", "year", "RBLPayResults");
+
+// or, to get row with year = 2021 from the RBLPayResults on the PayCE CalcEngine
+var payRows = $(".katapp").KatApp("getResultRow", "pay", "2021", "year", "RBLPayResults", "PayCE");
+var payRows = application.getResultRow("pay", "2021", "year", "RBLPayResults", "PayCE");
+```
+
+**`getResultValue( table: string, key: string, column: string, defaultValue?: string, tabDef?: string, calcEngine?: string ): string | undefined`**
+
+Return the `column` value from the `table` row with the id column matching `key`.  `tabDef` and `calcEngine` can be provided if there are multiple result tabs or CalcEngines in the Kaml View.  If not provided, the `tableName` from the _first_ result tab and _first_ CalcEngine will be returned.
+
+If the value returned from the calculation result is `undefined`, the `defaultValue` (if provided) will be returned.
+
+```javascript
+// to get the bonus value from pay row with id = 2021, defaulting to $0 if not available
+var currentBonus = $(".katapp").KatApp("getResultValue", "pay", "2021", "bonus","$0");
+var currentBonus = application.getResultValue("pay", "2021", "bonus", "$0");
+
+// or, to get the bonus value from pay row with id = 2021, from the RBLPayResults on the first/only CalcEngine
+var currentBonus = $(".katapp").KatApp("getResultValue", "pay", "2021", "bonus", undefined, "RBLPayResults");
+var currentBonus = application.getResultValue("pay", "2021", "bonus", undefined, "RBLPayResults");
+
+// or, to get the bonus value from pay row with id = 2021, from the RBLPayResults on the PayCE CalcEngine
+var currentBonus = $(".katapp").KatApp("getResultValue", "pay", "2021", "bonus", undefined, "RBLPayResults", "PayCE");
+var currentBonus = application.getResultValue("pay", "2021", "bonus", undefined, "RBLPayResults", "PayCE");
+```
+
+**`getResultValueByColumn( table: string, keyColumn: string, key: string, column: string, defaultValue?: string, tabDef?: string, calcEngine?: string ): string | undefined`**
+
+Return the `column` value from the `table` row with the `keyColumn` column matching `key`.  `tabDef` and `calcEngine` can be provided if there are multiple result tabs or CalcEngines in the Kaml View.  If not provided, the `tableName` from the _first_ result tab and _first_ CalcEngine will be returned.
+
+If the value returned from the calculation result is `undefined`, the `defaultValue` (if provided) will be returned.
+
+```javascript
+// to get the bonus value from pay row with year = 2021, defaulting to $0 if not available
+var currentBonus = $(".katapp").KatApp("getResultValueByColumn", "pay", "year", "2021", "bonus","$0");
+var currentBonus = application.getResultValueByColumn("pay", "year", "2021", "bonus", "$0");
+
+// or, to get the bonus value from pay row with year = 2021, from the RBLPayResults on the first/only CalcEngine
+var currentBonus = $(".katapp").KatApp("getResultValueByColumn", "pay", "year", "2021", "bonus", undefined, "RBLPayResults");
+var currentBonus = application.getResultValueByColumn("pay", "2021", "year", "bonus", undefined, "RBLPayResults");
+
+// or, to get the bonus value from pay row with year = 2021, from the RBLPayResults on the PayCE CalcEngine
+var currentBonus = $(".katapp").KatApp("getResultValueByColumn", "pay", "year", "2021", "bonus", undefined, "RBLPayResults", "PayCE");
+var currentBonus = application.getResultValueByColumn("pay", "2021", "year", "bonus", undefined, "RBLPayResults", "PayCE");
+```
+
+**`apiAction( commandName: string, customOptions?: KatAppActionOptions, actionLink?: JQuery<HTMLElement> )`**
+
+KatApps have the ability to call web api endpoints to perform actions that need server side processing (saving data, generating document packages, saving calculations, etc.).  
+
+`customOptions` can be provided and have the following properties.
+
+Property | Type | Description
+---|---|---
+isDownload | boolean | Optional. Set this property to `true` if the action results in the downloading of a file.
+customParameters | JSON | Optional.  Any parameter values to be passed back to the server endpoint that are required for processing (i.e. plan id and document id for election required document upload).
+customInputs | JSON | Optional.  Any input values that need to be passed back to the server endpoint and inserted into the input package sent to the RBLe Service calculation.
+
+<br/>
+
+```javascript
+// download link that generates a server side DocGen package for download
+$(".downloadForms", view).on('click', function (e) {
+    application.apiAction(
+        "PensionEstimates.DocGen.Forms", 
+        { 
+            isDownload: true, 
+            customInputs: 
+            { 
+                iDownloadForms: 1 
+            } 
+        }
+    );
+});
+```
+
+rbl-action-link="commandName" 
+    - rbl-action-confirm-selector
+    - rbl-action-download="true"
+    - data-param-* (doc-id, plan-id)
+    - data-input-* ()
+
+
+serverCalculation( customInputs: {} | undefined, actionLink?: JQuery<HTMLElement> ) |
+pushNotification(name: string, information: {} | undefined) | If multiple KatApps are on one page, a KatApp can broadcast notifications to other KatApps
+saveCalcEngine( location: string ) | // $("selector").KatApp("saveCalcEngine", "terry.aney"); - save *next successful* calc for all selector items to terry.aney
+refreshCalcEngine() | // $("selector").KatApp("refreshCalcEngine"); - refresh calc engine on *next successful* calc for all selector items
+traceCalcEngine() | // $("selector").KatApp("traceCalcEngine"); - return calc engine tracing from *next successful* calc for all selector items
+redraw( readViewOptions: boolean | undefined ) | // Redraw/re-render the view without triggering a calculation (speeds up view development time)
+ensure( options?: KatAppOptions ) | 
+
+trace( message: string, verbosity?: TraceVerbosity ) | TraceVerbosity.Normal
+
+
+options/methods on KatApp
+- See registerControlFunction method. - not right name, but there is similar 'template function callback' or something
+
+## KatApp Events
+get all events, don't forget about other events like file upload: onUploadStart, search for trigger()
+
+onActionStart, onActionResult, onActionFailed, onActionComplete (always)
+
+
+put sample code on how to hook up events in KamlViews - explain that events are usually there, but can be in config settings too
+
+## Calculation Lifecycle
+
 # To Document
-mixing config precedence
-footnote syntax
-options
-methods on KatApp
+
+Available on the options...document them
+    // If custom submit code is needed, can provide implementation here
+    submitCalculation?: SubmitCalculationDelegate;
+    // If client provides for a way to get registration data, can provide implementation here
+    getData?: GetDataDelegate;
+    // If custom register data code is needed, can provide implementation here
+    registerData?: RegisterDataDelegate;
+
+
+
+- framework inputs? `iConfigureUI`, `iDataBind`, and `iInputTrigger`, iCurrentPage (document valid values for environment)
+					AdminAuthID = t.GetInputAddress( "iAWSAdminAuthID" ).Address,
+					CurrentPage = t.GetInputAddress( "iCurrentPage" ).Address,
+					CurrentUICulture = t.GetInputAddress( "iCurrentUICulture" ).Address,
+					AllowTokens = t.GetInputAddress( "iAllowTokens" ).Address,
+					DenyTokens = t.GetInputAddress( "iDenyTokens" ).Address,
+					Environment = t.GetInputAddress( "iEnvironment" ).Address,
+					DebugInputs = t.GetInputAddress( "iDebugInputNames" ).Address,
+					FirstProfile = t.GetInputAddress( "iFirstProfile" ).Address,
+					IsTestCE = t.GetInputAddress( "iIsTestSE" ).Address,
+					TraceEnabled = t.GetInputAddress( "iTraceEnabled" ).Address,
+					JobToken = t.GetInputAddress( "iJobToken" ).Address
+input table management
+
+In Views section:
+mention scoping
+explain thisClass - put a link inside KatApp Properties pointing to this documentation where it talks about DOM element, add link too to template css scoping
+explain {id}/thisview - Put link to KatApp Events so that there is example on how to use
+
+default options (any other methods off of KatApp.* ?)
+
+Templates 
+scoping CSS - .katapp-css
+Talk about how templates can override each other
+Talk about the 'template type' property so can have diff template name but still 'processed as base'
+
 CODE TODO - get rid of ejs-output, ejs-visiblity table and use rbl-value , rbl-display
 
-
-## NEW Using templates to build common controls
-Templates are also used to build controls in an Kaml View that may have repetitive or complex markup.  This is accomplished by passing static data to the template that is used to create markup.  This use of templates generally does not use RBLe results, but rather static data.
-
-### Example: Creating a slider
-```xml
-<!-- create a slider for control 'iRetireAge' using 'standard' template -->
-<div rbl-tid="slider-control" data-inputname="iRetireAge">
-```
-The above markup uses the predefined "slider-control" template and the result is this markup:
-```xml
-<div class="form-group slider-control-group">
-    <div class="validator-container">
-        <a style="display: none;" class="vhiRetireAge" role="button" tabindex="0" data-toggle="popover"
-        data-trigger="click" data-content-selector=".hiRetireAge" data-placement="top">
-        <span class="glyphicon glyphicon-info-sign help-icon"></span>
-        </a>
-        <a style="display: none;" class="vsiRetireAge" role="button" tabindex="0" data-placement="top">
-        <span class="glyphicon glyphicon glyphicon-volume-up"></span>
-        </a>
-        <div class="slider-control slider-iRetireAge" data-slider-type="nouislider"></div>
-        <input name="iRetireAge" type="text" id_="iRetireAge" class="form-control iRetireAge" style="display: none" />
-        <span class="error-msg" data-toggle="tooltip" data-placement="top"></span>
-    </div>
-    <div class="hiRetireAgeTitle" style="display: none;"></div>
-    <div class="hiRetireAge" style="display: none;"></div>
-    <h6 class="text-center">
-        <span class="liRetireAge" style="text-transform: uppercase">iRetireAge Label</span>
-        <span class="sviRetireAge" style="font-weight: bold"></span>
-    </h6>
-</div>
-```
-In this manner, if two more sliders are needed for inputs iInvestmentReturn and iBonusPercentage, the Kaml View markup would be:
-```xml
-<!-- sliders -->
-<div rbl-tid="slider-control" data-inputname="iRetireAge">
-<div rbl-tid="slider-control" data-inputname="iInvestmentReturn">
-<div rbl-tid="slider-control" data-inputname="iBonusPercentage">
-```
-This is more accurate than repeating the complex markup for every slider needed and replacing all instances of 'iRetireAge'. 
 ## NEW Design Principles
-- See documentation above
-- Support multiple KatApp's in a page
-- JQuery plugin
-- Very close backward compatiblity so that existing DSTs and possibly ESS sites can be very simply convered (I'm doing BW FSA calculator as a test)
-- Browser client initiates RBLe registration via AJAX and gets registration token back.  This allows plugin to manage and recover from errors and timeout.  This doesn't mean browser has all data - 'client initiates' can mean the browser tells server code to register.  But then the RBLe return would be passed through to the browser client.
 - All `<inputs>` and result processing is isolated to the KatApp instance/view.
 - `<inputs>` should use `[name]` attrib, not id (in case different views have same input). <--valid? Will we get burned on radio? Not required to be in a form.
-- Discuss a mechanism to 'get' data via webservice as opposed to getting via a registration?
-- Easy javascript/console mechanisms for debugCE, expireCE, TestCE, TestView, TestPlugin
-- Template expansion: A view should be able to create custom templates. Including ablity to 'register' any post-calc javascript.  See registerControlFunction method.
-- A view must have a calcengine configured via `<rbl-config calcengine="Conduent_Sample_SE"/>`.  Need a default for the 'generic view'
-- Initializing KatApp - see documentation above, plus:
-    - If no view configured in tag, must specify view and/or calcengine in javascript.  
-    - javascript config will take precedence over attributes
-    - if only calcengine specified, 'generic' view will be used that relies on CE table ejs-output and/or ejs-markup
-- Tom's plugin flow:
-```javascript
-//rough outline of flow.
-//RBLEvents.onCalcStart and onCalcStop manage loaders and disabling inputs
-$(".KatApp").RBL().appInitialize(
-    $.appLoadView(
-        RBLEvents.onCalcStart(); //might be 'implied' with visible loaders
-        //ajax load view (custom processing and control functions registered)
-        //ajax load templates (control functions registered)
-        //build templates with data-*
-        $.appConfigureUI(
-            //just sets iConfigureUI=1 option and calls appCalculate
-            $.appCalculate(
-                RBLEvents.onCalcStart()
-                //initiates RBLe registration if needed
-                //submits to RBLe service
-                //handles errors with attempt to reregister and a 'retry' of once to avoid loop if error persists
-                $.appProcessResults(
-                    //process content/results
-                    //missing output for tables and charts
-                    //needs *-control templates.  (have some dummy controls)
-                    $.callControlFunctions(
-                        //runs all control functions for any view that calcs
-                        //needs flow work
-                        if (iConfigureUI) {
-                            configFunctions[]
-                            RBLEvents.onConfigureUI //wires up events
-                            .data().customConfigureUI //$({viewid}).registerFn() trick
-                        } 
-                        calcFunctions[
-                            //sliders & other controls
-                            //carousels
-                            //charts?
-                            //tables?  discuss how to support existing tables.
-                        ]
-                    )
-                    RBLEvents.customProcessing(
-                        //limited to view
-                        .data().customProcessing //$({viewid}).registerFn() trick
-                    )
-                    RBLEvents.onCalcStop();
-                )
-            );
-        );
-    );
-);
-//Errorhandlers all call RBLEvents.onCalcStop
-```
-- Entry points:
-    - Standard init will be to load a view
-    - Should also be able to launch a KatApp where the view is not dynamic, but rather is just the existing markup (think of converting a DST and just using current markup...tho maybe better as a dynamic view anyway)  
-    - In the case of using existing markup, you will just specify the calcengine.  Here's how current BW_HSA is launched using my flow above:
-```javascript
-    $("#KatApp").RBL().appOptions( rbleOptions ); //basically configure calcengine
-    $("#KatApp").RBL().appConfigureUI( rbleOptions );
-```
-
-
-## Ignore rest - unorganized notes.
-
- (1) Building a page before any RBL results and feeding results from data- (i.e. like sliders)
-        Template ID (tid) "slidercontrol":
-            <rbl-template tid="slidercontrol">
-                <div id="slider-{inputname}">add'l markup</div>
-            </rbl-template>
-
-        View markup: <div rbl-tid="slidercontrol" data-inputname="iReturn"></div>
- 
- (2) Building from RBLe results
-        Template ID (tid) "li-item":
-            <rbl-template tid="li-item">
-                <li>{text} ({tip})</li>
-            </rbl-template>
-
-        rbl-source: get a collection or collection item for the template.
-            Collection: rbl-source="considerations"
-             -Will create markup based on template for each item (row) in table
-             -Example: <ul rbl-tid="li-item" rbl-source="considerations"></ul>
-
-            Collection Item: rbl-source="benefit-savings.fsa"
-             -Will create markup based on template just for the given 'fsa' item:
-             -Example: <div rbl-tid="pill-display" rbl-source="benefit-savings.fsa"></div>
- (3) One time page build by creating
-        <ol rbl-source="elections.alert-visible.1">
-            <li>{title} - {alert-text}</li>
-        </ol>
-
-
-(3) ejs-markup allows for creating as much content, in any form into a target selection
-    selector = jquery selector applied to view markup
-    addClass, removeClass, html correspond to jquery methods.  
-    starting the html with an "&" means append (versus replace)
-
-
-State Tables: dependents
-<div class="skipRBLe" rbl-input-table="dependents">
--must have skipRBLe, then input table built up by RBLe.js
-
-RBLInput
-<dependents>
-dependents
-RBLResult
-dependents
-
-RBLInitializeInputTableDefaults( .selector, resultTableName)
-
-iConfigureUI = 1
-RBLInitializeInputTableDefaults( [data-table=dependents], dependents)
-//copy RBLResult.dependents to <div> as follows
-[what is data-column?]
-
-RBLUpdateInputTable( "tablename", "index", [ {inputs} ])
-// if index not found, create new
-// { ["@delete": "1"] }
-
-rbl-preserve
-
-RBLInitializeInputTableDefaults( .selector, resultTableName)
-
-"SaveCE":"tomaney",
-
-wouldprefer more like this
-
-'''
-<div class="skipRBLe" rbl-input-table="dependents" rbl-source="dependents">
-
-        <div class="RBLe-input-table skipRBLe" data-table="dependents">
-            <div data-category="Election" data-index="2020AE-01">
-                <input data-column="benefit-type" type="text" value="01" />
-                <input data-column="plan-code" type="text" value="02" />
-                <input data-column="option-code" type="text" value="03" />
-                <input data-column="coverage-ssns" type="text" value="111|333" />
-            </div>
-            <div data-category="Election" data-index="2020AE-02">
-                <input data-column="benefit-type" type="text" value="02" />
-                <input data-column="plan-code" type="text" value="02" />
-                <input data-column="option-code" type="text" value="01" />
-                <input data-column="coverage-ssns" type="text" value="111|" />
-            </div>
-        </div>
-
-
-
-
-
-        <div class="RBLe-input-table skipRBLe" data-table="CurrentElections">
-            <div data-category="Election" data-index="2020AE-01">
-                <input data-column="benefit-type" type="text" value="01" />
-                <input data-column="plan-code" type="text" value="02" />
-                <input data-column="option-code" type="text" value="03" />
-                <input data-column="coverage-ssns" type="text" value="111|333" />
-            </div>
-            <div data-category="Election" data-index="2020AE-02">
-                <input data-column="benefit-type" type="text" value="02" />
-                <input data-column="plan-code" type="text" value="02" />
-                <input data-column="option-code" type="text" value="01" />
-                <input data-column="coverage-ssns" type="text" value="111|" />
-            </div>
-        </div>
-'''

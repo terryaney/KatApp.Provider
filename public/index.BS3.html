@@ -80,15 +80,18 @@
             // https://stackoverflow.com/a/516648/166231
             Sys.CultureInfo.CurrentCulture.numberFormat.PercentPositivePattern = 1;
 
-            // Access to XMLHttpRequest at 'https://qabtr.lifeatworkportal.com/Services/Evolution/CalculationFunction.ashx?{Command:%27KatAppResource%27,Resource:%27KatAppProvider.js%27,Folder:%27Global%27,Version:%27Live%27}' from origin 'http://localhost:8887' has been blocked by CORS policy: No 'Access-Control-Allow-Origin' header is present on the requested resource.
-            KatApp.defaultOptions.functionUrl = "https://btr.lifeatworkportal.com/Services/Evolution/CalculationFunction.ashx";
-            KatApp.defaultOptions.functionUrl = "http://localhost:54300/CalculationFunction.ashx";
-            KatApp.defaultOptions.functionUrl = "https://qabtr.lifeatworkportal.com/Services/Evolution/CalculationFunction.ashx";
+            if ( KatApp.pageParameters[ "rbledebug" ] == "1" ) {
+                KatApp.defaultOptions.functionUrl = "http://localhost:54300/CalculationFunction.ashx";
+                KatApp.defaultOptions.sessionUrl = "http://localhost:54300/Calculation.ashx";
+            }
+            else if ( KatApp.pageParameters[ "rbletest" ] == "1" ) {
+                KatApp.defaultOptions.functionUrl = "https://qabtr.lifeatworkportal.com/Services/Evolution/CalculationFunction.ashx";
+                KatApp.defaultOptions.sessionUrl = "https://qabtr.lifeatworkportal.com/Services/Evolution/Calculation.ashx";
+            }
 
             var debuggerOptions = {
                 debug: {
-                    debugResourcesDomain: KatApp.pageParameters[ "localdebugger" ] === "1" ? "http://localhost:8887/" : undefined,
-                    debugProviderDomain: KatApp.pageParameters[ "localdebugger" ] === "1" ? "http://localhost:8887/" : undefined
+                    debugResourcesDomain: KatApp.pageParameters[ "localdebugger" ] === "1" ? "http://localhost:8887/" : undefined
                 }
             };
 

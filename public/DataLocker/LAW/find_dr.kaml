@@ -1,11 +1,7 @@
+
 <rbl-config calcengine="Conduent_FindDr_SE" templates="Standard_Templates,Input_TemplatesBS4"></rbl-config>
 
 <style>
-    @media (max-width: 767px) {
-		.irp-modal div.chart { height: 250px; }
-	}
-
-	rbl-template_off, [rbl-tid=inline] { display: none;}
 
     thisClass .katapp-loader span {
         width: 10px;
@@ -48,7 +44,6 @@
         border: 0;
         outline: none;
     }
-	thisClass .noUi-handle div {display: none;}
 
 	thisClass .specialty-groups-selected .fa {
 		color: white;
@@ -102,7 +97,7 @@
 	thisClass .search-header h4 {
 		top:4px;
 	}
-	thisClass .search-header .viproviderName {
+	thisClass .search-header [rbl-display=viproviderName] {
 		top:8px;
 	}
 	thisClass .docfind_logo {
@@ -130,7 +125,7 @@
 		margin-top: 15px;
 		margin-bottom: 0px;
 	}
-	thisClass .vispecialtyIds_groups .bs-select-all {
+	thisClass [rbl-display=vispecialtyIds_groups] .bs-select-all {
 		visibility:hidden;
 	}
 	thisClass .results-toolbar {
@@ -141,10 +136,10 @@
 	thisClass .results-toolbar .form-group {
 		margin: 3px 3px 0px 3px;
 	}
-	thisClass .results-toolbar .form-group label, .vilanguageIds label {
+	thisClass .results-toolbar .form-group label, [rbl-display=vilanguageIds] label {
 		display: none;
 	}
-	thisClass .form-group.vilanguageIds {
+	thisClass .form-group[rbl-display=vilanguageIds] {
 		margin-top: 5px;
 	}
 	thisClass .results-toolbar .form-group button {
@@ -154,7 +149,7 @@
 		margin: 0px 0px 0px 0px;
 		padding: 6px 2px 6px 2px;
 	}
-	thisClass .form-group.visortSelection {
+	thisClass .form-group[rbl-display=visortSelection] {
 		margin-top: 3px;
 		margin-bottom: 3px;
 	}
@@ -163,7 +158,7 @@
 		color: black;
 		background-color:rgb(238, 238, 238);
 	}
-	thisClass .vinetworkIds .text-muted {
+	thisClass [data-inputname='inetworkIds'] .text-muted {
 		color: brown !important;
 	}
 	thisClass [data-suffix] .input-group-addon {
@@ -193,7 +188,7 @@
 	thisClass .alert-secondary {
 		background-color: rgb(245, 245, 245);
 	}
-	thisClass div.form-group.vinetworkIds {
+	thisClass div.form-group[rbl-display=vinetworkIds] {
 		margin-top: 0;
 	}
 	thisClass div.row.header {
@@ -229,13 +224,13 @@
 	thisClass button.btn-default.selected {
 		background-color: lightblue;
 	}
-	thisClass .liSelectedProviders_cb .fa-check-square {
+	thisClass [rbl-value=liSelectedProviders_cb] .fa-check-square {
 		color:#0075ff;
 	}
 	thisClass .SearchKey {
 		width: 16px;
 	}
-	thisClass .linetworkIds .SearchKey, 
+	thisClass [rbl-value=linetworkIds] .SearchKey, 
 	thisClass .plans-selected .btn-secondary {
 		background-color: #545b62 !important;
 		border-width: 0;
@@ -243,7 +238,7 @@
 	thisClass .plans-selected .btn-secondary:hover {
 		background-color: #484d53 !important;
 	}
-	thisClass .liproviderTypeIds .SearchKey, 
+	thisClass [rbl-value=liproviderTypeIds] .SearchKey, 
 	thisClass .specialties-selected .btn-success  {
 		background-color: #00B4A4 !important;
 		border-width: 0;
@@ -251,7 +246,7 @@
 	thisClass .specialties-selected .btn-success:hover  {
 		background-color:#039b8d !important;
 	}
-	thisClass .liproviderName .SearchKey, 
+	thisClass [rbl-value=liproviderName] .SearchKey, 
 	thisClass .specialties-selected .btn-primary  {
 		background-color: #468cff !important;
 		border-width: 0;
@@ -259,7 +254,7 @@
 	thisClass .specialties-selected .btn-primary:hover  {
 		background-color: #3c80ef !important;
 	}
-	thisClass .lispecialtyIds_groups .SearchKey, 
+	thisClass [rbl-value=lispecialtyIds_groups] .SearchKey, 
 	thisClass .specialties-selected .btn-info  {
 		background-color: #0047BA !important;
 		border-width: 0;
@@ -287,39 +282,40 @@
 		font-size: 1rem;
 		color_: #999;
 	}
+	thisClass select.pagehop {
+		color: #007bff;
+	}
 </style>
 
 
-<!-- #templates start -->
+<!-- templates start -->
 <rbl-template tid="provider-list-item">
-	<div class="row provider-item" data-id="1465342">
+	<div class="row provider-item" data-id="{providerId}">
 		<div class="col-1 nopadding" style="padding-top: 3px"><span class="check"><input class="favorite" data-id={providerId} type="checkbox"></span></div>
 		<div class="col-10 col-md-5 pl-2 pr-1">
 
-			<span rbl-if="lname">
+			<span class="{doctor-display}">
 				<a class='doctor' role='button' data-id={providerId} data-toggle='modal' data-target='.modal-doctor'><span class="full-name">{lname}, {fname}, {degree}&nbsp;</span></a>
-				<!-- <i class="heart fa fa-heart-o" data-id={providerId}></i> -->
 				<span class="NPI">NPI#: {npi}</span>
 			</span>
-			<span class="doctor" rbl-if="facility">
+			<span class="doctor {facility-display}">
 				{facility} 
-				<!-- <i class="heart fa fa-heart-o" data-id={providerId}></i> -->
 			</span>			
 
 			<span class="address">{address1}<br/>{city}, {state} {zip}</span>
 			<span class="phone">
-				<a class="" href="tel:+{phone}"><span><span class="fa fa-phone" aria-hidden="true"></span> {phone_format} </span></a><br/>
+				<a class="" href="tel:+1{phone}"><span><span class="fa fa-phone" aria-hidden="true"></span> {phone_format} </span></a><br/>
 			</span>
-			<span rbl-if="city2"><a class='otherlocations' role='button' data-id={providerId} data-toggle='modal' data-target='.modal-doctor'>More Locations</a></span>			
+			<span class="{city-display}"><a class='otherlocations' role='button' data-id={providerId} data-toggle='modal' data-target='.modal-doctor'>More Locations</a></span>			
 		</div>
 		<div class="col-12 col-md-5  pl-1 pr-1 pull-left small">    
-			<span rbl-if="specialty0">
+			<span class="{specialty-display}">
 				<span class="specialists">{specialties}</span>
 			</span>
 			<span class="plans">{networks}</span>
-			<span rbl-if="hospitalaffiliation0">
+			<span class="{hospital-display}">
 				<span class="hospital">
-					<span class="hospitalheading" rbl-value="text-hospital-affiliations">[Hospital Affiliations]</span>
+					<span class="hospitalheading" rbl-value="text-hospital-affiliations">Hospital Affiliations</span>
 					<span>{hospitals}</span>
 				</span>			
 			</span>
@@ -335,7 +331,7 @@
 
 <!-- templates end -->
 
-<!-- #header start -->
+<!-- header start -->
 <div class="row header">
 	<div class="col-12 col-md-6">
 		<div class="docfind_logo"><span style="font-stretch:condensed; font-weight: bold;color:darkslategrey">Health Provider </span><b>Finder</b></div>
@@ -343,10 +339,10 @@
 	<div class="col-12 col-md-6">
 		<ul class="nav justify-content-end provider-view-buttons" style="display: none;">
 			<li class="nav-item">
-				<a class="nav-link provider-search active" href="#"><span class="fa fa-list"></span>&nbsp;<span rbl-value="text-provider-search">[Provider Search]</span></a>
+				<a class="nav-link provider-search active" href="#"><span class="fa fa-list"></span>&nbsp;<span class="d-none d-md-inline" rbl-value="text-provider-search">[Provider Search]</span></a>
 			</li>
 			<li class="nav-item">
-				<a class="nav-link provider-compare" href="#"><span class="fa fa-bar-chart"></span>&nbsp;<span rbl-value="text-specialist-count">[Specialist Compare]</span></a>
+				<a class="nav-link provider-compare" href="#"><span class="fa fa-bar-chart"></span>&nbsp;<span class="d-none d-md-inline" rbl-value="text-specialist-count">[Specialist Compare]</span></a>
 			</li>
 			</ul>			
 	</div>
@@ -354,7 +350,7 @@
 
 <div class="katapp-loader init">Loading Health Provider Finder<span></span></div>
 <div style="display:none">
-	<!-- #katapp markup start-->
+	<!-- hidden inputs -->
 	<div class="hidden d-none">
 		<input name="iInputsFromModeler" class="iInputsFromModeler" value="">
 		<input name="iChartClick" class="iChartClick rbl-nocalc" value="">
@@ -363,10 +359,11 @@
 		<input name="iSelectedProviders" class="iSelectedProviders" value="">
 		<input name="iSearchMethod" class="iSearchMethod" value_="groupedByProvider">
 		<input name="iApiPath" class="iApiPath" value="">
+		<input name="iProd" class="iProd" value="0">
 	</div>
 
 	<div class="row ajaxContent">
-		<!-- #inputs start -->
+		<!-- inputs start -->
 		<div class="col-12 col-md-4 mt-4">
 			<div class="row alert alert-secondary">			
 				<div rbl-tid="input-dropdown" class="col-sm-12 rbl-nocalc" 
@@ -393,7 +390,7 @@
 					data-max-options="5" 
 					data-max-options-text="Select 5 or less" 
 					data-selected-text-format_off="static"
-					data-multiselect="true" 
+					data-multiselect="true"
 					data-livesearch="true">
 				</div>
 				<div rbl-tid="input-slider" class="col-sm-12" data-inputname="iradiusInMiles"></div>
@@ -403,7 +400,7 @@
 					<hr/>
 					<div class="font-weight-bold" rbl-value="text-filters">[Filter]</div>
 					<div class="filter-hospital-group" style="display:none">
-						<!-- disabled for now -->
+						<!-- disabled for day1  possible revisit day2 -->
 						<div>
 							<span class="small" style="color:grey">You limited search to providers at:</span>
 							<div class="form-group mt-0">
@@ -431,16 +428,18 @@
 				<div class="col-sm-12">
 					<hr/>
 					<div class="text-center">
-							<button class="btn btn-default reset" rbl-value="text-button-reset" style="display:none">[Reset]</button>	
-							<button class="btn btn-primary search" rbl-value="text-button-start">[Start]</button>
+							<button class="btn btn-default reset" rbl-value="text-button-reset" style="display:none">[Reset]</button>
+							<!-- start button shouldn't be here in md+ views.  (_off should be removed here and on d-md-flex in other location below)-->	
+							<span class="d-inline d-md-none_off">
+								<button class="btn btn-primary search" rbl-value="text-button-start">[Start]</button>
+							</span>
 					</div>
 				</div>
 			</div>
 		</div>
 		<!-- inputs end -->
 		<div class="col-12 col-md-8 mt-4">
-			<!-- #content start -->
-			<!-- #results start-->
+			<!-- results start-->
 			<div class="row provider-results card pt-2" style="display:none">
 				<div class="provider-results_" >								
 					<div class="provider-list col-12">
@@ -451,7 +450,7 @@
 					</div>
 					<div class="row_ plans-selected">
 						<div class="col-12 list-group_" rbl-source="networks">
-							<button class="btn btn-secondary" data-selectid={key} rbl-tid="inline"><span class="fa fa-remove" aria-hidden="true"></span> {text}</button>						
+							<button class="btn btn-secondary d-none" data-selectid={key} rbl-tid="inline"><span class="fa fa-remove" aria-hidden="true"></span> {text}</button>						
 						</div>
 					</div>
 					<div class="row_ specialties-selected">
@@ -468,7 +467,6 @@
 					<div class=" col-12 provider-chart">
 						<div rbl-tid="chart-highcharts" rbl-chartdata="NetworkProvidersSpecialties" rbl-chartoptions="Default"></div>
 						<label rbl-value="text-providerchart-header">[Information About this Chart]</label>
-						<!-- <div rbl-tid="result-table" rbl-tablename="providerchart-info"></div> -->
 						<div>
 							<ul rbl-source="providerchart-info">
 								<li rbl-tid="inline">{text1}</li>
@@ -476,7 +474,7 @@
 						</div>
 					</div>
 
-					<div class="results-toolbar provider-list p-1">
+					<div class="results-toolbar provider-list p-1 mt-1">
 						<div class="col-12 ">
 							<div class="row">
 								<div class="col-12 col-md-2 align-self-center text-right">
@@ -499,10 +497,21 @@
 					<div class="col-12 provider-list">
 						<!-- toolbar for provider listing -->
 
-						<div class="provider-table provider-view-toggle" rbl-tid_="provider-list-item" rbl-source_="zelis-groupedByProvider" rbl-item-callback="providerItem"></div>
+						<div class="provider-table provider-view-toggle" rbl-tid="provider-list-item" rbl-source="zelis-groupedByProvider" rbl-item-callback_="providerItem">
+
+						</div>
 						<div class="result-pagenav provider-view-toggle pull-right" aria-label="...">
 							<ul class="pagination">
 							<li class="page-item prevpage disabled"><a class="page-link" href="#"><span aria-hidden="true">&larr;</span> Previous</a></li>
+							<li class="page-item border border-left-0">
+								<select class="pagehop rbl-nocalc h-100 pl-2 pr-1 border-0">
+									<option>1</option>
+									<option>2</option>
+									<option>3</option>
+									<option>4</option>
+									<option>5</option>
+								  </select>
+							</li>
 							<li class="page-item nextpage"><a class="page-link" href="#">Next <span aria-hidden="true">&rarr;</span></a></li>
 							</ul>
 						</div>
@@ -523,19 +532,22 @@
 			</div>
 			  
 			<div class="row welcome-content mt-5_">
-				<!-- #welcome start -->
+				<!-- welcome start -->
 				<div class="justify-content-center_">
 					<div class="col-12">
 						<div class="alert alert-warning d-none" role="alert">
 							<div class="text-center docfind_logo"><span style="font-stretch:condensed; font-weight: bold;color:darkslategrey">Health Provider </span><b>Finder</b></div>
 							<div rbl-value="text-welcome">Welcome...</div>
 						</div>
-						<!-- <div class="text-center docfind_logo"><span style="font-stretch:condensed; font-weight: bold;color:darkslategrey">Health Provider </span><b>Finder</b></div> -->
 						<div class="alert alert-warning" role="alert">
 							<div rbl-value="text-welcome-1">
 								<b>Reminder</b><br/>
 								<span>[Message 1]</span>
 							</div>
+						</div>
+						<!-- this is a better spot for 'start' button (disabled with '_off': d-md-flex_off) -->
+						<div class="d-none d-md-flex_off justify-content-center">
+							<button class="w-50 btn btn-primary search" rbl-value="text-button-start">[Start]</button> 
 						</div>
 						<div class="alert alert-info" role="alert" style="display:none">
 							<div rbl-value="text-welcome-2">
@@ -587,7 +599,7 @@
 										<div class="col-9 pl-2 pr-1">
 											<div>{address}<br/>{city}, {state} {zip}</div>
 											<div class="phone mt-2">
-												<a class="" href="tel:+{phone}"><span class="fa fa-phone" aria-hidden="true"></span><span class="phonenumber">{phone}</span></a><br/>
+												<a class="" href="tel:+1{phone}"><span class="fa fa-phone" aria-hidden="true"></span><span class="phonenumber">{phone}</span></a><br/>
 											</div>
 										</div>
 										<div class="col-2 text-right">
@@ -633,11 +645,8 @@
 	(function() {
 		var view = $("thisClass");
 
-		if ( view.data("debugger" ) === true ) {
-			debugger;
-		}
-
 		$(window).bind("resize", function () {
+			//make selectpicker behave when in mobile view.
 			if ($(this).width() < 500) {
 				$('.inetworkIds .dropdown-menu, .ispecialtyIds_groups .dropdown-menu', view).addClass('w-100')
 			} else {
@@ -645,15 +654,14 @@
 			}
 		});
 
-
 		var favs = {}; //track 'favorite' providers
 		var doctor = {}; //selected doctor
-		var pingURL = "https://qa6.lifeatworkportal.com/portal60/benefits/rks/keepalive/keepalive.htm";
+		var curNav = "";
+		var scrollToDoc = "";
 
 		//send initial keepalive
 		try {
 				top.opener.postMessage("LAW_PTNR_BTR", "*");
-				$.get(pingURL); 
 				console.log('law keepalive sent');
 			}
 		catch(e){
@@ -664,7 +672,6 @@
 		setInterval(function(){ 
 			try {
 				top.opener.postMessage("LAW_PTNR_BTR", "*");
-				$.get(pingURL); 
 				console.log('law keepalive sent');
 			}
 			catch(e){
@@ -673,7 +680,8 @@
 		}, 4 * 60 * 1000);
 
 		function mapProviders(application) {
-			if ( ( application.results["zelis-groupedByProvider"] || [] ).length > 0 ) {
+			//google maps
+			if ( ( application.getResultTable("zelis-groupedByProvider") || [] ).length > 0 ) {
 				if ( typeof application.map === "undefined") {
 					application.map = new google.maps.Map( document.getElementById('map'), {zoom: 15} );
 					application.mapmarkers = [];
@@ -693,7 +701,7 @@
 				//var markers = [];
 				var bounds = new google.maps.LatLngBounds();
 
-				application.results["zelis-groupedByProvider"].forEach( function( item) {
+				application.getResultTable("zelis-groupedByProvider").forEach( function( item) {
 					var sName = item.fname === null ?  item.facility || "Location" : item.fname + " " + item.lname + " " + item.degree;
 					var mOptions = 	{
 						position: {lng: item.long * 1.0, lat: item.lat * 1.0}, 
@@ -732,12 +740,84 @@
 			}
 		}
 
-		view.on( "onInitialized.RBLe", function( event, application ) {
+		view.on( "onCalculationOptions.RBLe", function( event, submitOptions, application ) {
+			
+			//sample postData object if not passed via actual post data from LAW
+			var postDataDefault = {
+				"comp_nr": "412",
+				"typeopt_": "0156|0145|0147|0214|0213|1501",
+				"typeopt": "0156|0145",
+				"mixed_medicare_typeopt": "",
+				"planyear": "2021",
+				"city": "TEST CITY",
+				"state": "NY",
+				"zip": "31029",
+				"site_name": "Demo"
+			}
+			if ( document.location.href.indexOf( "lmc=1") >=0 || true ) postDataDefault = {
+				"comp_nr": "879",
+				"typeopt": "0127|012R|01E1|01E5|01E9|01EC|01EG|01EL|0232|0233|0234|0301|0401|0501|0502|0503|0709|0710|0711|0805|0806|0807|1101|1102|1103|1104|1105|1106|1107|1108|1401|1521|1522|2001|2101|2401|2701|3003|3004|3005|3006|3007|3008|3009|3101|3102|3103|3104|3105|3106|3107|3201|3202|3203|3301|4210|4701,0127|012R|01E1|01E5|01E9|01EC|01EG|01EL|0232|0233|0234|0301|0401|0501|0502|0503|0709|0710|0711|0805|0806|0807|1101|1102|1103|1104|1105|1106|1107|1108|1401|1521|1522|2001|2101|2401|2701|3003|3004|3005|3006|3007|3008|3009|3101|3102|3103|3104|3105|3106|3107|3201|3202|3203|3301|4210|4701",
+				"mixed_medicare_typeopt": "",
+				"planyear": "2020",
+				"city": "TEST CITY",
+				"state": "NY",
+				"zip": "132091234",
+				"site_name": "demo"
+			}
+			if ( document.location.href.indexOf( "dataoverride=1")  >=0  ) postDataDefault = {"comp_nr":"879","typeopt":"01AV|01ED|01EH|01EM|01ER|01EV|01EZ|01G2|01G3|01G4|0232|0233|0234|0301|0401|0709|0710|0711|0805|0806|0807|1101|1102|1103|1104|1105|1106|1107|1108|1521|1522|1801|2001|2101|2501|2701|3003|3004|3005|3006|3007|3008|3009|3101|3102|3103|3104|3105|3106|3107|3201|3202|3203|3401|3402|3501|3502|3801|3802|4201|4202|4205|4211|4401|4402|4403|4404|4701,01AV|01ED|01EH|01EM|01ER|01EV|01EZ|01G2|01G3|01G4|0232|0233|0234|0301|0401|0709|0710|0711|0805|0806|0807|1101|1102|1103|1104|1105|1106|1107|1108|1521|1522|1801|2001|2101|2501|2701|3003|3004|3005|3006|3007|3008|3009|3101|3102|3103|3104|3105|3106|3107|3201|3202|3203|3401|3402|3501|3502|3801|3802|4201|4202|4205|4211|4401|4402|4403|4404|4701","mixed_medicare_typeopt":"","planyear":"2021","city":"TEST CITY                ","state":"GA","zip":"301521234","pingurl":"https%3A%2F%2Fqalmc.lifeatworkportal.com%2Fportal60%2Fbenefits%2Frks%2Fkeepalive%2Fkeepalive.htm","contact_center_name":"Lockheed Martin Employee Service Center","contact_center_phone":"866-562-2363","site_name":"LMC"};
 
+			//copy data to postDataX
+			var postDataX = {};
+			if ( typeof( postData ) == "undefined" || typeof( postData.comp_nr ) == "undefined" || postData.comp_nr == "079" ) {
+				postDataX = postDataDefault;
+			}
+			else {
+				postDataX = postData;
+			};
+
+			if (submitOptions.Inputs.iConfigureUI==1) {
+
+				submitOptions.Inputs.izipCode = postDataX.zip.substr(0,5);
+				submitOptions.Inputs.iYear = postDataX.planyear;
+				submitOptions.Inputs.iClient = postDataX.comp_nr;
+				var tables = submitOptions.InputTables;
+				if ( tables == null ) { 
+					submitOptions.InputTables = tables = [];
+				}
+
+				var typeoptData = postDataX.typeopt.split(",")[0].split("|");
+
+				var typeoptTable = {
+					Name: "typeOpt",
+					Rows: []
+				};
+
+				typeoptData.forEach(function (p) {
+					var row = { index: p };
+					typeoptTable.Rows.push( row );
+				});
+
+				tables.push(typeoptTable);
+			}
+			/*
+			Sample input table object
+			{ 
+				"InputTables":[
+					{ "Name": "typeOpt", "Rows": [
+						{ "index": "0127" }, { "index": "012R" }, { "index": "01E1" }, 
+						{ "index": "01E5" }, { "index": "01E9" }, { "index": "01EC" }, 
+						{ "index": "01EG" }, { "index": "01EL" }, { "index": "0232" }, 
+						{ "index": "3301" }, { "index": "4210" }, { "index": "4701" }
+					]}
+				]
+			}
+			*/		
+        });
+
+		view.on( "onInitialized.RBLe", function( event, application ) {
 			//check to see if need to get script for google maps
 			if ( (typeof google != "object") ) $.getScript("https://maps.googleapis.com/maps/api/js?key=AIzaSyAuLtIyhTCKqoM4fw_yaM7ECu6SnvE9ZHc&callback_off=initMap");
-			// load external styles
-			$('<link rel="stylesheet" href="css/basic.conduent.css" type="text/css" />').appendTo('head');
+			if ( document.location.href.indexOf("//btr") >= 0 ) $(".iProd", view).val( "1" );
 
 			//controls map vs list view
 			$("a.provider-view-toggle", view).on('click', function(e){
@@ -749,29 +829,45 @@
 			//search button
 			$("button.search", view).on('click', function(e){
 				$(".iSearchMethod", view).val( "groupedByProvider" ).trigger('change');
+				e.preventDefault();
+				return false;
 			});
 			$("button.reset", view).on('click', function(e){
 				$(".iSearchMethod", view).val( "" );
 				$(".iproviderName", view).val( "" );
+				$(".isortSelection", view).val( "distance" );
 				$(".inetworkIds", view).selectpicker('val', [] );
 				$(".ispecialtyIds_groups", view).selectpicker('val', [] );
-				$(".iproviderTypeIds", view).selectpicker('val', "6,3,13,4,5,10,2,14,16");
+				$(".iproviderTypeIds", view).selectpicker('val', "1,6,3,13,4,5,10,2,14,16");
 				$(".ilanguageIds", view).selectpicker('val', "0" );
-				$(".iFemale", view).removeAttr( "checked" );
-				$(".iMale", view).removeAttr( "checked" );
-				$(".iSelectedProviders_cb", view).removeAttr( "checked" );
-				$(".iacceptingNewPatients", view).removeAttr( "checked" );
+				$(".iFemale", view).removeAttr( "checked" ).prop("checked",false);
+				$(".iMale", view).removeAttr( "checked" ).prop("checked",false);
+				$(".iSelectedProviders_cb", view).removeAttr( "checked" ).prop("checked",false);
+				$(".iacceptingNewPatients", view).removeAttr( "checked" ).prop("checked",false);
 				$("a.provider-compare, a.provider-search", view).removeClass('active');
 				$("a.provider-search", view).addClass('active').blur();
-				application.setDefaultValue("iradiusInMiles","10");
-				application.calculate();
+				application.setInput("iradiusInMiles", 10, true);
+				e.preventDefault();
+				return false;
 			});
 
 			//page nav buttons
 			$(".result-pagenav a", view).on('click', function(e){
-				$(".iApiPath", view).val( $(this).data("path") ).trigger('change');
+				curNav = $(this).data("path");
+				$(".iApiPath", view).val( curNav ).trigger('change');
 				$(this).blur();
 			});
+
+			$(".result-pagenav select.pagehop", view).on('change', function(e){
+				var path = application.getResultValue("ejs-output", "groupedByProviderNext", "value", "");
+				if ( path.length = 0) path = application.getResultValue("ejs-output", "groupedByProviderPrevious", "value", "");
+				var page = this.value;
+				path = path.replace( /page=\d+/g, 'page=' + page );
+				curNav = path;
+				$(".iApiPath", view).val( curNav ).trigger('change');
+				$(this).blur();
+			});
+
 
 			$("a.provider-compare ", view).on('click', function(e){
 				$("a.provider-compare, a.provider-search", view).removeClass('active');
@@ -804,6 +900,10 @@
 			$(".modal-doctor", view).on("hidden.bs.modal", function() {
 				$(".katapp-loader.doctor", view).show();
 				$(".doctor-detail", view).hide();
+				if ( curNav.length > 0 ) {
+					$(".iApiPath", view).val( curNav );
+				}
+				scrollToDoc = doctor.providerId;
 				application.calculate();
 			});
 
@@ -813,7 +913,7 @@
 				$(".assumptionType_{id}", view).selectpicker();
             }			
 		});
-		//katapp event wireups
+
 		view.on( "onCalculateStart.RBLe", function( event, calculationResults, calcOptions, application ) {
 			if ( $("input.iSelectedProviders_cb", view).prop("checked") ) {
 				for (var key in favs) {
@@ -825,7 +925,7 @@
 			else $("input.iSelectedProviders", view).val("");
 			$("li.dropdown-divider:not(:first), option[data-divider=true]:not(:first)", view).remove();
 		});
-		//katapp event wireups
+
 		view.on( "onCalculation.RBLe", function( event, calculationResults, calcOptions, application ) {
 			
 			//set up filter dismiss events
@@ -833,7 +933,7 @@
 				var el = $(this);
 				if ( el.hasClass("btn-info") ) {
 					var vals = $("select.ispecialtyIds_groups", view).selectpicker('val');
-					$("select.ispecialtyIds_groups", view).selectpicker('val', vals.filter( function(i) {return (i != el.data("selectid"));})).trigger('change');
+					$("select.ispecialtyIds_groups", view).selectpicker('val', vals.filter( function(i) {return (i != el.data("selectid"));}));
 					application.calculate();
 				}
 				else if (el.hasClass("language") && el.hasClass("btn-warning")) {
@@ -841,7 +941,7 @@
 					application.calculate();
 				}
 				else if (el.hasClass("selected") && el.hasClass("btn-warning")) {
-					$(".iSelectedProviders_cb", view).removeAttr("checked");
+					$(".iSelectedProviders_cb", view).removeAttr("checked").prop("checked",false);
 					application.calculate();
 				}
 				else if ( el.hasClass("btn-default") ) {
@@ -852,14 +952,14 @@
 					application.calculate();
 				}
 				else if ( el.hasClass("btn-success") ) {
-					$("select.iproviderTypeIds", view).selectpicker('val',"6,3,13,4,5,10,2,14,16").trigger('change');
+					$("select.iproviderTypeIds", view).selectpicker('val',"1,6,3,13,4,5,10,2,14,16").trigger('change');
 				}
 				else if (el.data("selectvalue") == "Male" && el.hasClass("btn-warning")) {
-					$(".iMale", view).removeAttr("checked");
+					$(".iMale", view).removeAttr("checked").prop("checked",false);
 					application.calculate();
 				}
 				else if (el.data("selectvalue") == "Female" && el.hasClass("btn-warning")) {
-					$(".iFemale", view).removeAttr("checked");
+					$(".iFemale", view).removeAttr("checked").prop("checked",false);
 					application.calculate();
 				}
 				el.remove();
@@ -868,13 +968,14 @@
 				var el = $(this);
 				var vals = $("select.inetworkIds", view).selectpicker('val');
 				$("select.inetworkIds", view).selectpicker('val', vals.filter( function(i) {return (i != el.data("selectid"));}));
-				el.remove();
+				//el.remove();
+				el.addClass( "d-none");
 				application.calculate();
 			});
 
 			//setup events on input labels (why not on configureui? didn't work)
-			$(".liradiusInMiles a", view).attr("href","#").on('click', function(e){
-				$(".vizipCode", view).slideDown();
+			$("[data-inputname=iradiusInMiles] a", view).attr("href","#").on('click', function(e){
+				$("[rbl-display=vizipCode]", view).slideDown();
 				$(".izipCode", view).focus().select();
 			});
 
@@ -883,72 +984,20 @@
 			$(".result-pagenav .nextpage a", view).data("path", application.getResultValue("ejs-output", "groupedByProviderNext", "value", "") );
 			$(".iApiPath", view).val("");
 
-			//dumping data to modal view
-
-			//custom items: discuss with Terry
-			// use .map?
-			//<div class="doctor-list" rbl-tid_="doctor-list" rbl-source_="zelis-groupedByProvider" rbl-item-callback="doctor"></div>
-
-			//this function transforms a row from groupedByProvider, config'd in [rbl-item-callback]
-			//move to?
-			function providerItem(item) {
-				var phone = ( item.phone || "" ).length > 10 ? item.phone.substr( item.phone.length - 10 ) : ( item.phone || "" );
-				return $.extend( {}, item, {
-					"specialties": [item.specialty0,item.specialty1,item.specialty2].filter( function(item){ return item != undefined && item != "";}).join("<br/>"),
-					"networks": $( "<span>" + [item.network0,item.network1,item.network2,item.network3,item.network4,item.network5,item.network6,item.network7].filter( function(item){ return item != undefined && item != "";}).join("<br/>") + "</span>" ).html().replace(/&nbsp;/g, " "),
-					"hospitalaffiliation0": item.hospitalaffiliation0 || "",
-					"hospitals": [item.hospitalaffiliation0,item.hospitalaffiliation1,item.hospitalaffiliation2].filter( function(item){ return item != undefined && item != "";}).join("<br/>"),
-					"phone_format": ( phone || "" ).replace(/(\d\d\d)(\d\d\d)(\d\d\d\d)/, "($1) $2-$3")
-				});
-			}
-			
-			//transforms row data and applies template.  part of core provider?  
-			$("[rbl-item-callback]", view).each(function () {
-				var sel = $(this);
-				sel.empty();
-				var rows = application.results[ sel.attr("rbl-source_") ];
-				if ( rows != undefined) {
-					
-					//show terry (clever, but might need more control?)
-					// sel.append( 
-					// 	rows.map( function(row) {return $("rbl-template[tid=" + sel.attr("rbl-tid_") + "]").html().format( eval( sel.attr("rbl-item-callback") + "( row )") );} ).join("") 
-					// );
-
-					rows.forEach( function( item ){
-						var d = eval( sel.attr("rbl-item-callback") + "( item )");
-						var el =$( $("rbl-template[tid=" + sel.attr("rbl-tid_") + "]").html().format( d ) );
-
-						el.find("[rbl-if]").each( function( index, e ){
-							var s = $(e).attr("rbl-if");
-							if( (d[s] || "").length == 0  ) $(e).remove();
-						});
-						sel.append( el );
-					});
-
-				}
-				else {
-					//need to move this to calcengine
-					//sel.html("<div class='font-italic text-center' rbl-value='text-noresults'>[No results returned for your current search. Try expanding your search.]</div>");
-				}
-			});
-
 			$("a.otherlocations, a.doctor", view).on('click', function(){
 				var providerId = $(this).data("id");
 				//weird hack: must assign it twice.
 				doctor = application.getResultRow("zelis-groupedByProvider", providerId, "providerId");
 				doctor = application.getResultRow("zelis-groupedByProvider", providerId, "providerId");
-				doctor = providerItem(doctor);
-				doctor.morelocations = doctor.city2;
-				delete( doctor.city2 );
+				doctor["city-display"] = "d-none";
 				var el =$( $("rbl-template[tid=provider-list-item]").html().format( doctor ) )
-				el.find("[rbl-if]").each( function( index, e ){
-					var s = $(e).attr("rbl-if");
-					if( (doctor[s] || "").length == 0 ) $(e).remove();
-				});
-				//el.find(".address").remove();
 
 				$("div.doctor-general").html(el);
 				$("div.doctor-general").data( {doctor: doctor});
+
+				if (application.getResultValue("ejs-output", "groupedByProviderPrevious", "value", "").length == 0) {
+					curNav = "";
+				}
 
 				$("input.iproviderIds", view).val($(this).data("id"));
 				application.calculate();
@@ -996,10 +1045,6 @@
 			if ( $("div.modal-doctor .modal-title", view).is(":visible") ) {
 				if ( $(".katapp-loader.doctor", view).length > 0 ) {
 					var el = $("");
-					el.find("[rbl-if]").each( function( index, e ){
-						var s = $(e).attr("rbl-if");
-						if( (doctor[s] || "").length == 0 ) $(e).remove();
-					});
 
 					//format phone numbers
 					$("div.show-morelocations span.phonenumber", view).each( function(index, e) {
@@ -1013,8 +1058,12 @@
 					el.text( $("div.doctor-general a.doctor").text() )
 					$("div.doctor-general a.doctor").after( el );
 					$("div.doctor-general a.doctor").remove();
-					//remove first location since that's shown in top
-					$(".item-location:not([rbl-tid]):first", view).remove()
+					//remove location that's shown in top
+					var s = $("div.modal-doctor span.address").html().split("<")[0];
+					$(".item-location:contains('" + s + "')", view).remove()
+					//clean up odd language:
+					s = $("[rbl-source=doctor-extradetails] div:contains('Language(s)') b", view).text().replace(" | ^", "");
+					$("[rbl-source=doctor-extradetails] div:contains('Language(s)') b", view).text( s );
 
 					$(".katapp-loader.doctor", view).hide();
 					$(".katapp-loader.doctor", view).next("div").fadeIn();
@@ -1023,15 +1072,52 @@
 
 			//$(".provider-results.card").animate({ scrollTop: 0 }, "slow");
 			$("li.dropdown-divider:not(:first), option[data-divider=true]:not(:first)", view).remove();
-			$(".provider-results.card")[0].scrollIntoView( { behavior: "smooth"});
+
+			//scrolling	
+			var element = $(".provider-results.card")[0];
+			var headerOffset = 45;
+			if ( scrollToDoc.length > 0 ){
+				element = $("div.provider-item[data-id=" + scrollToDoc + "]")[0];
+				headerOffset = 20;
+				scrollToDoc = "";
+			}		
+			var elementPosition = element.getBoundingClientRect().top;
+			var offsetPosition = elementPosition - headerOffset;
+			if (elementPosition < 0 || elementPosition > 200) {
+				window.scrollTo({
+					top: offsetPosition,
+					behavior: "smooth"
+				});
+			}
+
+			//screen cleanup
+			if ( application.getResultValue("ejs-visibility", "provider-chart", "value", "0") == 1 && ( $("select.ispecialtyIds_groups", view).selectpicker('val') == null || $("select.ispecialtyIds_groups", view).selectpicker('val').length == 0 ) ) {
+				$(".specialties-selected", view).hide();
+			}
+			if( application.getResultValue("ejs-output", "totalProviders", "value", "0") == 0 ) {
+				$("div.provider-table").empty();
+			}
+
+			//manage plans selected
+			$(".plans-selected [data-selectid]").addClass( "d-none" );
+			$(".inetworkIds").selectpicker('val').forEach( function( s ) {
+				$(".plans-selected [data-selectid=" + s + "]").removeClass( "d-none" )
+			});
+
+			//manage pages and build page dropdown
+			var pages = Math.floor ( application.getResultValue("ejs-output", "totalProviders", "value", "0").replace(/,/g, '') / 25 );
+			var currpage = application.getResultValue("ejs-output", "currentPage", "value", "1").replace(/,/g, '');
+			$("select.pagehop option").remove();
+			for (let index = 1; index < pages + 2; index++) {
+				$("select.pagehop").append("<option>" + index + "</option>");				
+			}
+			$("select.pagehop").val( currpage );
 			
 		});
 
 		view.on( "onConfigureUICalculation.RBLe", function( event, calculationResults, calcOptions, application ) {
-			//done once when katapp initialized to set up input controls and other init reqmts
-			$("select.ispecialtyIds_groups_off, select.inetworkIds_off", view).on('changed.bs.select', function (e, clickedIndex, isSelected, previousValue) {
-				$(this).selectpicker('toggle');
-			});
+	
+			//search when listbox closed
 			$("select.inetworkIds", view).on('hidden.bs.select', function () {
 				application.calculate();
 			});
@@ -1042,7 +1128,7 @@
 			$(".ispecialtyIds_groups").selectpicker('val', []);
 
 			//set up common searches - capture data from results
-			$(".suggested-provider-searches").data("search", application.results["quick-search"]);
+			$(".suggested-provider-searches").data("search", application.getResultTable("quick-search"));
 			$("button.quick-search", view).on('click', function (e) {
 				var searchid = $(this).data("search");
 				var row = $(".suggested-provider-searches").data("search").filter( function(r) {return r['@id'] == searchid;})[0];
@@ -1062,6 +1148,10 @@
 			}
 
 			$(".provider-view-buttons", view).fadeIn();			
+
+			//hack for selectpicker after filter
+			$(".ispecialtyIds_groups .dropdown-menu").css("min-height", "250px");
+			$(".ispecialtyIds_groups .inner").css("min-height", "150px");
 		});
 	})();
 

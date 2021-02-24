@@ -11,7 +11,6 @@ interface KatAppOptions
     debug?: {
         traceVerbosity?: TraceVerbosity;
         debugResourcesDomain?: string;
-        debugProviderDomain?: string;
         saveFirstCalculationLocation?: string;        
         refreshCalcEngine?: boolean; // expireCE=1 querystring
         useTestCalcEngine?: boolean; // test=1 querystring
@@ -27,7 +26,7 @@ interface KatAppOptions
 
     registerDataWithService?: boolean;
     shareDataWithOtherApplications?: boolean;
-    sharedDataLastRequested?: number;
+    _sharedDataLastRequested?: number;
     data?: RBLeRESTServiceResult; // Used if registerDataWithService = false
     registeredToken?: string; // Used if registerDataWithService = true
 
@@ -41,9 +40,8 @@ interface KatAppOptions
     relativePathTemplates?: ResourceResults;
 
     inputSelector?: string;
-    // This is normally used internally by the Provider code.  If there are some inputs that should
-    // always be passed in on a calculation but aren't available in the UI, they can be assigned here.
-    // The most common use of this is iConfigureUI/iDataBind/iInputTrigger
+    // If there are some inputs that should always be passed in on a calculation but aren't available in the UI, 
+    // they can be assigned here.  The most common use of this is iConfigureUI/iDataBind/iInputTrigger
     manualInputs?: CalculationInputs;
     // Used during updateOptions and init to set default inputs. After inputs are set, defaultInputs
     // property on the options object is set to undefined so they are only applied one time.
@@ -103,6 +101,7 @@ interface KatAppPlugInShimInterface {
     // ConfigureUI calc and you want to immediately calculate all applications with a 'normal' calculation.
     // Even that seems weird though because CalcEngine could just ignore it.
     // needsCalculation?: boolean;
+    
     destroy: ()=> void;
     
     // Completely destroy and init an application (possibly using new view/templates) given options.
@@ -118,7 +117,7 @@ interface KatAppPlugInShimInterface {
     // NOTE: updateOptions (along with init()) *will* apply options.defaultInputs every time it is called
     //      as if setInputs() was called.
     updateOptions: ( options: KatAppOptions )=> void;
-    calculate: ( options?: KatAppOptions )=> void;
+    calculate: ( customOptions?: KatAppOptions )=> void;
     trace: ( message: string, verbosity?: TraceVerbosity )=> void;
 }
 
@@ -140,33 +139,40 @@ interface KatAppPlugInShimInterface {
 // for clients to be able to reference.
 interface KatAppPlugInInterface extends KatAppPlugInShimInterface {
     templateBuilder: StandardTemplateBuilderInterface;
+
     results?: TabDef[];
-    exception?: RBLeServiceResults;
-    resultRowLookups?: ResultRowLookupsInterface;
-    getResultTable<T>( tableName: string): Array<T>;
-    getResultRow<T>( table: string, id: string, columnToSearch?: string ): T | undefined;
-    getResultValue( table: string, id: string, column: string, defaultValue?: string ): string | undefined;
-    getResultValueByColumn( table: string, keyColumn: string, key: string, column: string, defaultValue?: string ): string | undefined;
-    setDefaultValue: ( id: string, value: string | undefined )=> void;
-    
     calculationInputs?: CalculationInputs;
 
-    calculate: ( customOptions?: KatAppOptions )=> void;
+    exception?: RBLeServiceResults;
 
     // Re-run configureUI calculation, it will have already ran during first calculate() 
     // method if runConfigureUICalculation was true. This call is usually only needed if
     // you want to explicitly save a CalcEngine from a ConfigureUI calculation, so you set
     // the save location and call this.
     configureUI: ( customOptions?: KatAppOptions )=> void;
+
+    getResultTable<T>( tableName: string, tabDef?: string, calcEngine?: string): Array<T>;
+    getResultRow<T>( table: string, id: string, columnToSearch?: string, tabDef?: string, calcEngine?: string ): T | undefined;
+    getResultValue( table: string, id: string, column: string, defaultValue?: string, tabDef?: string, calcEngine?: string ): string | undefined;
+    getResultValueByColumn( table: string, keyColumn: string, key: string, column: string, defaultValue?: string, tabDef?: string, calcEngine?: string ): string | undefined;
     
+    getInputs: ()=> JSON;
+    setInputs: ( inputs: JSON | CalculationInputs, calculate: boolean )=> void;
+    setInput: ( id: string, value: string | undefined, calculate: boolean )=> void;
+    serverCalculation: ( customInputs: {} | undefined, actionLink?: JQuery<HTMLElement> )=> void;
+    
+    apiAction: ( commandName: string, customOptions?: KatAppActionOptions, actionLink?: JQuery<HTMLElement> )=> void
+    // If multiple KatApps are on one page, a KatApp can broadcast notifications to other KatApps
+    pushNotification: (name: string, information: {} | undefined)=> void;
+
     // $("selector").KatApp("saveCalcEngine", "terry.aney"); - save *next successful* calc for all selector items to terry.aney
     saveCalcEngine: ( location: string )=> void;
     // $("selector").KatApp("refreshCalcEngine"); - refresh calc engine on *next successful* calc for all selector items
     refreshCalcEngine: ()=> void;
     // $("selector").KatApp("traceCalcEngine"); - return calc engine tracing from *next successful* calc for all selector items
     traceCalcEngine: ()=> void;
-    // If multiple KatApps are on one page, a KatApp can broadcast notifications to other KatApps
-    pushNotification: (name: string, information: {} | undefined)=> void;
+    // Redraw/re-render the view without triggering a calculation (speeds up view development time)
+    redraw: ( readViewOptions: boolean | undefined )=> void;
 }
 
 interface CalcEngine {

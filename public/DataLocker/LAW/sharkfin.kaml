@@ -668,7 +668,7 @@
                     
                     application.setInputs({
                         "iRetAge": inputs["iRetirementAge"],
-                        "iSalScale": inputs["iAnnualFuturePayIncreaseRate"],
+                        "iSalaryIncrease": inputs["iAnnualFuturePayIncreaseRate"],
                         "iReplaceRatio": Math.round(Number(inputs["iReplaceRatio"]) * 100 / 5) * 5
                     });
                 });
@@ -689,7 +689,7 @@
 					defaultInputs: {
 						iInputsFromModeler: 1,
 						iCurrentAge: application.getResultValue("variable", "iCurrentAge", "value") * 1,
-						iAnnualFuturePayIncreaseRate: $(".iSalScale").val(),
+						iAnnualFuturePayIncreaseRate: $(".iSalaryIncrease").val(),
 						iAnnualPay: $(".iSalary").val(),
 						iRetirementAge: $(".iRetAge").val(),
 						iRetirementSavingsPct: application.getResultValue("variable", "iRetirementSavingsPct", "value") * 1

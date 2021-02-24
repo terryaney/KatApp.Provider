@@ -545,7 +545,7 @@ class KatApp
     }
     */
     
-    const allowedPropertyGetters = ['options', 'id'];
+    const methodsThatReturnResult = ['options', 'id', 'results', 'calculationInputs', 'exception', 'getInputs', 'getResultTable', 'getResultRow', 'getResultValue', 'getResultValueByColumn'];
     // const autoInitMethods = ['calculate', 'updateOptions'];
 
     // Not a fan of these 'magic' strings to call methods:
@@ -594,7 +594,7 @@ class KatApp
             
             // Call a public pluguin method (not starting with an underscore) for each 
             // selected element.
-            if (args.length == 0 && $.inArray(options, allowedPropertyGetters) != -1 ) {
+            if ($.inArray(options, methodsThatReturnResult) != -1 ) {
             
                 // If the user does not pass any arguments and the method allows to
                 // work as a getter then break the chainability so we can return a value
@@ -604,7 +604,7 @@ class KatApp
                 if ( instance === undefined ) return undefined;
 
                 return typeof instance[options] === 'function'
-                    ? instance[options].apply(instance) // eslint-disable-line prefer-spread
+                    ? instance[options].apply(instance, args) // eslint-disable-line prefer-spread
                     : instance[options];
             
             } else {
@@ -650,14 +650,9 @@ class KatApp
         if ( applications.length === 1 ) {
             shim.trace("Loading KatAppProvider library...", TraceVerbosity.Detailed);
 
-            let debugProviderDomain: string | undefined = shim.options.debug?.debugProviderDomain;
-            if ( debugProviderDomain !== undefined ) {
-                debugProviderDomain += "js/";
-            }
-
             const useTestService = shim.options?.debug?.useTestPlugin ?? KatApp.defaultOptions.debug?.useTestPlugin ?? false;
 
-            KatApp.getResources( shim, "Global:KatAppProvider.js", useTestService, true, debugProviderDomain,
+            KatApp.getResources( shim, "Global:KatAppProvider.js", useTestService, true, shim.options.debug?.debugResourcesDomain,
                 function( errorMessage ) {
                     if ( errorMessage !== undefined ) {
                         shim.trace("KatAppProvider library could not be loaded.", TraceVerbosity.Quiet);

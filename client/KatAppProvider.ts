@@ -1,14 +1,3 @@
-/*
-Multi CEs:
-calcEngines: [
-    { Key, Name, }
-]
-<div rbl-value="test"/>
-<div rbl-ce="ce" rbl-value="test"/>
-<div rbl-ce="ce" rbl-tab="tab" rbl-value="test"/>
-<div rbl-tab="tab" rbl-value="test"/>
-*/
-
 const providerVersion = 8.36; // eslint-disable-line @typescript-eslint/no-unused-vars
 
 KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosity.Detailed);
@@ -118,7 +107,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
             this.init( options );
         }
     
-        init( options: KatAppOptions ): void {
+        private init( options: KatAppOptions ): void {
 
             // MULTIPLE CE: Need to support nested config element of multiple calc engines I guess
             //              Problem.. if passed in options has calcEngine(s) specified or if there is config
@@ -586,26 +575,38 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
             initPipeline( 0 );
         }
 
-        rebuild( options: KatAppOptions ): KatAppOptions {
-            const o = KatApp.extend({}, this.options, options);
+        private setRegisteredToken( token: string ): void {
+            this.options.registeredToken = token;
+
+            if ( this.options.shareDataWithOtherApplications ?? false ) {
+                const _sharedData = $.fn.KatApp.sharedData;
+                _sharedData.registeredToken = token;
+                this.options._sharedDataLastRequested = _sharedData.lastRequested = Date.now();                
+            }
+        }
+
+        destroy(): void {
+            this.element.removeAttr("rbl-application-id");
+            this.element.removeClass("katapp-" + this.id);
+            this.element.removeData("katapp-save-calcengine");
+            this.element.removeData("katapp-refresh-calcengine");
+            this.element.removeData("katapp-trace-calcengine");
+            $('[data-katapp-initialized]', this.element).removeAttr("data-katapp-initialized");
             this.ui.unbindCalculationInputs();
             this.ui.triggerEvent( "onDestroyed", this );
+            this.element.off(".RBLe"); // remove all KatApp handlers
+            delete this.element[ 0 ].KatApp;
+        }
+
+        rebuild( options: KatAppOptions ): KatAppOptions {
+            const o = KatApp.extend({}, this.options, options);
+            this.destroy();
             this.init( o );
             return o;
         }
 
         pushNotification(name: string, information: {} | undefined): void {
             this.ui.pushNotification(this, name, information);
-        }
-
-        setRegisteredToken( token: string ): void {
-            this.options.registeredToken = token;
-
-            if ( this.options.shareDataWithOtherApplications ?? false ) {
-                const _sharedData = $.fn.KatApp.sharedData;
-                _sharedData.registeredToken = token;
-                this.options.sharedDataLastRequested = _sharedData.lastRequested = Date.now();                
-            }
         }
 
         calculate( customOptions?: KatAppOptions ): void {
@@ -617,10 +618,10 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
             if ( shareDataWithOtherApplications ) {
                 this.options.registeredToken = _sharedData.registeredToken;
                 this.options.data = _sharedData.data;
-                this.options.sharedDataLastRequested = _sharedData.lastRequested;
+                this.options._sharedDataLastRequested = _sharedData.lastRequested;
             }
 
-            this.exception = undefined; // Should I set results to undefined too?
+            this.exception = this.results = undefined;
 
             // Build up complete set of options to use for this calculation call
             const currentOptions = KatApp.extend(
@@ -691,7 +692,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                                 that.trace("Data is now ready", TraceVerbosity.Detailed);
                                 that.options.data = currentOptions.data = _sharedData.data;
                                 that.options.registeredToken = currentOptions.registeredToken = _sharedData.registeredToken;
-                                that.options.sharedDataLastRequested = _sharedData.lastRequested;
+                                that.options._sharedDataLastRequested = _sharedData.lastRequested;
                                 calculatePipeline( 1 ); 
                             }
                             else {
@@ -701,7 +702,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                             }                  
                         });
                     }
-                    else if ( shareDataWithOtherApplications && _sharedData.lastRequested != null && ( that.options.sharedDataLastRequested === undefined || _sharedData.lastRequested > that.options.sharedDataLastRequested ) ) {
+                    else if ( shareDataWithOtherApplications && _sharedData.lastRequested != null && ( that.options._sharedDataLastRequested === undefined || _sharedData.lastRequested > that.options._sharedDataLastRequested ) ) {
                         // Protecting against following scenario:
                         // Two applications registered data on server and timed out due to inactivity.  Then both
                         // applications triggered calculations at 'similar times' and both submit to server.  
@@ -719,7 +720,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                         that.trace("Using existing shared data", TraceVerbosity.Detailed);
                         that.options.data = currentOptions.data = _sharedData.data;
                         that.options.registeredToken = currentOptions.registeredToken = _sharedData.registeredToken;
-                        that.options.sharedDataLastRequested = _sharedData.lastRequested;
+                        that.options._sharedDataLastRequested = _sharedData.lastRequested;
                         calculatePipeline( 1 ); 
                     }
                     else {
@@ -894,7 +895,6 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                         throw new Error(pipelineError);
                     }
                 } catch (error) {
-                    that.setResults( undefined );
                     that.trace( "Error during result processing: " + error, TraceVerbosity.None );
                     that.ui.triggerEvent( "onCalculationErrors", "RunCalculation", error, that.exception, currentOptions, that );
                     calculatePipeline( 1 );
@@ -1011,18 +1011,6 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
             this.calculate( KatApp.extend( {}, customOptions, manualInputs ) );
         }
 
-        destroy(): void {
-            this.element.removeAttr("rbl-application-id");
-            this.element.removeClass("katapp-" + this.id);
-            this.element.removeData("katapp-save-calcengine");
-            this.element.removeData("katapp-refresh-calcengine");
-            this.element.removeData("katapp-trace-calcengine");
-            this.element.off(".RBLe");
-            this.ui.unbindCalculationInputs();
-            this.ui.triggerEvent( "onDestroyed", this );
-            delete this.element[ 0 ].KatApp;
-        }
-
         updateOptions( options: KatAppOptions ): void { 
             this.options = KatApp.extend( {}, this.options, options )
             this.ui.unbindCalculationInputs();
@@ -1042,8 +1030,15 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
         setInputs( inputs: JSON | CalculationInputs, calculate = true ): void {
             // When called publicly, want to trigger a calculation, when called from init() we don't
             Object.keys( inputs ).forEach( i => {
-                this.rble.setDefaultValue( i, inputs[ i ]);
+                this.rble.setInput( i, inputs[ i ]);
             });
+
+            if ( calculate ) {
+                this.calculate();
+            }
+        }
+        setInput( id: string, value: string | undefined, calculate = false): void {
+            this.rble.setInput(id, value);
 
             if ( calculate ) {
                 this.calculate();
@@ -1051,7 +1046,9 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
         }
 
         getInputs(): JSON {
-            return this.ui.getInputs( this.options );
+            var inputs = this.ui.getInputs( this.options );
+            var result = KatApp.extend( {}, inputs, { InputTables: this.ui.getInputTables() } ) as JSON;
+            return result;
         };
 
         serverCalculation( customInputs: {} | undefined, actionLink?: JQuery<HTMLElement> ): void {
@@ -1088,7 +1085,6 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                 this.blockerCount = 0;
             }
         }
-
         setResults( results: TabDef[] | undefined, calculationOptions: KatAppOptions = this.options ): void {
             const calcEngines = calculationOptions.calcEngines;
             if ( calcEngines !== undefined && results !== undefined ) {
@@ -1255,12 +1251,6 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
         getResultValueByColumn( table: string, keyColumn: string, key: string, column: string, defautlValue?: string, tabDef?: string, calcEngine?: string ): string | undefined { 
             return this.rble.getResultValueByColumn( this.rble.getTabDef( tabDef, calcEngine ), table, keyColumn, key, column, defautlValue ); 
         }
-        setDefaultValue( id: string, value: string | undefined): void {
-            this.rble.setDefaultValue(id, value);
-        }
-        saveCalcEngine( location: string ): void {
-            this.element.data("katapp-save-calcengine", location);
-        }
 
         // Debug helpers        
         redraw( readViewOptions: boolean | undefined ): void {
@@ -1290,8 +1280,6 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                 // is calling this, presummably results worked previously and they just updated
                 // their view and want to test that.
 
-                that.exception = undefined; // Should I set results to undefined too?
-
                 const cancelCalculation = !that.ui.triggerEvent( "onCalculateStart", that );
 
                 if ( cancelCalculation ) {
@@ -1316,6 +1304,9 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
             rebuildOptions = this.rebuild( { runConfigureUICalculation: false } );
         }
 
+        saveCalcEngine( location: string ): void {
+            this.element.data("katapp-save-calcengine", location);
+        }
         refreshCalcEngine(): void {
             this.element.data("katapp-refresh-calcengine", "1");
         }
@@ -1959,6 +1950,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
 			*/
 			return (input.length === 1 && $("label", input).length === 1 && $("input[type=checkbox]", input).length === 1);
 		}
+        
         getAspNetCheckboxLabel(input: JQuery<HTMLElement>): JQuery<HTMLElement> | undefined {
 			if ( this.isAspNetCheckbox(input) ) {
                 // Moved the help icons inside the label so if label is ever too long and wraps, the icon stays at the end of the text.
@@ -1967,11 +1959,13 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
             }
             return undefined;
         }
+
         getAspNetCheckboxInput(input: JQuery<HTMLElement>): JQuery<HTMLElement> | undefined {
 			return this.isAspNetCheckbox(input)
                 ? $("input", input)
                 : undefined;
         }
+
         getNoUiSlider(id: string, view: JQuery<HTMLElement>): noUiSlider.noUiSlider | undefined {
             const sliderJQuery = $(".slider-" + id, view);
             if ( sliderJQuery.length === 1 ) {
@@ -1979,6 +1973,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
             }
             return undefined;
         }
+
         getNoUiSliderContainer(id: string, view: JQuery<HTMLElement>): JQuery<HTMLElement> | undefined {
             const sliderJQuery = $(".slider-" + id, view);
             if ( sliderJQuery.length === 1 ) {
@@ -2656,7 +2651,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
             });
         }
     
-        setDefaultValue( id: string, value: string | undefined ): void {
+        setInput( id: string, value: string | undefined ): void {
             const selector = this.application.ui.getJQuerySelector( id );
     
             if ( selector !== undefined ) {
@@ -2722,7 +2717,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
     
             defaultRows.forEach( row => {
                 const id = row["@id"];
-                this.setDefaultValue(id, row.value);
+                this.setInput(id, row.value);
             });
         }
     
@@ -3382,7 +3377,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                     // Legacy, might not be needed
                     const visibilityRows = this.getResultTable<RBLeDefaultRow>( tabDef, "ejs-visibility" );
                     visibilityRows.forEach( row => {
-                        const selector = application.ui.getJQuerySelector( row["@id"] );
+                        const selector = application.ui.getJQuerySelector( row["@id"] ) + ", [rbl-display='" + row["@id"] + "']";
                         if ( selector !== undefined ) {
                             if (row.value === "1") {
                                 $(selector, application.element).show();
@@ -3490,7 +3485,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                 return eval(v);
 			}
 			else if (value.startsWith("function ")) {
-				const f = this.removeRBLEncoding("function f() {value} f.call(this);".format( { value: value.substring(value.indexOf("{")) } ));
+				const f = this.removeRBLEncoding("function f {function} f.call(this);".format( { function: value.substring(value.indexOf("(")) } ));
 				return function (): any { return eval(f!); } // eslint-disable-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-non-null-assertion
 			}
 			else return this.removeRBLEncoding(value);
@@ -3553,13 +3548,15 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
 					? optionValue
 					: {};
 
+                const needsArrayElement = optionIndex > -1 && optionJson[optionName] != undefined && (optionJson[optionName] as HighchartsOptionsArray ).length - 1 < optionIndex;
+
 				// If doesn't exist, set it to new object or array
 				if (optionJson[optionName] === undefined) {
 					optionJson[optionName] = optionIndex > -1 ? [newValue] : newValue;
 				}
-				else if (onPropertyValue) {
+				else if (onPropertyValue || needsArrayElement ) {
 					if (optionIndex > -1) {
-						const propertyArray = optionJson[optionName] as Array<any>; // eslint-disable-line @typescript-eslint/no-explicit-any
+						const propertyArray = optionJson[optionName] as HighchartsOptionsArray;
 						// If property is an array and index isn't there yet, push a new element
 						while (propertyArray.length - 1 < optionIndex) {
 							propertyArray.push(undefined);
@@ -3570,14 +3567,6 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
 						// If on property value and exists, this is an override, so just replace the value
 						optionJson[optionName] = newValue;
 					}
-				}
-				else if (optionIndex > -1 && (optionJson[optionName] as Array<any> ).length - 1 < optionIndex) { // eslint-disable-line @typescript-eslint/no-explicit-any
-					const propertyArray = optionJson[optionName] as Array<any>; // eslint-disable-line @typescript-eslint/no-explicit-any
-					// If property is an array and index isn't there yet, push a new element
-					while (propertyArray.length - 1 < optionIndex) {
-						propertyArray.push(undefined);
-					}
-					propertyArray[optionIndex] = newValue;
 				}
 
 				// Reset my local variable to the most recently added/created object
@@ -4854,14 +4843,6 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
         });
     }
 
-    // Overwrite the implementation of getResources with latest version so that it can support
-    // improvements made (i.e. checking local web server first), store copy of original function
-    // from katapp.js so that if they call reset() I can restore that and not run functions in
-    // this file that is going to be re-injected into debug page
-    $.fn.KatApp.getResources = $.fn.KatApp.getResources ?? KatApp[ "getResources" ];
-    $.fn.KatApp.ping = $.fn.KatApp.ping ?? KatApp[ "ping" ];
-    $.fn.KatApp.getResource = $.fn.KatApp.getResource ?? KatApp[ "getResource" ];
-
     $.whenAllDone = function ( deferredParams: Deferred[] ): Deferred {
 		// Update, made this more like Promises.allSettled
         // Understanding promises
@@ -4920,6 +4901,14 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
 
         return result;
     }
+
+    // Overwrite the implementation of getResources with latest version so that it can support
+    // improvements made (i.e. checking local web server first), store copy of original function
+    // from katapp.js so that if they call reset() I can restore that and not run functions in
+    // this file that is going to be re-injected into debug page
+    $.fn.KatApp.getResources = $.fn.KatApp.getResources ?? KatApp[ "getResources" ];
+    $.fn.KatApp.ping = $.fn.KatApp.ping ?? KatApp[ "ping" ];
+    $.fn.KatApp.getResource = $.fn.KatApp.getResource ?? KatApp[ "getResource" ];
 
     KatApp[ "ping" ] = function( url: string, callback: ( responded: boolean, error?: string | Event )=> void ): void {
         const ip = url.replace('http://','').replace('https://','').split(/[/?#]/)[0];

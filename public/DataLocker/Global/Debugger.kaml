@@ -3,58 +3,45 @@
 <style>
 /* Link Style */
 /* Button Style */
-{thisClass} .btn-primary,
-{thisClass} .btn-danger,
-{thisClass} .btn-default,
-{thisClass} .btn-success,
-{thisClass} .btn-info,
-{thisClass} .btn-warning {
-  -webkit-border-radius: 6px;
-  -moz-border-radius: 6px;
-  border-radius: 6px;
-}
-{thisClass} .btn-xs {
-  -webkit-border-radius: 4px;
-  -moz-border-radius: 4px;
-  border-radius: 4px;
-}
-
-{thisClass} .rbl-logclass {
+.thisClass .rbl-logclass {
   padding: 0 20px;
   margin-bottom: 20px;
-  border: solid 1px black;
+  border: solid 1px steelblue;
   max-height: 160px;
   overflow-y: auto;
 }
-
-{thisClass} .toast {
-  position: fixed;
-  bottom: 5px;
-  left: 2%;
-  width: 50%;
-  margin: 0 25% 0 25%;
-  z-index: 999;
-}
 </style>
 
-<div class="s">
-    <div class="alert alert-info toast" style="display:none;" role="alert"></div>
-</div>
+<div class="katapp-controls" style="display:none">
 
-<div class="rbl-nocalc">
-    <div class="row">
-        <div class="col-sm-12">
-            <h3 class="mb-3">Options</h3>
-        </div>
-    </div>
-    <div class="row">
-        <div class="form-group vCustomView col-sm-6">
-            <label for="" class="control-label lCustomView">Custom View</label>
-            <div class="validator-container">
-                <input name="CustomView" id="CustomView" type="text" placeholder="Folder:View, i.e. DST:FSA" class="form-control CustomView">
-                <span class="error-msg" data-toggle="tooltip" data-placement="top"></span>
+    <div class="row text-center mb-2" style="font-size:20px;margin-top:5px;">
+        <div class="col-xs-12" style="display:flex">
+            <div width="40px" height="40px" class="icon" style="width:40px;height:40px;top:-5px; margin-left: 10px;">
+                <div>
+                    <svg xmlns="http://www.w3.org/2000/svg" id="Layer_1" x="0" y="0" version="1.1" viewBox="0 0 128 128" xml:space="preserve"><path fill="#fff" d="M64 9A55 55 0 1 0 64 119A55 55 0 1 0 64 9Z"></path><path fill="#71c2ff" d="M84.1 78.1c-.8 0-1.6-.3-2.2-1-1.1-1.2-1-3.1.2-4.2l9.7-8.9-9.7-8.9c-1.2-1.1-1.3-3-.2-4.2 1.1-1.2 3-1.3 4.2-.2l12.1 11.1c.6.6 1 1.4 1 2.2s-.4 1.6-1 2.2L86.2 77.3C85.6 77.8 84.9 78.1 84.1 78.1zM43.9 78.1c-.7 0-1.5-.3-2-.8L29.8 66.2c-.6-.6-1-1.4-1-2.2s.4-1.6 1-2.2l12.1-11.1c1.2-1.1 3.1-1 4.2.2 1.1 1.2 1 3.1-.2 4.2L36.2 64l9.7 8.9c1.2 1.1 1.3 3 .2 4.2C45.5 77.7 44.7 78.1 43.9 78.1zM56 91c-.3 0-.6 0-.9-.2-1.6-.5-2.4-2.2-1.9-3.8l16-48c.5-1.6 2.2-2.4 3.8-1.9 1.6.5 2.4 2.2 1.9 3.8l-16 48C58.4 90.2 57.3 91 56 91z"></path><path fill="#444b54" d="M64,122C32,122,6,96,6,64S32,6,64,6s58,26,58,58S96,122,64,122z M64,12c-28.7,0-52,23.3-52,52s23.3,52,52,52 s52-23.3,52-52S92.7,12,64,12z"></path></svg>
+                </div>
+            </div>    
+            <div style="margin:6px 15px 5px 3px; padding-right: 15px; border-right:2px solid steelblue;">
+                KatApp Fiddle
+            </div>
+            <div class="form-inline" style="margin-top:2px; margin-right: 3px;">
+                <label style="margin:6px 15px 5px 3px" class="small text-muted" for="CustomView">Kaml View</label>
+                <input type="text" class="form-control mr-2 CustomView" id="CustomView" placeholder="Folder:View, i.e. DST:FSA">
+            </div>
+            <div style="margin-top:3px">
+                <a class="btn btn-default btn-outline-secondary UpdateDebugOptions">Refresh View</a>
+                <a class="btn btn-default btn-outline-secondary LogResults">Log Calculation</a>
+                <a class="btn btn-default btn-outline-secondary ConfigureUI">Trigger ConfigureUI</a>
+                <a data-toggle="button" class="btn btn-default btn-outline-secondary advanced-options">Advanced Options</a>
             </div>
         </div>
+    </div>
+
+    <hr style="border-top:2px solid steelblue; margin-top: 2px;" />
+</div>
+
+<div class="katapp-controls-advanced" style="display:none">
+    <div class="row d-none hidden">
         <div class="form-group vKatAppSelector col-sm-6">
             <label for="" class="control-label lKatAppSelector">KatApp Selector To Override</label>
             <div class="validator-container">
@@ -64,74 +51,21 @@
         </div>
     </div>
     <div class="row">
-        <div class="form-group vDataAttributes col-sm-6">
-            <label for="" class="control-label lDataAttributes">Data Attributes To Apply...</label>
-            <div class="validator-container">
-                <input name="DataAttributes" id="DataAttributes" type="text" class="form-control DataAttributes">
-                <span class="error-msg" data-toggle="tooltip" data-placement="top"></span>
-            </div>
-        </div>
-        <div class="form-group vSaveCalcEngineLocation col-sm-6">
-            <label for="" class="control-label lSaveCalcEngineLocation">Save Next Calculation To...</label>
-            <div class="validator-container">
-                <div class="input-group">
-                    <input name="SaveCalcEngineLocation" id="SaveCalcEngineLocation" type="text" class="form-control SaveCalcEngineLocation">
-                    <span class="input-group-append">
-                        <a class="btn btn-primary lnkSaveCalcEngine">Save</a>
-                    </span>
+        <div class="col-sm-6">
+            <div class="form-group vSaveCalcEngineLocation">
+                <label for="" class="control-label lSaveCalcEngineLocation">Debug CalcEngine</label>
+                <div class="validator-container">
+                    <div class="input-group">
+                        <input name="SaveCalcEngineLocation" id="SaveCalcEngineLocation" type="text" class="form-control SaveCalcEngineLocation" placeholder="save location, i.e. first.last">
+                        <span class="input-group-append input-group-btn">
+                            <a class="btn btn-primary lnkSaveCalcEngine">Save Next Calculation</a>
+                        </span>
+                    </div>
+                    <span class="error-msg" data-toggle="tooltip" data-placement="top"></span>
                 </div>
-                <span class="error-msg" data-toggle="tooltip" data-placement="top"></span>
             </div>
-        </div>
-    </div>
-    <div class="row">
-        <div class="form-group vSampleData col-sm-6">
-            <label for="" class="control-label lSampleData">Sample Data (json)</label>
-            <div class="validator-container">
-                <input name="SampleData" id="SampleData" type="text" placeholder="paste json from DataSource" class="form-control SampleData">
-                <span class="error-msg" data-toggle="tooltip" data-placement="top"></span>
-            </div>
-        </div>
-        <div class="col-sm-3">
-            <label data-info="spacer"></label>
-            <div class="validator-container checkbox-container vUseTestPlugin">
-                <span class="checkbox abc-checkbox UseTestPlugin lUseTestPlugin">
-                    <input id="UseTestPlugin" type="checkbox" name="UseTestPlugin">
-                    <label for="UseTestPlugin">Use test KatAppProvider version</label>
-                </span>
-            </div>
-            <div class="validator-container checkbox-container vUseTestView">
-                <span class="checkbox abc-checkbox UseTestView lUseTestView">
-                    <input id="UseTestView" type="checkbox" name="UseTestView">
-                    <label for="UseTestView">Use test View/Template versions</label>
-                </span>
-            </div>
-        </div>
-        <div class="col-sm-3">
-            <label data-info="spacer"></label>
-            <div class="validator-container checkbox-container vUseTestCalcEngine">
-                <span class="checkbox abc-checkbox UseTestCalcEngine lUseTestCalcEngine">
-                    <input id="UseTestCalcEngine" type="checkbox" name="UseTestCalcEngine">
-                    <label for="UseTestCalcEngine">Use test CalcEngine</label>
-                </span>
-            </div>
-            <div class="validator-container checkbox-container vUseLocalFiles d-none">
-                <span class="checkbox abc-checkbox UseLocalFiles lUseLocalFiles">
-                    <input id="UseLocalFiles" type="checkbox" name="UseLocalFiles">
-                    <label for="UseLocalFiles">Use resources from local webserver</label>
-                </span>
-            </div>
-        </div>
-        <div class="col-sm-12" style="padding-top: 10px;">
-            <a class="btn btn-primary UpdateDebugOptions">Update</a>
-            <a class="btn btn-primary LogResults">Log Calculation Info</a>
-            <a class="btn btn-primary ConfigureUI">ConfigureUI Calculation</a>
-        </div>
-    </div>
-    <div class="row">
-        <div class="col-sm-6" style="padding-top: 15px;">
             <div class="form-group vtraceLevel">
-                <label for="traceLevel" class="control-label">Trace Verbosity</span> <a href="#" onclick="$('.rbl-logclass').empty();return false;">clear</a></label>
+                <label for="traceLevel" class="control-label">Trace Verbosity</span> <a href="#" onclick="$('.rbl-logclass').empty().hide();return false;">clear</a></label>
                 <select name="traceLevel" id="traceLevel" class="form-control bootstrap-select show-tick traceLevel" tabindex="-98">
                     <option value="0" selected="true">None</option>
                     <option value="1">Quiet</option>
@@ -141,11 +75,69 @@
                     <option value="5">Diagnostic</option>             
                 </select>
             </div>
+            <div class="row">
+                <div class="col-sm-6">
+                    <div class="validator-container checkbox-container vUseTestPlugin">
+                        <span class="UseTestPlugin lUseTestPlugin">
+                            <input id="UseTestPlugin" type="checkbox" name="UseTestPlugin">
+                            <label for="UseTestPlugin">Use test KatAppProvider version</label>
+                        </span>
+                    </div>
+                    <div class="validator-container checkbox-container vUseTestView">
+                        <span class="UseTestView lUseTestView">
+                            <input id="UseTestView" type="checkbox" name="UseTestView">
+                            <label for="UseTestView">Use test View/Template versions</label>
+                        </span>
+                    </div>
+                </div>
+                <div class="col-sm-6">
+                    <div class="validator-container checkbox-container vUseTestCalcEngine">
+                        <span class="UseTestCalcEngine lUseTestCalcEngine">
+                            <input id="UseTestCalcEngine" type="checkbox" name="UseTestCalcEngine">
+                            <label for="UseTestCalcEngine">Use test CalcEngine</label>
+                        </span>
+                    </div>
+                    <div class="validator-container checkbox-container vUseLocalFiles">
+                        <span class="UseLocalFiles lUseLocalFiles">
+                            <input id="UseLocalFiles" type="checkbox" name="UseLocalFiles">
+                            <label for="UseLocalFiles">Allow local webserver</label>
+                        </span>
+                    </div>
+                </div>
+            </div>
         </div>
-        <div class="col-sm-12">
-            <div class="rbl-logclass"></div>                    
+        <div class="form-group vDataAttributes col-sm-6 d-none hidden">
+            <label for="" class="control-label lDataAttributes">Data Attributes To Apply...</label>
+            <div class="validator-container">
+                <input name="DataAttributes" id="DataAttributes" type="text" class="form-control DataAttributes">
+                <span class="error-msg" data-toggle="tooltip" data-placement="top"></span>
+            </div>
+        </div>
+        <div class="col-sm-6">
+            <div class="form-group vSampleData">
+                <label for="" class="control-label lSampleData">Sample Data (json)</label>
+                <div class="validator-container">
+                    <textarea name="SampleData" id="SampleData" rows="8" placeholder="paste json from DataSource" class="form-control SampleData"></textarea>
+                    <span class="error-msg" data-toggle="tooltip" data-placement="top"></span>
+                </div>
+            </div>
         </div>
     </div>
+    <div class="row">
+        <div class="col-sm-6">
+        </div>
+        <div class="col-sm-6">
+        </div>
+        <div class="col-12">
+            <div class="rbl-logclass" style="display:none;"></div>                    
+        </div>
+    </div>
+
+    <div>
+        <div class="alert alert-info fiddleMessage" style="display:none;" role="alert"></div>
+    </div>
+    
+    <hr style="border-top:2px solid steelblue; padding-top: 5px;" />
 </div>
 
 <script type="text/javascript">
@@ -156,9 +148,20 @@
             debugger;
         }
 
+        // Defaults
+        if ( ( KatApp.pageParameters[ "view"] || "" ) != "" ) {
+            $(".CustomView", view).val(KatApp.pageParameters["view"]);
+        }
+        $("#UseLocalFiles", view).prop("checked", KatApp.pageParameters[ "allowlocal"] != "0");
+        $("#UseTestView", view).prop("checked", KatApp.pageParameters[ "testview"] != "0");
+        $("#UseTestPlugin", view).prop("checked", KatApp.pageParameters[ "testplugin"] != "0");
+        $("#UseTestCalcEngine", view).prop("checked", KatApp.pageParameters[ "test"] != "0");
+
         view.on( "onInitialized.RBLe", function( event, application ) {
             const selectPickerAvailable = typeof $.fn.selectpicker === "function";
-
+            $(".traceLevel").on("loaded.bs.select", function() {
+                $(".traceLevel button.btn-light").addClass("btn-outline-secondary").removeClass("btn-light");
+            });
             if ( selectPickerAvailable ) {
                 $(".bootstrap-select", view).selectpicker();
             }
@@ -173,6 +176,10 @@
                 $(getSelector()).KatApp("updateOptions", { debug: { traceVerbosity: Number($("#traceLevel").val()) } });
             });
             
+            $(".advanced-options", view).click(function() {
+                $(".katapp-controls-advanced").toggle();
+            });
+
             $(".SaveCalcEngineLocation", view).bind("keyup.RBLe", function (e) {
                 var keycode = (e.keyCode ? e.keyCode : e.which);
                 if (keycode == 13) {
@@ -180,7 +187,15 @@
                     $(".lnkSaveCalcEngine", view).trigger("click");
                 }
             });
-        
+
+            $(".CustomView", view).bind("keyup.RBLe", function (e) {
+                var keycode = (e.keyCode ? e.keyCode : e.which);
+                if (keycode == 13) {
+                    e.preventDefault();
+                    $(".UpdateDebugOptions", view).trigger("click");
+                }
+            });
+            
             $(".lnkSaveCalcEngine", view).click(function() {
                 const location = $(".SaveCalcEngineLocation", view).val();
 
@@ -188,9 +203,9 @@
                     $(getSelector()).KatApp("saveCalcEngine", location);
                     $(".SaveCalcEngineLocation", view).val("");
 
-                    $(".toast", view).html("<p><b>Save Next CalcEngine...</b></p><p>Next calculation will be saved to " + location + " secure file location.</p>").slideDown();
+                    $(".fiddleMessage", view).html("<p><b>Save Next CalcEngine:</b> Next calculation will be saved to " + location + " secure file location.</p>").slideDown();
                     window.setTimeout(function() {
-                        $(".toast", view).slideUp();
+                        $(".fiddleMessage", view).slideUp();
                     }, 2500);
                 }
             })
@@ -233,7 +248,7 @@
                     useTestView: $("#UseTestView", view).prop("checked"),
                     useTestPlugin: $("#UseTestPlugin", view).prop("checked"),
                     useTestCalcEngine: $("#UseTestCalcEngine", view).prop("checked"),
-                    debugResourcesDomain: false && $("#UseLocalFiles", view).prop("checked") ? "http://localhost:8887/" /* start at root of site */ : undefined
+                    allowLocalServer: $("#UseLocalFiles", view).prop("checked")
                 };
 
                 // Reset default options with options from UI
@@ -266,6 +281,7 @@
                         }
                     });                
 
+                    // Can't see how this is used in Provider, think it was earlier implementation, hiding input for now
                     if ( dataAttributes !== "" ) {
                         dataAttributes.split(",").forEach( function( a ) {
                             const attrs = a.trim().split("=");
@@ -274,7 +290,7 @@
                     }
 
                     $(".DataAttributes", view).val("");
-                    
+                   
                     const options = KatApp.extend( {}, KatApp.defaultOptions, { 
                         view: currentView,
                         getData: ($(".SampleData").val() || "" ) != ""
@@ -299,19 +315,10 @@
                 }
             });
 
-            $("#UseLocalFiles", view).prop("checked", KatApp.pageParameters[ "localdebugger"] === "1");
-            $("#UseTestView", view).prop("checked", KatApp.pageParameters[ "testview"] === "1");
-            $("#UseTestPlugin", view).prop("checked", KatApp.pageParameters[ "testplugin"] === "1");
-            $("#UseTestCalcEngine", view).prop("checked", KatApp.pageParameters[ "test"] === "1");
-
-            /*
-            KatApp.defaultOptions.debug.refreshCalcEngine = true;
-            KatApp.defaultOptions.debug.traceVerbosity = Number($("#traceLevel").val());
-            
-            if ( $("#UseLocalFiles", view).prop("checked") ) {
-                KatApp.defaultOptions.debug.debugResourcesDomain = "http://localhost:8887/";
+            if ( KatApp.pageParameters[ "hidetoolbar"] != "1" ) $( ".katapp-controls").show()
+            if ( ( $(".CustomView", view).val() || "" ) != "" ) {
+                $(".UpdateDebugOptions").trigger("click");
             }
-            */           
         });
     })();
     //# sourceURL=Debugger.kaml

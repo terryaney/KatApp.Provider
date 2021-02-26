@@ -3817,11 +3817,10 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
     class StandardTemplateBuilder implements StandardTemplateBuilderInterface
     {
         application: KatAppPlugIn;
-        isBootstrap3: boolean;
+        isBootstrap3: boolean = false;
 
         constructor( application: KatAppPlugIn ) {
             this.application = application;   
-            this.isBootstrap3 = $("rbl-config", this.application.element).attr("bootstrap") == "3";
         }
         
         private buildCarousel(el: JQuery): JQuery {
@@ -4530,6 +4529,11 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
         }
 
         processUI( container?: JQuery<HTMLElement> ): void {
+            const bootstrapVersion = 
+                this.application.element.attr("rbl-bootstrap") ??
+                $("rbl-config", this.application.element).attr("bootstrap");
+
+            this.isBootstrap3 = bootstrapVersion == "3";
             this.processInputs( container );
             this.processCarousels( container );
             this.processHelpTips( container );
@@ -5026,6 +5030,10 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                 // Ping local domain
                 function(): void {
                     if ( localWebServer === undefined || application.element.data("kat-local-domain-reachable") !== undefined ) {
+                        if ( !application.element.data("kat-local-domain-reachable") ) {
+                            localWebServer = undefined;
+                            useLocalWebServer = false;
+                        }
                         getResourcesPipeline();
                     }
                     else {

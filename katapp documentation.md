@@ -1603,11 +1603,13 @@ $(".downloadForms", view).on('click', function (e) {
 });
 ```
 
+*I'm here, document how to set up an action-link in markup and how it flows
+
 rbl-action-link="commandName" 
     - rbl-action-confirm-selector
     - rbl-action-download="true"
     - data-param-* (doc-id, plan-id)
-    - data-input-* ()
+    - data-input-* (don't think this is used, check for docgen link and see if anything set there)
 
 
 serverCalculation( customInputs: {} | undefined, actionLink?: JQuery<HTMLElement> ) |
@@ -1636,7 +1638,7 @@ put sample code on how to hook up events in KamlViews - explain that events are 
 
 # To Document
 
-Available on the options...document them
+Delegates available on the options...document them
     // If custom submit code is needed, can provide implementation here
     submitCalculation?: SubmitCalculationDelegate;
     // If client provides for a way to get registration data, can provide implementation here
@@ -1661,16 +1663,16 @@ Available on the options...document them
 input table management
 
 In Views section:
-mention scoping
-explain thisClass - put a link inside KatApp Properties pointing to this documentation where it talks about DOM element, add link too to template css scoping
-explain {id}/thisview - Put link to KatApp Events so that there is example on how to use
+    mention scoping
+    explain thisClass - put a link inside KatApp Properties pointing to this documentation where it talks about DOM element, add link too to template css scoping
+    explain {id}/thisview - Put link to KatApp Events so that there is example on how to use
 
-default options (any other methods off of KatApp.* ?)
+default options (any other methods off of static KatApp? (trace,ping,defaultOptions))
 
 Templates 
-scoping CSS - .katapp-css
-Talk about how templates can override each other
-Talk about the 'template type' property so can have diff template name but still 'processed as base'
+    scoping CSS - .katapp-css
+    Talk about how templates can override each other
+    Talk about the 'template type' property so can have diff template name but still 'processed as base'
 
 CODE TODO - get rid of ejs-output, ejs-visiblity table and use rbl-value , rbl-display
 

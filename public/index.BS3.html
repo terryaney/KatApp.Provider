@@ -2,46 +2,29 @@
 <html class="no-js">
 
 <head>
-	<meta charset="utf-8">
+    <meta charset="utf-8">
 	<meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
-	<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
-	<title>Decision Support Tools - Test Harness</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+	<title>KatApp Fiddle</title>
 
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.3.7/css/bootstrap.css" integrity="sha256-fmMNkMcjSw3xcp9iuPnku/ryk9kaWgrEbfJfKmdZ45o=" crossorigin="anonymous" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.3.7/css/bootstrap.min.css" integrity="sha512-6MXa8B6uaO18Hid6blRMetEIoPqHf7Ux1tnyIQdpt9qI5OACx7C+O3IVTr98vwGnlcg0LOLa02i9Y1HpVhlfiw==" crossorigin="anonymous" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-datepicker/1.9.0/css/bootstrap-datepicker.min.css" integrity="sha256-siyOpF/pBWUPgIcQi17TLBkjvNgNQArcmwJB8YvkAgg=" crossorigin="anonymous" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/noUiSlider/10.0.0/nouislider.css" integrity="sha256-FosuD4ZAGQFqGAUliYx0rX1BEMviGzI3I0pjy3uIryA=" crossorigin="anonymous" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-select/1.13.12/css/bootstrap-select.min.css" integrity="sha256-l3FykDBm9+58ZcJJtzcFvWjBZNJO40HmvebhpHXEhC0=" crossorigin="anonymous" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/awesome-bootstrap-checkbox/0.3.7/awesome-bootstrap-checkbox.css" integrity="sha256-M9aoCVzUR/zsTFd2J1WmS91DpOOSbh3luX6xNnaY1QI=" crossorigin="anonymous" />
-    <link href="https://stackpath.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css" rel="stylesheet" integrity="sha384-wvfXpqpZZVQGK6TAh5PVlGOfQNHSoD2xbE+QkPxCAFlNEevoEH3Sl0sibVcOQVnN" crossorigin="anonymous">
-    <link rel="stylesheet" href="css/basic.bundle.kat.css" />
-    <link rel="stylesheet" href="css/dst.kat.css" />
+    <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.15.1/css/all.css" />
+    <link rel="stylesheet" href="css/basic.bundle.katapp.css" />
 </head>
 
-<body id="myBody">
-    <header class="header">
-        <div class="container">
-            <div class="logo-brand">
-                <span class="logo logo-left">KatApp Test Harness</span>
-                <span class="logo logo-right"></span>
-            </div>
-        </div>
-    </header>
-
+<body>
     <div class="page-content">
-        <div class="container">
-            <div class='KatAppDebugger' rbl-view='Debugger.BS3' rbl-trace-id='Debugger' data-selector='.katapp'>Loading KatApp Debugger...</div>
-            <div class='katapp' rbl-view="Global:None" rbl-trace-id="1">Loading KatApp...</div>
+        <div class="container">                
+            <div class='KatAppDebugger' rbl-view='Debugger' rbl-bootstrap="3" rbl-trace-id='Debugger' data-selector='.katapp'>Loading KatApp Debugger...</div>
+            <div class='katapp' rbl-trace-id="1"></div>
         </div>
     </div>
 
-    <style>
-        body {
-            background-color: #c7c7c7;
-        }
-        .page-content .container {
-            background-color: #fff;
-        }
-    </style>
+
     <!-- 3rd party cdn -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.5.1/jquery.js" crossorigin="anonymous"></script>    
     <script src="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.3.7/js/bootstrap.js" integrity="sha256-Cr6N6zNN4bp0OwTQOZ6Z66M2r+2dpy/EwKMCyZ+SOMg=" crossorigin="anonymous"></script>
@@ -91,12 +74,11 @@
 
             var debuggerOptions = {
                 debug: {
-                    debugResourcesDomain: KatApp.pageParameters[ "localdebugger" ] === "1" ? "http://localhost:8887/" : undefined
+                    useTestPlugin: true
                 }
             };
 
             $(".KatAppDebugger").KatApp(debuggerOptions);             
-            $(".katapp").KatApp();
         });
     </script>
 

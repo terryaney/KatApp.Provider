@@ -144,7 +144,7 @@ class KatApp
                 item = $("<div>" + displayDate + ": " + message + "</div>");
             }
             console.log( item.text() /* remove any html formatting from message */ );            
-            $(".rbl-logclass").append( item );
+            $(".rbl-logclass").show().append( item );
             $('.rbl-logclass:not(.rbl-do-not-scroll)').each(function() {
                 this.scrollTop = this.scrollHeight;
             })
@@ -267,6 +267,10 @@ class KatApp
                 // Ping local domain
                 function(): void {
                     if ( localWebServer === undefined || application.element.data("kat-local-domain-reachable") !== undefined ) {
+                        if ( !application.element.data("kat-local-domain-reachable") ) {
+                            localWebServer = undefined;
+                            useLocalWebServer = false;
+                        }
                         getResourcesPipeline();
                     }
                     else {

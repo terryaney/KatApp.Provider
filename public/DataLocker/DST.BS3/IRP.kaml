@@ -1,4 +1,4 @@
-<rbl-config calcengine="Buck_DecisionSupportIRP_SE" templates="Standard_Templates"></rbl-config>
+<rbl-config bootstrap="3" calcengine="Buck_DecisionSupportIRP_SE" templates="Standard_Templates"></rbl-config>
 
 <script>
 	(function() {
@@ -22,7 +22,7 @@
 					$.fn.matchHeight._update();
 				}
 			}).trigger("change");
-
+			
 			// Since IRP KatApp is being shown in a 'modal/blocker' with position of absolute, 
 			// I need to set this z-index so that it doesn't appear behind the blocker: 
 			$(".learnMoreModal, .modelingDefaultsModal, #iMedicalCostInflation-worksheet, #iAnnualFuturePayIncreaseRate-worksheet", view).on("shown.bs.modal", function() {
@@ -213,16 +213,16 @@
 			<div class="modal-body">
 				<div class="alert alert-warning hide validation-summary"></div>
 				<div class="row">
-					<div rbl-tid="input-textbox" data-inputname="iMedCostYear1" data-css="col-sm-6" data-label="Year" />
-					<div rbl-tid="input-textbox" data-inputname="iMedCostRate1" data-css="col-sm-6" data-label="Rate" data-suffix="%" />
-					<div rbl-tid="input-textbox" data-inputname="iMedCostYear2" data-css="col-sm-6" data-label="Year" />
-					<div rbl-tid="input-textbox" data-inputname="iMedCostRate2" data-css="col-sm-6" data-label="Rate" data-suffix="%" />
-					<div rbl-tid="input-textbox" data-inputname="iMedCostYear3" data-css="col-sm-6" data-label="Year" />
-					<div rbl-tid="input-textbox" data-inputname="iMedCostRate3" data-css="col-sm-6" data-label="Rate" data-suffix="%" />
-					<div rbl-tid="input-textbox" data-inputname="iMedCostYear4" data-css="col-sm-6" data-label="Year" />
-					<div rbl-tid="input-textbox" data-inputname="iMedCostRate4" data-css="col-sm-6" data-label="Rate" data-suffix="%" />
-					<div rbl-tid="input-textbox" data-inputname="iMedCostYear5" data-css="col-sm-6" data-label="Year" />
-					<div rbl-tid="input-textbox" data-inputname="iMedCostRate5" data-css="col-sm-6" data-label="Rate" data-suffix="%" />
+					<div rbl-tid="input-textbox" data-inputname="iMedCostYear1" data-css="col-sm-6" data-label="Year"></div>
+					<div rbl-tid="input-textbox" data-inputname="iMedCostRate1" data-css="col-sm-6" data-label="Rate" data-suffix="%"></div>
+					<div rbl-tid="input-textbox" data-inputname="iMedCostYear2" data-css="col-sm-6" data-label="Year"></div>
+					<div rbl-tid="input-textbox" data-inputname="iMedCostRate2" data-css="col-sm-6" data-label="Rate" data-suffix="%" ></div>
+					<div rbl-tid="input-textbox" data-inputname="iMedCostYear3" data-css="col-sm-6" data-label="Year"></div>
+					<div rbl-tid="input-textbox" data-inputname="iMedCostRate3" data-css="col-sm-6" data-label="Rate" data-suffix="%"></div>
+					<div rbl-tid="input-textbox" data-inputname="iMedCostYear4" data-css="col-sm-6" data-label="Year"></div>
+					<div rbl-tid="input-textbox" data-inputname="iMedCostRate4" data-css="col-sm-6" data-label="Rate" data-suffix="%"></div>
+					<div rbl-tid="input-textbox" data-inputname="iMedCostYear5" data-css="col-sm-6" data-label="Year"></div>
+					<div rbl-tid="input-textbox" data-inputname="iMedCostRate5" data-css="col-sm-6" data-label="Rate" data-suffix="%"></div>
 					<div rbl-tid="input-checkbox" data-inputname="iMedicalCostInflation_advanced" data-css="col-sm-12"></div>
 				</div>
 			</div>

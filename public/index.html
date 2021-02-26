@@ -2,10 +2,10 @@
 <html class="no-js">
 
 <head>
-	<meta charset="utf-8">
+    <meta charset="utf-8">
 	<meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
-	<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
-	<title>KatApp - Test Harness</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+	<title>KatApp Fiddle</title>
 
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/4.5.2/css/bootstrap.min.css" integrity="sha512-MoRNloxbStBcD8z3M/2BmnT+rg4IsMxPkXaGh2zD6LGNNFE80W3onsAhRcMAMrSoyWL9xD7Ert0men7vR8LUZg==" crossorigin="anonymous" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-datepicker/1.9.0/css/bootstrap-datepicker.min.css" integrity="sha256-siyOpF/pBWUPgIcQi17TLBkjvNgNQArcmwJB8YvkAgg=" crossorigin="anonymous" />
@@ -15,39 +15,23 @@
     <link rel="stylesheet" href="css/Bootstrap.AwesomeCheckbox.css" />
     -->
     <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.15.1/css/all.css" />
-    <link rel="stylesheet" href="css/basic.bundle.kat.css" />
-    <link rel="stylesheet" href="css/dst.kat.css" />
+    <link rel="stylesheet" href="css/basic.bundle.katapp.css" />
 </head>
 
-<body id="myBody">
-    <header class="header">
-        <div class="container">
-            <div class="logo-brand">
-                <span class="logo logo-left">KatApp Test Harness</span>
-                <span class="logo logo-right"></span>
-            </div>
-        </div>
-    </header>
-
+<body>
     <div class="page-content">
-        <div class="container">
+        <div class="container">                
             <div class='KatAppDebugger' rbl-view='Debugger' rbl-trace-id='Debugger' data-selector='.katapp'>Loading KatApp Debugger...</div>
-            <div class='katapp' rbl-view="Global:None" rbl-trace-id="1">Loading KatApp...</div>
+            <div class='katapp' rbl-trace-id="1"></div>
         </div>
     </div>
 
-    <style>
-        body {
-            background-color: #c7c7c7;
-        }
-        .page-content .container {
-            background-color: #fff;
-        }
-    </style>
+
     <!-- 3rd party cdn -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.5.1/jquery.js" crossorigin="anonymous"></script>    
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/4.5.2/js/bootstrap.bundle.min.js" integrity="sha512-kBFfSXuTKZcABVouRYGnUo35KKa1FBrYgwG4PAx7Z2Heroknm0ca2Fm2TosdrrI356EDHMW383S3ISrwKcVPUw==" crossorigin="anonymous"></script>    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-select/1.13.12/js/bootstrap-select.min.js" integrity="sha256-+o/X+QCcfTkES5MroTdNL5zrLNGb3i4dYdWPWuq6whY=" crossorigin="anonymous"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-datepicker/1.9.0/js/bootstrap-datepicker.min.js" integrity="sha256-bqVeqGdJ7h/lYPq6xrPv/YGzMEb6dNxlfiTUHSgRCp8=" crossorigin="anonymous"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/4.5.2/js/bootstrap.bundle.js"></script>    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-datepicker/1.9.0/js/bootstrap-datepicker.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-select/1.13.18/js/bootstrap-select.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/noUiSlider/10.0.0/nouislider.js" integrity="sha256-qBtL4kx2JuCUQp1aTQxlcVxo58MxzFpmUS0WEl99kqw=" crossorigin="anonymous"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/highcharts/6.0.7/highcharts.js" integrity="sha256-F0xKYvUdYPCgKKgKGtEjxwHXKSRbwKP+2mOlgGoR0Fs=" crossorigin="anonymous"></script>
     <script src="https://ajax.microsoft.com/ajax/4.0/1/MicrosoftAjax.js" ></script>
@@ -94,12 +78,11 @@
 
             var debuggerOptions = {
                 debug: {
-                    debugResourcesDomain: KatApp.pageParameters[ "localdebugger" ] === "1" ? "http://localhost:8887/" : undefined
+                    useTestPlugin: true
                 }
             };
 
             $(".KatAppDebugger").KatApp(debuggerOptions);             
-            $(".katapp").KatApp();
         });
     </script>
 

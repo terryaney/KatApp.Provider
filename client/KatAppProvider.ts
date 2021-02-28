@@ -107,6 +107,24 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
             this.init( options );
         }
     
+        dataAttributesToJson( container: JQuery, attributePrefix: string ): object {
+            const attributeNames = 
+                [].slice.call(container.get(0).attributes).filter(function(attr: Attr) {
+                    return attr && attr.name && attr.name.indexOf(attributePrefix) === 0
+                }).map( function( a: Attr ) { return a.name; } );
+
+            const json = {};
+
+            attributeNames.forEach( a => {
+                const value = container.attr(a);
+
+                if ( value !== undefined ) {
+                    json[ a.substring(attributePrefix.length) ] = value;
+                }
+            });
+            return json;            
+        } 
+
         private init( options: KatAppOptions ): void {
 
             // MULTIPLE CE: Need to support nested config element of multiple calc engines I guess
@@ -516,7 +534,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                         const templateId = $(this).attr('rbl-tid');
                         if (templateId !== undefined && templateId !== "inline") {
                             //Replace content with template processing, using data-* items in this pass
-                            that.rble.injectTemplate( $(this), that.ui.getTemplate( templateId, $(this).data() ) );
+                            that.rble.injectTemplate( $(this), that.ui.getTemplate( templateId, that.dataAttributesToJson($(this), "data-")));
                         }
                     });
 
@@ -903,8 +921,6 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
 
             // Always go calculateEnd
             const updateData = function(): void {
-                that.trace("Posting jwt update data from results", TraceVerbosity.Detailed);
-
                 try {
                     const uploadUrl = that.options.rbleUpdatesUrl;
 
@@ -913,6 +929,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                     };
     
 					if (jwtToken.Tokens.filter( t => t.Name == "data-updates" ).length > 0 && uploadUrl !== undefined ) {
+                        that.trace("Posting jwt update data from results", TraceVerbosity.Detailed);
                         const fd = new FormData();
                         fd.append("KatAppCommand", "SaveRBLeUpdates");
                         fd.append("KatAppView", that.options.view ?? "Unknown" );
@@ -1560,38 +1577,28 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
 
             if ( itemType == "checkbox" ) {
                 /*                
-                Find checkboxlist in ess for example rendering.
-                    - Look at SetCheckboxListInputNames method as well
-
-                Current provider code seems to assume checkbox list if has checkbox-list-horizontal class
-                    - if ess version is NOT horizontal, don't think defaults would be working in here because it is
-                        not flagged as a isCheckboxList?
-                    - Search for isCheck, checkbox, checkbox-list to see how I'm using it
-                        Make sure I can support CheckboxList items when needed
-                    - Make sure templates are right
-
-                    - Evo ess Framework
+                    Evo ess Framework Issues
 
                     iCheckList, with items of
 
-                    a:Item A
-                    b:Item B
-                    c:Item C
+                        a:Item A
+                        b:Item B
+                        c:Item C
 
-                    When you set default values, you do: iCheckList: a,c (comma delim list)
-
-                    But when 'getting values' you make inputs named: iCheckLista, iCheckListb, iCheckListc (input for each item)
-
-                    How hard would it be have one input (iCheckList) and the value is comma delim of vlaues selected...Harder to work with or no?
-
+                    When you set default values, you do: iCheckList: a,c (comma delim list).  But when 'getting values' you make 
+                    inputs named: iCheckLista, iCheckListb, iCheckListc (input for each item).  How hard would it be have one 
+                    input (iCheckList) and the value is comma delim of vlaues selected...Harder to work with or no?
+                    ** Note, I've changed after talking to han, we are always returning comma delim list in Evo.
+                    
                     * Currently checkbox lists don't work in ESS (DST OOPBasic)
-                    - note, all oop's are going to MBM early next year
-                    - note, no one uses bootstrapcheckbox control (bsc), only manual markup
-                    - bsc removes col-* attribute from container, so then 'label' is offset wrong (radio and check lists when horizontal - katapp works b/c col class is on template container element)
-                        - manual works because don't have new 'bs-listcontrol' class for identification
-                    - vertical manual ones do not look good because 'checkbox abc-checkbox' isn't present in markup (should be on span containing the input/label)
-                    - both bsc/manual fail if vertical, it adds 'options' to the table, results has ejs-list table in it again for visiblity
-                        - code doesn't know how to handle/hide items b/c it is hardcoded (RBLe) to only handle 'horizontal' ones
+                        *** Not sure if I fixed this in EVO/RBLe implementation or not.  Everything works in KatApp
+                        - all oop's are going to MBM early next year
+                        - no one uses bootstrapcheckbox control (bsc), only manual markup
+                        - bsc removes col-* attribute from container, so then 'label' is offset wrong (radio and check lists when horizontal - katapp works b/c col class is on template container element)
+                            - manual works because don't have new 'bs-listcontrol' class for identification
+                        - vertical manual ones do not look good because 'checkbox abc-checkbox' isn't present in markup (should be on span containing the input/label)
+                        - both bsc/manual fail if vertical, it adds 'options' to the table, results has ejs-list table in it again for visiblity
+                            - code doesn't know how to handle/hide items b/c it is hardcoded (RBLe) to only handle 'horizontal' ones
 
                 */
                 // throw new Error("CheckboxList is not supported yet.");
@@ -1696,7 +1703,8 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
 
                 if ( !li.Visible ){
                     currentItem.hide();
-                    currentInput.prop("checked", false);
+                    // Don't need to hide anymore...I don't include in inputs if hidden
+                    // currentInput.prop("checked", false);
                 }
                 else {
                     if ( text != "" ) {
@@ -1796,10 +1804,11 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                     }
                 });
 
+                // Checkbox list...
                 $("[data-itemtype='checkbox']", this.application.element).each(function() {
                     const cbl = $(this);
                     const name = cbl.data("inputname");
-                    const value = $("input:checked", cbl).toArray().map( chk => $(chk).data("value")).join(",");
+                    const value = $("input:checked:visible", cbl).toArray().map( chk => $(chk).data("value")).join(",");
                     inputs[name] = value;
                 });
             }
@@ -2324,7 +2333,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                             
                             if (templateId !== undefined) {
                                 //Replace content with template processing, using data-* items in this pass
-                                this.injectTemplate( el, this.application.ui.getTemplate( templateId, el.data() ) );
+                                this.injectTemplate( el, this.application.ui.getTemplate( templateId, this.application.dataAttributesToJson(el, "data-") ) );
                             }
                             
                             // Append 'templated' content to view
@@ -2428,7 +2437,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                     // Only process element if *not* flagged as a rbl-configui only item or if it actually is a Configuration UI calculation
                     if ( el.attr("rbl-configui") === undefined || application.calculationInputs?.iConfigureUI === 1 ) {
     
-                        const elementData = el.data();
+                        const elementData = application.dataAttributesToJson(el, "data-");
                         const tid = el.attr('rbl-tid');
                         const rblSourceTableParts = el.attr('rbl-source-table')?.split('.');
                         const tabDef = that.getTabDef( el.attr('rbl-tab'), el.attr('rbl-ce') )
@@ -2659,8 +2668,8 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                 $(selector + "DisplayOnly", this.application.element).html(value);
                 const input = $(selector, this.application.element).not("div");
                 const listControl = $(selector + "[data-itemtype]", this.application.element);
-                const isCheckboxList = listControl.data("itemtype") == "checkbox"; // input.hasClass("checkbox-list-horizontal");
-                const isRadioList = listControl.data("itemtype") == "radio"; // input.hasClass("checkbox-list-horizontal");
+                const isCheckboxList = listControl.data("itemtype") == "checkbox";
+                const isRadioList = listControl.data("itemtype") == "radio";
                 const aspCheckbox = this.application.ui.getAspNetCheckboxInput(input);
                 const radioButtons = isRadioList ? $("input", listControl) : $("input[type='radio']", input);
                 const noUiSlider = this.application.ui.getNoUiSlider(id, this.application.element);
@@ -2948,12 +2957,12 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                                     const textCol = spanConfig.isTextColumn;
     
                                     const sClass =
-                                        "{valueClass} {columnClass} span-{table}-{column}".format(
+                                        "{valueClass}{columnClass} span-{table}-{column}".format(
                                             {
                                                 table: tableName,
                                                 column: colSpan,
                                                 valueClass: textCol ? "text" : "value",
-                                                columnClass: spanConfig.cssClass ?? ""
+                                                columnClass: spanConfig.cssClass != undefined ? " " + spanConfig : ""
                                             }
                                         );
     
@@ -3935,7 +3944,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                 }
             }, 185);
         }
-        
+                
         processActionLinks( container?: JQuery<HTMLElement> ): void {
             const view = container ?? this.application.element;
             const that = this;
@@ -3986,34 +3995,8 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                         // https://storiknow.com/download-file-with-jquery-and-web-api-2-0-ihttpactionresult/ (most recent answer I could find)
                         //	This one didn't work (left a comment) because of needing to return text (error) or file (success).
                         
-                        const actionParameters = 
-                            [].slice.call(actionLink.get(0).attributes).filter(function(attr: Attr) {
-                                return attr && attr.name && attr.name.indexOf("data-param-") === 0
-                            }).map( function( a: Attr ) { return a.name; } );
-
-                        const parametersJson = {};
-
-                        actionParameters.forEach( a => {
-                            const value = actionLink.attr(a);
-
-                            if ( value !== undefined ) {
-                                parametersJson[ a.substring(11) ] = value;
-                            }
-                        });
-
-                        const actionInputs = 
-                            [].slice.call(actionLink.get(0).attributes).filter(function(attr: Attr) {
-                                return attr && attr.name && attr.name.indexOf("data-input-") === 0
-                            }).map( function( a: Attr ) { return a.name; } );
-                        const inputsJson = {};
-
-                        actionInputs.forEach( a => {
-                            const value = actionLink.attr(a);
-
-                            if ( value !== undefined ) {
-                                inputsJson[ a.substring(11) ] = value;
-                            }
-                        });
+                        const parametersJson = application.dataAttributesToJson( actionLink, "data-param-");
+                        const inputsJson = application.dataAttributesToJson( actionLink, "data-input-" );
 
                         application.apiAction(
                             katAppCommand, 
@@ -4347,8 +4330,8 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                         let addOnContainer = validatorContainer;
                         
                         if ( !isBootstrap3 ) {
-                            addOnContainer = $("<div class='input-group-prepend'></div>");
-                            validatorContainer.prepend( addOnContainer );
+                            validatorContainer.prepend( $("<div class='input-group-prepend'></div>") );
+                            addOnContainer = $(".input-group-prepend", validatorContainer);
                         }
                         
                         addOnContainer.prepend($("<span class='input-group-addon input-group-text'>" + prefix + "</span>"));
@@ -4360,8 +4343,8 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                         let addOnContainer = validatorContainer;
                         
                         if ( !isBootstrap3 ) {
-                            addOnContainer = $("<div class='input-group-append'></div>");
-                            validatorContainer.append( addOnContainer );
+                            validatorContainer.append( $("<div class='input-group-prepend'></div>") );
+                            addOnContainer = $(".input-group-prepend", validatorContainer);
                         }
                         
                         addOnContainer.append($("<span class='input-group-addon input-group-text'>" + suffix + "</span>"));
@@ -4377,7 +4360,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
         }
 
         private buildListControls( view: JQuery<HTMLElement> ): void {
-            const listControls = $('[rbl-tid="input-radiobuttonlist"],[rbl-template-type="radiobuttonlist"]', view);
+            const listControls = $('[rbl-tid="input-radiobuttonlist"],[rbl-template-type="radiobuttonlist"],[rbl-tid="input-checkboxlist"],[rbl-template-type="checkboxlist"]', view);
             const that = this;
 
             listControls.not('[data-katapp-initialized="true"]').each( function() {

@@ -1,12 +1,4 @@
-<rbl-config calcengine="Buck_DecisionSupportLI_SE" templates="Standard_Templates"></rbl-config>
-
-<style>
-.katapp-css .row.pull-bottom > div > div {
-  float: none;
-  vertical-align: bottom;
-  display: inline-block;
-}	
-</style>
+<rbl-config calcengine="Buck_DecisionSupport_RothvsPretax_SE" templates="Standard_Templates" bootstrap="3"></rbl-config>
 
 <div class="page-header"><h1>Initial Inputs</h1></div>
 <div class="row">
@@ -21,16 +13,16 @@
 	<input name="iInitialInputs" class="iInitialInputs" value="1"/>
 </div>
 
-<div class="ajaxContent">
+<div class="ajaxContent rbl-nocalc">
     <div class="row">
-		<div rbl-tid="input-dropdown" data-css="col-sm-4" data-inputname="iFamilyStatus"></div>
-		<div rbl-tid="input-slider" data-css="col-sm-4 skipRBLe" data-inputname="iSpouseAge"></div>
-		<div rbl-tid="input-slider" data-css="col-sm-3 skipRBLe" data-inputname="iYoungestChildAge"></div>
-    </div>
-    <div class="row pull-bottom">
-		<div class="col-sm-4"><div rbl-tid="input-textbox" data-css="skipRBLe" data-inputname="iAnnualIncomeReplacement" data-prefix="$"></div></div>
-		<div class="col-sm-4"><div rbl-tid="input-textbox" data-css="skipRBLe" data-inputname="iCurrentLifeInsurance" data-prefix="$"></div></div>
-		<div class="col-sm-3"><div rbl-tid="input-textbox" data-css="skipRBLe" data-inputname="iCurrentInvestments" data-prefix="$"></div></div>
+	    <div class="col-sm-6">
+			<div rbl-tid="input-textbox" data-inputname="iDateBirth" data-type="date"></div>
+			<div rbl-tid="input-textbox" data-prefix="$" data-inputname="iSalary"></div>
+	    </div>
+	    <div class="col-sm-6">
+			<div rbl-tid="input-textbox" data-prefix="$" data-inputname="iTargetPercentage"></div>
+			<div rbl-tid="input-textbox" data-inputname="iSecurityPin"></div>
+	    </div>
     </div>
 	<div class="ajaxloader"></div>
 </div>
@@ -59,7 +51,7 @@
 		}).on( "onCalculation.RBLe", function( event, calculationResults, calcOptions, application ) {
 			if ( calculationResults[ "errors"] === undefined && application.calculationInputs.iInputTrigger === "iInitialInputs" ) {
 				application.element.KatApp({ 
-					view: "DST:Life",
+					view: "DST:RothVsPreTax",
 					defaultInputs: application.calculationInputs
 				});
 			}

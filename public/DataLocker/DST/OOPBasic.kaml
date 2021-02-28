@@ -1,0 +1,278 @@
+<!--
+	NOTE: This isn't finished for generic DST...
+
+	View Issues:
+		Probably need to get it styling better for 'conduent dst'
+
+	CalcEngine Issues:
+		Add 'custom' option to 'health care usage' dropdown
+		When show and hide 'advanced-assumptions' based on custom or not
+		Change label of 'Customize' when they change drop down to 'Customize * Level'
+
+		On compare table - instead of headers with just the 'plan feature' (i.e. 'Benefits'), get rid of the
+							first header row, and every other header row should just be Feature/In-Network/Out-of-Network/HMO 
+							(or whatever original header was), b/c you can't see when 'scrolling' and would be nice to not have to 
+							scroll to top to see them (only partial or no scroll needed if add cols in each row)
+
+		Missing some 'labels' for Rx and In/Out inputs
+		iComparePlan1-10...now I give comma delim list in iComparePlan
+		Don't have *D inputs anymore (no modal), iOOPType, iAdvAssumptions
+		Need to do validation on custom inputs all the time
+-->
+
+<rbl-config calcengine="Conduent_Nexgen_OOP_SE" templates="Standard_Templates,Input_TemplatesBS4"></rbl-config>
+
+<script>
+	(function(){
+		var view = $("{thisView}");
+
+		if ( view.data("debugger" ) == true ) {
+			debugger;
+		}
+
+		view.on( "onInitialized.RBLe", function( event, application ) {
+            const selectPickerAvailable = typeof $.fn.selectpicker === "function";
+
+			if ( selectPickerAvailable ) {
+				$(".iCustomCoverageType", view).selectpicker();
+            }
+
+			if ( $.fn.matchHeight !== undefined ) {
+				$(".match-height", view).matchHeight({ property: 'height' });
+				$.fn.matchHeight._maintainScroll = true;
+			}
+
+			$('.compareLinks a', view).on('show.bs.tab', function (e) {
+				$("div[rbl-tablename='summary-details']", view).html("");
+				$(".iCompareInOut", view).val($(e.target).data("compare-type")).trigger("change");
+			});
+			$('.oopViewLinks a', view).on('shown.bs.tab', function (e) {
+				$(".iCurrentTab", view).val($(e.target).data("tab-input"));
+			});
+
+			$("select.iCustomCoverageType", view).on('change', function () {
+				$(".tabCoverages", view).hide();
+				var nav = $(this).val();				
+				$(nav, view).show();
+				if ( $.fn.matchHeight !== undefined ) {
+					$.fn.matchHeight._update();
+				}
+			}).trigger("change");
+		});
+
+		view.on( "onCalculation.RBLe", function( event, calculationResults, calcOptions, application ) {
+			// Doesn't look like I can only call 'update' to match height items within my view, so this will update
+			// all and any match heights applied on page, but my bindings were set scoped to my view, so it should
+			// not have adverse affects.  The project page mentioned that match heights can be achieved in modern
+			// browsers by using CSS Flexbox and CSS Grid instead.  So could look at that.
+			if ( $.fn.matchHeight !== undefined ) {
+				$.fn.matchHeight._update();
+			}
+			
+			if (application.calculationInputs.iInputTrigger == "iBenefitType") {
+				$(".compareLinks a#{id}-pill-feature-compare-both").tab('show');
+			}
+		});
+
+	})();
+	//# sourceURL=OOPBasic.kaml
+</script>
+
+<style>
+    .thisClass div.chart { height: 350px; }
+    @media (max-width: 767px) {
+        .thisClass div.chart { height: 250px; }
+    }
+    .thisClass .scenario-header {
+        border-bottom: 2px solid var(--colorDB);
+        font-weight: bold;
+    }
+    .thisClass .scenario-header-mobile {
+        border-left: 2px solid var(--colorDB);
+        padding-left: 5px;
+    }
+</style>
+
+<div class="d-none">
+	<input name="iHSAType" class="iHSAType" />
+	<input name="iCurrentTab" class="iCurrentTab" value="tabOOP" />
+	<input name="iCompareInOut" class="iCompareInOut" value="in-out" />
+</div>
+
+<div class="row ajaxContent">
+    <div class="col-12">
+		<ul class="nav nav-pills oopViewLinks" role="tablist">
+			<li class="nav-item" role="presentation"><a class="nav-link active" data-tab-input="tabOOP" id="{id}-pill-pocket-compare" data-toggle="pill" href="#{id}-tab-pocket-compare" role="tab" aria-controls="{id}-tab-pocket-compare" aria-selected="true">Out of Pocket Comparison</a></li>
+			<li class="nav-item" role="presentation"><a class="nav-link" data-tab-input="tabPlanCompare" id="{id}-pill-feature-compare" data-toggle="pill" href="#{id}-tab-feature-compare" role="tab" aria-controls="{id}-tab-feature-compare" aria-selected="true">Plan Feature Comparison</a></li>
+		</ul>
+		<div class="tab-content">
+			<div class="tab-pane fade show active" id="{id}-tab-pocket-compare" role="tabpanel" aria-labelledby="{id}-pill-pocket-compare">
+				<div class="row">
+					<div class="col-md-5">
+						<div class="card">
+							<div class="card-header">
+								<h4>Assumptions</h4>
+							</div>
+							<div class="card-body">
+								<div class="row">
+									<div rbl-tid="input-dropdown" data-inputname="iCoverageType" class="col-12"></div>
+									<div rbl-tid="input-slider" data-inputname="iHSAContribution" class="col-12"></div>
+									<div rbl-tid="input-checkbox" data-inputname="iWellness" class="col-12"></div>
+									<div rbl-tid="input-checkbox" data-inputname="iSpouseSurcharge" class="col-12"></div>
+									<div rbl-tid="input-slider" data-inputname="iHCFSAContribution" class="col-12"></div>
+
+									<div rbl-tid="input-dropdown" data-inputname="iHealthCareUsageOwn" class="col-12"></div>
+									<!--
+									<div rbl-tid="input-dropdown" data-inputname="iHealthCareUsageSpouse" class="col-12"></div>
+									<div rbl-tid="input-dropdown" data-inputname="iHealthCareUsageFamily" class="col-12"></div>
+									-->
+									<div class="col-12" rbl-display="advanced-assumptions" style="display: none;">
+										<div class="row">
+											<div class="col-sm-12">
+												<div class="form-group">
+													<label for="iCustomCoverageType" class="col-form-label">Custom Coverages to View</label>
+													<select class="form-control bootstrap-select rbl-exclude iCustomCoverageType" name="iCustomCoverageType">
+														<option selected="selected" value=".tabCustomCoverageType_{id}_visits">Visits</option>
+														<option value=".tabCustomCoverageType_{id}_expenses">Expenses</option>
+														<option value=".tabCustomCoverageType_{id}_prescriptions">Prescriptions</option>
+													</select>
+												</div>
+											</div>
+										</div>
+										<div class="tabCoverages tabCustomCoverageType_{id}_visits">
+											<div class="row">
+												<div class="col-12">
+													<div class="row">
+														<div class="col-md-6 d-none d-md-block">In-Network</div>
+														<div class="col-md-6 d-none d-md-block">Out-of-Network</div>
+													</div>
+													<div rbl-tid="input-textbox-2col" data-inputname="iPreventive" data-col1-label="In-Network" data-col1-suffix="_In" data-col2-label="Out-of-Network" data-col2-suffix="_Out"></div>
+													<div rbl-tid="input-textbox-2col" data-inputname="iPrimary" data-col1-label="In-Network" data-col1-suffix="_In" data-col2-label="Out-of-Network" data-col2-suffix="_Out"></div>
+													<div rbl-tid="input-textbox-2col" data-inputname="iSpecialist" data-col1-label="In-Network" data-col1-suffix="_In" data-col2-label="Out-of-Network" data-col2-suffix="_Out"></div>
+													<div rbl-tid="input-textbox-2col" data-inputname="iMaternity" data-col1-label="In-Network" data-col1-suffix="_In" data-col2-label="Out-of-Network" data-col2-suffix="_Out"></div>
+													<div rbl-tid="input-textbox-2col" data-inputname="iEmergency" data-col1-label="In-Network" data-col1-suffix="_In" data-col2-label="Out-of-Network" data-col2-suffix="_Out"></div>
+												</div>
+											</div>
+										</div>
+										<div class="tabCoverages tabCustomCoverageType_{id}_expenses" style="display: none;">
+											<div class="row">
+												<div class="col-12">
+													<div class="row">
+														<div class="col-md-6 d-none d-md-block">In-Network</div>
+														<div class="col-md-6 d-none d-md-block">Out-of-Network</div>
+													</div>
+													<div rbl-tid="input-textbox-2col" data-inputname="iInpatient" data-col1-label="In-Network" data-col1-suffix="_In" data-col2-label="Out-of-Network" data-col2-suffix="_Out"></div>
+													<div rbl-tid="input-textbox-2col" data-inputname="iOutpatient" data-col1-label="In-Network" data-col1-suffix="_In" data-col2-label="Out-of-Network" data-col2-suffix="_Out"></div>
+													<div rbl-tid="input-textbox-2col" data-inputname="iLab" data-col1-label="In-Network" data-col1-suffix="_In" data-col2-label="Out-of-Network" data-col2-suffix="_Out"></div>
+													<div rbl-tid="input-textbox-2col" data-inputname="iMHInpatient" data-col1-label="In-Network" data-col1-suffix="_In" data-col2-label="Out-of-Network" data-col2-suffix="_Out"></div>
+													<div rbl-tid="input-textbox-2col" data-inputname="iMHOutpatient" data-col1-label="In-Network" data-col1-suffix="_In" data-col2-label="Out-of-Network" data-col2-suffix="_Out"></div>
+												</div>								
+											</div>
+										</div>
+										<div class="tabCoverages tabCustomCoverageType_{id}_prescriptions" style="display: none;">
+											<div class="row">
+												<div class="col-12">
+													<div class="row">
+														<div class="col-md-6 d-none d-md-block">Retail</div>
+														<div class="col-md-6 d-none d-md-block">Mail Order</div>
+													</div>
+													<div rbl-tid="input-textbox-2col" data-inputname="iRxPreferred" data-col1-label="Retail" data-col1-suffix="_Retail" data-col2-label="Mail Order" data-col2-suffix="_Mail"></div>
+													<div rbl-tid="input-textbox-2col" data-inputname="iRxNonPreferred" data-col1-label="Retail" data-col1-suffix="_Retail" data-col2-label="Mail Order" data-col2-suffix="_Mail"></div>
+													<div rbl-tid="input-textbox-2col" data-inputname="iRxGeneric" data-col1-label="Retail" data-col1-suffix="_Retail" data-col2-label="Mail Order" data-col2-suffix="_Mail"></div>
+												</div>
+											</div>
+										</div>
+									</div>
+								</div>
+							</div>
+						</div>
+					</div>
+					<div class="col-md-7">
+						<div class="card">
+							<div class="card-header">
+								<h4>Comparison</h4>
+							</div>
+							<div class="card-body">
+								<div class="row">
+									<div class="col-sm-12">
+										<div rbl-tid="chart-highcharts" rbl-chartdata="OOPChart"></div>
+									</div>
+									<div class="col-sm-12">
+										<div class="alert alert-info" role="alert" rbl-value="chart-footnote"></div>
+									</div>
+								</div>				
+							</div>
+						</div>
+					</div>
+				</div>
+			</div>
+			<div class="tab-pane fade" id="{id}-tab-feature-compare" role="tabpanel" aria-labelledby="{id}-pill-feature-compare">
+				<div class="row">
+					<div rbl-tid="input-dropdown" data-inputname="iBenefitType" class="col-md-6"></div>
+					<div rbl-tid="input-checkboxlist" data-inputname="iComparePlan" data-horizontal="true" class="col-12 pb-2"></div>						
+
+					<div class="col-12">
+						<ul class="nav nav-pills mb-2 compareLinks" role="tablist">
+							<li class="nav-item" role="presentation"><a class="nav-link active" data-compare-type="in-out" id="{id}-pill-feature-compare-both" data-toggle="pill" href="#{id}-tab-feature-compare-both" role="tab" aria-controls="{id}-tab-feature-compare-both" aria-selected="true">In- and Out-of-Network Benefits</a></li>
+							<li class="nav-item" role="presentation"><a class="nav-link" data-compare-type="in" id="{id}-pill-feature-compare-in" data-toggle="pill" href="#{id}-tab-feature-compare-in" role="tab" aria-controls="{id}-tab-feature-compare-in" aria-selected="true">In-Network Benefits</a></li>
+							<li class="nav-item" role="presentation"><a class="nav-link" data-compare-type="out" id="{id}-pill-feature-compare-out" data-toggle="pill" href="#{id}-tab-feature-compare-out" role="tab" aria-controls="{id}-tab-feature-compare-out" aria-selected="true">Out-of-Network Benefits</a></li>
+						</ul>
+					</div>
+
+					<div class="tab-content">
+						<div role="tabpanel" class="tab-pane fade show active">
+							<div class="row">
+								<div class="col-12" rbl-tid="result-table" rbl-tablename="summary-details"></div>
+							</div>								
+						</div>	
+					</div>
+				</div>
+			</div>
+		</div>
+    </div>
+    <div class="ajaxloader"></div>
+</div>            
+
+<div class="row">
+    <div class="col-xs-12">
+        <div rbl-tid="validation-summary"></div>
+    </div>
+</div>
+
+<rbl-template tid="input-textbox-2col" type="katapp-textbox">
+	<div class="row">
+		<div class="col-12">
+			<div rbl-display="v{inputname}">
+				<label for="katapp_{id}_{inputname}" class="col-form-label">
+					<span rbl-value="l{inputname}">[MISSING l{inputname}]</span>
+					<a style="display: none;" onclick="return false;" rbl-display="vh{inputname}" class="help-icon-anchor" role="button" tabindex="-1" data-toggle="popover" data-trigger="click" data-content-selector="#{id}_h{inputname}" data-placement="top"><span class="fa fa-question-circle help-icon"></span></a>
+					<a style="display: none;" onclick="return false;" rbl-display="vs{inputname}" class="help-icon-anchor" role="button" tabindex="-1"><span class="fa fa-volume-up"></span></a>
+				</label>
+				<div id="{id}_h{inputname}Title" rbl-value="h{inputname}Title" style="display: none;"></div>
+				<div id="{id}_h{inputname}" rbl-value="h{inputname}" style="display: none;"></div>
+				<div class="row">
+					<div class="col-md-6">
+						<div class="form-group">
+							<label for="katapp_{id}_{inputname}{col1-suffix}" class="col-form-label d-sm-block d-md-none" rbl-value="l{inputname}{col1-suffix}">{col1-label}</label>
+							<div class="validator-container">
+								<input name="{inputname}{col1-suffix}" id_="katapp_{id}_{inputname}{col1-suffix}" type="text" class="form-control {inputname}{col1-suffix}" />
+								<div class="{inputname}{col1-suffix}DisplayOnly form-control-display-only"></div>
+								<span class="error-msg" data-toggle="tooltip" data-placement="top auto"></span>
+							</div>
+						</div>
+					</div>
+					<div class="col-md-6">
+						<div class="form-group">
+							<label for="katapp_{id}_{inputname}{col2-suffix}" class="col-form-label d-sm-block d-md-none" rbl-value="l{inputname}{col2-suffix}">{col2-label}</label>
+							<div class="validator-container">
+								<input name="{inputname}{col2-suffix}" id_="katapp_{id}_{inputname}{col2-suffix}" type="text" class="form-control {inputname}{col2-suffix}" />
+								<div class="{inputname}{col2-suffix}DisplayOnly form-control-display-only"></div>
+								<span class="error-msg" data-toggle="tooltip" data-placement="top auto"></span>
+							</div>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
+</rbl-template>

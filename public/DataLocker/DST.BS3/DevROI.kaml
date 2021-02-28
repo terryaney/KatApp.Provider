@@ -1,4 +1,4 @@
-<rbl-config calcengine="Buck_DEVROI_SE" templates="Standard_Templates"></rbl-config>
+<rbl-config calcengine="Buck_DEVROI_SE" templates="Standard_Templates" bootstrap="3"></rbl-config>
 
 <style>
     .katapp-css div.chart { height: 350px; }

@@ -155,7 +155,6 @@
 				$("#modal-worksheet .total", view).html(String.localeFormat("{0:c0}", Math.min(worksheetMax, GetTotal())));
 			})
 			$(".iWorksheet:eq(0)", view).trigger("change");
-			application.pushNotification("Hello");
 		});
 
 		var worksheetMax = 0;

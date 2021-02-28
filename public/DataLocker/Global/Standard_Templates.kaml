@@ -273,9 +273,9 @@
           .katapp-css .form-inline .abc-checkbox label,
           .katapp-css .form-inline .radio label,
           .katapp-css .form-inline .checkbox label {
-              padding-left: 5px;
+            padding-left: 5px;
           }
-      
+
           .katapp-css .radio input[type="radio"]:disabled,
           .katapp-css .abc-radio input[type="radio"]:disabled,
           .katapp-css .radio input[type="radio"]:disabled+label::before,
@@ -288,6 +288,12 @@
           }
 
           /* For horizontal lists, have to apply some styling to make it look better */
+          .katapp-css .form-inline .abc-radio label,
+          .katapp-css .form-inline .abc-checkbox label,
+          .katapp-css .form-inline .radio label,
+          .katapp-css .form-inline .checkbox label {
+            padding-right: 10px;
+          }
           .katapp-css .form-inline .form-group .abc-checkbox label::before,
           .katapp-css .form-inline .form-group .abc-checkbox label::after,
           .katapp-css .form-inline .form-group .abc-radio label::before,

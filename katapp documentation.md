@@ -54,7 +54,24 @@
 - [Advanced Configuration](#Advanced-Configuration)
     - [RBLe Service Attributes / Classes](#RBLe-Service-Attributes-/-Classes)
     - [Precalc Pipelines](#Precalc-Pipelines)
-    - [KatApp API](#KatApp-API)
+- [KatApp API](#KatApp-API)
+    - [KatApp Object Properties](#KatApp-Object-Properties)
+        - [KatAppOptions Object](#KatAppOptions-Object)
+        - [DebugOptions Object](#DebugOptions-Object)
+        - [CalcEngine Object](#CalcEngine-Object)
+        - [OptionInputs Object](#OptionInputs-Object)
+        - [KatAppData Object](#KatAppData-Object)
+        - [RelativePathTemplates Object](#RelativePathTemplates-Object)
+        - [TabDef Object](#TabDef-Object)
+        - [CalculationInputs Object](#CalculationInputs-Object)
+        - [CalculationException Object](#CalculationException-Object)
+    - [KatApp Methods](#KatApp-Methods)
+        - [KatApp Lifecycle Methods](#KatApp-Lifecycle-Methods)
+        - [KatApp Calculation Methods](#KatApp-Calculation-Methods)
+        - [KatApp Advanced Methods](#KatApp-Advanced-Methods)
+        - [KatApp Debugging Methods](#KatApp-Debugging-Methods)
+    - [KatApp Events](#KatApp-Events)
+    
 # Overview
 A KatApp is a dynamic html application delivered to a host platform such as Life@Work.  Conceptually, its like a CMS, but instead of static content, it provides for dynamic content containing potentially complex business logic and controls and data and results.
 
@@ -1246,6 +1263,8 @@ relativePathTemplates | [RelativePathTemplates](#RelativePathTemplates-Object) |
 
 ### DebugOptions Object
 
+The following properties are available on the `DebugOptions` object, some of which can be set with query string values.
+
 Property | Type | Description
 ---|---|---
 traceVerbosity | TraceVerbosity | Set the minimum allowed trace level to be displayed.  Values are : `None`, `Quiet`, `Minimal`, `Normal`, `Detailed`, or `Diagnostic`.
@@ -1388,7 +1407,15 @@ A CalculationException is a json object representation of any exception that occ
 
 ## KatApp Methods
 
-Once you have a reference to a KatApp Object, the following methods are available.
+Once you have a reference to a KatApp Object, there are many methods that can be called to read data, control lifecycle of KatApp, or perform debugging actions.
+
+### KatApp Lifecycle Methods
+
+The following methods control the lifecycle (create/destroy) and options of KatApps.
+
+**`.KatApp( options?: KatAppOptions )`**
+
+Creates the KatApp.  See [Initializing and Configuring a KatApp](#Initializing-and-Configuring-a-KatApp) for more examples.
 
 **`.destroy()`**
 
@@ -1426,6 +1453,43 @@ If `.KatApp("ensure", options)` is called, items that did _not_ have a KatApp al
 $(".katapp").KatApp("updateOptions", updatedOptions);
 application.updateOptions(updatedOptions);
 ```
+
+**`.ensure( options?: KatAppOptions )`**
+
+Create or update a KatApp.  It is similar to the `.KatApp()` method call, but it allows you to create _or update an existing_ KatApp in one method call.  This is useful when a KatApp is displayed in a modal dialog and you don't want to initialize it until the modal is displayed (maybe because inputs are being passed from the current version).  Additionally when they display the modal again, you don't want to have to destroy and re-recreate the KatApp.
+
+_Note: This method should NOT be called by obtaining a reference to the KatApp and accessing it directly from the object because if the KatApp has not been created yet, there is no KatApp reference available._
+
+```javascript
+// Launch an IRP DST in a modal using many of the same options already in use by the current KapApp that is launching the IRP Kaml View
+
+// clone current options and update with custom options needed for IRP (i.e. passing some inputs from the parent KatApp to the IRP KatApp)
+var options =
+    KatApp.extend({},
+        application.options,
+        {
+            view: "DST:IRP",
+            defaultInputs: {
+                iInputsFromModeler: 1,
+                iCurrentAge: application.getResultValue("variable", "iCurrentAge", "value") * 1,
+                iAnnualFuturePayIncreaseRate: $(".iSalaryIncrease").val(),
+                iAnnualPay: $(".iSalary").val(),
+                iRetirementAge: $(".iRetAge").val(),
+                iRetirementSavingsPct: application.getResultValue("variable", "iRetirementSavingsPct", "value") * 1
+            }
+        });
+
+// Delete the 'calcEngines' property from the cloned options so that CalcEngine configuration is read from the IRP Kaml View
+delete options.calcEngines;
+$(".katapp-irp").KatApp("ensure", options);
+
+// NOTE: This is wrong, never call ensure directly from a KatApp reference.  *Always* use the jQuery plugin syntax
+$(".katapp-irp").KatApp().ensure(options);`
+```
+
+### KatApp Calculation Methods
+
+The following methods allow developers to trigger calculations, get and set inputs, and get result information.
 
 **`.calculate( calculationOptions?: KatAppOptions )`**
 
@@ -1573,7 +1637,9 @@ var currentBonus = $(".katapp").KatApp("getResultValueByColumn", "pay", "year", 
 var currentBonus = application.getResultValueByColumn("pay", "2021", "year", "bonus", undefined, "RBLPayResults", "PayCE");
 ```
 
-**`apiAction( commandName: string, customOptions?: KatAppActionOptions, actionLink?: JQuery<HTMLElement> )`**
+### KatApp Advanced Methods
+
+**`.apiAction( commandName: string, customOptions?: KatAppActionOptions, actionLink?: JQuery<HTMLElement> )`**
 
 KatApps have the ability to call web api endpoints to perform actions that need server side processing (saving data, generating document packages, saving calculations, etc.).  
 
@@ -1603,7 +1669,7 @@ $(".downloadForms", view).on('click', function (e) {
 });
 ```
 
-Kaml View developers can leverage calling API endpoints as well by constructing links with appropriate attributes.
+Kaml View developers can leverage calling API endpoints as well by constructing `rbl-action-link` links with appropriate attributes.
 
 Attribute | Description
 ---|---
@@ -1611,6 +1677,7 @@ rbl-action-link | Used as the `commandName` passed into `apiAction`.
 rbl-action-download | Used as the `isDownload` property of the `customOptions` parameter.
 data-param-* | Used as the `customParameters` property of the `customOptions` parameter.  (i.e. to pass plan-id parameter to server, use `data-param-plan-id="value"`)
 data-input-* | Used as the `customInputs` property of the `customOptions` parameter.  (i.e. to pass iDownloadForms=1 parameter to server, use `data-input-iDownloadForms="1"`)
+rbl-action-confirm-selector | If the link should prompt before calling the endpoint, this attribute provides a jQuery selector to element containing the markup to display in a modal confirm dialog.
 
 <br/>
 
@@ -1620,42 +1687,133 @@ Each `commandName`/`rbl-action-link` can, and most likely will, have its own set
 <!-- Same as sample above in Javascript, create a link generates a server side DocGen package for download -->
 <a rbl-action-link="PensionEstimates.DocGen.Forms" rbl-action-download="true" data-input-iDownloadForms="1" href="#">Download Forms</a>
 
-<a rbl-action-link="DownloadFile" rbl-action-download="true" data-param-filename="PlanDocument.pdf" class="download-file" href="#">Download</a>
+<!-- Sample download of a static file -->
+<a rbl-action-link="DownloadFile" rbl-action-download="true" data-param-filename="PlanDocument.pdf" class="download-file" href="#">Download SPD</a>
 
-<a rbl-action-link="UploadFile" rbl-action-download="true" data-param-filename="PlanDocument.pdf" class="download-file" href="#">Download</a>
-
+<!-- Sample enrollment kaml deleting a 'required document' that was uploaded -->
 <a rbl-action-link="RetireOnline.DeleteDocument" rbl-action-confirm-selector="[data-required-document-prompt=\'delete\']" data-param-doc-id="PlanDocument" data-param-plan-id="{plan-id}" class="delete-file" href="#">Delete</a>
 
-<!-- Current inputs are passed as well, so can get dropdown for which type of document they are uploading -->
+<!-- 
+Using input-fileupload template to support file uploads using the `data-command` attribute.  Current inputs from the 'entire KatApp' are passed as well, so endpoint code can use that as well to determine which type of document they are uploading.
+-->
 <div rbl-tid="input-fileupload" class="col-md-9" data-hidelabel="false" data-label="File Name" data-inputname="iUpload" data-command="RetireOnline.UploadRequiredDocument"></div>
 ```
 
-rbl-action-link="commandName" 
-    - rbl-action-confirm-selector
-    - rbl-action-download="true"
-    - data-param-* (doc-id, plan-id)
-    - data-input-* (don't think this is used, check for docgen link and see if anything set there)
+There is an API Endpoint lifecycle of events that are triggered during the processing of an action.  See [KatApp Action Lifecycle Events](#KatApp-Action-Lifecycle-Events) for more information.
 
 
-serverCalculation( customInputs: {} | undefined, actionLink?: JQuery<HTMLElement> ) |
-pushNotification(name: string, information: {} | undefined) | If multiple KatApps are on one page, a KatApp can broadcast notifications to other KatApps
-saveCalcEngine( location: string ) | // $("selector").KatApp("saveCalcEngine", "terry.aney"); - save *next successful* calc for all selector items to terry.aney
-refreshCalcEngine() | // $("selector").KatApp("refreshCalcEngine"); - refresh calc engine on *next successful* calc for all selector items
-traceCalcEngine() | // $("selector").KatApp("traceCalcEngine"); - return calc engine tracing from *next successful* calc for all selector items
-redraw( readViewOptions: boolean | undefined ) | // Redraw/re-render the view without triggering a calculation (speeds up view development time)
-ensure( options?: KatAppOptions ) | 
+**`.serverCalculation( customInputs: {} | undefined, actionLink?: JQuery<HTMLElement> )`**
 
-trace( message: string, verbosity?: TraceVerbosity ) | TraceVerbosity.Normal
+`serverCalculation` is shortcut method that calls `apiAction`.  The most common use for the need to call a 'server calculation' is when a calculation 'result' needs to be saved to storage.
 
+```javascript
+// Set up a click handler that calls a serverCalculation to save the calculated results to storage
+$(".saveButtonAction", view).on('click', function (e) {
+    application.serverCalculation({ iSaveInputs: 1, iCalculationName: $(".iCalculationName", view).val() }, $(this));
+});
 
-options/methods on KatApp
-- See registerControlFunction method. - not right name, but there is similar 'template function callback' or something
+// The same functionality could be accomplished using the apiAction method call as well.
+$(".saveButtonAction", view).on('click', function (e) {
+    application.apiAction(
+        "ServerCalculation", 
+        {
+            customInputs: customInputs
+        },
+        $(this) 
+    );
+});
+```
+
+There is an API Endpoint lifecycle of events that are triggered during the processing of an server side calculation.  See [KatApp Action Lifecycle Events](#KatApp-Action-Lifecycle-Events) for more information.
+
+**`.pushNotification(name: string, information: {} | undefined)`**
+
+If multiple KatApps are on one page, KatApps can broadcast notifications to other KatApps.  Use this functionality when two KatApps are displaying the same data and one of them updates the data and the other KatApp needs to be notified to 'refresh'.
+
+```javascript
+// In the KatApp that wants to send the message...
+// Hook up an event to save a calculation then notify other KatApps that are displaying information about saved calculations
+$(".saveButtonAction", view).on('click', function (e) {
+    application.serverCalculation({ iSaveInputs: 1, iCalculationName: $(".iCalculationName", view).val() }, $(this));
+    application.pushNotification("SavePensionEstimate");
+});
+
+// In other KatApps that want to handle the message...
+view.on( "onKatAppNotification.RBLe", function( event, name, information, application ) {
+    switch( name ) {
+        case "SavePensionEstimate":
+        {
+            // Just recalculate to render UI with updated data
+            application.calculate();
+            break;
+        }
+    }
+});
+```
+
+### KatApp Debugging Methods
+
+The following methods are helpful for Kaml View or CalcEngine developers to aid in their debugging.  These methods are manually invoked via the browser's console window while working on the site.
+
+**`.saveCalcEngine( location: string )`**
+
+Save the *next successful* calculation's CalcEngine to the secure folder specified KAT Team's CMS.
+
+```javascript
+// Save the next CalcEngine to the 'terry.aney' folder
+$(".katapp").KatApp("saveCalcEngine", "terry.aney");
+$(".katapp").KatApp().saveCalcEngine("terry.aney");
+```
+
+**`.refreshCalcEngine()`**
+
+For the next calculation, instruct the RBLe Service to immediately check for an updated CalcEngine from the CalcEngine CMS instead of waiting for the RBLe Service's CalcEngine cache to expire.
+
+```javascript
+// Immediately check for new CalcEngine upon the next calculation
+$(".katapp").KatApp("refreshCalcEngine");
+$(".katapp").KatApp().refreshCalcEngine();
+```
+
+**`.traceCalcEngine()`**
+
+For the next calculation, instruct the RBLe Service to return detailed trace information from the *next successful* calculation.
+
+```javascript
+// Save the next CalcEngine to the 'terry.aney' folder
+$(".katapp").KatApp("traceCalcEngine");
+$(".katapp").KatApp().traceCalcEngine();
+```
+
+**`.redraw()`**
+
+Redraw/re-render the Kaml View _without_ triggering a calculation.  This can be used while a Kaml View developer is modifying the view and wants to see their progress without waiting for the time required to re-run the actual calculation.  This speeds up the development cycle of the UX developers.
+
+```javascript
+// Save the next CalcEngine to the 'terry.aney' folder
+$(".katapp").KatApp("redraw");
+$(".katapp").KatApp().redraw();
+```
 
 ## KatApp Events
 get all events, don't forget about other events like file upload: onUploadStart, search for trigger()
 
-onActionStart, onActionResult, onActionFailed, onActionComplete (always)
+onKatAppNotification
 
+        $.fn.KatApp.templateOn = function( templateName: string, events: string, fn: TemplateOnDelegate ): void {
+            $.fn.KatApp.templateDelegates.push( { Template: templateName.ensureGlobalPrefix(), Delegate: fn, Events: events } );
+            KatApp.trace( undefined, "Template event(s) [" + events + "] registered for [" + templateName + "]", TraceVerbosity.Normal );
+        };
+
+### KatApp Lifecycle Events
+
+### KatApp Calculation Lifecycle Events
+
+### KatApp Action Lifecycle Events
+onActionStart, onActionResult, onActionFailed, onActionComplete (always)
+- Note, put these in interface so they are 'documented' there
+
+### KatApp Upload Lifecycle Events
 
 put sample code on how to hook up events in KamlViews - explain that events are usually there, but can be in config settings too
 

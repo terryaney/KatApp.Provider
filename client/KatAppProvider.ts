@@ -932,11 +932,9 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
     
 					if (jwtToken.Tokens.filter( t => t.Name == "data-updates" ).length > 0 && uploadUrl !== undefined ) {
                         that.trace("Posting jwt update data from results", TraceVerbosity.Detailed);
-                        const fd = new FormData();
-                        fd.append("KatAppCommand", "SaveRBLeUpdates");
-                        fd.append("KatAppView", that.options.view ?? "Unknown" );
-                        fd.append("KatAppInputs", JSON.stringify(that.calculationInputs));
-                        fd.append("KatAppConfiguration", JSON.stringify(currentOptions));
+                        
+                        const fd = that.getEndpointFormData("SaveRBLeUpdates", currentOptions);
+
                         fd.append("KatAppDataTokens", JSON.stringify(jwtToken));
 
                         $.ajax({
@@ -1005,6 +1003,29 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
 
             // Start the pipeline
             calculatePipeline( 0 );
+        }
+
+        getEndpointFormData( endPoint: string, options: KatAppOptions, customOptions?: KatAppOptions): FormData {
+            const currentOptions = KatApp.extend(
+                {}, // make a clone of the options
+                KatApp.clone( 
+                    options,
+                    function( _key, value ) {
+                        if ( typeof value === "function" ) {
+                            return; // don't want any functions passed along to api
+                        }
+                        return value; 
+                    }
+                ), // original options
+                customOptions, // override options
+            ) as KatAppOptions;
+
+            const fd = new FormData();
+            fd.append("KatAppCommand", endPoint);
+            fd.append("KatAppView", this.options.view ?? "Unknown" );
+            fd.append("KatAppInputs", JSON.stringify(this.calculationInputs));
+            fd.append("KatAppConfiguration", JSON.stringify(currentOptions));
+            return fd;
         }
 
         private processResults( calculationOptions: KatAppOptions ): void {
@@ -1152,26 +1173,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
             
             if (url != undefined) {
                 const isDownload = customOptions?.isDownload ?? false;
-
-                // Build up complete set of options to use for this calculation call
-                const currentOptions = KatApp.extend(
-                    {}, // make a clone of the options
-                    KatApp.clone( 
-                        this.options,
-                        function( _key, value ) {
-                            if ( typeof value === "function" ) {
-                                return; // don't want any functions passed along to api
-                            }
-                            return value; 
-                        }
-                    ), // original options
-                    customOptions, // override options
-                ) as KatAppOptions;
-
-                const fd = new FormData();
-                fd.append("KatAppCommand", commandName);
-                fd.append("KatAppInputs", JSON.stringify(this.getInputs()));
-                fd.append("KatAppConfiguration", JSON.stringify(currentOptions));
+                const fd = this.getEndpointFormData(commandName, this.options, customOptions);
 
                 const errors: ValidationRow[] = [];
                 // Can't use 'view' in selector for validation summary b/c view could be a 'container' instead of entire view
@@ -1281,6 +1283,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
             // Remove all event handlers on view because they'll be reset
             this.element.off(".RBLe");
 
+            // If || true is removed...update documentation to add the parameter
             if ( readViewOptions || true ) {
                 // Clear these out and read from the view
                 this.options.calcEngines = undefined;
@@ -4081,17 +4084,13 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                         $(".file-upload-progress", that.application.element).show();
 
                         const fileUpload = $(".file-data", $(this).parent());
-                        const fd = new FormData();
-                        const files = ( fileUpload[0] as HTMLInputElement ).files;
+                        const fd = that.application.getEndpointFormData(katAppCommand, that.application.options);
 
+                        const files = ( fileUpload[0] as HTMLInputElement ).files;
                         $.each(files, function(key, value)
                         {
                             fd.append(key, value);
                         });
-
-                        fd.append("KatAppCommand", katAppCommand);
-                        fd.append("KatAppView", that.application.options.view ?? "Unknown" );
-                        fd.append("KatAppInputs", JSON.stringify(that.application.getInputs()));
 
                         const errors: ValidationRow[] = [];
                         // Can't use 'view' in selector for validation summary b/c view could be a 'container' instead of entire view
@@ -5247,13 +5246,12 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
         
         $.fn.KatApp.templatesUsedByAllApps = {};
         $.fn.KatApp.templateDelegates = [];
+        $.fn.KatApp.sharedData = { requesting: false, callbacks: [] };
 
         $.fn.KatApp.templateOn = function( templateName: string, events: string, fn: TemplateOnDelegate ): void {
             $.fn.KatApp.templateDelegates.push( { Template: templateName.ensureGlobalPrefix(), Delegate: fn, Events: events } );
             KatApp.trace( undefined, "Template event(s) [" + events + "] registered for [" + templateName + "]", TraceVerbosity.Normal );
         };
-
-        $.fn.KatApp.sharedData = { requesting: false, callbacks: [] };
     }
 
     ( $.fn.KatApp.plugInShims as KatAppPlugInShimInterface[] ).forEach( a => { 

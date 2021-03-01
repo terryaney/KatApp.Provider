@@ -167,7 +167,7 @@ interface KatAppPlugInInterface extends KatAppPlugInShimInterface {
 
     // $("selector").KatApp("saveCalcEngine", "terry.aney"); - save *next successful* calc for all selector items to terry.aney
     saveCalcEngine: ( location: string )=> void;
-    // $("selector").KatApp("refreshCalcEngine"); - refresh calc engine on *next successful* calc for all selector items
+    // $("selector").KatApp("refreshCalcEngine"); - for the next calculation, instruct the RBLe Service to immediately check for an updated CalcEngine
     refreshCalcEngine: ()=> void;
     // $("selector").KatApp("traceCalcEngine"); - return calc engine tracing from *next successful* calc for all selector items
     traceCalcEngine: ()=> void;

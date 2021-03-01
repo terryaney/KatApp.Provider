@@ -528,7 +528,7 @@
 			<!-- validation messages -->
 			<div id="{id}_ModelerValidationTable" class="col-12 alert alert-error" role="alert" title="Please review the following issues:" style="">
 				<p rbl-value="text-error-header">[Please review the following issues:]</p>
-			 	<ul</ul>
+			 	<ul></ul>
 			</div>
 			  
 			<div class="row welcome-content mt-5_">

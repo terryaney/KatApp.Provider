@@ -532,7 +532,9 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                     // uses data-* to create a dataobject.  Normally just making controls with templates here
                     $("[rbl-tid]:not([rbl-source])", that.element).each(function () {
                         const templateId = $(this).attr('rbl-tid');
-                        if (templateId !== undefined && templateId !== "inline") {
+                        // If templateId still has { } in it, then it is contained in a template and going to be
+                        //  dynamically assigned during template processing and rendered later/at that time.
+                        if (templateId !== undefined && templateId !== "inline" && templateId.indexOf("{") == -1) {
                             //Replace content with template processing, using data-* items in this pass
                             that.rble.injectTemplate( $(this), that.ui.getTemplate( templateId, that.dataAttributesToJson($(this), "data-")));
                         }
@@ -2586,7 +2588,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                         rblDisplayParts[ rblDisplayParts.length - 1] = expressionParts[0];
                         
                         let visibilityValue = 
-                            that.getRblSelectorValue( tabDef, "rbl-display", rblDisplayParts )
+                            that.getRblSelectorValue( tabDef, "rbl-display", rblDisplayParts ) ??
                             that.getRblSelectorValue( tabDef, "ejs-visibility", rblDisplayParts ) ??
                             that.getRblSelectorValue( tabDef, "ejs-output", rblDisplayParts ); // Should remove this and only check ejs-visibility as the 'default'
             
@@ -3095,7 +3097,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
             [ warningSummary, errorSummary ].forEach( summary => {
                 // Some server side calcs add error messages..if only errors are those from client calcs, 
                 // I can remove them here
-                if ($("ul li:not(.rble)", summary).length === 0) {
+                if ($("ul li", summary).length === 0) {
                     summary.hide();
                     $("div:first", summary).hide();
                 }

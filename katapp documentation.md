@@ -1588,7 +1588,7 @@ customInputs | JSON | Optional.  Any input values that need to be passed back to
 <br/>
 
 ```javascript
-// download link that generates a server side DocGen package for download
+// hook up a click handler that generates a server side DocGen package for download
 $(".downloadForms", view).on('click', function (e) {
     application.apiAction(
         "PensionEstimates.DocGen.Forms", 
@@ -1603,7 +1603,32 @@ $(".downloadForms", view).on('click', function (e) {
 });
 ```
 
-*I'm here, document how to set up an action-link in markup and how it flows
+Kaml View developers can leverage calling API endpoints as well by constructing links with appropriate attributes.
+
+Attribute | Description
+---|---
+rbl-action-link | Used as the `commandName` passed into `apiAction`.
+rbl-action-download | Used as the `isDownload` property of the `customOptions` parameter.
+data-param-* | Used as the `customParameters` property of the `customOptions` parameter.  (i.e. to pass plan-id parameter to server, use `data-param-plan-id="value"`)
+data-input-* | Used as the `customInputs` property of the `customOptions` parameter.  (i.e. to pass iDownloadForms=1 parameter to server, use `data-input-iDownloadForms="1"`)
+
+<br/>
+
+Each `commandName`/`rbl-action-link` can, and most likely will, have its own set of custom parameters or inputs.  To determine which values to pass, see the API endpoint documentation.
+
+```html
+<!-- Same as sample above in Javascript, create a link generates a server side DocGen package for download -->
+<a rbl-action-link="PensionEstimates.DocGen.Forms" rbl-action-download="true" data-input-iDownloadForms="1" href="#">Download Forms</a>
+
+<a rbl-action-link="DownloadFile" rbl-action-download="true" data-param-filename="PlanDocument.pdf" class="download-file" href="#">Download</a>
+
+<a rbl-action-link="UploadFile" rbl-action-download="true" data-param-filename="PlanDocument.pdf" class="download-file" href="#">Download</a>
+
+<a rbl-action-link="RetireOnline.DeleteDocument" rbl-action-confirm-selector="[data-required-document-prompt=\'delete\']" data-param-doc-id="PlanDocument" data-param-plan-id="{plan-id}" class="delete-file" href="#">Delete</a>
+
+<!-- Current inputs are passed as well, so can get dropdown for which type of document they are uploading -->
+<div rbl-tid="input-fileupload" class="col-md-9" data-hidelabel="false" data-label="File Name" data-inputname="iUpload" data-command="RetireOnline.UploadRequiredDocument"></div>
+```
 
 rbl-action-link="commandName" 
     - rbl-action-confirm-selector

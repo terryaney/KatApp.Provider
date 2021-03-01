@@ -1705,10 +1705,13 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
 
                 if ( !li.Visible ){
                     currentItem.hide();
-                    // Don't need to hide anymore...I don't include in inputs if hidden
+                    // Don't uncheck anymore, just mark as 'not visible' so getInputValue ignores it
+                    currentInput.attr("kat-visible", "0");
                     // currentInput.prop("checked", false);
                 }
                 else {
+                    currentInput.removeAttr("kat-visible");
+
                     if ( text != "" ) {
                         $("label", currentItem).html(text);
                     }
@@ -1810,7 +1813,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                 $("[data-itemtype='checkbox']", this.application.element).each(function() {
                     const cbl = $(this);
                     const name = cbl.data("inputname");
-                    const value = $("input:checked:visible", cbl).toArray().map( chk => $(chk).data("value")).join(",");
+                    const value = $("input:checked:not([kat-visible='0'])", cbl).toArray().map( chk => $(chk).data("value")).join(",");
                     inputs[name] = value;
                 });
             }

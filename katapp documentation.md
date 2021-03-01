@@ -65,6 +65,9 @@
         - [TabDef Object](#TabDef-Object)
         - [CalculationInputs Object](#CalculationInputs-Object)
         - [CalculationException Object](#CalculationException-Object)
+        - [GetDataDelegate Object](#GetDataDelegate-Object)
+        - [RegisterDataDelegate Object](#RegisterDataDelegate-Object)
+        - [SubmitCalculationDelegate Object](#SubmitCalculationDelegate-Object)
     - [KatApp Methods](#KatApp-Methods)
         - [KatApp Lifecycle Methods](#KatApp-Lifecycle-Methods)
         - [KatApp Calculation Methods](#KatApp-Calculation-Methods)
@@ -1258,7 +1261,9 @@ requestIP | string | IP Address of client browser.  Used during calculation job 
 environment | string | The environment the current Kaml View is running in.  This value is passed to CalcEngines in the `iEnvironment` input.
 currentUICulture | string | The current culture the Kaml View is being rendered under.  This value is passed to CalcEngines in the `iCurrentUICulture` input.
 relativePathTemplates | [RelativePathTemplates](#RelativePathTemplates-Object) | Configure views and relative paths when Kaml View files are located in the hosting site instead of the Kaml View CMS
-
+getData | [GetDataDelegate](#GetDataDelegate-Object) | If data is retrieved from the client browser (instead of provided from server side code), a handler can be provided.  Typically, if a handler is provided, it is calling a API Endpiont from the host application to get the data.  In some cases, the data can be generated with javascript if the KatApp is a generic tool that does not need real data.
+registerData | [RegisterDataDelegate](#RegisterDataDelegate-Object) | If the data is registered from the client side browser (usually after the `getData` handler was called), a handler can be provided to register the data with the RBLe Service.  Typically, if a handler is provided, it is calling a API Endpoint from the host application that is performing some service side code before registration with RBLe Service.
+submitCalculation | [SubmitCalculationDelegate](#SubmitCalculationDelegate-Object) | Provide a custom handler to submit calculations if needed.  Typically, if a handler is provided, it is calling an API Endpoint because data was registered in RBLe Service session with a call to the `registerData` endpoint handler and the `submitCalculation` endpoint is needed to access the session/cookie of the RBLe Service on subsequent calls.
 <br/>
 
 ### DebugOptions Object
@@ -1405,6 +1410,81 @@ A CalculationException is a json object representation of any exception that occ
 }
 ```
 
+### GetDataDelegate Object
+
+The `getData` property is a delegate handler with the following signature.
+
+**`function( application: KatAppPlugInInterface, options: KatAppOptions, done: ( data: KatAppData ), fail: ( jqXHR: JQuery.jqXHR, textStatus: string, errorThrown: string ) )`**
+
+```javascript
+// By default, the KatApp framework will return a 'dummy' data object to support any KatApps that do not need personal information
+{
+    getData: function( appilcation, options, done ) { 
+        done( {
+            AuthID: "Empty",
+            Client: "Empty",
+            Profile: {} as JSON,
+            History: {} as JSON
+        });
+    }
+}
+
+// Sample application that calls API endpoint relative to containing site
+{
+    getData: function( application, options, done, fail ) {
+        $.ajax({
+            url: pURL('/rks/benefits/services/sharkfin/db/data.htm'),
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' }
+        })
+        .done( function ( payload ) { done( payload.payload ); } )
+        .fail( fail );
+    }
+}
+```
+
+### RegisterDataDelegate Object
+
+The `registerData` property is a delegate handler with the following signature.
+
+**`function( application: KatAppPlugInInterface, options: KatAppOptions, done: ( data: KatAppData ), fail: ( jqXHR: JQuery.jqXHR, textStatus: string, errorThrown: string ) )`**
+
+```javascript
+// Sample application that calls API endpoint relative to containing site.
+{
+    registerData: function( application, options, done, fail ) {
+        $.ajax({
+            url: pURL('/rks/benefits/services/sharkfin/db/guid.htm'),
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' }
+        })
+        .done( function ( payload ) { done( { registeredToken: payload.payload } ); } )
+        .fail( fail );
+    }
+}
+```
+
+### SubmitCalculationDelegate Object
+
+The `submitCalculation` property is a delegate handler with the following signature.
+
+**`function( application: KatAppPlugInInterface, options: KatAppOptions, done: ( data: KatAppData ), fail: ( jqXHR: JQuery.jqXHR, textStatus: string, errorThrown: string ) )`**
+
+```javascript
+// Sample application that calls API endpoint relative to containing site.  Note that the KatApp framework has built in code to look for a `.payload` property on the returned value
+// to support common implementation for Life @ Work
+{
+    submitCalculation: function( application, options, done, fail ) {
+        $.ajax({
+            url: pURL('/rks/benefits/services/sharkfin/db/calculate.htm'),
+            data: JSON.stringify(options),
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' }
+        }).done( done ).fail( fail );
+    }
+}
+```
+
 ## KatApp Methods
 
 Once you have a reference to a KatApp Object, there are many methods that can be called to read data, control lifecycle of KatApp, or perform debugging actions.
@@ -1413,9 +1493,13 @@ Once you have a reference to a KatApp Object, there are many methods that can be
 
 The following methods control the lifecycle (create/destroy) and options of KatApps.
 
+<hr/>
+
 **`.KatApp( options?: KatAppOptions )`**
 
 Creates the KatApp.  See [Initializing and Configuring a KatApp](#Initializing-and-Configuring-a-KatApp) for more examples.
+
+<hr/>
 
 **`.destroy()`**
 
@@ -1426,11 +1510,15 @@ $(".katapp").KatApp("destroy");
 application.destroy();
 ```
 
+<hr/>
+
 **`.rebuild( options?: KatAppOptions )`**
 
 Merge the optional [KatAppOptions](#KatAppOptions-Object) `options` parameter with existing KatApp options, then completely destroy and re-initialize the KatApp (possibly using new view/templates) given the newly merged options.
 
 When `.KatApp(options)` is called, if the selector returns items that already had KatApp created on it, the plugin will call this method.
+
+Note: This method is typically only used by debugging/test harnesses, but could also could be used in a Single Page Application framework as well.
 
 ```javascript
 $(".katapp").KatApp("rebuild", customOptions);
@@ -1440,6 +1528,8 @@ application.rebuild( customOptions);
 $(".katapp").KatApp("rebuild");
 application.rebuild();
 ```
+
+<hr/>
 
 **`.updateOptions( options: KatAppOptions )`**
 
@@ -1453,6 +1543,8 @@ If `.KatApp("ensure", options)` is called, items that did _not_ have a KatApp al
 $(".katapp").KatApp("updateOptions", updatedOptions);
 application.updateOptions(updatedOptions);
 ```
+
+<hr/>
 
 **`.ensure( options?: KatAppOptions )`**
 
@@ -1491,6 +1583,8 @@ $(".katapp-irp").KatApp().ensure(options);`
 
 The following methods allow developers to trigger calculations, get and set inputs, and get result information.
 
+<hr/>
+
 **`.calculate( calculationOptions?: KatAppOptions )`**
 
 Manually invoke a calculation with the optional [KatAppOptions](#KatAppOptions-Object) `calculationOptions` parameter merged with the existing KatApp options for a one time use.
@@ -1505,6 +1599,8 @@ application.calculate(calculationOptions);
 $(".katapp").KatApp("calculate");
 application.calculate();
 ```
+
+<hr/>
 
 **`.configureUI( calculationOptions?: KatAppOptions )`**
 
@@ -1521,6 +1617,8 @@ $(".katapp").KatApp("configureUI");
 application.configureUI();
 ```
 
+<hr/>
+
 **`.getInputs(): CalculationInputs`**
 
 Returns a [CalculationInputs Object](#CalculationInputs-Object) representing all the inputs and input tables of the KatApp.
@@ -1529,6 +1627,8 @@ Returns a [CalculationInputs Object](#CalculationInputs-Object) representing all
 var inputs = $(".katapp").KatApp("getInputs");
 var inputs = application.getInputs();
 ```
+
+<hr/>
 
 **`setInputs( inputs: OptionInputs, calculate?: boolean )`**
 
@@ -1543,6 +1643,8 @@ $(".katapp").KatApp("setInputs", newInputs, false);
 application.setInputs(newInputs, false);
 ```
 
+<hr/>
+
 **`setInput( id: string, value: number | string | undefined, calculate?: boolean )`**
 
 Set the value of the input identified by `id` with the `value` parameter.  If `calculate` is true, a calculation will be triggered after all inputs have been set.  **By default, `calculate` is `false`.**
@@ -1555,6 +1657,8 @@ application.setInput("iRetireAge", 65);
 $(".katapp").KatApp("setInput", "iRetireAge", 65, true);
 application.setInput("iRetireAge", 65, true);
 ```
+
+<hr/>
 
 **`getResultTable( tableName: string, tabDef?: string, calcEngine?: string): Array<JSON>`**
 
@@ -1572,6 +1676,8 @@ var payRows = application.getResultTable("pay", "RBLPayResults");
 var payRows = $(".katapp").KatApp("getResultTable", "pay", "RBLPayResults", "PayCE");
 var payRows = application.getResultTable("pay", "RBLPayResults", "PayCE");
 ```
+
+<hr/>
 
 **`getResultRow( table: string, key: string, columnToSearch?: string, tabDef?: string, calcEngine?: string ): JSON`**
 
@@ -1597,6 +1703,8 @@ var payRows = $(".katapp").KatApp("getResultRow", "pay", "2021", "year", "RBLPay
 var payRows = application.getResultRow("pay", "2021", "year", "RBLPayResults", "PayCE");
 ```
 
+<hr/>
+
 **`getResultValue( table: string, key: string, column: string, defaultValue?: string, tabDef?: string, calcEngine?: string ): string | undefined`**
 
 Return the `column` value from the `table` row with the id column matching `key`.  `tabDef` and `calcEngine` can be provided if there are multiple result tabs or CalcEngines in the Kaml View.  If not provided, the `tableName` from the _first_ result tab and _first_ CalcEngine will be returned.
@@ -1616,6 +1724,8 @@ var currentBonus = application.getResultValue("pay", "2021", "bonus", undefined,
 var currentBonus = $(".katapp").KatApp("getResultValue", "pay", "2021", "bonus", undefined, "RBLPayResults", "PayCE");
 var currentBonus = application.getResultValue("pay", "2021", "bonus", undefined, "RBLPayResults", "PayCE");
 ```
+
+<hr/>
 
 **`getResultValueByColumn( table: string, keyColumn: string, key: string, column: string, defaultValue?: string, tabDef?: string, calcEngine?: string ): string | undefined`**
 
@@ -1638,6 +1748,8 @@ var currentBonus = application.getResultValueByColumn("pay", "2021", "year", "bo
 ```
 
 ### KatApp Advanced Methods
+
+<hr/>
 
 **`.apiAction( commandName: string, customOptions?: KatAppActionOptions, actionLink?: JQuery<HTMLElement> )`**
 
@@ -1701,6 +1813,7 @@ Using input-fileupload template to support file uploads using the `data-command`
 
 There is an API Endpoint lifecycle of events that are triggered during the processing of an action.  See [KatApp Action Lifecycle Events](#KatApp-Action-Lifecycle-Events) for more information.
 
+<hr/>
 
 **`.serverCalculation( customInputs: {} | undefined, actionLink?: JQuery<HTMLElement> )`**
 
@@ -1725,6 +1838,8 @@ $(".saveButtonAction", view).on('click', function (e) {
 ```
 
 There is an API Endpoint lifecycle of events that are triggered during the processing of an server side calculation.  See [KatApp Action Lifecycle Events](#KatApp-Action-Lifecycle-Events) for more information.
+
+<hr/>
 
 **`.pushNotification(name: string, information: {} | undefined)`**
 
@@ -1755,6 +1870,8 @@ view.on( "onKatAppNotification.RBLe", function( event, name, information, applic
 
 The following methods are helpful for Kaml View or CalcEngine developers to aid in their debugging.  These methods are manually invoked via the browser's console window while working on the site.
 
+<hr/>
+
 **`.saveCalcEngine( location: string )`**
 
 Save the *next successful* calculation's CalcEngine to the secure folder specified KAT Team's CMS.
@@ -1764,6 +1881,8 @@ Save the *next successful* calculation's CalcEngine to the secure folder specifi
 $(".katapp").KatApp("saveCalcEngine", "terry.aney");
 $(".katapp").KatApp().saveCalcEngine("terry.aney");
 ```
+
+<hr/>
 
 **`.refreshCalcEngine()`**
 
@@ -1775,6 +1894,8 @@ $(".katapp").KatApp("refreshCalcEngine");
 $(".katapp").KatApp().refreshCalcEngine();
 ```
 
+<hr/>
+
 **`.traceCalcEngine()`**
 
 For the next calculation, instruct the RBLe Service to return detailed trace information from the *next successful* calculation.
@@ -1784,6 +1905,8 @@ For the next calculation, instruct the RBLe Service to return detailed trace inf
 $(".katapp").KatApp("traceCalcEngine");
 $(".katapp").KatApp().traceCalcEngine();
 ```
+
+<hr/>
 
 **`.redraw()`**
 
@@ -1796,18 +1919,224 @@ $(".katapp").KatApp().redraw();
 ```
 
 ## KatApp Events
-get all events, don't forget about other events like file upload: onUploadStart, search for trigger()
 
-onKatAppNotification
+KatApps trigger several events to during different workflows allowing Kaml View developers to catch and respond to these events as needed.  All events are registered on the 'view' of the application.  The view is simply the HTML element that had the `.KatApp()` method applied to it to build a KatApp.  
 
-        $.fn.KatApp.templateOn = function( templateName: string, events: string, fn: TemplateOnDelegate ): void {
-            $.fn.KatApp.templateDelegates.push( { Template: templateName.ensureGlobalPrefix(), Delegate: fn, Events: events } );
-            KatApp.trace( undefined, "Template event(s) [" + events + "] registered for [" + templateName + "]", TraceVerbosity.Normal );
-        };
+When using events, use the following guidelines:
+
+1. Events should use the _.RBLe_ namespace
+2. All jQuery selectors should be scoped to either `view`, `application.element`, or using `{id}`
+3. `{id}` is replaced with a unique application ID for the currently running KatApp
+
+**Example Kaml View Script**
+
+```javascript
+(function() {
+    // Use this line to grab a reference to the current view the Kaml View is being rendered to
+    var view = $("thisClass");
+
+    // Hook up one or more event handlers *using* the .RBLe namespace
+    view.on( "onInitialized.RBLe", function( event, application ) {
+        // Perform view specific code
+    });
+})();
+```
+
+Additionally, every event handler described can be passed in on the `KatAppOptions` object at the time of KatApp creation.  However, if handlers are passed in this way, they override the default behaviors of the KatApp framework.  For example, you could change the default behavior of the start and end of calculations by passing in your own handlers.
+
+```javascript
+var options = {
+    onCalculateStart: function( application: KatAppPlugIn ) {
+        application.showAjaxBlocker();
+    },
+    onCalculateEnd: function( application: KatAppPlugIn ) {
+        application.hideAjaxBlocker();
+    }
+};
+
+$(".katapp").KatApp(options);
+```
 
 ### KatApp Lifecycle Events
 
+KatApp Lifecycle Events are events that pertain to the creation, updating, notifying, and destroying of a KatApp.  Some Calculation Lifecycle Events are intermixed and will be mentioned but see [documentation](#KatApp-Calculation-Lifecycle-Events) for more detailed information.
+
+<hr/>
+
+#### onInitialized
+
+**`onInitialized?: (event: Event, application: KatApp )`**
+
+Triggered after a KatApp finishes building the application instance, rendering the view/templates, and runs a ConfigureUI calculation (if needed).  `onInitialized` is where event handlers that need to use a reference to the `application` should be placed.  Other event handlers can be included, but could be placed outside of this event.
+
+```javascript
+(function() {
+    // Use this line to grab a reference to the current view the Kaml View is being rendered to
+    var view = $("thisClass");
+
+    // Hook up one or more event handlers *using* the .RBLe namespace
+    view.on( "onInitialized.RBLe", function( event, application ) {
+        // When any inputs tagged with recalcInputs class change, turn on the recalcNeeded notification
+        $(".recalcInputs " + application.options.inputSelector, application.element).on("change", function() {
+            $(".recalcNeeded", application.element).addClass("active");
+        })
+
+        // When the recalculateButton is clicked, trigger a KatApp calculation
+        $("#{id}_recalculateButton", application.element).on("click", function(e) {
+            e.preventDefault();
+            application.calculate();
+        });
+
+        // When iAdditionalDates checkbox is clicked, toggle the 'both-scenarios-v' elements
+        $('.iAdditionalDates', application.element).click(function (e) {
+            if (e.target.tagName.toUpperCase() !== "INPUT") {
+                return;
+            }
+            $(".both-scenarios-v").fadeToggle();
+        });
+    });
+
+    // SAMPLE: Same as the handler registered inside onInitialized for iAdditionalDates.  Since it didn't need
+    // a reference to the application object, it could be done outside any KatApp handlers.
+    // NOTE: The use of 'view' instead of 'application.element' for scoping.
+    $('.iAdditionalDates', view).click(function (e) {
+        if (e.target.tagName.toUpperCase() !== "INPUT") {
+            return;
+        }
+        $(".both-scenarios-v").fadeToggle();
+    });
+})();
+```
+
+<hr/>
+
+#### onDestroyed
+
+**`onDestroyed(event: Event, application: KatApp )`**
+
+Triggered from the `destroy` method after a KatApp finishes destroying the application instance and unbinding any event handlers, and runs a ConfigureUI calculation (if needed).  `onDestroyed` is normally not needed.  The `destroy` method is only called from the `rebuild()` 'debug' method.  Note that the view/templates are _not_ removed.  So if the site was manually calling `destroy` clean up code could be placed in this event to perform site specific clean up.
+
+<hr/>
+
+#### onOptionsUpdated
+
+**`onOptionsUpdated(event: Event, application: KatApp )`**
+
+Triggered from the `updateOptions` method after a KatApp finishes updating options, rebinding input event handlers, and setting default inputs.
+
+<hr/>
+
+#### onKatAppNotification
+
+**`onKatAppNotification(event: Event, notificationName: string, notificationInformation: JSON | undefined, application: KatApp )`**
+
+Triggered from the `pushNotification` method from the calling KatApp.  All other KatApps that are rendered on the page are sent the notification for custom processing.
+
+```javascript
+// Caller KatApp...
+$(".saveButtonAction", application.element).on('click', function (e) {
+    application.pushNotification("SavePensionEstimate");
+});
+
+// Notified KatApp...
+view.on("onKatAppNotification.RBLe", function (event, name, information, application) {
+    switch (name) {
+        case "SavePensionEstimate":
+            {
+                application.calculate();
+                break;
+            }
+    }
+});
+```
+
 ### KatApp Calculation Lifecycle Events
+
+KatApp Calculation Lifecycle Events are events that pertain to preparing, executing, and processing results from RBLe Service calculations.  If a KatApp is configured to run a ConfigureUI calculation, this events happen _before_ the `onInitialized` event.
+
+<hr/>
+
+#### onCalculateStart
+
+**`onCalculateStart(event: Event, application: KatApp ): bool | undefined`**
+
+This event is triggered at the start of the `calculate` method.  Use this event to perform any actions that need to occur before the calculation is submitted.  If the handler returns `false`, then the calculation is immediately cancelled.
+
+By default, the KatApp framework does the following:
+
+1. Shows the configured Ajax UI Blocker
+2. Disabled all Kaml View inputs
+
+<hr/>
+
+#### onRegistration
+
+**`onRegistration(event: Event, calculationOptions: KatAppOptions, application: KatApp )`**
+
+This event is triggered during `calculate` if there is no data available to submit to the RBLe Service and the KatApp is configured to register data with the RBLe Service.  It occurs before calculation submission to RBLe Service and after calling the `getData` handler if configured.
+
+<hr/>
+
+#### onCalculationOptions
+
+**`onCalculationOptions(event: Event, calculationOptions: KatAppOptions, application: KatApp )`**
+
+This event is triggered during `calculate` immediately before submission to RBLe Service.  It allows Kaml Views to massage the `calculationOptions` before being submitted.  Use this method if you want to massage inputs or add custom inputs/tables to the `calculationOptions` that wouldn't normally be processed by the KatApp framework.
+
+```javascript
+// Sample appends two inputs that are read from the current url/querystring
+view.on("onCalculationOptions.RBLe", function (event, calculationOptions, application) {
+    calculationOptions.Inputs.iUrl = document.URL;
+    calculationOptions.Inputs.iHero = querystring.hero;
+});
+```
+
+<hr/>
+
+#### onResultsProcessing
+
+**`onResultsProcessing(event: Event, calculationResults: TabDef[], calculationOptions: KatAppOptions, application: KatApp )`**
+
+This event is triggered during `calculate` _after a successful calculation_ from the RBLe Service and _before framework result processing_.  Use this handler to do something before framework result processing happens (i.e. clear/destroy table/chart so only displays if results are present in current calculation).
+
+```javascript
+view.on( "onResultsProcessing.RBLe", function( event, calculationResults, calculationOptions, application ) {
+    $(".conversionTable", view).empty(); // In case not returned from the CalcEngine, remove the table
+})
+```
+
+<hr/>
+
+#### onConfigureUICalculation
+
+**`onResultsProcessing(event: Event, calculationResults: TabDef[], calculationOptions: KatAppOptions, application: KatApp )`**
+
+This event is triggered during `calculate` _after a successful calculation and result processing_.  Use this handler to do something before framework result processing happens (i.e. clear/destroy table/chart so only displays if results are present in current calculation).
+
+```javascript
+view.on( "onConfigureUICalculation.RBLe", function( event, calculationResults, calculationOptions, application ) {
+    // Add a 'set' noUiSlider handler add
+    $(".recalcInputs .slider-control", application.element).each(function () {
+        var slider = this.noUiSlider;
+        slider.on('set', function() {
+            $(".recalcNeeded", application.element).addClass("active");
+        });
+    });
+})
+```
+
+<hr/>
+
+#### **`onConfigureUICalculation(event: Event, calculationResults: TabDef[], calculationOptions: KatAppOptions, application: KatApp )`**
+
+This event is triggered at the end of the `calculate` method after a calculation succeeds, fails, or is cancelled.  Use this event to perform any actions that need to occur after the calculation is completely finished.
+
+By default, the KatApp framework does the following:
+
+1. Hides the configured Ajax UI Blocker
+2. Removes the `needsRBLeConfig` class from any elements (showing UI components that are hidden during initialization)
+3. Enables all Kaml View inputs
+
 
 ### KatApp Action Lifecycle Events
 onActionStart, onActionResult, onActionFailed, onActionComplete (always)
@@ -1816,8 +2145,15 @@ onActionStart, onActionResult, onActionFailed, onActionComplete (always)
 ### KatApp Upload Lifecycle Events
 
 put sample code on how to hook up events in KamlViews - explain that events are usually there, but can be in config settings too
+// get all events, don't forget about other events like file upload: onUploadStart, search for trigger()
 
-## Calculation Lifecycle
+### Template Event Handlers
+
+        $.fn.KatApp.templateOn = function( templateName: string, events: string, fn: TemplateOnDelegate ): void {
+            $.fn.KatApp.templateDelegates.push( { Template: templateName.ensureGlobalPrefix(), Delegate: fn, Events: events } );
+            KatApp.trace( undefined, "Template event(s) [" + events + "] registered for [" + templateName + "]", TraceVerbosity.Normal );
+        };
+
 
 # To Document
 

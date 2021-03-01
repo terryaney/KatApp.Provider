@@ -63,23 +63,23 @@ interface KatAppOptions
     // If custom register data code is needed, can provide implementation here
     registerData?: RegisterDataDelegate;
 
-    // If multiple KatApps are on one page, you can catch notifications from other KatApps that called pushNotification()
-    onKatAppNotification?: (this: HTMLElement, notificationName: string, notificationInformation: {}, application: KatAppPlugInInterface )=> void;
-
     // If you use on() syntax for initialized, need to set it up before calling KatApp();
     onInitialized?: (this: HTMLElement, application: KatAppPlugInInterface )=> void;
     onDestroyed?: (this: HTMLElement, application: KatAppPlugInInterface )=> void;
     onOptionsUpdated?: (this: HTMLElement, application: KatAppPlugInInterface )=> void;
-    onRegistration?: (this: HTMLElement, calcOptions: KatAppOptions, application: KatAppPlugInInterface )=> void;
+    // If multiple KatApps are on one page, you can catch notifications from other KatApps that called pushNotification()
+    onKatAppNotification?: (this: HTMLElement, notificationName: string, notificationInformation: {}, application: KatAppPlugInInterface )=> void;
+    
     onCalculateStart?: (this: HTMLElement, application: KatAppPlugInInterface )=> void;
+    onRegistration?: (this: HTMLElement, calcOptions: KatAppOptions, application: KatAppPlugInInterface )=> void;
+    onCalculationOptions?: (this: HTMLElement, submitOptions: SubmitCalculationOptions, application: KatAppPlugInInterface )=> void;
     // Can use onResultsProcessing if you want to do something before generic result processing happens (i.e. clear/destroy table/chart so only displays if results in current calculation)
     onResultsProcessing?: (this: HTMLElement, calculationResults: JSON, calcOptions: KatAppOptions, application: KatAppPlugInInterface )=> void;
     onConfigureUICalculation?: (this: HTMLElement, calculationResults: JSON, calcOptions: KatAppOptions, application: KatAppPlugInInterface )=> void;
-    onCalculationOptions?: (this: HTMLElement, submitOptions: SubmitCalculationOptions, application: KatAppPlugInInterface )=> void;
     onCalculation?: (this: HTMLElement, calculationResults: JSON, calcOptions: KatAppOptions, application: KatAppPlugInInterface )=> void;
-    onCalculationErrors?: (this: HTMLElement, key: string, message: string, exception: Error, calcOptions: KatAppOptions, application: KatAppPlugInInterface)=> void;
-    onDataUpdateErrors?: (this: HTMLElement, message: string, exception: RBLeServiceResults | undefined, calcOptions: KatAppOptions, application: KatAppPlugInInterface)=> void;
     onDataUpdate?: (this: HTMLElement, calculationResults: JSON, calcOptions: KatAppOptions, application: KatAppPlugInInterface)=> void;
+    onDataUpdateErrors?: (this: HTMLElement, message: string, exception: RBLeServiceResults | undefined, calcOptions: KatAppOptions, application: KatAppPlugInInterface)=> void;
+    onCalculationErrors?: (this: HTMLElement, key: string, message: string, exception: Error, calcOptions: KatAppOptions, application: KatAppPlugInInterface)=> void;
     onCalculateEnd?: (this: HTMLElement, application: KatAppPlugInInterface )=> void;
 }
 // These are the only methods available to call on .KatApp() until onInitialized is triggered (meaning

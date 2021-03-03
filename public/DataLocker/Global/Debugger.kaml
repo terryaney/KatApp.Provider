@@ -56,7 +56,7 @@
                 <label for="" class="control-label lSaveCalcEngineLocation">Debug CalcEngine</label>
                 <div class="validator-container">
                     <div class="input-group">
-                        <input name="SaveCalcEngineLocation" id="SaveCalcEngineLocation" type="text" class="form-control SaveCalcEngineLocation" placeholder="save location, i.e. first.last">
+                        <input name="SaveCalcEngineLocation" id="SaveCalcEngineLocation" type="text" class="form-control SaveCalcEngineLocation" placeholder="Provide save location, i.e. first.last">
                         <span class="input-group-append input-group-btn">
                             <a class="btn btn-primary lnkSaveCalcEngine">Save Next Calculation</a>
                         </span>
@@ -74,6 +74,22 @@
                     <option value="4">Detailed</option>
                     <option value="5">Diagnostic</option>             
                 </select>
+            </div>
+            <div class="form-group vDataAttributes">
+                <label for="" class="control-label lDataAttributes">Data Attributes To Apply...</label>
+                <div class="validator-container">
+                    <input name="DataAttributes" id="DataAttributes" type="text" placeholder="Use if View looks for view.data- to control features" class="form-control DataAttributes">
+                    <span class="error-msg" data-toggle="tooltip" data-placement="top"></span>
+                </div>
+            </div>
+        </div>
+        <div class="col-sm-6">
+            <div class="form-group vSampleData">
+                <label for="" class="control-label lSampleData">Sample Data (json)</label>
+                <div class="validator-container">
+                    <textarea name="SampleData" id="SampleData" rows="4" placeholder="Paste json from DataSource" class="form-control SampleData"></textarea>
+                    <span class="error-msg" data-toggle="tooltip" data-placement="top"></span>
+                </div>
             </div>
             <div class="row">
                 <div class="col-sm-6">
@@ -103,22 +119,6 @@
                             <label for="UseLocalFiles">Allow local webserver</label>
                         </span>
                     </div>
-                </div>
-            </div>
-        </div>
-        <div class="form-group vDataAttributes col-sm-6 d-none hidden">
-            <label for="" class="control-label lDataAttributes">Data Attributes To Apply...</label>
-            <div class="validator-container">
-                <input name="DataAttributes" id="DataAttributes" type="text" class="form-control DataAttributes">
-                <span class="error-msg" data-toggle="tooltip" data-placement="top"></span>
-            </div>
-        </div>
-        <div class="col-sm-6">
-            <div class="form-group vSampleData">
-                <label for="" class="control-label lSampleData">Sample Data (json)</label>
-                <div class="validator-container">
-                    <textarea name="SampleData" id="SampleData" rows="8" placeholder="paste json from DataSource" class="form-control SampleData"></textarea>
-                    <span class="error-msg" data-toggle="tooltip" data-placement="top"></span>
                 </div>
             </div>
         </div>
@@ -260,6 +260,9 @@
                         $(selector + " select.bootstrap-select").selectpicker("destroy");
                     }
 
+                    // data- attributes on the element allow for custom code inside Kaml View to control 
+                    // functionality.  i.e. FSA DST looks for data attributes of iFlagFSA and iPlanID to
+                    // determine how to render/execute
                     var dataAttributes = $(".DataAttributes", view).val() || "";
 
                     $(selector).removeData().each(function() {
@@ -281,7 +284,6 @@
                         }
                     });                
 
-                    // Can't see how this is used in Provider, think it was earlier implementation, hiding input for now
                     if ( dataAttributes !== "" ) {
                         dataAttributes.split(",").forEach( function( a ) {
                             const attrs = a.trim().split("=");

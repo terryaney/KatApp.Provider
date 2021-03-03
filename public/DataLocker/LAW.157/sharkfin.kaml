@@ -688,7 +688,7 @@
                     
                     application.setInputs({
                         "iRetAge": inputs["iRetirementAge"],
-                        "iSalScale": inputs["iAnnualFuturePayIncreaseRate"],
+                        "iSalaryIncrease": inputs["iAnnualFuturePayIncreaseRate"],
                         "iReplaceRatio": Math.round(Number(inputs["iReplaceRatio"]) * 100 / 5) * 5
                     });
                 });
@@ -709,7 +709,7 @@
 					defaultInputs: {
 						iInputsFromModeler: 1,
 						iCurrentAge: application.getResultValue("variable", "iCurrentAge", "value") * 1,
-						iAnnualFuturePayIncreaseRate: $(".iSalScale").val(),
+						iAnnualFuturePayIncreaseRate: $(".iSalaryIncrease").val(),
 						iAnnualPay: $(".iSalary").val(),
 						iRetirementAge: $(".iRetAge").val(),
 						iRetirementSavingsPct: application.getResultValue("variable", "iRetirementSavingsPct", "value") * 1
@@ -820,7 +820,7 @@
         <div class="col-sm-4">
             <div class="validator-container">
                 <div class="slider-control slider-{inputname}" data-slider-type="nouislider"></div>
-                <input name="{inputname}" type="text" _id="katapp_{id}_{inputname}" class="form-control {inputname}"
+                <input name="{inputname}" type="text" id_="katapp_{id}_{inputname}" class="form-control {inputname}"
                     style="display: none" />
                 <span class="error-msg" data-toggle="tooltip" data-placement="top auto"></span>
             </div>

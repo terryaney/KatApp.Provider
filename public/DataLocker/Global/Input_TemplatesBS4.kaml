@@ -174,7 +174,7 @@
 </rbl-template>
 
 <rbl-template tid="input-checkbox" type="katapp-checkbox">
-  <div class="form-group validator-container checkbox-container v{inputname}">
+  <div class="form-group validator-container checkbox-container v{inputname}" rbl-display="v{inputname}">
     <span class="checkbox abc-checkbox {inputname}" rbl-value="l{inputname}">
       <input id_="katapp_{id}_{inputname}" type="checkbox" name="{inputname}" />
       <label for="katapp_{id}_{inputname}">

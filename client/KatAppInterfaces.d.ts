@@ -81,6 +81,16 @@ interface KatAppOptions
     onDataUpdateErrors?: (this: HTMLElement, message: string, exception: RBLeServiceResults | undefined, calcOptions: KatAppOptions, application: KatAppPlugInInterface)=> void;
     onCalculationErrors?: (this: HTMLElement, key: string, message: string, exception: Error, calcOptions: KatAppOptions, application: KatAppPlugInInterface)=> void;
     onCalculateEnd?: (this: HTMLElement, application: KatAppPlugInInterface )=> void;
+
+    onActionStart?: (this: HTMLElement, commandName: string, formData: FormData, application: KatAppPlugInInterface, actionLink: JQuery<HTMLElement>)=> void;
+    onActionResult?: (this: HTMLElement, commandName: string, result: JSON | undefined, application: KatAppPlugInInterface, actionLink: JQuery<HTMLElement>)=> void;
+    onActionFailed?: (this: HTMLElement, commandName: string, exception: JSON, application: KatAppPlugInInterface, actionLink: JQuery<HTMLElement>)=> void;
+    onActionComplete?: (this: HTMLElement, commandName: string, application: KatAppPlugInInterface, actionLink: JQuery<HTMLElement>)=> void;
+    
+    onUploadStart?: (this: HTMLElement, fileUpload: JQuery<HTMLElement>, formData: FormData, application: KatAppPlugInInterface)=> void;
+    onUploaded?: (this: HTMLElement, fileUpload: JQuery<HTMLElement>, application: KatAppPlugInInterface)=> void;
+    onUploadFailed?: (this: HTMLElement, fileUpload: JQuery<HTMLElement>, exception: JSON, application: KatAppPlugInInterface)=> void;
+    onUploadComplete?: (this: HTMLElement, fileUpload: JQuery<HTMLElement>, application: KatAppPlugInInterface)=> void;
 }
 // These are the only methods available to call on .KatApp() until onInitialized is triggered (meaning
 // that the provider object has been loaded and replaced the Shim and all methods of the KatAppPlugInInterface 

@@ -779,7 +779,7 @@
         <div class="col-sm-4">
             <div class="validator-container">
                 <div class="slider-control slider-{inputname}" data-slider-type="nouislider"></div>
-                <input name="{inputname}" type="text" _id="katapp_{id}_{inputname}" class="form-control {inputname}"
+                <input name="{inputname}" type="text" id_="katapp_{id}_{inputname}" class="form-control {inputname}"
                     style="display: none" />
                 <span class="error-msg" data-toggle="tooltip" data-placement="top auto"></span>
             </div>

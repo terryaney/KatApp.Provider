@@ -1,17 +1,4 @@
 <!-- Markup Templates -->
-<rbl-template tid="pill-display">
-  <div class="rounded-pill border" style="background-color: {color}; margin-top: 10px;">
-    <div class="row align-items-center vertical-center status-pill">
-      <div class="col-sm-3">{shortname}</div>
-      <div class="col-sm-3">{perpaycheck}</div>
-      <div class="col-sm-3">{balance}</div>
-      <div class="col-sm-3">{balanceproj}</div>
-    </div>
-  </div>
-</rbl-template>
-
-<rbl-template tid="text">{value}</rbl-template>
-
 <rbl-template tid="li-item">
   <li>{text}</li>
 </rbl-template>
@@ -21,20 +8,20 @@
 </rbl-template>
 
 <rbl-template tid="carousel">
-  <div class="carousel-control-group" rbl-name="{name}">
-    <div id="carousel-{name}" class="carousel-default carousel slide" data-ride="false">
-      <ol class="carousel-indicators align-items-center" rbl-tid="caro-ind" rbl-source="{source}" rbl-prepend="true">
+  <div class="carousel-control-group" rbl-name="{id}-{name}">
+    <div id="carousel-{id}-{name}" class="carousel-default carousel slide" data-ride="false">
+      <ol class="carousel-indicators align-items-center" rbl-tid="carousel-indicator" rbl-source="{source}" rbl-prepend="true">
         <a style="display:none" class="list-btn" rbl-preserve="true"> Show More</a>
       </ol>
-      <div class="carousel-inner" role="listbox" rbl-tid="caro-item" rbl-source="{source}"></div>
-      <a class="left carousel-control" data-target="#carousel-{name}" role="button" data-slide="prev">
+      <div class="carousel-inner" role="listbox" rbl-tid="carousel-item" rbl-source="{source}"></div>
+      <a class="left carousel-control" data-target="#carousel-{id}-{name}" role="button" data-slide="prev">
         <i class="fa fa-caret-left" aria-hidden="true"></i>
       </a>
-      <a class="right carousel-control" data-target="#carousel-{name}" role="button" data-slide="next">
+      <a class="right carousel-control" data-target="#carousel-{id}-{name}" role="button" data-slide="next">
         <i class="fa fa-caret-right" aria-hidden="true"></i>
       </a>
     </div>
-    <div id="all-{name}" class="carousel-all" style="display: none;" rbl-tid="caro-item" rbl-source="{source}"
+    <div id="all-{id}-{name}" class="carousel-all" style="display: none;" rbl-tid="carousel-item" rbl-source="{source}"
       rbl-prepend="true">
       <div class="text-center" rbl-preserve="true">
         <a class="carousel-btn"> Show Less</a>
@@ -43,19 +30,26 @@
   </div>
 </rbl-template>
 
-<rbl-template tid="caro-item">
+<rbl-template tid="carousel-item">
   <div class="item"><span class="number">{_index1}</span>
     <p>{text}</p>
   </div>
 </rbl-template>
 
-<rbl-template tid="caro-ind">
+<rbl-template tid="carousel-indicator">
   <li data-slide-to="{_index0}" class=""></li>
 </rbl-template>
 
 <rbl-template tid="validation-summary">
   <div id="{id}_ModelerValidationTable" class="validation-summary alert alert-danger" role="alert" title="Please review the following issues:" style="display: none;">
     <p><strong>Please review the following issues:</strong></p>
+    <ul></ul>
+  </div>
+</rbl-template>
+
+<rbl-template tid="validation-warning-summary">
+  <div id="{id}_ModelerWarnings" class="validation-warning-summary alert alert-warning" role="alert" title="Please review the following warnings:" style="display: none;">
+    <p><span class='glyphicon glyphicon glyphicon-warning-sign' aria-hidden='true'></span> <span class='sr-only'>Warnings</span> Please review the following warnings: </p>
     <ul></ul>
   </div>
 </rbl-template>
@@ -77,7 +71,7 @@
     </label>
     <div class="validator-container">
       <input name="{inputname}" id_="katapp_{id}_{inputname}" type="text" class="form-control {inputname}">
-      <div class="{inputname}DisplayOnly form-control-display-only"></div>
+      <div class="{inputname}DisplayOnly form-control-display-only" rbl-value="{inputname}DisplayOnly"></div>
       <span class="error-msg" data-toggle="tooltip" data-placement="top auto"></span>
     </div>
     <div rbl-value="h{inputname}Title" id="{id}_h{inputname}Title" style="display: none;"></div>
@@ -101,6 +95,29 @@
   </div>
 </rbl-template>
 
+<rbl-template tid="input-checkbox" type="katapp-checkbox">
+  <div class="form-group validator-container checkbox-container v{inputname}" rbl-display="v{inputname}">
+    <span class="checkbox abc-checkbox {inputname}" rbl-value="l{inputname}">
+      <input id_="katapp_{id}_{inputname}" type="checkbox" name="{inputname}" />
+      <label for="katapp_{id}_{inputname}">
+        <span class="checkbox-label"></span>
+        <a style="display: none;" onclick="return false;" rbl-display="vh{inputname}" class="help-icon-anchor" role="button" tabindex="-1" data-toggle="popover" data-trigger="click" data-content-selector="#{id}_h{inputname}" data-placement="top"><span class="glyphicon glyphicon-info-sign help-icon"></span></a>
+        <a style="display: none;" onclick="return false;" rbl-display="vs{inputname}" class="help-icon-anchor" role="button" tabindex="-1"><span class="glyphicon glyphicon-volume-up"></span></a>
+      </label>
+    </span>
+    <span class="error-msg" data-toggle="tooltip" data-placement="top auto"></span>
+    <div rbl-value="h{inputname}Title" id="{id}_h{inputname}Title" style="display: none;"></div>
+    <div rbl-value="h{inputname}" id="{id}_h{inputname}" style="display: none;"></div>
+  </div>
+</rbl-template>
+
+<rbl-template tid="input-checkbox-simple" type="katapp-checkbox">
+  <div class="form-group" rbl-display="v{inputname}">
+    <input class="form-check-input {inputname}" id_="{inputname}" type="checkbox" name="{inputname}" />
+    <label class="form-check-label" rbl-value="l{inputname}" for="{inputname}"></label>
+  </div>
+</rbl-template>
+
 <!-- Leaving sv{inputname} as class (instead of rbl-value) because value will never be from CE.
      If I want to change to an ID or something, would need to make sure LAW js is updated b/c they go after class element
 -->
@@ -118,36 +135,6 @@
     </div>
     <div rbl-value="h{inputname}Title" id="{id}_h{inputname}Title" style="display: none;"></div>
     <div rbl-value="h{inputname}" id="{id}_h{inputname}" style="display: none;"></div>
-  </div>
-</rbl-template>
-
-<rbl-template tid="input-radiobuttonlist-vertical-container">
-  <table class='radio abc-radio bs-listcontrol' border='0'>
-    <tbody class='items-container'></tbody>
-  </table>
-</rbl-template>
-<!-- Need tr_/td_ because <tr/> and <td/> can not just be standalone, they are removed from html (i.e. this template markup) -->
-<rbl-template tid="input-radiobuttonlist-vertical-item">
-  <tr_ rbl-display="{visibleSelector}">
-    <td_>
-      <span class="radio abc-radio">
-        <input id_="{itemId}" type="radio" name="{id}:{inputName}" value="{value}" />
-        <label for="{itemId}">{text}</label>
-        <a rbl-display="{helpIconSelector}" style="display: none;" onclick="return false;" class="help-icon-anchor" role="button" tabindex="-1" data-toggle="popover" data-trigger="click" data-content-selector="#{id}_{helpSelector}" data-placement="top"><span class="glyphicon glyphicon-info-sign help-icon"></span></a>
-        <div rbl-value="{helpSelector}Title" id="{id}_{helpSelector}Title" style="display: none;"></div>
-        <div rbl-value="{helpSelector}" id="{id}_{helpSelector}" style="display: none;"></div>
-      </span>
-    </td_>
-  </tr_>
-</rbl-template>
-
-<rbl-template tid="input-radiobuttonlist-horizontal-item">
-  <div class='radio abc-radio' rbl-display="{visibleSelector}">
-    <input id_="{itemId}" type="radio" name="{id}:{inputName}" value="{value}" />
-    <label for="{itemId}">{text}</label>
-    <a rbl-display="{helpIconSelector}" style="display: none;" onclick="return false;" class="help-icon-anchor" role="button" tabindex="-1" data-toggle="popover" data-trigger="click" data-content-selector="#{id}_{helpSelector}" data-placement="top"><span class="glyphicon glyphicon-info-sign help-icon"></span></a>
-    <div rbl-value="{helpSelector}Title" id="{id}_{helpSelector}Title" style="display: none;"></div>
-    <div rbl-value="{helpSelector}" id="{id}_{helpSelector}" style="display: none;"></div>
   </div>
 </rbl-template>
 
@@ -185,34 +172,35 @@
   </div>
 </rbl-template>
 
-<rbl-template tid="input-checkbox" type="katapp-checkbox">
-  <div class="form-group validator-container checkbox-container v{inputname}">
-    <span class="checkbox abc-checkbox {inputname}" rbl-value="l{inputname}">
-      <input id_="katapp_{id}_{inputname}" type="checkbox" name="{inputname}" />
-      <label for="katapp_{id}_{inputname}">
-        <span class="checkbox-label"></span>
-        <a style="display: none;" onclick="return false;" rbl-display="vh{inputname}" class="help-icon-anchor" role="button" tabindex="-1" data-toggle="popover" data-trigger="click" data-content-selector="#{id}_h{inputname}" data-placement="top"><span class="glyphicon glyphicon-info-sign help-icon"></span></a>
-        <a style="display: none;" onclick="return false;" rbl-display="vs{inputname}" class="help-icon-anchor" role="button" tabindex="-1"><span class="glyphicon glyphicon-volume-up"></span></a>
-      </label>
-    </span>
-    <span class="error-msg" data-toggle="tooltip" data-placement="top auto"></span>
-    <div rbl-value="h{inputname}Title" id="{id}_h{inputname}Title" style="display: none;"></div>
-    <div rbl-value="h{inputname}" id="{id}_h{inputname}" style="display: none;"></div>
-  </div>
+<rbl-template tid="input-radiobuttonlist-vertical-container">
+  <table class='radio abc-radio bs-listcontrol' border='0'>
+    <tbody class='items-container'></tbody>
+  </table>
+</rbl-template>
+<!-- Need tr_/td_ because <tr/> and <td/> can not just be standalone, they are removed from html (i.e. this template markup) -->
+<rbl-template tid="input-radiobuttonlist-vertical-item">
+  <tr_ rbl-display="{visibleSelector}">
+    <td_>
+      <span class="radio abc-radio">
+        <input id_="{itemId}" type="radio" name="{id}:{inputName}" value="{value}" />
+        <label for="{itemId}">{text}</label>
+        <a rbl-display="{helpIconSelector}" style="display: none;" onclick="return false;" class="help-icon-anchor" role="button" tabindex="-1" data-toggle="popover" data-trigger="click" data-content-selector="#{id}_{helpSelector}" data-placement="top"><span class="glyphicon glyphicon-info-sign help-icon"></span></a>
+        <div rbl-value="{helpSelector}Title" id="{id}_{helpSelector}Title" style="display: none;"></div>
+        <div rbl-value="{helpSelector}" id="{id}_{helpSelector}" style="display: none;"></div>
+      </span>
+    </td_>
+  </tr_>
 </rbl-template>
 
-<rbl-template tid="input-checkbox-simple" type="katapp-checkbox">
-  <div class="form-group" rbl-display="v{inputname}">
-    <input class="form-check-input {inputname}" id_="{inputname}" type="checkbox" name="{inputname}" />
-    <label class="form-check-label" rbl-value="l{inputname}" for="{inputname}"></label>
-    <a style="display: none;" onclick="return false;" rbl-display="vh{inputname}" class="help-icon-anchor" role="button" tabindex="-1" data-toggle="popover" data-trigger="click" data-content-selector="#{id}_h{inputname}" data-placement="top"><span class="glyphicon glyphicon-info-sign help-icon"></span></a>
-    <a style="display: none;" onclick="return false;" rbl-display="vs{inputname}" class="help-icon-anchor" role="button" tabindex="-1"><span class="glyphicon glyphicon-volume-up"></span></a>
-    <span class="error-msg" data-toggle="tooltip" data-placement="top auto"></span>
-    <div rbl-value="h{inputname}Title" id="{id}_h{inputname}Title" style="display: none;"></div>
-    <div rbl-value="h{inputname}" id="{id}_h{inputname}" style="display: none;"></div>
+<rbl-template tid="input-radiobuttonlist-horizontal-item">
+  <div class='radio abc-radio' rbl-display="{visibleSelector}">
+    <input id_="{itemId}" type="radio" name="{id}:{inputName}" value="{value}" />
+    <label for="{itemId}">{text}</label>
+    <a rbl-display="{helpIconSelector}" style="display: none;" onclick="return false;" class="help-icon-anchor" role="button" tabindex="-1" data-toggle="popover" data-trigger="click" data-content-selector="#{id}_{helpSelector}" data-placement="top"><span class="glyphicon glyphicon-info-sign help-icon"></span></a>
+    <div rbl-value="{helpSelector}Title" id="{id}_{helpSelector}Title" style="display: none;"></div>
+    <div rbl-value="{helpSelector}" id="{id}_{helpSelector}" style="display: none;"></div>
   </div>
 </rbl-template>
-
 
 <script>
   if (KatApp.pageParameters["debugkatapp"] === "t.{thisTemplate}") {

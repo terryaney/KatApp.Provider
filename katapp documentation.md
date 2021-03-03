@@ -14,6 +14,7 @@
     - [RBLe Attributes used in Kaml View](#RBLe-Attributes-used-in-Kaml-View)
     - [RBLe Selector Paths](#RBLe-Selector-Paths)
     - [rbl-display Attribute Details](#rbl-display-Attribute-Details)
+    - [View Scoping](#View-Scoping)
     - [Legacy _Push_ Processing](#Legacy-_Push_-Processing)
         - [ejs-output Table](#**ejs-output**)
         - [ejs-visibility Table](#**ejs-visibility**)
@@ -27,30 +28,46 @@
         - [errors And warnings Tables](#**errors/warnings**)
         - [ejs-markup Table](#**ejs-markup**)
 - [Templates](#Templates)
+    - [Template Precedence](#Template-Precedence)
     - [Template Attributes](#Template-Attributes)
     - [Inline Templates](#Inline-Templates)
     - [Automatically Processed Templates](#Automatically-Processed-Templates)
         - [ResultBuilder Framework Tables](#ResultBuilder-Framework-Tables)
         - [ResultBuilder Framework Charts](#ResultBuilder-Framework-Charts)
     - [Building Common Controls](#Building-Common-Controls)
-- [ResultBuilder Framework](#ResultBuilder-Framework)
-    - [Table Template Processing](#Table-Template-Processing)
-        - [colgroup processing](#colgroup-Processing)
-        - [Header Rows](#Header-Rows)
-        - [Automatic Column Spanning](#Automatic-Column-Spanning)
-        - [Manual Column Spanning](#Manual-Column-Spanning)
-        - [Column Widths](#Column-Widths)
-    - [Highcharts Template Processing](#Highcharts-Template-Processing)
-        - [CalcEngine Table Layouts](#CalcEngine-Table-Layouts)
-            - [Highcharts-{rbl-chartoptions}-Options](#Highcharts-{rbl-chartoptions}-Options)
-            - [Highcharts-{rbl-chartdata}-Data](#Highcharts-{rbl-chartoptions}-Data)
-            - [Highcharts-Overrides](#Highcharts-Overrides)
-        - [Custom Chart Options](#Custom-Chart-Options)
-        - [Standard Chart Options](#Standard-Chart-Options)
-        - [Custom Series Options](#Custom-Series-Options)
-        - [Standard Series Options](#Standard-Series-Options)
-        - [Property Value Parsing](#Property-Value-Parsing)
-        - [Language Support](#Language-Support)
+        - [Eliminating Browser ID Warnings](#Eliminating-Browser-ID-Warnings)
+        - [Creating Table Row/Column Templates](#Creating-Table-Row/Column-Templates)
+        - [Example: Creating a slider](#Example:-Creating-a-slider)
+    - [Standard_Templates.kaml](#Standard_Templates.kaml)
+        - [input-textbox](#input-textbox)
+        - [input-dropdown](#input-dropdown)
+        - [input-checkbox / input-checkbox-simple](#input-checkbox-/-input-checkbox-simple)
+        - [input-slider](#input-slider)
+        - [input-radiobuttonlist / input-checkboxlist](#input-radiobuttonlist-/-input-checkboxlist)
+        - [input-fileupload](#input-fileupload)
+        - [validation-summary / validation-warning-summary](#validation-summary-/-validation-warning-summary)
+        - [carousel](#carousel)
+        - [Additional Template Components](#Additional-Template-Components)
+        - [Using Template Type Attribute](#Using-Template-Type-Attribute)
+- [RBLe Service](#RBLe-Service)
+    - [ResultBuilder Framework](#ResultBuilder-Framework)
+        - [Table Template Processing](#Table-Template-Processing)
+            - [colgroup processing](#colgroup-Processing)
+            - [Header Rows](#Header-Rows)
+            - [Automatic Column Spanning](#Automatic-Column-Spanning)
+            - [Manual Column Spanning](#Manual-Column-Spanning)
+            - [Column Widths](#Column-Widths)
+        - [Highcharts Template Processing](#Highcharts-Template-Processing)
+            - [CalcEngine Table Layouts](#CalcEngine-Table-Layouts)
+                - [Highcharts-{rbl-chartoptions}-Options](#Highcharts-{rbl-chartoptions}-Options)
+                - [Highcharts-{rbl-chartdata}-Data](#Highcharts-{rbl-chartoptions}-Data)
+                - [Highcharts-Overrides](#Highcharts-Overrides)
+            - [Custom Chart Options](#Custom-Chart-Options)
+            - [Standard Chart Options](#Standard-Chart-Options)
+            - [Custom Series Options](#Custom-Series-Options)
+            - [Standard Series Options](#Standard-Series-Options)
+            - [Property Value Parsing](#Property-Value-Parsing)
+            - [Language Support](#Language-Support)
 - [Advanced Configuration](#Advanced-Configuration)
     - [RBLe Service Attributes / Classes](#RBLe-Service-Attributes-/-Classes)
     - [Precalc Pipelines](#Precalc-Pipelines)
@@ -70,13 +87,65 @@
         - [SubmitCalculationDelegate Object](#SubmitCalculationDelegate-Object)
     - [KatApp Methods](#KatApp-Methods)
         - [KatApp Lifecycle Methods](#KatApp-Lifecycle-Methods)
+            - [KatApp](#KatApp)
+            - [destroy](#destroy)
+            - [rebuild](#rebuild)
+            - [updateOptions](#updateOptions)
+            - [ensure](#ensure)
         - [KatApp Calculation Methods](#KatApp-Calculation-Methods)
+            - [calculate](#calculate)
+            - [configureUI](#configureUI)
+            - [getInputs](#getInputs)
+            - [setInputs](#setInputs)
+            - [setInput](#setInput)
+            - [getResultTable](#getResultTable)
+            - [getResultRow](#getResultRow)
+            - [getResultValue](#getResultValue)
+            - [getResultValueByColumn](#getResultValueByColumn)
         - [KatApp Advanced Methods](#KatApp-Advanced-Methods)
+            - [apiAction](#apiAction)
+            - [serverCalculation](#serverCalculation)
+            - [publishNotification](#publishNotification)
         - [KatApp Debugging Methods](#KatApp-Debugging-Methods)
+            - [saveCalcEngine](#saveCalcEngine)
+            - [refreshCalcEngine](#refreshCalcEngine)
+            - [traceCalcEngine](#traceCalcEngine)
+            - [redraw](#redraw)
     - [KatApp Events](#KatApp-Events)
-    
+        - [KatApp Lifecycle Events](#KatApp-Lifecycle-Events)
+            - [onInitialized](#onInitialized)
+            - [onDestroyed](#onDestroyed)
+            - [onOptionsUpdated](#onOptionsUpdated)
+            - [onKatAppNotification](#onKatAppNotification)
+        - [KatApp Calculation Lifecycle Events](#KatApp-Calculation-Lifecycle-Events)
+            - [onCalculateStart](#onCalculateStart)
+            - [onRegistration](#onRegistration)
+            - [onCalculationOptions](#onCalculationOptions)
+            - [onResultsProcessing](#onResultsProcessing)
+            - [onConfigureUICalculation](#onConfigureUICalculation)
+            - [onCalculation](#onCalculation)
+            - [onCalculationErrors](#onCalculationErrors)
+            - [onDataUpdate](#onDataUpdate)
+            - [onDataUpdateErrors](#onDataUpdateErrors)
+            - [onCalculateEnd](#onCalculateEnd)
+        - [KatApp Action Lifecycle Events](#KatApp-Action-Lifecycle-Events)
+            - [onActionStart](#onActionStart)
+            - [onActionResult](#onActionResult)
+            - [onActionFailed](#onActionFailed)
+            - [onActionComplete](#onActionComplete)
+        - [KatApp Upload Lifecycle Events](#KatApp-Upload-Lifecycle-Events)
+            - [onUploadStart](#onUploadStart)
+            - [onUploaded](#onUploaded)
+            - [onUploadFailed](#onUploadFailed)
+            - [onUploadComplete](#onUploadComplete)
+        - [Template Event Handlers](#Template-Event-Handlers)
+
 # Overview
 A KatApp is a dynamic html application delivered to a host platform such as Life@Work.  Conceptually, its like a CMS, but instead of static content, it provides for dynamic content containing potentially complex business logic and controls and data and results.
+
+See [KatApp Debugging Methods](#KatApp-Debugging-Methods) for the most commonly used methods during the development cycle to aid in obtaining debug CalcEngines, seeing intermediate results/inputs, etc.
+
+See [DebugOptions Object](#DebugOptions-Object) for the most commonly used options (and the query strings that enable them) during the development cycle to configure live or test CalcEngines, Views, or Provider, enabling the KatApp Inspector, etc.
 
 ## Definitions
 
@@ -243,11 +312,16 @@ $("#KatApp-wealth").KatApp({
 
 ## Configuration Precedence
 
-As noted, there are three ways to configure KatApp's with each method have a specific precedence that can override the same settings set via different methods.  The configuration precedence is as follows.
+There are three ways to configure KatApp's and each method has a specific precedence that can override the same settings set via different methods.  
+
+In addition to the the three methods of configuration described above, there is one more mechanism.  There is a global `KatApp.defaultOptions` object.  It has all the same properties as the normal Javascript configuration option passed in on that `.KatApp( options )` method.  See [KatAppOptions Object](#KatAppOptions-Object) for more information.
+
+The configuration precedence is as follows (1 being the highest)
 
 1. Javascript configuration object
 2. KatApp element attributes
-3. `<rbl-config>` attributes
+3. KatApp.defaultOptions configuration object
+4. `<rbl-config>` attributes
 
 # Kaml View Specifications
 
@@ -330,6 +404,91 @@ Show if 'enabled' column from 'wealth-summary' table where 'id' is 'benefit-star
 <div rbl-ce="Shared" rbl-display="wealth-summary.benefit-start.enabled=1">Wealth Information</div>
 ```
 
+## View Scoping
+
+It is very important to keep Kaml View encapsulated as an isolated environment, or sandbox if you will. **The KatApp framework ensures that all input and calculation result processing are isolated to the KatApp/Kaml View.**  In the same manner, there are ways to ensure proper scoping your markup and javascript so that Kaml Views do not interfere with containing web sites.
+
+**Scoping CSS**
+
+In Kaml Views, if you include a `<style>` section to define some CSS for the view, make sure you prefix every class selector with `.thisClass`.
+
+Additional CSS scoping has to be considered when creating Template Kaml Files.  The `.katapp-css` class will always be applied to KatApp application elements.  So that is the way to provide some scoping inside template files (or Kaml Views too, although `.thisClass` is preferred).
+
+So the CSS priority would be:
+
+1. `.katapp-css`
+2. `.thisClass`
+
+```html
+<style>
+    /* Without scoping would affect all h2 elements on rendered page even if not part of this Kaml View */
+    h2 {
+        font-size: 24px;
+    }
+
+    /* Do use .katapp-css */
+    .katapp-css h2 {
+        color: Green;
+        font-size: 30px;
+    }
+
+    /* Do use .thisClass */
+    .thisClass h2 {
+        color: Red;
+    }
+
+    /* The end result would be color: Red, size 30px */
+</style>
+
+<h2>Hello</h2>
+```
+
+**Scoping IDs**
+
+When creating HTML elements inside the Kaml View that needs the `id` attribute provided, ID scoping must be used.  A name cannot be guaranteed to be unique with out.  To guarantee a unique ID for elements, you need to append or prepend the unique KatApp ID.  This is done with the `{id}` token. 
+
+```html
+<!-- nav-list can not be guaranteed unique, the containing application (or other hosted KatApps may use the same id) -->
+<div id="nav-list">
+    <!-- ... -->
+</div>
+
+
+<div id="nav-list_{id}">
+    <!-- ... -->
+</div>
+```
+
+**jQuery Scoping**
+
+When `<script>` tags are included in Kaml View files, the correct way to obtain the KatApp element is by using this `{thisView}` token.  `{thisView}` is substituted with a jQuery selector like `[rbl-application-id='{id}']` where `{id}` is the unique KatApp ID.
+
+```html
+<script>
+(function () {
+    
+    // Obtain a reference of the KatApp element.
+    var view = $("{thisView}");
+
+})();
+</script>
+```
+
+Additionally, inside any `<script>` elements in a Kaml View, any time you do a selector, you need to scope it with the KatApp element/view.
+
+```html
+<script>
+view.on("onInitialized.RBLe", function (event, application) {
+    $("[data-reset-confirmed='true']", view).on("click", function (e) {
+        e.preventDefault();
+        $(".iDirection", view).val(-1);
+    })
+});
+</script>
+```
+
+See [KatApp Events](#KatApp-Events) for more usage examples where scoping is required.
+
 ## Legacy  _Push_ Processing
 
 KatApps are an upgrade to original RBLe Service processing in that Kaml Views are able to _pull_ information from the CalcEngine and able to pull it from specific locations using 'selector paths'.  After a calculation is finished, all elements using `rbl-value`, `rbl-source`, `rbl-tid`, or `rbl-display` binding attributes are automatically updated/processed.  
@@ -349,6 +508,8 @@ value | The content to set.  (Supports text or HTML)
 
 <br/>
 
+**Note**: This table should no longer be used.  A `rbl-value` table should be used in its place (ensure that all elements that need content from the table have a `rbl-value=` attribute applied).
+
 ### **ejs-visibility**
 
 Legacy functionality replaced by `rbl-display` processing.  Set the visiblity for any element based on CSS classes.
@@ -359,6 +520,8 @@ id | The CSS class of one or more elements in your Kaml View (i.e. `introText`).
 value | Whether or not to hide the element.  If `value` is `0`, the element will be hidden.
 
 <br/>
+
+**Note**: This table should no longer be used.  A `rbl-display` table should be used in its place (ensure that all elements that need content from the table have a `rbl-display=` attribute applied). 
 
 ## Required  _Push_ Processing
 
@@ -565,6 +728,30 @@ The most common use of templates with RBLe results is for repetitive result item
 </ul>
 ```
 
+## Template Precedence
+
+Templates can be created inside Kaml View files in addition to a separate Kaml Template file.  Also, a Kaml View can specify multiple Kaml Template files that are required.  Therefore, an order of precedence is applied because templates can be overridden if the same `tid` is used.
+
+**Sample Kaml View File**
+```html
+<rbl-config calcengine="Conduent_DST_CE" templates="Standard_Templates,Client_Templates"></rbl-config>
+
+<!-- Kaml View Markup -->
+
+<!-- Custom checkbox template to replace the template inside Standard_Templates -->
+<rbl-template tid="input-checkbox">
+  <div class="form-group" rbl-display="v{inputname}">
+    <input class="form-check-input {inputname}" id_="{inputname}" type="checkbox" name="{inputname}" />
+    <label class="form-check-label" rbl-value="l{inputname}" for="{inputname}"></label>
+  </div>
+</rbl-template>
+```
+
+Given the above sample, the order of precedence (1 being the highest) is applied when locating a template:
+
+1. Template located inside the Kaml View file
+2. Search template files specified in the `templates` attribute from _right to left_
+
 ## Template Attributes
 
 There is additional control that can be applied when processing Kaml templates.
@@ -749,6 +936,48 @@ rbl&#x2011;chartoptions | Optional name of the RBLe Service table that provides 
 
 Templates are also used to build controls in an Kaml View that may have repetitive or complex markup.  This is accomplished by passing static data to the template that is used to create markup.  This use of templates generally does not use RBLe results, but rather static data.
 
+### Eliminating Browser ID Warnings
+
+When creating a Template Kaml File that has markup for more than one control/component, it is common to have something like the following:
+
+```html
+<rbl-template tid="my-textbox" type="katapp-textbox">
+  <input name="{inputname}" id="katapp_{id}_{inputname}" type="text" class="form-control {inputname}">
+</rbl-template>
+
+<rbl-template tid="my-checkbox" type="katapp-checkbox">
+  <input name="{inputname}" id="katapp_{id}_{inputname}" type="checkbox" class="form-control {inputname}">
+</rbl-template>
+```
+
+When this template is injected into the page, both `input` elements have the same id of `katapp_{id}_{inputname}` (no substitution yet because the template hasn't been applied) and browser debug tools complain about multiple elements with identical `id` attributes.  To get around this, you can use an `id_` attribute instead of `id` and when the template is processed, it will change `id_` to `id` and avoid superfluous error messages.
+
+**Update**: The `id` attribute is not needed by the KatApp framework, only the `name` attribute.  If the `id` attribute is not needed for Kaml View javascript or Template javascript, it is preferred to only use the `name` attribute.
+
+### Creating Table Row/Column Templates
+
+Browsers do not allow `tr` or `td` table elements to exist unless nested properly under a `table` element.  When it encounters such elements, it simply (silently) removes the element from the DOM.  The following template is not valid because the `tr` would be removed and unusable.
+
+```html
+<rbl-template tid="my-table-row">
+  <tr>
+    <td>{data-text}</td>
+    <td>{data-value}</td>
+  </tr>
+</rbl-template>
+```
+
+To allow for row and column templates, Template Kaml files must use `tr_` and `td_` instead of `tr` and `td`.  The following would be a functional template for table rows.
+
+```html
+<rbl-template tid="my-table-row">
+  <tr_>
+    <td_>{data-text}</td_>
+    <td_>{data-value}</td_>
+  </tr_>
+</rbl-template>
+```
+
 ### Example: Creating a slider
 ```xml
 <!-- create a slider for control 'iRetireAge' using 'standard' template -->
@@ -791,9 +1020,340 @@ In this manner, if two more sliders are needed for inputs iInvestmentReturn and 
 
 This is more accurate than repeating the complex markup for every slider needed and replacing all instances of 'iRetireAge'. 
 
-# ResultBuilder Framework
+## Standard_Templates.kaml
 
-## Table Template Processing
+The KatApp framework includes a _Standard\_Templates.kaml_ Template that has the most commonly used input templates leveraged in Kaml Views.  The inputs are styled with Bootstrap 3.  When a container is using Bootstrap 4, include the _Input\_TemplatesBS4.kaml_ file as well.
+
+```html
+<!-- When Bootstrap 4 is being used, the view's templates attribute should be configured as follows -->
+<rbl-config calcengine="Conduent_DST_CE" templates="Standard_Templates,Input_TemplatesBS4"></rbl-config>
+```
+
+Each input can have its own set of data attributes to configure the functionality and appearance of the input.  For some templated inputs, results from the CalcEngine can provide all or additional configuration as well.
+
+This section contains a list of the common controls provided by this template and the attributes that can configure them.  When creating custom templates, do use Standard_Templates as an example of how templates should be built.
+
+<hr/>
+
+### input-textbox
+
+Builds a textual input that is styled with Bootstrap and supports input group suffix/prefix, help tips, voice icons, and validation indicators.
+
+Attribute | Description
+---|---
+data-inputname | The input name.
+data-type | The type of input it is: `password`, `multiline`, `date`, or `text` (default).
+data-label | The input label.
+data-help | The help tip.  When provided, the help icon will be displayed that can render the tip in a a popup fashion.
+data-prefix | Prefix to prepend to the input in the form of a Bootstrap `input-group-prepend` element (usually the $ symbol when needed).
+data-suffix | Suffix to append to the input in the form of a Bootstrap `input-group-append` element (usually the % symbol when needed).
+data-placeholder | The placeholder to display when the input is empty.
+data-maxlength | The max length allowed for textual input.
+data&#x2011;autocomplete | A `Boolean`, that when `false` specifies that the `autocomplete="false"` attribute should be assigned to the contained `input` element (default is `false` for inputs with `type=password`, otherwise default is `true`).
+data-value | A default value to use for the input.
+data-css | A CSS class to apply to the container `div`.  This is same `div` that has the `rbl-display` attribute and `form-group` CSS class assigned.
+data-formcss | A CSS class to use in place of the default `form-group`.
+data-inputcss | A CSS class to apply to the contained `input` element.
+data-labelcss | A CSS class to apply to the contained `label` element.
+data-displayonly | A `Boolean` value specifying whether this input should be rendered in a 'display only` mode.  All the logic for label, help and voice will remain, but the input will be removed and replaced with a label input (default is `false`).
+data-hidelabel | A `Boolean` value specifying whether the contained `label` element should be remove to correct for UI layout issues when needed (default is `false`).
+
+<br/>
+
+<hr/>
+
+### input-dropdown
+
+Builds a dropdown control that is styled with Bootstrap (and _bootstrap-select_) and supports help tips, voice icons, validation indicators, and [_bootstrap-select API_](#https://developer.snapappointments.com/bootstrap-select/) properites.
+
+Attribute | Description
+---|---
+data-inputname | The input name.
+data-label | The input label.
+data-help | The help tip.  When provided, the help icon will be displayed that can render the tip in a a popup fashion.
+data-css | A CSS class to apply to the container `div`.  This is same `div` that has the `rbl-display` attribute and `form-group` CSS class assigned.
+data-multiselect | A `Boolean` value specifying whether this dropdown allows multi-selection (default is `false`).
+data-livesearch | A `Boolean` value specifying whether this dropdown allows live search capabilities when the dropdown is opened (default is `false`).
+data-size | The number of items to display when the dropdown is opened before rendering a scrollbar (default is `15`).
+data-lookuptable | Specifies the name of lookup table to use as a data source when `ejs-listcontrols` from the results will _not_ provide the data source.
+data-* | All other data attributes present will be applied to the contained `select` element for processing from the [_bootstrap-select API_](#https://developer.snapappointments.com/bootstrap-select/).
+
+<br/>
+
+Using the `data-lookuptable` attribute requires a `<rbl-template tid="lookup-tables">` containing the lookup table in the same format as a xDS Specification Sheet export.
+
+```html
+<!-- Create a 'Tax Status' label and manually provide the data source to propulate the dropdown -->
+<div rbl-tid="input-dropdown" data-label="Tax Status" data-lookuptable="TableTaxStatus"></div>
+
+<rbl-template tid="lookup-tables">
+	<DataTable id="TableTaxStatus">
+        <TableItem key="1" name="Single Standard Deduction"/>
+        <TableItem key="2" name="Married File Jointly Std. Ded"/>
+        <TableItem key="3" name="Married File Sep Std. Ded"/>
+        <TableItem key="4" name="Head of Household Std. Ded"/>
+	</DataTable>
+</rbl-template>
+```
+
+<hr/>
+
+### input-checkbox / input-checkbox-simple
+
+Builds a checkbox input that is styled with Bootstrap and supports help tips, voice icons, and validation indicators.
+
+The `input-checkbox-simple` is a simplified rendering that does _not_ support help tips, voice icons, or validation indicators.
+
+Attribute | Description
+---|---
+data-inputname | The input name.
+data-label | The input label.
+data-help | The help tip.  When provided, the help icon will be displayed that can render the tip in a a popup fashion.
+data&#x2011;checked | A `Boolean` indicating whether the input should be checked by default (default is `false`).
+data-css | A CSS class to apply to the container `div`.  This is same `div` that has the `rbl-display` attribute and `form-group` CSS class assigned.
+data-inputcss | A CSS class to apply to the contained `input` element.
+
+<br/>
+
+<hr/>
+
+### input-slider
+
+Builds a noUiSlider input that is styled with Bootstrap and supports help tips, voice icons, and validation indicators.
+
+Attribute | Description
+---|---
+data-inputname | The input name.
+data-label | The input label.
+data-help | The help tip.  When provided, the help icon will be displayed that can render the tip in a a popup fashion.
+data-css | A CSS class to apply to the container `div`.  This is same `div` that has the `rbl-display` attribute and `form-group` CSS class assigned.
+data-value | A default value to use for the slider.
+
+See [ejs-sliders](#**ejs-sliders** ) for more information about the values that come from RBLe Service calculation results that control the configuration of the noUiSlider.
+
+<br/>
+
+<hr/>
+
+
+### input-radiobuttonlist / input-checkboxlist
+
+Builds a radio or checkbox list of inputs that grouped together and styled with Bootstrap and supports help tips, voice icons, and validation indicators.
+
+Attribute | Description
+---|---
+data-inputname | The input name.
+data-label | The input label.
+data-help | The help tip.  When provided, the help icon will be displayed that can render the tip in a a popup fashion.
+data-css | A CSS class to apply to the container `div`.  This is same `div` that has the `rbl-display` attribute and `form-group` CSS class assigned.
+data-formcss | A CSS class to use in place of the default `form-group`.
+data-horizontal | A `Boolean` value specifying whether the list items should be displayed in a horizontal layout versus vertical (default is `false`).
+data-hidelabel | A `Boolean` value specifying whether the contained `label` element should be remove to correct for UI layout issues when needed (default is `false`).
+data-lookuptable | Specifies the name of lookup table to use as a data source when `ejs-listcontrols` from the results will _not_ provide the data source.
+
+<br/>
+
+Using the `data-lookuptable` attribute requires a `<rbl-template tid="lookup-tables">` containing the lookup table in the same format as a xDS Specification Sheet export.
+
+```html
+<!-- Create a 'Tax Status' label and manually provide the data source for the list of radio buttons -->
+<div rbl-tid="input-radiobuttonlist" data-label="Tax Status" data-lookuptable="TableTaxStatus"></div>
+
+<rbl-template tid="lookup-tables">
+	<DataTable id="TableTaxStatus">
+        <TableItem key="1" name="Single Standard Deduction"/>
+        <TableItem key="2" name="Married File Jointly Std. Ded"/>
+        <TableItem key="3" name="Married File Sep Std. Ded"/>
+        <TableItem key="4" name="Head of Household Std. Ded"/>
+	</DataTable>
+</rbl-template>
+```
+
+<hr/>
+
+### input-fileupload
+
+Builds a file upload input that is styled with Bootstrap and supports help tips, voice icons, and validation indicators.
+
+Attribute | Description
+---|---
+data-inputname | The input name.
+data-label | The input label.
+data-help | The help tip.  When provided, the help icon will be displayed that can render the tip in a a popup fashion.
+data-css | A CSS class to apply to the container `div`.  This is same `div` that has the `rbl-display` attribute and `form-group` CSS class assigned.
+data-formcss | A CSS class to use in place of the default `form-group`.
+data-inputcss | A CSS class to apply to the contained `input` element.
+data-labelcss | A CSS class to apply to the contained `label` element.
+data-hidelabel | A `Boolean` value specifying whether the contained `label` element should be remove to correct for UI layout issues when needed (default is `false`).
+data-comand | The KatApp Command Value to submit to the Endpoint API indicating the purpose of this file upload (default is `UploadFile`).
+
+<br/>
+
+See [apiAction](#apiAction) for more information on KatApp Commands.
+
+```html
+<!-- Build a file upload input that has label, name, and KatApp Command provided -->
+<div rbl-tid="input-fileupload" class="col-md-9" data-label="File Name" data-inputname="iUpload" data-command="RetireOnline.UploadRequiredDocument"></div>
+```
+
+<hr/>
+
+### validation-summary / validation-warning-summary
+
+Provides the markup needed to display the default error (`validation-summary`) or warning (`validation-warning-summary`) validaiton summaries.
+
+There are no custom data attributes to use to customize validation summary components.
+
+<hr/>
+
+### carousel
+
+Builds a standard Boostrap carousel.
+
+Attribute | Description
+---|---
+data-name | Provides the name for the carousel.
+data-source | Provides the result table to use as a `rbl-source` to be used to generate carousel items.  The table specified only needs to contain a `text` column.
+
+<br/>
+
+<hr/>
+
+### Additional Template Components
+
+In addition to the common components previously described there are a handful of other components less often used.
+
+Component | Description
+---|---
+li-item | Wraps a `text` data with `<li></li>`
+p-item | Wraps a `text` data with `<p></p>`
+result-table | Actually has no content, is simply an indicator for a ResultBuilder Framework to build a [table](#Table-Template-Processing).
+chart&#x2011;highcharts | Renders a container div with default CSS (`chart chart-responsive`) which later has a Highcarts chart generated inside of it.  See [chart processing](#Highcharts-Template-Processing) for more information.
+
+<br/>
+
+### Using Template Type Attribute
+
+Some Kaml Views need to use input templates provided from Standard_Templates.kaml _and_ create additional input templates with different markup (using a different `tid` as to no override the base template).  In most cases, it is still desired to support all or some of the `data-` attribute functionality that the base templates support.  Since the `tid` is different, to allow for the KatApp framework to properly include custom input template during the processing of these `data-` attributes, use the `type` attribute on your `rbl-template` element.
+
+```html
+<!-- Custom template, but categorized as a katapp-checkbox -->
+<rbl-template tid="custom-checkbox" type="katapp-checkbox">
+    <!-- markup -->
+</rbl-template>
+```
+
+The following template types are supported: `katapp-textbox`, `katapp-dropdown`, `katapp-checkbox`, `katapp-radiobuttonlist`, `katapp-checkboxlist`, `katapp-fileupload`, and `katapp-highcharts`.
+
+# RBLe Service
+
+The RBLe Service is the backbone of KatApps.  The service is able to marshall inputs and results in and out of RBLe CalcEngines.  These results drive the functionality of KatApps.
+
+## Framework Inputs
+
+Every calculation sends back a set of framework inputs that are set programmatically via the `KatAppOptions`, versus an actual input on the page.
+
+Input | Description
+---|---
+iConfigureUI | A value of `1` indicates that this is the first calculation called after the markup has been rendered.  Can be turned off via `KatAppOptions.runConfigureUICalculation`
+iDataBind | A value of `1` indicates that all `ejs-listcontrol` and `ejs-defaults` should be processed to set default data bound values (note, this happens on the same calculation that sends `iConfigureUI=1`).
+iInputTrigger | The name of the input that triggered the calculation (if any) will be passed.
+iCurrentPage | Describes which page the calculation is being submitted from.  Passed from `KatAppOptions.currentPage`
+iCurrentUICulture | Specifies which culture should be when generating results.  Passed from `KatAppOptions.currentUICulture`
+iEnvironment | Specifies the environment in which the RBLe Service is executing.  Passed from `KatAppOptions.environment` (`PITT.PROD`, `PITT.UAT`, or `WN.PROD`)
+
+<br/>
+
+## Input Table Management
+
+RBLe Service has the concept of input tables that allow for tabular input data to be sent to the CalcEngine.  This can be handled in markup or in javascript.
+
+```javascript
+// Append custom table to the CalculationInputs object instead of sending an input for each 'table cell' of data
+view.on("onCalculationOptions.RBLe", function (event, submitOptions, application) {
+    var tables = submitOptions.InputTables;
+    if (tables == null) {
+        // Ensure that the InputTables property is valid
+        submitOptions.InputTables = tables = [];
+    }
+
+    // Create custom coverage table
+    var coverageTable = {
+        Name: "coverage",
+        Rows: []
+    };
+
+    // Loop all inputs that start with iCoverageA- and process them.
+    // data-inputname is in form of iCoverageA-id
+    // For each input, create a row with id/covered properties
+    var inputControlData = $("div[data-inputname^=iCoverageA-]", view);
+    inputControlData.each(function (index, element) {
+        var id = $(element).data("inputname").split("-")[1];
+        var v = $(element).hasClass("active") ? 1 : 0;
+        var row = { "id": id, covered: v };
+        coverageTable.Rows.push(row);
+    });
+    tables.push(coverageTable);
+});
+```
+
+Calculation Input Tables can be driven by Html markup too.  The markup can be a hidden element that has its 'state' managed via javascript (i.e. Income/Expense cards in Evolution Framework planner) or can be an actual UI table of inputs the user is manipulating.  For processing to function properly data attributes need to be applied to container elements and inputs.
+
+Attribute | Description
+---|---
+RBLe&#x2011;input&#x2011;table | Not an attribute, but a `class` that must be applied to the container that represents the input table.  KatApp framework will loop all elements with this `class` and treat it as an input table.
+data-table | The name of the input table applied on the same container that has the `RBLe-input-table` class.
+data-index | The index/id of the row containing columns of inputs applied on a container of input elements.
+data-column | The column name to use for current data value applied on an input.
+
+<br/>
+
+Note: The `data-index` and `data-column` tagged elements do **not** have to be direct descendents of the related parent.
+
+```html
+<!-- 
+Sample hidden input table whose state (rows, columns/inputs, and values) is managed via javascript.
+The resulting markup is processed by KatApp frameworks `calculate` method when it gathers all the inputs to submit.
+-->
+<div class="RBLe-input-table d-none hidden" data-table="pay">
+    <div data-index="2020">
+        <input data-column="base" type="text" value="50000">
+        <input data-column="bonus" type="text" value="0">
+    </div>
+    <div data-index="2021">
+        <input data-column="base" type="text" value="51000">
+        <input data-column="bonus" type="text" value="1000">
+    </div>
+</div>
+
+<!--
+Sample UI input table allowing user to enter inputs to be submitted as a table to RBLe Service
+-->
+<div class="RBLe-input-table" data-table="pay">
+    <div class="row" data-index="2020">
+        <div class="col-6">
+            <input data-column="base" type="text" value="50000">
+        </div>
+        <div class="col-6">
+            <input data-column="bonus" type="text" value="0">
+        </div>
+    </div>
+    <div class="row" data-index="2021">
+        <div class="col-6">
+            <input data-column="base" type="text" value="51000">
+        </div>
+        <div class="col-6">
+            <input data-column="bonus" type="text" value="1000">
+        </div>
+    </div>
+</div>
+```
+
+## ResultBuilder Framework
+
+The RBLe ResultBuilder Framework is responsible for creating HTML table and chart markup, the latter leverages Highcharts API, automatically from the calculation results returned from the CalcEngine.
+
+### Table Template Processing
 
 All tables rendered by ResultBuilder Framework use the generic rules described below.  Simply put, only columns starting with `text` or `value` are rendered.  The ResultBuilder Framework generates the table based on the columns present in the `rbl-tablename` table from the CalcEngine.
 
@@ -810,21 +1370,28 @@ xs-width<br/>sm-width<br/>md-width<br/>lg-width | If you want explicit control o
 
 <br/>
 
-### colgroup Processing
+#### RBLe Processing Flags
+
+Flag | Location | Description
+---|---|---
+`/export-blanks` | Column Header | By default, blank values/columns are not returned from RBLe service.  If table processing requires all columns to be present even when blank, use the `/export-blanks` switch on the column header.
+`/work-table` | Table Name | By default, all tables on a CalcEngine result tab are exported (until two blank columns are encountered).  To flag a table as simply a temp/work table that doesn't need to be processed, use the `/work-table` switch on the table name.
+
+#### colgroup Processing
 
 The first row returned by the `rbl-source` table is used to build the `colgroup` element inside the `table` element.  For each `text*` and `value*` column it generates a `col` element as`<col class="{table}-{column}">`.  Additional width processing is desribed in the [Columns Widths](#Columns-Widths) section.
 
-### Header Rows
+#### Header Rows
 
 The `id` and `code` columns are used to detect header rows.  Row ids do _not_ have to be unique.  However, the only time they possibly shouldn't be unique is when they are identifying header rows.  Otherwise, you cannot guarantee selecting the proper row if used in a selector path.  If the `id`/``code` column is `h`, starts with `hdr` or starts with `header`, then the cell element will be a `th` (header), otherwise it will be a `td` (row).
 
 All 'header' rows processed before the _first_ non-header row is processed will be placed inside the `thead` element, after which, all remaining rows (data and header) will be placed inside the `tbody` element.
 
-### Automatic Column Spanning
+#### Automatic Column Spanning
 
 For header rows, if only one column has a value, it automatically spans all columns.
 
-### Manual Column Spanning
+#### Manual Column Spanning
 
 The `span` column is used to define column spanning in the format of `columnName:spanCount[:columnName:spanCount]`
 
@@ -845,7 +1412,7 @@ _Wrong:_ `text1:2` - setting this will only generate one cell spanning two colum
 
 _Correct:_ `text1:2:value2:1:value3:1` - you must explicitly set all columns for the row. The sum of columns by this configuration is four which equals the total number of columns in the table.  
 
-### Column Widths
+#### Column Widths
 
 Column widths can be provided in three ways.  Absolute width, percentage width, or bootstrap class widths.  If **any** bootstrap class widths are provided, or if the `data-css` attribute provided for a table contains `table-responsive`, then bootstrap widths are used.  Otherwise, the `width` column is used and is deemed a percentage if the value ends with a `%` sign.
 
@@ -889,7 +1456,7 @@ When using bootstrap widths, the `width` value is applied to the `col` element i
 </colgroup>
 ```
 
-## Highcharts Template Processing
+### Highcharts Template Processing
 
 There are three types of chart information returned from CalcEngines: KatApp specific `config-*` options, chart and series options (matching the Highcharts API), and data.
 
@@ -1003,6 +1570,7 @@ The following Hicharts configuration would be created:
 Another example assigning [annotations](https://api.highcharts.com/highcharts/annotations):
 
 For example, given:
+
 id | value
 ---|---
 annotations[0].labels[0] | json:{ point: 'series1.69', text: 'Life Exp' }
@@ -1043,7 +1611,7 @@ An example of how these might look in a CalcEngine result table.
 
 category | series1 | series2 | series3 | series4
 ---|---|---|---|---
-config-visible | 1 | 1 | 1 | 0
+config&#x2011;visible | 1 | 1 | 1 | 0
 config-hidden | 0 | 0 | 1 | 1
 config-format | c2 | c2 | c2 | c2
 
@@ -1062,12 +1630,12 @@ config-* | Every row that starts with `config-` but is not `config-visible`, `co
 Example of settings used for KatApp Sharkfin Income chart.
 
 category | series1 | series2 | series3 | series4 | series5 | series6
----|---|---|---|---|---
+---|---|---|---|---|---|--
 config-name | Shortfall | 401(k) Plan | Non Qualified Savings Plan | HSA | Personal Savings | Retirement Income  Needed
 config-color | #FFFFFF | #006BD6 | #DDDDDD | #6F743A | #FD9F13 | #D92231
 config-type | areaspline | column | column | column | column | spline
 config-fillOpacity | 0 |||||			
-config-showInLegend | 0 | 1 | 1 | 1 | 1 | 1
+config&#x2011;showInLegend | 0 | 1 | 1 | 1 | 1 | 1
 
 <br/>
 
@@ -1129,14 +1697,14 @@ See [series](https://api.highcharts.com/highcharts/series) documentation to lear
 
 Value columns used to set the Highcharts API option values allow for several different formats of data that are then converted into different types of properties values.
 
-Value | API Value Type | Description
+Value&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; | API&nbsp;Value&nbsp;Type | Description
 ---|---|---
 `blank` or `null` | `undefined` | If no value or value of `null` (case insensitive) is returned, `undefined` will be assigned to the property value.
 numeric | numeric | If the value returned can be parsed into a number, a numeric value will be assigned to the property value.
 `true` or `false` | boolean |  If a value of `true` or `false` (case insensitive) is returned, a `boolean` value will be assigned to the property value.
 `json:{ name: value }` | object | If a value starting with `json:` is returned, the json text will be parsed and the resulting object will be assigned to the property value.
 `eval [1,2]` | any | If a value starting with `eval ` is returned, the text following the `eval` prefix is _parsed and evaluated_ as Javascript and the resulting value (can be any type) is assigned to the property value.  In the example shown here, an integer array of `[1,2]` would be assigned to the property.  Assigning properties of type array are most common use of this syntax.
-`function () { return String.localeFormat("{0:c0}", this.y); }` | function: any | For API properties that can be assigned a function, if a value starting with `function ` is returned, it will be parsed as a valid function and assigned to the property.
+`function () { ... }` | function: any | For API properties that can be assigned a function, if a value starting with `function ` is returned, it will be parsed as a valid function and assigned to the property.
 
 <br/>
 
@@ -1227,7 +1795,7 @@ $(".katapp").KatApp().saveCalcEngine("first.last");
 Property | Type | Description
 ---|---|---
 id | string | The unique id generated for KatApp.
-element | DOM Element | The Document Object Model (DOM) element that represents the KatApp.  All input and result processing are scoped to this DOM Element.  CSS style should be scoped as well.
+element | DOM Element | The Document Object Model (DOM) element that represents the KatApp.  All input and result processing are scoped to this DOM Element.  CSS style should be scoped as well.  See [View Scoping](#View-Scoping) for more information about scoping inside Kaml Views.
 options | [KatAppOptions](#KatAppOptions-Object) | The options currently in use by the KatApp.
 results | [TabDef](#TabDef-Object)[] | Contains the results from the last calculation submission.  If an error occurs during submission, this will be set to `undefined`
 calculationInputs | [CalculationInputs](#CalculationInputs-Object) | Contains all the input and input tables used during the last calculation submission.
@@ -1397,6 +1965,8 @@ The CalcualtionInputs object extends the OptionInputs object simply by adding a 
 }
 ```
 
+See RBLe Service [Input Table Management](#Input-Table-Management) for more information.
+
 ### CalculationException Object
 
 A CalculationException is a json object representation of any exception that occurs inside the RBLe Service.
@@ -1495,11 +2065,15 @@ The following methods control the lifecycle (create/destroy) and options of KatA
 
 <hr/>
 
+#### KatApp
+
 **`.KatApp( options?: KatAppOptions )`**
 
 Creates the KatApp.  See [Initializing and Configuring a KatApp](#Initializing-and-Configuring-a-KatApp) for more examples.
 
 <hr/>
+
+#### destroy
 
 **`.destroy()`**
 
@@ -1511,6 +2085,8 @@ application.destroy();
 ```
 
 <hr/>
+
+#### rebuild
 
 **`.rebuild( options?: KatAppOptions )`**
 
@@ -1531,6 +2107,8 @@ application.rebuild();
 
 <hr/>
 
+#### updateOptions
+
 **`.updateOptions( options: KatAppOptions )`**
 
 Merge the [KatAppOptions](#KatAppOptions-Object) `options` parameter with existing KatApp options.  This will not load new view or templates, but the CalcEngine or any other options could be updated.
@@ -1545,6 +2123,8 @@ application.updateOptions(updatedOptions);
 ```
 
 <hr/>
+
+#### ensure
 
 **`.ensure( options?: KatAppOptions )`**
 
@@ -1585,6 +2165,8 @@ The following methods allow developers to trigger calculations, get and set inpu
 
 <hr/>
 
+#### calculate
+
 **`.calculate( calculationOptions?: KatAppOptions )`**
 
 Manually invoke a calculation with the optional [KatAppOptions](#KatAppOptions-Object) `calculationOptions` parameter merged with the existing KatApp options for a one time use.
@@ -1601,6 +2183,8 @@ application.calculate();
 ```
 
 <hr/>
+
+#### configureUI
 
 **`.configureUI( calculationOptions?: KatAppOptions )`**
 
@@ -1619,6 +2203,8 @@ application.configureUI();
 
 <hr/>
 
+#### getInputs
+
 **`.getInputs(): CalculationInputs`**
 
 Returns a [CalculationInputs Object](#CalculationInputs-Object) representing all the inputs and input tables of the KatApp.
@@ -1629,6 +2215,8 @@ var inputs = application.getInputs();
 ```
 
 <hr/>
+
+#### setInputs
 
 **`setInputs( inputs: OptionInputs, calculate?: boolean )`**
 
@@ -1645,6 +2233,8 @@ application.setInputs(newInputs, false);
 
 <hr/>
 
+#### setInput
+
 **`setInput( id: string, value: number | string | undefined, calculate?: boolean )`**
 
 Set the value of the input identified by `id` with the `value` parameter.  If `calculate` is true, a calculation will be triggered after all inputs have been set.  **By default, `calculate` is `false`.**
@@ -1659,6 +2249,8 @@ application.setInput("iRetireAge", 65, true);
 ```
 
 <hr/>
+
+#### getResultTable
 
 **`getResultTable( tableName: string, tabDef?: string, calcEngine?: string): Array<JSON>`**
 
@@ -1678,6 +2270,8 @@ var payRows = application.getResultTable("pay", "RBLPayResults", "PayCE");
 ```
 
 <hr/>
+
+#### getResultRow
 
 **`getResultRow( table: string, key: string, columnToSearch?: string, tabDef?: string, calcEngine?: string ): JSON`**
 
@@ -1705,6 +2299,8 @@ var payRows = application.getResultRow("pay", "2021", "year", "RBLPayResults", "
 
 <hr/>
 
+#### getResultValue
+
 **`getResultValue( table: string, key: string, column: string, defaultValue?: string, tabDef?: string, calcEngine?: string ): string | undefined`**
 
 Return the `column` value from the `table` row with the id column matching `key`.  `tabDef` and `calcEngine` can be provided if there are multiple result tabs or CalcEngines in the Kaml View.  If not provided, the `tableName` from the _first_ result tab and _first_ CalcEngine will be returned.
@@ -1726,6 +2322,8 @@ var currentBonus = application.getResultValue("pay", "2021", "bonus", undefined,
 ```
 
 <hr/>
+
+#### getResultValueByColumn
 
 **`getResultValueByColumn( table: string, keyColumn: string, key: string, column: string, defaultValue?: string, tabDef?: string, calcEngine?: string ): string | undefined`**
 
@@ -1750,6 +2348,8 @@ var currentBonus = application.getResultValueByColumn("pay", "2021", "year", "bo
 ### KatApp Advanced Methods
 
 <hr/>
+
+#### apiAction
 
 **`.apiAction( commandName: string, customOptions?: KatAppActionOptions, actionLink?: JQuery<HTMLElement> )`**
 
@@ -1815,6 +2415,8 @@ There is an API Endpoint lifecycle of events that are triggered during the proce
 
 <hr/>
 
+#### serverCalculation
+
 **`.serverCalculation( customInputs: {} | undefined, actionLink?: JQuery<HTMLElement> )`**
 
 `serverCalculation` is shortcut method that calls `apiAction`.  The most common use for the need to call a 'server calculation' is when a calculation 'result' needs to be saved to storage.
@@ -1840,6 +2442,8 @@ $(".saveButtonAction", view).on('click', function (e) {
 There is an API Endpoint lifecycle of events that are triggered during the processing of an server side calculation.  See [KatApp Action Lifecycle Events](#KatApp-Action-Lifecycle-Events) for more information.
 
 <hr/>
+
+#### publishNotification
 
 **`.pushNotification(name: string, information: {} | undefined)`**
 
@@ -1872,6 +2476,8 @@ The following methods are helpful for Kaml View or CalcEngine developers to aid 
 
 <hr/>
 
+#### saveCalcEngine
+
 **`.saveCalcEngine( location: string )`**
 
 Save the *next successful* calculation's CalcEngine to the secure folder specified KAT Team's CMS.
@@ -1883,6 +2489,8 @@ $(".katapp").KatApp().saveCalcEngine("terry.aney");
 ```
 
 <hr/>
+
+#### refreshCalcEngine
 
 **`.refreshCalcEngine()`**
 
@@ -1896,6 +2504,8 @@ $(".katapp").KatApp().refreshCalcEngine();
 
 <hr/>
 
+#### traceCalcEngine
+
 **`.traceCalcEngine()`**
 
 For the next calculation, instruct the RBLe Service to return detailed trace information from the *next successful* calculation.
@@ -1907,6 +2517,8 @@ $(".katapp").KatApp().traceCalcEngine();
 ```
 
 <hr/>
+
+#### redraw
 
 **`.redraw()`**
 
@@ -1925,7 +2537,7 @@ KatApps trigger several events to during different workflows allowing Kaml View 
 When using events, use the following guidelines:
 
 1. Events should use the _.RBLe_ namespace
-2. All jQuery selectors should be scoped to either `view`, `application.element`, or using `{id}`
+2. All jQuery selectors should be scoped to either `view`, `application.element`, or using `{id}` (see [View Scoping](#View-Scoping) for more information)
 3. `{id}` is replaced with a unique application ID for the currently running KatApp
 
 **Example Kaml View Script**
@@ -2060,12 +2672,23 @@ KatApp Calculation Lifecycle Events are events that pertain to preparing, execut
 
 **`onCalculateStart(event: Event, application: KatApp ): bool | undefined`**
 
-This event is triggered at the start of the `calculate` method.  Use this event to perform any actions that need to occur before the calculation is submitted.  If the handler returns `false`, then the calculation is immediately cancelled.
+This event is triggered at the start of the `calculate` method.  Use this event to perform any actions that need to occur before the calculation is submitted (i.e. custom processing of UI blockers or enabled state of inputs).  If the handler returns `false`, then the calculation is immediately cancelled.
 
 By default, the KatApp framework does the following:
 
 1. Shows the configured Ajax UI Blocker
 2. Disabled all Kaml View inputs
+
+```javascript
+{
+    onCalculateStart = function (application) {
+        // custom code
+        
+        // can then call default behavior if you want via following line
+        KatApp.defaultOptions.onCalculateStart(application);
+    }
+}
+```
 
 <hr/>
 
@@ -2109,13 +2732,15 @@ view.on( "onResultsProcessing.RBLe", function( event, calculationResults, calcul
 
 #### onConfigureUICalculation
 
-**`onResultsProcessing(event: Event, calculationResults: TabDef[], calculationOptions: KatAppOptions, application: KatApp )`**
+**`onConfigureUICalculation(event: Event, calculationResults: TabDef[], calculationOptions: KatAppOptions, application: KatApp )`**
 
-This event is triggered during `calculate` _after a successful calculation and result processing_.  Use this handler to do something before framework result processing happens (i.e. clear/destroy table/chart so only displays if results are present in current calculation).
+This event is triggered during `calculate` _after a successful calculation and result processing_ and _only_ for a calculation where the `iConfigureUI` input is `1`.  Use this handler to finish setting up Kaml View UI that are dependent upon the first calculation results being processed (i.e. creation of sliders, list controls, etc.)
 
 ```javascript
 view.on( "onConfigureUICalculation.RBLe", function( event, calculationResults, calculationOptions, application ) {
-    // Add a 'set' noUiSlider handler add
+    // Add a 'set' noUiSlider handler display a 'recalc needed' message whenever a slider changes.  
+    // Needs to be in ConfigureUI calculation because the sliders aren't built until after the first
+    // calculation results are processed.
     $(".recalcInputs .slider-control", application.element).each(function () {
         var slider = this.noUiSlider;
         slider.on('set', function() {
@@ -2127,7 +2752,68 @@ view.on( "onConfigureUICalculation.RBLe", function( event, calculationResults, c
 
 <hr/>
 
-#### **`onConfigureUICalculation(event: Event, calculationResults: TabDef[], calculationOptions: KatAppOptions, application: KatApp )`**
+#### onCalculation
+
+**`onCalculation(event: Event, calculationResults: TabDef[], calculationOptions: KatAppOptions, application: KatApp )`**
+
+This event is triggered during `calculate` _after a successful calculation and result processing_.  Use this handler to process any additional requirements that may be dependent on a calculation finishing.
+
+```javascript
+view.on( "onCalculation.RBLe", function( event, calculationResults, calculationOptions, application ) {
+    // Every time a calculation finishes, it may have shown or hidden some 'scroll UI' components...refresh them
+    easyScrollDots({
+        'fixedNav': false,
+        'fixedNavId': '',
+        'fixedNavUpward': false
+    });
+})
+```
+
+<hr/>
+
+#### onCalculationErrors
+
+**`onCalculationErrors(event: Event, key: string, message: string, exception: Error, calculationOptions: KatAppOptions, application: KatApp )`**
+
+This event is triggered during `calculate` if an exception happens.  During the `calculate` workflow, if an exception happens inside 'data updating' a [`onDataUpdateErrors`](#onDataUpdateErrors) event will be triggered instead of `onCalculationErrors`.  Use this handler to clean up an UI components that may need processing when calculation results are not available.
+
+The `key` parameter can be `GetData`, `RegisterData`, `SubmitCalculation`, or `ProcessResults` to identify which stage of the `calculate` workflow failed.
+
+<hr/>
+
+#### onDataUpdate
+
+**`onDataUpdate(event: Event, calculationResults: TabDef[], calcOptions: KatAppOptions, application: KatApp)`**
+
+This event is triggered during `calculate` upon successful `jwt-data` data updates to the server.  A common use for this handler is to display a status notification that data was updated.
+
+```javascript
+view.on("onDataUpdate.RBLe", function (event, results, options, application) {
+    $(".saveSuccess", view).show(500).delay(7000).hide(500);
+});
+```
+
+<hr/>
+
+#### onDataUpdateErrors
+
+**`onDataUpdateErrors(event: Event, message: string, exception: Error | undefined, calcOptions: KatAppOptions, application: KatApp)`**
+
+This event is triggered during `calculate` when `jwt-data` data updates fail.  A common use for this handler is to display a status notification that data updates failed.
+
+Note: Even though data updating failed, 'normal calculation processing' was successful.
+
+```javascript
+view.on("onDataUpdateErrors.RBLe", function (event, message, exception, options, application) {
+    $(".saveError", view).show(500).delay(3000).hide(500);
+});
+```
+
+<hr/>
+
+#### onCalculateEnd
+
+**`onCalculateEnd(event: Event, application: KatApp )`**
 
 This event is triggered at the end of the `calculate` method after a calculation succeeds, fails, or is cancelled.  Use this event to perform any actions that need to occur after the calculation is completely finished.
 
@@ -2139,62 +2825,100 @@ By default, the KatApp framework does the following:
 
 
 ### KatApp Action Lifecycle Events
-onActionStart, onActionResult, onActionFailed, onActionComplete (always)
-- Note, put these in interface so they are 'documented' there
+
+KatApp Action Lifecycle Events are events that occur during the processing of a [`apiAction`](#apiAction) method call.
+
+<hr/>
+
+#### onActionStart
+
+**`onActionStart(event: Event, commandName: string, formData: FormData, application: KatAppPlugInInterface, actionLink: JQuery<HTMLElement>)`**
+
+This event is triggered immediately before submitting the `formData` to the API endpoint.  This handler could be used to modify the `formData` before submission if required.
+
+<hr/>
+
+#### onActionResult
+
+**`onActionResult(event: Event, commandName: string, resultData: JSON | undefined, application: KatAppPlugInInterface, actionLink: JQuery<HTMLElement>)`**
+
+This event is triggered upon successful submission and response from the API endpoint.  If the action is a 'file download', `resultData` will be `undefined`, otherwise it will be a JSON payload with properties specific to the `commandName`.
+
+<hr/>
+
+#### onActionFailed
+
+**`onActionFailed(event: Event, commandName: string, exception: JSON, application: KatAppPlugInInterface, actionLink: JQuery<HTMLElement>)`**
+
+This event is triggered when submission to an API endpoint fails.  The `exception` object will have a `Validations` property that can be examined for more details about the cause of the exception.
+
+<hr/>
+
+#### onActionComplete
+
+**`onActionComplete(event: Event, commandName: string, application: KatAppPlugInInterface, actionLink: JQuery<HTMLElement>)`**
+
+This event is triggered after the `apiAction` has processed and will trigger on both success and failure.  Use this handler to process any UI actions that are required.
+
+<hr/>
+
 
 ### KatApp Upload Lifecycle Events
 
-put sample code on how to hook up events in KamlViews - explain that events are usually there, but can be in config settings too
-// get all events, don't forget about other events like file upload: onUploadStart, search for trigger()
+KatApp Action Lifecycle Events are events that occur during the processing of a [`apiAction`](#apiAction) method call.
+
+<hr/>
+
+#### onUploadStart
+
+**`onUploadStart(event: Event, fileUpload: JQuery<HTMLElement>, formData: FormData, application: KatApp)`**
+
+This event is triggered immediately before submitting the `formData` to the API endpoint.  This handler could be used to modify the `formData` before submission if required.
+
+<hr/>
+
+#### onUploaded
+
+**`onUploaded(event: Event, fileUpload: JQuery<HTMLElement>, application: KatApp)`**
+
+This event is triggered upon successful submission and response from the API endpoint.
+
+<hr/>
+
+#### onUploadFailed
+
+**`onUploadFailed(event: Event, fileUpload: JQuery<HTMLElement>, exception: JSON, application: KatApp)`**
+
+This event is triggered when upload submission to an API endpoint fails.  The `exception` object will have a `Validations` property that can be examined for more details about the cause of the exception.
+
+<hr/>
+
+#### onUploadComplete
+
+**`onUploadComplete(event: Event, fileUpload: JQuery<HTMLElement>, application: KatApp)`**
+
+This event is triggered after the file upload has finished processing and will trigger on both success and failure.  Use this handler to process any UI actions that are required.
+
+<hr/>
+
+
 
 ### Template Event Handlers
 
-        $.fn.KatApp.templateOn = function( templateName: string, events: string, fn: TemplateOnDelegate ): void {
-            $.fn.KatApp.templateDelegates.push( { Template: templateName.ensureGlobalPrefix(), Delegate: fn, Events: events } );
-            KatApp.trace( undefined, "Template event(s) [" + events + "] registered for [" + templateName + "]", TraceVerbosity.Normal );
-        };
+[Templates](#Templates) are a powerful tool in Kat Apps.  However, when you create a new template Kaml file, if you need event handlers to run, registering those handlers is different than normal.  Because the template is loaded one time regardless of how many KatApps are configured to use it.  To function properly, an event handler for each _KatApp_ that uses a template would need to be registered.  To accomplish this, you use the global `$.fn.KatApp.templateOn` method call.
 
+**`$.fn.KatApp.templateOn = function( templateName: string, events: string, fn: FunctionDelegate )`**
 
-# To Document
+The syntax is exactly the same as normal event handling except for the `templateName` parameter.  This could be hard coded, but the preferred way to pass the template name is to use the `{thisTemplate}` token.
 
-Delegates available on the options...document them
-    // If custom submit code is needed, can provide implementation here
-    submitCalculation?: SubmitCalculationDelegate;
-    // If client provides for a way to get registration data, can provide implementation here
-    getData?: GetDataDelegate;
-    // If custom register data code is needed, can provide implementation here
-    registerData?: RegisterDataDelegate;
+```javascript
+// Sample event handler registration in **Kaml View**...
+view.on( "onInitialized.RBLe", function( event, application ) {
+    // custom code to run in view when initialized
+});
 
-
-
-- framework inputs? `iConfigureUI`, `iDataBind`, and `iInputTrigger`, iCurrentPage (document valid values for environment)
-					AdminAuthID = t.GetInputAddress( "iAWSAdminAuthID" ).Address,
-					CurrentPage = t.GetInputAddress( "iCurrentPage" ).Address,
-					CurrentUICulture = t.GetInputAddress( "iCurrentUICulture" ).Address,
-					AllowTokens = t.GetInputAddress( "iAllowTokens" ).Address,
-					DenyTokens = t.GetInputAddress( "iDenyTokens" ).Address,
-					Environment = t.GetInputAddress( "iEnvironment" ).Address,
-					DebugInputs = t.GetInputAddress( "iDebugInputNames" ).Address,
-					FirstProfile = t.GetInputAddress( "iFirstProfile" ).Address,
-					IsTestCE = t.GetInputAddress( "iIsTestSE" ).Address,
-					TraceEnabled = t.GetInputAddress( "iTraceEnabled" ).Address,
-					JobToken = t.GetInputAddress( "iJobToken" ).Address
-input table management
-
-In Views section:
-    mention scoping
-    explain thisClass - put a link inside KatApp Properties pointing to this documentation where it talks about DOM element, add link too to template css scoping
-    explain {id}/thisview - Put link to KatApp Events so that there is example on how to use
-
-default options (any other methods off of static KatApp? (trace,ping,defaultOptions))
-
-Templates 
-    scoping CSS - .katapp-css
-    Talk about how templates can override each other
-    Talk about the 'template type' property so can have diff template name but still 'processed as base'
-
-CODE TODO - get rid of ejs-output, ejs-visiblity table and use rbl-value , rbl-display
-
-## NEW Design Principles
-- All `<inputs>` and result processing is isolated to the KatApp instance/view.
-- `<inputs>` should use `[name]` attrib, not id (in case different views have same input). <--valid? Will we get burned on radio? Not required to be in a form.
+// Sample event handler registration in **Kaml Template File**...
+$.fn.KatApp.templateOn("{thisTemplate}", "onInitialized.RBLe", function (event, application) {
+    // custom code here to run inside each application that uses this template
+});
+```

@@ -37,7 +37,7 @@
     - [Building Common Controls](#Building-Common-Controls)
         - [Eliminating Browser ID Warnings](#Eliminating-Browser-ID-Warnings)
         - [Creating Table Row/Column Templates](#Creating-Table-Row/Column-Templates)
-        - [Example: Creating a slider](#Example:-Creating-a-slider)
+        - [Example: Creating a slider](#Example-Creating-a-slider)
     - [Standard_Templates.kaml](#Standard_Templates.kaml)
         - [input-textbox](#input-textbox)
         - [input-dropdown](#input-dropdown)
@@ -521,7 +521,7 @@ value | Whether or not to hide the element.  If `value` is `0`, the element will
 
 <br/>
 
-**Note**: This table should no longer be used.  A `rbl-display` table should be used in its place (ensure that all elements that need content from the table have a `rbl-display=` attribute applied). 
+**Note**: This table should no longer be used.  A `rbl-display` table should be used in its place (ensure that all elements that toggle visibility using this table have a `rbl-display=` attribute applied). 
 
 ## Required  _Push_ Processing
 
@@ -1041,7 +1041,7 @@ Builds a textual input that is styled with Bootstrap and supports input group su
 
 Attribute | Description
 ---|---
-data-inputname | The input name.
+data&#x2011;inputname | The input name.
 data-type | The type of input it is: `password`, `multiline`, `date`, or `text` (default).
 data-label | The input label.
 data-help | The help tip.  When provided, the help icon will be displayed that can render the tip in a a popup fashion.
@@ -1068,14 +1068,14 @@ Builds a dropdown control that is styled with Bootstrap (and _bootstrap-select_)
 
 Attribute | Description
 ---|---
-data-inputname | The input name.
+data&#x2011;inputname | The input name.
 data-label | The input label.
 data-help | The help tip.  When provided, the help icon will be displayed that can render the tip in a a popup fashion.
 data-css | A CSS class to apply to the container `div`.  This is same `div` that has the `rbl-display` attribute and `form-group` CSS class assigned.
 data-multiselect | A `Boolean` value specifying whether this dropdown allows multi-selection (default is `false`).
 data-livesearch | A `Boolean` value specifying whether this dropdown allows live search capabilities when the dropdown is opened (default is `false`).
 data-size | The number of items to display when the dropdown is opened before rendering a scrollbar (default is `15`).
-data-lookuptable | Specifies the name of lookup table to use as a data source when `ejs-listcontrols` from the results will _not_ provide the data source.
+data&#x2011;lookuptable | Specifies the name of lookup table to use as a data source when `ejs-listcontrols` from the results will _not_ provide the data source.
 data-* | All other data attributes present will be applied to the contained `select` element for processing from the [_bootstrap-select API_](#https://developer.snapappointments.com/bootstrap-select/).
 
 <br/>
@@ -1106,7 +1106,7 @@ The `input-checkbox-simple` is a simplified rendering that does _not_ support he
 
 Attribute | Description
 ---|---
-data-inputname | The input name.
+data&#x2011;inputname | The input name.
 data-label | The input label.
 data-help | The help tip.  When provided, the help icon will be displayed that can render the tip in a a popup fashion.
 data&#x2011;checked | A `Boolean` indicating whether the input should be checked by default (default is `false`).
@@ -1123,7 +1123,7 @@ Builds a noUiSlider input that is styled with Bootstrap and supports help tips, 
 
 Attribute | Description
 ---|---
-data-inputname | The input name.
+data&#x2011;inputname | The input name.
 data-label | The input label.
 data-help | The help tip.  When provided, the help icon will be displayed that can render the tip in a a popup fashion.
 data-css | A CSS class to apply to the container `div`.  This is same `div` that has the `rbl-display` attribute and `form-group` CSS class assigned.
@@ -1142,14 +1142,14 @@ Builds a radio or checkbox list of inputs that grouped together and styled with 
 
 Attribute | Description
 ---|---
-data-inputname | The input name.
+data&#x2011;inputname | The input name.
 data-label | The input label.
 data-help | The help tip.  When provided, the help icon will be displayed that can render the tip in a a popup fashion.
 data-css | A CSS class to apply to the container `div`.  This is same `div` that has the `rbl-display` attribute and `form-group` CSS class assigned.
 data-formcss | A CSS class to use in place of the default `form-group`.
 data-horizontal | A `Boolean` value specifying whether the list items should be displayed in a horizontal layout versus vertical (default is `false`).
 data-hidelabel | A `Boolean` value specifying whether the contained `label` element should be remove to correct for UI layout issues when needed (default is `false`).
-data-lookuptable | Specifies the name of lookup table to use as a data source when `ejs-listcontrols` from the results will _not_ provide the data source.
+data&#x2011;lookuptable | Specifies the name of lookup table to use as a data source when `ejs-listcontrols` from the results will _not_ provide the data source.
 
 <br/>
 
@@ -1177,7 +1177,7 @@ Builds a file upload input that is styled with Bootstrap and supports help tips,
 
 Attribute | Description
 ---|---
-data-inputname | The input name.
+data&#x2011;inputname | The input name.
 data-label | The input label.
 data-help | The help tip.  When provided, the help icon will be displayed that can render the tip in a a popup fashion.
 data-css | A CSS class to apply to the container `div`.  This is same `div` that has the `rbl-display` attribute and `form-group` CSS class assigned.
@@ -2480,7 +2480,7 @@ The following methods are helpful for Kaml View or CalcEngine developers to aid 
 
 **`.saveCalcEngine( location: string )`**
 
-Save the *next successful* calculation's CalcEngine to the secure folder specified KAT Team's CMS.
+Save the *next successful* calculation's CalcEngine to the secure folder specified KAT Team's CMS.  Trigger the calculation by changing an input or manually calling the [`.calculate()`](#calculate) or [`.configureUI()`](#configureUI) methods.
 
 ```javascript
 // Save the next CalcEngine to the 'terry.aney' folder

@@ -19,7 +19,7 @@
     "@types/express": "^4.17.8",
     "@types/jquery": "^3.5.5",
     "@types/microsoft-ajax": "0.0.35",
-    "@types/nouislider": "^9.0.7",
+    "@types/nouislider": "^9.0.10",
     "@typescript-eslint/eslint-plugin": "^2.34.0",
     "@typescript-eslint/parser": "^2.34.0",
     "eslint": "^6.8.0",

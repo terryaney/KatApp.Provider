@@ -312,8 +312,6 @@ $("#KatApp-wealth").KatApp({
 
 ## Configuration Precedence
 
-There are three ways to configure KatApp's and each method has a specific precedence that can override the same settings set via different methods.  
-
 In addition to the the three methods of configuration described above, there is one more mechanism.  There is a global `KatApp.defaultOptions` object.  It has all the same properties as the normal Javascript configuration option passed in on that `.KatApp( options )` method.  See [KatAppOptions Object](#KatAppOptions-Object) for more information.
 
 The configuration precedence is as follows (1 being the highest)

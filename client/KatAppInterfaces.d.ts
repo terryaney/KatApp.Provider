@@ -295,6 +295,17 @@ interface ajaxGetResourceFailCallback {
     ( jqXHR: JQuery.jqXHR, textStatus: string, errorThrown: string, resource: KatAppResourceResult ): void;
 }
 
+interface GetResourceFailure
+{ 
+    resource: string;
+    errorMessage: string;
+}
+interface GetResourceSuccess
+{ 
+    isScript: boolean;
+    key: string;
+    content: string | undefined;
+}
 interface SubmitCalculationSuccess
 { 
     calcEngine: CalcEngine;

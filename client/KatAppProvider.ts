@@ -3821,7 +3821,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
             const carouselName = el.attr("rbl-name");
 
             // { is for skipping template carousels
-            if (carouselName !== undefined && !carouselName.includes("{")) {
+            if (carouselName !== undefined && carouselName.indexOf("{") == -1) {
                 this.application.trace("Processing carousel: " + carouselName, TraceVerbosity.Detailed);
 
                 $(".carousel-inner .item, .carousel-indicators li", el).removeClass("active");
@@ -5183,7 +5183,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                             resourceResults
                                 .filter( r => ( r.value as GetResourceSuccess ).isScript )
                                 .forEach( r => {
-                                    const scriptContent = ( r.value as GetResourceSuccess ).content;
+                                    let scriptContent = ( r.value as GetResourceSuccess ).content;
 
                                     // If local script location is provided, doing the $.ajax code automatically 
                                     // injects/executes the javascript, no need to do it again
@@ -5201,7 +5201,13 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                                         // https://stackoverflow.com/a/56509649/166231
                                         const script = document.createElement('script');
                                         script.setAttribute("rbl-script", "true");
-                                        script.innerHTML = scriptContent.replace("//# sourceMappingURL=KatAppProvider.js.map","");
+
+                                        var scriptLines = scriptContent.split('\n');
+                                        if ( scriptLines[ scriptLines.length - 1 ] == "//# sourceMappingURL=KatAppProvider.js.map" ) {
+                                            scriptLines.pop();
+                                            scriptContent = scriptLines.join("\n");
+                                        }
+                                        script.innerHTML = scriptContent;
                                         body.appendChild(script);
                                     }
 

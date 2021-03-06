@@ -142,7 +142,7 @@
 
 <script type="text/javascript">
     (function() {
-        const view = $("{thisView}");
+        var view = $("{thisView}");
 
         if ( KatApp.pageParameters[ "debugkatapp"] === "1" ) {
             debugger;
@@ -158,7 +158,7 @@
         $("#UseTestCalcEngine", view).prop("checked", KatApp.pageParameters[ "test"] != "0");
 
         view.on( "onInitialized.RBLe", function( event, application ) {
-            const selectPickerAvailable = typeof $.fn.selectpicker === "function";
+            var selectPickerAvailable = typeof $.fn.selectpicker === "function";
             $(".traceLevel").on("loaded.bs.select", function() {
                 $(".traceLevel button.btn-light").addClass("btn-outline-secondary").removeClass("btn-light");
             });
@@ -168,7 +168,7 @@
 
             $(".KatAppSelector").val($(view).data("selector"));
 
-            const getSelector = function() {
+            var getSelector = function() {
                 return $(".KatAppSelector", view).val() || "[rbl-application-id]"; // Default to all katapps on page;
             }
 
@@ -197,7 +197,7 @@
             });
             
             $(".lnkSaveCalcEngine", view).click(function() {
-                const location = $(".SaveCalcEngineLocation", view).val();
+                var location = $(".SaveCalcEngineLocation", view).val();
 
                 if ( location !== "" ) {
                     $(getSelector()).KatApp("saveCalcEngine", location);
@@ -216,7 +216,7 @@
 
             $(".LogResults", view).click( function () {
                 $(getSelector()).each(function() {
-                    const application = $(this).KatApp();
+                    var application = $(this).KatApp();
 
                     console.group("Application " + application.displayId + " Results");
                     console.log(application.results);
@@ -228,20 +228,20 @@
             });
 
             $(".UpdateDebugOptions", view).click(function() {
-                const selector = getSelector();
+                var selector = getSelector();
 
                 var initialSaveLocation = $(".SaveCalcEngineLocation", view).val() || "";
                 $(".SaveCalcEngineLocation", view).val("");
 
-                let calcEngine = undefined;
-                let currentView = $(".CustomView", view).val() || "";
-                const viewParts = currentView.split(">");
+                var calcEngine = undefined;
+                var currentView = $(".CustomView", view).val() || "";
+                var viewParts = currentView.split(">");
                 if ( viewParts.length === 2 ) {
                     currentView = viewParts[ 0 ];
                     calcEngine = viewParts[ 1 ];
                 }
 
-                const debugOptions = { 
+                var debugOptions = { 
                     saveFirstCalculationLocation: initialSaveLocation !== "" ? initialSaveLocation : undefined,
                     refreshCalcEngine: true,
                     traceVerbosity: Number($("#traceLevel", view).val()),
@@ -252,7 +252,15 @@
                 };
 
                 // Reset default options with options from UI
-                KatApp.defaultOptions = KatApp.extend( KatApp.defaultOptions, { debug: debugOptions, functionUrl: KatApp.defaultOptions?.functionUrl ?? KatApp.functionUrl } );
+                KatApp.defaultOptions = KatApp.extend( 
+                    KatApp.defaultOptions, 
+                    { 
+                        debug: debugOptions, 
+                        functionUrl: KatApp.defaultOptions != undefined && KatApp.defaultOptions.functionUrl != undefined 
+                        ? KatApp.defaultOptions.functionUrl
+                        : KatApp.functionUrl 
+                    } 
+                );
 
                 if ( currentView !== "" ) {
                     $(selector).KatApp("destroy"); // wouldn't need this usually on client site, but I'm going to reload/execute provider script so wanted everything destroyed
@@ -286,14 +294,14 @@
 
                     if ( dataAttributes !== "" ) {
                         dataAttributes.split(",").forEach( function( a ) {
-                            const attrs = a.trim().split("=");
+                            var attrs = a.trim().split("=");
                             $(selector).attr("data-" + attrs[ 0 ], attrs[ 1 ]);
                         });
                     }
 
                     $(".DataAttributes", view).val("");
                    
-                    const options = KatApp.extend( {}, KatApp.defaultOptions, { 
+                    var options = KatApp.extend( {}, KatApp.defaultOptions, { 
                         view: currentView,
                         getData: ($(".SampleData").val() || "" ) != ""
                             ? function( application, _options, done ) {    

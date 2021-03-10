@@ -52,6 +52,7 @@
 - [RBLe Service](#RBLe-Service)
     - [ResultBuilder Framework](#ResultBuilder-Framework)
         - [Table Template Processing](#Table-Template-Processing)
+            - [table-output-control](#table-output-control)
             - [colgroup processing](#colgroup-Processing)
             - [Header Rows](#Header-Rows)
             - [Automatic Column Spanning](#Automatic-Column-Spanning)
@@ -1353,27 +1354,40 @@ The RBLe ResultBuilder Framework is responsible for creating HTML table and char
 
 ### Table Template Processing
 
-All tables rendered by ResultBuilder Framework use the generic rules described below.  Simply put, only columns starting with `text` or `value` are rendered.  The ResultBuilder Framework generates the table based on the columns present in the `rbl-tablename` table from the CalcEngine.
+All tables rendered by ResultBuilder Framework use the rules described below.  Simply put, only columns starting with `text` or `value` are rendered, however, there are flags, columns, or names available for use that control how results are generated and returned for each `rbl-tablename` table from the CalcEngine.
 
-Table&nbsp;Column | Description
----|---
-id | An arbitrary 'id' value for each row.  Used in selector paths and also used to detect 'header' rows.
-on | Whether or not this row gets exported. 
-code | Same rules as id column for rendering 'header' rows.
-class | Optional CSS class to apply to the table row (`tr` element).
-span | Optional column to use to define column spanning within the row.textX | Render content with `text {table}-{column}` CSS class. `text` by default causes left alignment.
-valueX | Render content with `value {table}-{column}` CSS class. `value` by default causes right alignment.
-width<br/>r-width | If you want explicit control of column widths via absolute or percentage, values can be provided here.  `r-width` is used when the table has a CSS class of `table-responsive` applied.
-xs-width<br/>sm-width<br/>md-width<br/>lg-width | If you want explicit control of column widths via bootstrap column sizes, values can be provided here.  **Note:** If any bootstrap viewport width is provided, the `width` column is ignored.
+Name&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; | Location&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; | Description
+---|---|---
+id | Column Name | An arbitrary 'id' value for each row.  Used in selector paths and also used to detect 'header' rows.
+on | Column Name | Whether or not this row gets exported. If set to `0`, the row is not returned in results.
+code | Column Name | Same rules as id column for rendering 'header' rows.
+class | Column Name | Optional CSS class to apply to the table row (`tr` element).
+span | Column Name | Optional column to use to define column spanning within the row.
+textX | Column Name | Render content with `text {table}-{column}` CSS class. `text` by default causes left alignment.
+valueX | Column Name | | Render content with `value {table}-{column}` CSS class. `value` by default causes right alignment.
+width<br/>r-width | Row ID | If you want explicit control of column widths via absolute or percentage, values can be provided here.  `r-width` is used when the table has a CSS class of `table-responsive` applied.
+xs-width<br/>sm-width<br/>md-width<br/>lg-width | Row ID | If you want explicit control of column widths via bootstrap column sizes, values can be provided here.  **Note:** If any bootstrap viewport width is provided, the `width` column is ignored.
+on | Row ID | Similar to the `on` Column, to control whether or not a column gets exported, provide a row with `id` set to `on`, then for each column in this row, if the value is `0`, then _entire_ column will not be exported.
+class | Row ID | Similar to the `class` Column, to provide a class on a specific column, provide a row with `id` set to `class`, then for each column in this row, provide a class that will be applied to a column for _every_ row rendered.
+table-output-control | Table Name | Similar to the `on` Column Name and Row ID, this controls exporting logic, but it puts all the logic in one place (instead of every row's `on` column) to make maintenance easier.  See [table-output-control](#table-output-control) for more information.
+export-blanks | Column Switch | By default, blank values/columns are not returned from RBLe service.  If table processing requires all columns to be present even when blank, use the `/export-blanks` switch on the column header.
+work-table | Table Switch | By default, all tables on a CalcEngine result tab are exported (until two blank columns are encountered).  To flag a table as simply a temp/work table that doesn't need to be processed, use the `/work-table` switch on the table name.
+configure-ui | Table Switch | To configure a table to _only_ export during a Configure UI calculation (`iConfigureUI=1`), use the `/configure-ui` switch on the table name.  This removes the need of putting `on` or `table-output-control` logic that checks the `iConfigureUI` input explicitly.
+sort-field | Table Switch | To configure how the data is sorted on an _Input Tab Table_, use the `/sort-field:field-name` switch on the table name.  To specify multiple columns to use in the sort, provide a comma delimitted list of field names.
+sort-direction | Table Switch | Optional sort control (`asc` or `desc`) used in conjunction with `sort-field`.  By default, data will be sorted ascending.  Use the `/sort-direction:direction` to control how field(s) specified in the `/sort-field` switch are sorted.  If `/sort-direction:` is provided, there must be the same number of comma delimitted values as the number of comma delimitted fields found in `/sort-field`.
+sort-number | Table Switch | Optional switch (`true` or `false`) used in conjunction with `sort-field`.  By default, data will be sorted using a `string` comparison.  Use the `/sort-number:true` to indicate that field(s) specified in the `/sort-field` switch should be treated as numeric when sorting.  If `/sort-number:` is provided, there must be the same number of comma delimitted values as the number of comma delimitted fields found in `/sort-field`.
+
 
 <br/>
 
-#### RBLe Processing Flags
+#### table-output-control
 
-Flag | Location | Description
----|---|---
-`/export-blanks` | Column Header | By default, blank values/columns are not returned from RBLe service.  If table processing requires all columns to be present even when blank, use the `/export-blanks` switch on the column header.
-`/work-table` | Table Name | By default, all tables on a CalcEngine result tab are exported (until two blank columns are encountered).  To flag a table as simply a temp/work table that doesn't need to be processed, use the `/work-table` switch on the table name.
+Provide a single table with logic that controls whether or not a table is exported without the need placing logic in every row's `on` column of desired table.
+
+Column | Description
+---|---
+id | The name of the table to control.
+export | Whether or not the table is exported.  A value of `0` prevents the table from being exported.
 
 #### colgroup Processing
 

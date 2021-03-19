@@ -2413,6 +2413,11 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                     }
     
                     target.html( value );
+
+                    if ( value.indexOf( "rbl-tid" ) > -1 ) {
+                        // recursive call for templates...
+                        that.processRblSource(target, showInspector);                        
+                    }
                 }
                 else {
                     application.trace("<b style='color: Red;'>RBL WARNING</b>: no data returned for tab=" + tabDef?._fullName + ", rbl-value=" + el.attr('rbl-value'), TraceVerbosity.Detailed);

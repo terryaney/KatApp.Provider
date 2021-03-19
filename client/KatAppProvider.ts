@@ -1,11 +1,11 @@
-const providerVersion = 8.36; // eslint-disable-line @typescript-eslint/no-unused-vars
+const providerVersion = 8.38; // eslint-disable-line @typescript-eslint/no-unused-vars
 
 KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosity.Detailed);
 
 // Need this function format to allow for me to reload script over and over (during debugging/rebuilding)
 (function($, window, document, undefined?: undefined): void {
     const tableInputsAndBootstrapButtons = ", .RBLe-input-table :input, .dropdown-toggle, button";
-    const validInputSelector = "[data-itemtype='checkbox'] :input, .notRBLe, .notRBLe :input, .rbl-exclude, .rbl-exclude :input, rbl-template :input, [type='search']" + tableInputsAndBootstrapButtons;
+    const inputsToIgnoreSelector = "[data-itemtype='checkbox'] :input, .notRBLe, .notRBLe :input, .rbl-exclude, .rbl-exclude :input, rbl-template :input, [type='search']" + tableInputsAndBootstrapButtons;
     const skipBindingInputSelector = ".notRBLe, .notRBLe :input, .rbl-exclude, .rbl-exclude :input, .skipRBLe, .skipRBLe :input, .rbl-nocalc, .rbl-nocalc :input, rbl-template :input, [type='search']" + tableInputsAndBootstrapButtons;
 
     // Reassign options here (extending with what client/host might have already set) allows
@@ -1078,8 +1078,8 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
         }
 
         getInputs(): JSON {
-            var inputs = this.ui.getInputs( this.options );
-            var result = KatApp.extend( {}, inputs, { InputTables: this.ui.getInputTables() } ) as JSON;
+            const inputs = this.ui.getInputs( this.options );
+            const result = KatApp.extend( {}, inputs, { InputTables: this.ui.getInputTables() }, this.options.defaultInputs, this.options.manualInputs ) as JSON;
             return result;
         };
 
@@ -1796,7 +1796,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
             const that: UIUtilities = this;
 
             if ( customOptions.inputSelector !== undefined ) {
-                const validInputs = $(customOptions.inputSelector, this.application.element).not(validInputSelector);
+                const validInputs = $(customOptions.inputSelector, this.application.element).not(inputsToIgnoreSelector);
 
                 jQuery.each(validInputs, function () {
                     const input = $(this);
@@ -2429,7 +2429,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
             const that: RBLeUtilities = this;
             const application = this.application;
     
-            $("[rbl-source], [rbl-source-table]", root)
+            $("[rbl-source], [rbl-source-table]", root).add(root.is("[rbl-source], [rbl-source-table]") ? root : [] ) // In case only element from first template is a template itself
                 .not("rbl-template [rbl-source], rbl-template [rbl-source-table]") // not in templates
                 .not("[rbl-source] [rbl-source], [rbl-source] [rbl-source-table]") // not nested in rbl-source item
                 .not("[rbl-source-table] [rbl-source], [rbl-source-table] [rbl-source-table]") // not nested in rbl-source-table item
@@ -2489,62 +2489,69 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                         else if ( rblSourceParts === undefined || rblSourceParts.length === 0) {
                             application.trace("<b style='color: Red;'>RBL WARNING</b>: no rbl-source data in tab " + tabDefName, TraceVerbosity.Detailed);
                         }
-                        else if ( rblSourceParts.length === 1 || rblSourceParts.length === 3 ) {                        
+                        else if ( rblSourceParts.length > 0 ) {
                             //table in array format.  Clear element, apply template to all table rows and .append
                             const table = that.getResultTable<JSON>( tabDef, rblSourceParts[0] );
                             
                             if ( table !== undefined && table.length > 0 ) {
                                 
-                                el.children( ":not(.rbl-preserve, [rbl-tid='inline'])" ).remove();
-                                const prepend = el.attr('rbl-prepend') === "true";
-    
-                                table.forEach( ( row, index ) => {
-                                    if ( rblSourceParts.length === 1 || row[ rblSourceParts[ 1 ] ] === rblSourceParts[ 2 ] ) {
-                                        // Automatically add the _index0 and _index1 for carousel template
-                                        const templateData = KatApp.extend( {}, row, { _index0: index, _index1: index + 1 } )
-                                        const formattedContent = $(templateContent.format( templateData ));
-    
-                                        // Recursive call to support nested templates
-                                        that.processRblSource(formattedContent, showInspector);
-    
-                                        if ( prepend ) {
-                                            el.prepend( formattedContent );
-                                        }
-                                        else {
-                                            el.append( formattedContent );
-                                        }
+                                // Get a row with all values cleared out so that rows with blanks in CE
+                                // (which aren't exported) are properly handled in templates
+                                const firstRowSource = KatApp.extend( {}, table[0] );
+                                if (Object.keys(firstRowSource).length > 0) {
+                                    for (const propertyName in firstRowSource) {
+                                        firstRowSource[propertyName] = "";
                                     }
-    
-                                });
+                                }
+
+                                if ( rblSourceParts.length === 2 ) {
+                                    const row = that.getResultRow<JSON>( tabDef, rblSourceParts[0], rblSourceParts[1] );
+                                    const templateData = row; // KatApp.extend( {}, firstRowSource, row );
+                                    if ( row !== undefined ) {
+                                        el.html( templateContent.format( row ) );
+                                    }
+                                    else {
+                                        application.trace("<b style='color: Red;'>RBL WARNING</b>: no data returned for tab=" + tabDefName + ", rbl-source=" + el.attr('rbl-source'), TraceVerbosity.Detailed);
+                                    }
+                                }
+                                else if ( rblSourceParts.length === 1 || rblSourceParts.length === 3 ) {
+                                    el.children( ":not(.rbl-preserve, [rbl-tid='inline'])" ).remove();
+                                    const prepend = el.attr('rbl-prepend') === "true";
+                                                            
+                                    table.forEach( ( row, index ) => {
+                                        if ( rblSourceParts.length === 1 || row[ rblSourceParts[ 1 ] ] === rblSourceParts[ 2 ] ) {
+                                            // Automatically add the _index0 and _index1 for carousel template
+                                            // const templateData = KatApp.extend( {}, firstRowSource, row, { _index0: index, _index1: index + 1 } )
+                                            const templateData = KatApp.extend( {}, row, { _index0: index, _index1: index + 1 } )
+                                            const formattedContent = $(templateContent.format( templateData ));
+        
+                                            // Recursive call to support nested templates
+                                            that.processRblSource(formattedContent, showInspector);
+        
+                                            if ( prepend ) {
+                                                el.prepend( formattedContent );
+                                            }
+                                            else {
+                                                el.append( formattedContent );
+                                            }
+                                        }
+                                    });
+                                }
+                                else if ( rblSourceParts.length === 3 ) {                            
+                                    const value = that.getResultValue( tabDef, rblSourceParts[0], rblSourceParts[1], rblSourceParts[2]);
+                                    
+                                    if ( value !== undefined ) {
+                                        el.html( templateContent.format( { "value": value } ) );                                    
+                                    }
+                                    else {
+                                        application.trace("<b style='color: Red;'>RBL WARNING</b>: no data returned for tab=" + tabDefName + ", rbl-source=" + el.attr('rbl-source'), TraceVerbosity.Detailed);
+                                    }
+            
+                                }        
                             } else {
                                 application.trace("<b style='color: Red;'>RBL WARNING</b>: no data returned for tab=" + tabDefName + ", rbl-source=" + el.attr('rbl-source'), TraceVerbosity.Detailed);
                             }
-    
-                        } else if ( rblSourceParts.length === 2 ) {
-    
-                            const row = that.getResultRow( tabDef, rblSourceParts[0], rblSourceParts[1] );
-                            
-                            if ( row !== undefined ) {
-                                el.html( templateContent.format( row ) );
-                            }
-                            else {
-                                application.trace("<b style='color: Red;'>RBL WARNING</b>: no data returned for tab=" + tabDefName + ", rbl-source=" + el.attr('rbl-source'), TraceVerbosity.Detailed);
-                            }
-    
                         }
-                        else if ( rblSourceParts.length === 3 ) {
-                            
-                            const value = that.getResultValue( tabDef, rblSourceParts[0], rblSourceParts[1], rblSourceParts[2]);
-                            
-                            if ( value !== undefined ) {
-                                el.html( templateContent.format( { "value": value } ) );                                    
-                            }
-                            else {
-                                application.trace("<b style='color: Red;'>RBL WARNING</b>: no data returned for tab=" + tabDefName + ", rbl-source=" + el.attr('rbl-source'), TraceVerbosity.Detailed);
-                            }
-    
-                        }
-                
                     }
                 });
         }
@@ -2797,12 +2804,13 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                 : row[columnName] ?? ""
         }
     
-        private getCellMarkup(row: ResultTableRow, columnName: string, element: string, columnClass: string, colSpan?: number): string {
+        private getCellMarkup(row: ResultTableRow, columnName: string, element: string, columnClass: string, colSpan: number | undefined, isBootstrapColumn: boolean): string {
             const value = this.getResultTableValue( row, columnName );
     
-            if (colSpan !== undefined) {
+            if (!isBootstrapColumn && colSpan !== undefined) {
                 element += " colspan=\"" + colSpan + "\"";
             }
+
             return this.createResultTableElement(value, element, columnClass);
         };
     
@@ -2829,6 +2837,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                 if ( tableName !== null ) {
                     const tabDef = that.getTabDef( r.getAttribute('rbl-tab'), r.getAttribute('rbl-ce') )
                     const contentRows = application.rble.getResultTable<ContentsRow>( tabDef, "contents" );
+                    
                     const configRow = 
                         contentRows.find( row => row.section === "1" && KatApp.stringCompare( row.type, "table", true ) === 0 && row.item === tableName );
     
@@ -2865,10 +2874,10 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                                 cssClass: e.Element["@class"],
                                 width: e.Width !== undefined && !e.Width.endsWith("%") ? + e.Width : undefined,
                                 widthPct: e.Width !== undefined && e.Width.endsWith("%") ? e.Width : undefined,
-                                xsColumns: e.Element["@xs-width"] || (hasResponsiveTable ? e.Element["@width"] : undefined),
-                                smColumns: e.Element["@sm-width"],
-                                mdColumns: e.Element["@md-width"],
-                                lgColumns: e.Element["@lg-width"]
+                                xsColumns: ( e.Element["@xs-width"] != undefined ? e.Element["@xs-width"]*1 : undefined ) || (hasResponsiveTable && e.Element["@width"] != undefined ? e.Element["@width"]*1 : undefined),
+                                smColumns: e.Element["@sm-width"] != undefined ? e.Element["@sm-width"] * 1 : undefined,
+                                mdColumns: e.Element["@md-width"] != undefined ? e.Element["@md-width"] * 1 : undefined,
+                                lgColumns: e.Element["@lg-width"] != undefined ? e.Element["@lg-width"] * 1 : undefined
                             }) as ResultTableColumnConfiguration );
                     
                     const columnConfiguration: { 
@@ -2880,42 +2889,56 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                     });
     
                     const hasBootstrapTableWidths = tableColumns.filter(c => c.xsColumns !== undefined || c.smColumns !== undefined || c.mdColumns !== undefined || c.lgColumns !== undefined).length > 0;
+                    const useBootstrapColumnWidths = hasBootstrapTableWidths && !hasResponsiveTable;
     
                     let colGroupDef: string | undefined = undefined; // This was an optional param in RBLe
     
+                    const getBootstrapColumnCss = function( c: ResultTableColumnConfiguration ) {
+                        let bsClass = c.xsColumns !== undefined ? " col-xs-" + c.xsColumns : "";
+                        bsClass += c.smColumns !== undefined ? " col-sm-" + c.smColumns : "";
+                        bsClass += c.mdColumns !== undefined ? " col-md-" + c.mdColumns : "";
+                        bsClass += c.lgColumns !== undefined ? " col-lg-" + c.lgColumns : "";
+
+                        return bsClass.trim();
+                    }
+                    const getBootstrapSpanColumnCss = function( start: number, length: number ) {
+                        const spanCols = tableColumns.filter( ( c, i ) => i >= start && i <= start + length );
+                        const xs = spanCols.reduce( ( sum, curr ) => sum + ( curr.xsColumns ?? 0 ), 0 );
+                        const sm = spanCols.reduce( ( sum, curr ) => sum + ( curr.smColumns ?? 0 ), 0 );
+                        const md = spanCols.reduce( ( sum, curr ) => sum + ( curr.mdColumns ?? 0 ), 0 );
+                        const lg = spanCols.reduce( ( sum, curr ) => sum + ( curr.lgColumns ?? 0 ), 0 );
+                        let bsClass = xs > 0 ? " col-xs-" + xs : "";
+                        bsClass += sm > 0 ? " col-sm-" + sm : "";
+                        bsClass += md > 0 ? " col-md-" + md : "";
+                        bsClass += lg > 0 ? " col-lg-" + lg : "";
+
+                        return bsClass.trim();
+                    }
+
                     if ( colGroupDef === undefined ) {
                         colGroupDef = "";
-    
-                        tableColumns.forEach(c => {
-                            const isFixedWidth = !hasBootstrapTableWidths || hasResponsiveTable;
-    
-                            const width = isFixedWidth && (c.width !== undefined || c.widthPct !== undefined)
-                                ? " width=\"{width}\"".format( { width: c.widthPct || (c.width + "px") })
-                                : "";
-    
-                            let bsClass = c.xsColumns !== undefined ? " col-xs-" + c.xsColumns : "";
-                            bsClass += c.smColumns !== undefined ? " col-sm-" + c.smColumns : "";
-                            bsClass += c.mdColumns !== undefined ? " col-md-" + c.mdColumns : "";
-                            bsClass += c.lgColumns !== undefined ? " col-lg-" + c.lgColumns : "";
-    
-                            colGroupDef += "<col class=\"{table}-{column}{bsClass}\"{width} />".format(
-                                {
-                                    table: tableName,
-                                    column: c.name,
-                                    bsClass: !isFixedWidth ? bsClass : "",
-                                    width: width
-                                }
-                            );
-                        });
+
+                        if ( !useBootstrapColumnWidths ) {
+                            tableColumns.forEach(c => {
+                                const width = c.width !== undefined || c.widthPct !== undefined
+                                    ? " width=\"{width}\"".format( { width: c.widthPct || (c.width + "px") })
+                                    : "";
+        
+                                colGroupDef += "<col class=\"{table}-{column}\"{width} />".format(
+                                    {
+                                        table: tableName,
+                                        column: c.name,
+                                        width: width
+                                    }
+                                );
+                            });
+                        }
                     }
     
-                    const colGroup = that.createResultTableElement(colGroupDef, "colgroup");
+                    const colGroup = colGroupDef != "" ? that.createResultTableElement(colGroupDef, "colgroup") : "";
     
                     let headerHtml = "";
                     let bodyHtml = "";
-    
-                    let needBootstrapWidthsOnEveryRow = false;
-                    // const includeBootstrapColumnWidths = hasBootstrapTableWidths && !hasResponsiveTable;
     
                     tableRows.forEach( row => {
                         const code = row["code"] ?? "";
@@ -2924,94 +2947,117 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                             (code === "h" || code.startsWith("header") || code.startsWith("hdr") ) ||
                             (id === "h" || id.startsWith("header") || id.startsWith("hdr"));
     
-                        const element = isHeaderRow ? "th" : "td";
-                        const rowClass = row["@class"] ?? row["class"];
+                        const element = 
+                            useBootstrapColumnWidths ? "div" :
+                            isHeaderRow ? "th" : "td";
+
+                        let rowClass = row["@class"] ?? row["class"] ?? "";
+
+                        if ( useBootstrapColumnWidths ) {
+                            rowClass += " row tr-row";
+                            if ( isHeaderRow ) {
+                                rowClass += " h-row"
+                            }
+                        }
+
                         const span = that.getResultTableValue(row, "span");
     
                         let rowHtml = "";
                         let headerSpanCellName: string | undefined = "";
     
                         if (isHeaderRow && span === "" && (headerSpanCellName = that.getHeaderSpanCellName(row)) !== undefined) {
-                            // Need bootstraps on every row if already set or this is first row
-                            needBootstrapWidthsOnEveryRow = needBootstrapWidthsOnEveryRow || i === 0;
-    
                             const hClass =
-                                "{valueClass} span-{table}-{column}".format(
+                                "{valueClass} span-{table}-{column} {bsGrid}".format(
                                     {
                                         table: tableName,
                                         column: headerSpanCellName,
-                                        valueClass: columnConfiguration[headerSpanCellName].isTextColumn ? "text" : "value"
+                                        valueClass: columnConfiguration[headerSpanCellName].isTextColumn ? "text" : "value",
+                                        bsGrid: useBootstrapColumnWidths ? getBootstrapSpanColumnCss( 0, tableColumns.length - 1 ) : ""
                                     }
                                 );
-                            rowHtml += that.getCellMarkup(row, headerSpanCellName, element, hClass, tableColumns.length);
+                            rowHtml += that.getCellMarkup(row, headerSpanCellName, element, hClass.trim(), tableColumns.length, useBootstrapColumnWidths);
                         }
                         else if (span !== "") {
-                            // Need bootstraps on every row if already set or this is first row
-                            needBootstrapWidthsOnEveryRow = needBootstrapWidthsOnEveryRow || i === 0;
-    
                             const parts = span.split(":");
-                            
+                            let currentCol = 0;
+
                             for (let p = 0; p < parts.length; p++) {
                                 if (p % 2 === 0) {
                                     const colSpan = +parts[p + 1];
     
+                                    // includeBootstrapColumnWidths - need to figure out how to get class in here...
+                                    // parse viewports and add together based on colSpan...
                                     const colSpanName = parts[p];
                                     const spanConfig = columnConfiguration[colSpanName];
                                     const textCol = spanConfig.isTextColumn;
     
                                     const sClass =
-                                        "{valueClass}{columnClass} span-{table}-{column}".format(
+                                        "{valueClass}{columnClass} span-{table}-{column} {bsGrid}".format(
                                             {
                                                 table: tableName,
                                                 column: colSpan,
                                                 valueClass: textCol ? "text" : "value",
-                                                columnClass: spanConfig.cssClass != undefined ? " " + spanConfig : ""
+                                                columnClass: spanConfig.cssClass != undefined ? " " + spanConfig.cssClass : "",
+                                                bsGrid: useBootstrapColumnWidths ? getBootstrapSpanColumnCss(currentCol, colSpan - 1) : ""
                                             }
                                         );
-    
-                                    rowHtml += that.getCellMarkup(row, colSpanName, element, sClass, /* includeBootstrapColumnWidths, */ colSpan);
+                                    
+                                    currentCol += colSpan;
+                                    rowHtml += that.getCellMarkup(row, colSpanName, element, sClass.trim(), colSpan, useBootstrapColumnWidths);
                                 }
                             }
                         }
                         else {
                             tableColumns.forEach(c => {
+                                const columnClass = useBootstrapColumnWidths
+                                    ? [ getBootstrapColumnCss( c ), c.cssClass ?? "" ]
+                                        .filter( c => c != undefined && c != "" )
+                                        .join( " " )
+                                    : c.cssClass ?? "";
+
                                 const cClass =
                                     "{valueClass} {columnClass} {table}-{column}".format(
                                         {
                                             table: tableName,
                                             column: c.name,
                                             valueClass: c.isTextColumn ? "text" : "value",
-                                            columnClass: c.cssClass ?? ""
+                                            columnClass: columnClass
                                         }
                                     );
     
-                                rowHtml += that.getCellMarkup(row, c.name, element, cClass /*, includeBootstrapColumnWidths && (needBootstrapWidthsOnEveryRow || i === 0) */ );
+                                rowHtml += that.getCellMarkup(row, c.name, element, cClass, undefined, useBootstrapColumnWidths );
                             });
                         }    
     
-                        if (isHeaderRow && bodyHtml === "") {
-                            headerHtml += that.createResultTableElement(rowHtml, "tr", rowClass);
+                        if (!useBootstrapColumnWidths && isHeaderRow && bodyHtml === "") {
+                            headerHtml += that.createResultTableElement(rowHtml, "tr", rowClass.trim());
                         }
                         else {
-                            bodyHtml += that.createResultTableElement(rowHtml, "tr", rowClass);
+                            bodyHtml += that.createResultTableElement(rowHtml, useBootstrapColumnWidths ? "div" : "tr", rowClass.trim());
                         }
                     });
                     
-                    const tableHtml = that.createResultTableElement(
-                        colGroup + 
-                        ( headerHtml !== "" 
-                            ? that.createResultTableElement(headerHtml, "thead") 
-                            : ""
-                        ) + that.createResultTableElement(bodyHtml, "tbody"),
-                        "table border=\"0\" cellspacing=\"0\" cellpadding=\"0\"",
-                        tableCss
-                    );
-    
-                    const html = hasResponsiveTable
-                        ? that.createResultTableElement(tableHtml, "div", "table-responsive")
-                        : tableHtml;
-    
-                    $(r).empty().append($(html));
+                    if ( useBootstrapColumnWidths ) {
+                        const html = that.createResultTableElement(bodyHtml, "div", "");        
+                        $(r).empty().append($(html));
+                    }
+                    else {
+                        const tableHtml = that.createResultTableElement(
+                            colGroup + 
+                            ( headerHtml !== "" 
+                                ? that.createResultTableElement(headerHtml, "thead") 
+                                : ""
+                            ) + that.createResultTableElement(bodyHtml, "tbody"),
+                            "table border=\"0\" cellspacing=\"0\" cellpadding=\"0\"",
+                            tableCss
+                        );
+        
+                        const html = hasResponsiveTable
+                            ? that.createResultTableElement(tableHtml, "div", "table-responsive")
+                            : tableHtml;
+        
+                        $(r).empty().append($(html));
+                        }
                 }
             });
         }
@@ -4783,9 +4829,18 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
         if (Object.keys(json).length > 0) {
             for (const propertyName in json) {
                 const re = new RegExp('{' + propertyName + '}', 'gm');
-                that = that.replace(re, json[propertyName]);
+                // https://stackoverflow.com/a/6024772/166231
+                const jsonValue = json[propertyName] === "$0" ? "$$0" : json[propertyName];
+                that = that.replace(re, jsonValue)
+
+                // https://stackoverflow.com/a/6024692/166231
+                // that = that.replace(re, function() { return json[propertyName]; });
             }
         }
+        // const leftOverTokens = new RegExp('\{\S*\}', 'gm');
+        // return that.replace(leftOverTokens, "").replace("_", "_");
+        
+        // don't know why I have this replace in here
         return that.replace("_", "_");
     };
     if (typeof String.prototype.startsWith !== 'function') {
@@ -5135,7 +5190,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                                 }
                                 
                                 // data.Content when request from service, just data when local files
-                                d.resolve( { "key": resourceKey, "content": data.Resources?.[ 0 ].Content ?? data as string, "isScript": isScript } );
+                                d.resolve( { "key": resourceKey, "isLocalServer": tryLocalWebServer, "content": data.Resources?.[ 0 ].Content ?? data as string, "isScript": isScript } );
                             }
                         };
 
@@ -5183,7 +5238,8 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                             resourceResults
                                 .filter( r => ( r.value as GetResourceSuccess ).isScript )
                                 .forEach( r => {
-                                    let scriptContent = ( r.value as GetResourceSuccess ).content;
+                                    const success = r.value as GetResourceSuccess;
+                                    let scriptContent = success.content;
 
                                     // If local script location is provided, doing the $.ajax code automatically 
                                     // injects/executes the javascript, no need to do it again
@@ -5203,7 +5259,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                                         script.setAttribute("rbl-script", "true");
 
                                         var scriptLines = scriptContent.split('\n');
-                                        if ( scriptLines[ scriptLines.length - 1 ] == "//# sourceMappingURL=KatAppProvider.js.map" ) {
+                                        if ( !success.isLocalServer && scriptLines[ scriptLines.length - 1 ] == "//# sourceMappingURL=KatAppProvider.js.map" ) {
                                             scriptLines.pop();
                                             scriptContent = scriptLines.join("\n");
                                         }
@@ -5259,6 +5315,6 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
     // Destroy plugInShims
     delete $.fn.KatApp.plugInShims;
 })(jQuery, window, document);
-// Needed this line to make sure that I could debug in VS Code since this was dynamically loaded 
-// with $.getScript() - https://stackoverflow.com/questions/9092125/how-to-debug-dynamically-loaded-javascript-with-jquery-in-the-browsers-debugg
+// https://stackoverflow.com/questions/9092125/how-to-debug-dynamically-loaded-javascript-with-jquery-in-the-browsers-debugg
+// Needed this line to make sure that I could debug in VS Code since this was dynamically loaded with $.getScript()
 //# sourceURL=DataLocker\Global\KatAppProvider.js

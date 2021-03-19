@@ -248,7 +248,8 @@
                     useTestView: $("#UseTestView", view).prop("checked"),
                     useTestPlugin: $("#UseTestPlugin", view).prop("checked"),
                     useTestCalcEngine: $("#UseTestCalcEngine", view).prop("checked"),
-                    allowLocalServer: $("#UseLocalFiles", view).prop("checked")
+                    allowLocalServer: $("#UseLocalFiles", view).prop("checked"),
+                    showInspector: KatApp.pageParameters[ "showinspector"] == "1" 
                 };
 
                 // Reset default options with options from UI

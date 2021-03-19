@@ -1366,7 +1366,7 @@ span | Column Name | Optional column to use to define column spanning within the
 textX | Column Name | Render content with `text {table}-{column}` CSS class. `text` by default causes left alignment.
 valueX | Column Name | | Render content with `value {table}-{column}` CSS class. `value` by default causes right alignment.
 width<br/>r-width | Row ID | If you want explicit control of column widths via absolute or percentage, values can be provided here.  `r-width` is used when the table has a CSS class of `table-responsive` applied.
-xs-width<br/>sm-width<br/>md-width<br/>lg-width | Row ID | If you want explicit control of column widths via bootstrap column sizes, values can be provided here.  **Note:** If any bootstrap viewport width is provided, the `width` column is ignored.
+width-xs<br/>width-sm<br/>width-md<br/>width-lg | Row ID | If you want explicit control of column widths via bootstrap column sizes, values can be provided here.  **Note:** If any bootstrap viewport width is provided, the `width` column is ignored.
 on | Row ID | Similar to the `on` Column, to control whether or not a column gets exported, provide a row with `id` set to `on`, then for each column in this row, if the value is `0`, then _entire_ column will not be exported.
 class | Row ID | Similar to the `class` Column, to provide a class on a specific column, provide a row with `id` set to `class`, then for each column in this row, provide a class that will be applied to a column for _every_ row rendered.
 table-output-control | Table Name | Similar to the `on` Column Name and Row ID, this controls exporting logic, but it puts all the logic in one place (instead of every row's `on` column) to make maintenance easier.  See [table-output-control](#table-output-control) for more information.
@@ -2498,6 +2498,14 @@ Save the *next successful* calculation's CalcEngine to the secure folder specifi
 // Save the next CalcEngine to the 'terry.aney' folder
 $(".katapp").KatApp("saveCalcEngine", "terry.aney");
 $(".katapp").KatApp().saveCalcEngine("terry.aney");
+
+// Then call calculation or configureUI to trigger a calculation...
+$(".katapp").KatApp("calculate");
+$(".katapp").KatApp().calculate();
+
+// or... 
+$(".katapp").KatApp("configureUI");
+$(".katapp").KatApp().configureUI();
 ```
 
 <hr/>
@@ -2512,6 +2520,14 @@ For the next calculation, instruct the RBLe Service to immediately check for an 
 // Immediately check for new CalcEngine upon the next calculation
 $(".katapp").KatApp("refreshCalcEngine");
 $(".katapp").KatApp().refreshCalcEngine();
+
+// Then call calculation or configureUI to trigger a calculation...
+$(".katapp").KatApp("calculate");
+$(".katapp").KatApp().calculate();
+
+// or... 
+$(".katapp").KatApp("configureUI");
+$(".katapp").KatApp().configureUI();
 ```
 
 <hr/>
@@ -2526,6 +2542,14 @@ For the next calculation, instruct the RBLe Service to return detailed trace inf
 // Save the next CalcEngine to the 'terry.aney' folder
 $(".katapp").KatApp("traceCalcEngine");
 $(".katapp").KatApp().traceCalcEngine();
+
+// Then call calculation or configureUI to trigger a calculation...
+$(".katapp").KatApp("calculate");
+$(".katapp").KatApp().calculate();
+
+// or... 
+$(".katapp").KatApp("configureUI");
+$(".katapp").KatApp().configureUI();
 ```
 
 <hr/>

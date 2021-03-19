@@ -84,7 +84,7 @@ class KatApp
 
             // Always do deep copy
             if ( typeof value === "object" && !Array.isArray( value ) ) {
-                if ( target[key] === undefined )
+                if ( target[key] === undefined || target[key] === "" )
                 {
                     target[key] = {};
                 }
@@ -369,7 +369,7 @@ class KatApp
                                 }
                                 
                                 // data.Content when request from service, just data when local files
-                                d.resolve( { "key": resourceKey, "content": data.Resources?.[ 0 ].Content ?? data as string, "isScript": isScript } );
+                                d.resolve( { "key": resourceKey, "isLocalServer": tryLocalWebServer, "content": data.Resources?.[ 0 ].Content ?? data as string, "isScript": isScript } );
                             }
                         };
 
@@ -417,7 +417,8 @@ class KatApp
                             resourceResults
                                 .filter( r => ( r.value as GetResourceSuccess ).isScript )
                                 .forEach( r => {
-                                    let scriptContent = ( r.value as GetResourceSuccess ).content;
+                                    const success = r.value as GetResourceSuccess;
+                                    let scriptContent = success.content;
 
                                     // If local script location is provided, doing the $.ajax code automatically 
                                     // injects/executes the javascript, no need to do it again
@@ -437,7 +438,7 @@ class KatApp
                                         script.setAttribute("rbl-script", "true");
 
                                         var scriptLines = scriptContent.split('\n');
-                                        if ( scriptLines[ scriptLines.length - 1 ] == "//# sourceMappingURL=KatAppProvider.js.map" ) {
+                                        if ( !success.isLocalServer && scriptLines[ scriptLines.length - 1 ] == "//# sourceMappingURL=KatAppProvider.js.map" ) {
                                             scriptLines.pop();
                                             scriptContent = scriptLines.join("\n");
                                         }

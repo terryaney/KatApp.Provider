@@ -707,6 +707,17 @@
     border-bottom-left-radius: 0 !important;
 }
 
+.katapp-css .help-icon {
+	color: #333;
+}
+.katapp-css a.help-icon-anchor:hover, 
+.katapp-css a.help-icon-anchor:visited, 
+.katapp-css a.help-icon-anchor:active, 
+.katapp-css a.help-icon-anchor:focus {
+    text-decoration: none;
+}
+
+
 /****** KatApp modals ******/
 .katapp-css .katapp-modal {
     display: none; /* Hidden by default */
@@ -730,6 +741,43 @@
 }
 
 /****** Table Formatting ******/
+.katapp-css div.tr-row > div {
+  padding-top: 5px;
+  padding-bottom: 5px;
+}
+
+/* https://stackoverflow.com/a/35505259 */
+.katapp-css div.tr-row:after {
+  content: "";
+  display: block;
+  border-top: 1px solid #ddd;
+  margin: 0 15px;
+}
+.katapp-css div.tr-row.h-row:after {
+  content: "";
+  display: block;
+  border-bottom: 2px solid #ddd;
+  border-top: 0px solid #ddd;
+  margin: 0 15px;
+}
+.katapp-css div.tr-row:last-child:after {
+  border-top: 0px solid #ddd;
+}
+
+/* https://stackoverflow.com/a/22725200/166231 */
+.katapp-css div.tr-row.h-row.off > div {
+  float: none;
+  display: table-cell;
+  vertical-align: bottom;
+}
+/* https://stackoverflow.com/a/28200097/166231 */
+/* This one allowed 'spans' to continue to work */
+.katapp-css div.tr-row.h-row > div {
+  float: none;
+  display: inline-block;
+  vertical-align: bottom;
+}
+
 .katapp-css .table thead tr th,
 .katapp-css .table tbody tr th {
 	vertical-align: bottom;
@@ -737,11 +785,14 @@
 
 .katapp-css .table tbody tr td.value, 
 .katapp-css .table tbody tr th.value, 
-.katapp-css .table thead tr th.value {
+.katapp-css .table thead tr th.value,
+.katapp-css div.tr-row div.value {
 	text-align: right;
 }
 
-.katapp-css .table > tbody > tr.total > td {
+.katapp-css .table > tbody > tr.total > td,
+.katapp-css div.tr-row.total > div,
+.katapp-css div.tr-row.h-row > div {
   font-weight: bold;
 }
 

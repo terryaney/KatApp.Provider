@@ -302,8 +302,9 @@ interface GetResourceFailure
 }
 interface GetResourceSuccess
 { 
-    isScript: boolean;
     key: string;
+    isScript: boolean;
+    isLocalServer: boolean;
     content: string | undefined;
 }
 interface SubmitCalculationSuccess

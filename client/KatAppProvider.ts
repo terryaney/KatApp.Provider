@@ -895,9 +895,10 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
             // Error - calculateEnd (checks pipeline error before processing)
             const processResults = function(): void {
                 that.trace("Processing results from calculation", TraceVerbosity.Detailed);
-
+                const start = new Date();
                 try {
                     that.processResults( currentOptions );
+                    that.trace("Processing results took " + ( Date.now() - start.getTime() ) + "ms", TraceVerbosity.Detailed);
                     calculatePipeline( 0 );
                 } catch (error) {
                     that.trace( "Error during result processing: " + error, TraceVerbosity.None );
@@ -2511,7 +2512,8 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
 
                                 if ( rblSourceParts.length === 2 ) {
                                     const row = that.getResultRow<JSON>( tabDef, rblSourceParts[0], rblSourceParts[1] );
-                                    const templateData = row; // KatApp.extend( {}, firstRowSource, row );
+                                    // const templateData = row;
+                                    const templateData = KatApp.extend( {}, firstRowSource, row );
                                     if ( row !== undefined ) {
                                         el.html( templateContent.format( row ) );
                                     }
@@ -2526,8 +2528,8 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                                     table.forEach( ( row, index ) => {
                                         if ( rblSourceParts.length === 1 || row[ rblSourceParts[ 1 ] ] === rblSourceParts[ 2 ] ) {
                                             // Automatically add the _index0 and _index1 for carousel template
-                                            // const templateData = KatApp.extend( {}, firstRowSource, row, { _index0: index, _index1: index + 1 } )
-                                            const templateData = KatApp.extend( {}, row, { _index0: index, _index1: index + 1 } )
+                                            // const templateData = KatApp.extend( {}, row, { _index0: index, _index1: index + 1 } )
+                                            const templateData = KatApp.extend( {}, firstRowSource, row, { _index0: index, _index1: index + 1 } )
                                             const formattedContent = $(templateContent.format( templateData ));
         
                                             // Recursive call to support nested templates
@@ -4834,10 +4836,23 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
         if (Object.keys(json).length > 0) {
             for (const propertyName in json) {
                 const re = new RegExp('{' + propertyName + '}', 'gm');
+                const valueType = typeof json[propertyName];
+
+                // If class/width/other RBLe custom columns were used, their values
+                // would be assigned as attributes, so a #text property on the object would
+                // exist, and that is probably what they want.
+                let jsonValue = valueType == "object" 
+                    ? json[propertyName][ "#text" ] ?? json[propertyName]
+                    : json[propertyName];
+                    
                 // https://stackoverflow.com/a/6024772/166231
-                const jsonValue = json[propertyName] === "$0" ? "$$0" : json[propertyName];
+                if ( jsonValue === "$0" ) {
+                    jsonValue = "$$0";
+                }
+                
                 that = that.replace(re, jsonValue)
 
+                // If I didn't want to hard code the $0 check, this answer suggested using a function, but I didn't want the overhead
                 // https://stackoverflow.com/a/6024692/166231
                 // that = that.replace(re, function() { return json[propertyName]; });
             }

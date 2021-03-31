@@ -175,6 +175,9 @@ class KatApp
     }
 
     static getResource( url: string, tryLocalWebServer: boolean, isInManagementSite: boolean, folder: string, name: string, version: string ): GetResourceXHR {
+        // https://stackoverflow.com/a/66187724/166231
+        // This link showed me how to get custom parameter sent back in call back
+        
         const resource: KatAppResource = { Resource: name, Folder: folder, Version: version };
         const command = { 
             "Command": "KatAppResource", 

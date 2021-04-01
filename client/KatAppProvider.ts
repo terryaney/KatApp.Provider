@@ -606,6 +606,16 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
         }
 
         destroy(): void {
+            this.unregister();
+            this.ui.triggerEvent( "onDestroyed", this );
+            delete this.element[ 0 ].KatApp;
+        }
+
+        // This was needed for 'redraw' method which simply wants to 'restart' the load
+        // of the view and use last 'calculation' to re-render (it is a method for UI developers)
+        // I couldn't use destroy because it deleted the KatApp and only the KatAppPlugIn 'sets' that
+        // so then KatApp was undefined.
+        unregister(): void {
             this.element.removeAttr("rbl-application-id");
             this.element.removeClass("katapp-" + this.id);
             this.element.removeData("katapp-save-calcengine");
@@ -613,14 +623,12 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
             this.element.removeData("katapp-trace-calcengine");
             $('[data-katapp-initialized]', this.element).removeAttr("data-katapp-initialized");
             this.ui.unbindCalculationInputs();
-            this.ui.triggerEvent( "onDestroyed", this );
             this.element.off(".RBLe"); // remove all KatApp handlers
-            delete this.element[ 0 ].KatApp;
         }
 
         rebuild( options: KatAppOptions ): KatAppOptions {
             const o = KatApp.extend({}, this.options, options);
-            this.destroy();
+            this.unregister();
             this.init( o );
             return o;
         }
@@ -1273,9 +1281,6 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
             $.fn.KatApp.templatesUsedByAllApps = {};
             $.fn.KatApp.templateDelegates = [];
 
-            // Remove all event handlers on view because they'll be reset
-            this.element.off(".RBLe");
-
             // If || true is removed...update documentation to add the parameter
             if ( readViewOptions || true ) {
                 // Clear these out and read from the view
@@ -1312,11 +1317,10 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                 that.ui.triggerEvent( "onCalculateEnd", that );
                 that.element.off( "onInitialized.RBLe", redrawInit);
             };
-            this.element.on( "onInitialized.RBLe", redrawInit);
 
             // This returns right away, so need to hook up the event handler above to process everything 
             // after view is loaded.  Don't run new calcs b/c need to just use existing results.
-            rebuildOptions = this.rebuild( { runConfigureUICalculation: false } );
+            rebuildOptions = this.rebuild( { runConfigureUICalculation: false, onInitialized: redrawInit } );
         }
 
         saveCalcEngine( location: string ): void {

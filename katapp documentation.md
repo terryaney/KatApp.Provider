@@ -2400,7 +2400,7 @@ Attribute | Description
 rbl-action-link | Used as the `commandName` passed into `apiAction`.
 rbl-action-download | Used as the `isDownload` property of the `customOptions` parameter.
 data-param-* | Used as the `customParameters` property of the `customOptions` parameter.  (i.e. to pass plan-id parameter to server, use `data-param-plan-id="value"`)
-data-input-* | Used as the `customInputs` property of the `customOptions` parameter.  (i.e. to pass iDownloadForms=1 parameter to server, use `data-input-iDownloadForms="1"`)
+data-input-* | Used as the `customInputs` property of the `customOptions` parameter.  (i.e. to pass iDownloadForms=1 parameter to server, use `data-input-download-forms="1"`, the server will convert to 'input name' automatically)
 rbl-action-confirm-selector | If the link should prompt before calling the endpoint, this attribute provides a jQuery selector to element containing the markup to display in a modal confirm dialog.
 
 <br/>
@@ -2539,7 +2539,7 @@ $(".katapp").KatApp().configureUI();
 For the next calculation, instruct the RBLe Service to return detailed trace information from the *next successful* calculation.
 
 ```javascript
-// Save the next CalcEngine to the 'terry.aney' folder
+// Trace the next calculation
 $(".katapp").KatApp("traceCalcEngine");
 $(".katapp").KatApp().traceCalcEngine();
 
@@ -2561,7 +2561,6 @@ $(".katapp").KatApp().configureUI();
 Redraw/re-render the Kaml View _without_ triggering a calculation.  This can be used while a Kaml View developer is modifying the view and wants to see their progress without waiting for the time required to re-run the actual calculation.  This speeds up the development cycle of the UX developers.
 
 ```javascript
-// Save the next CalcEngine to the 'terry.aney' folder
 $(".katapp").KatApp("redraw");
 $(".katapp").KatApp().redraw();
 ```

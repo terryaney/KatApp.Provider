@@ -2515,11 +2515,17 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                                 }
 
                                 if ( rblSourceParts.length === 2 ) {
-                                    const row = that.getResultRow<JSON>( tabDef, rblSourceParts[0], rblSourceParts[1] );
-                                    // const templateData = row;
-                                    const templateData = KatApp.extend( {}, firstRowSource, row );
-                                    if ( row !== undefined ) {
-                                        el.html( templateContent.format( row ) );
+                                    let templateData = KatApp.extend( {}, that.getResultRow<JSON>( tabDef, rblSourceParts[0], rblSourceParts[1] ) );
+
+                                    try {
+                                        templateData = KatApp.extend( {}, firstRowSource, templateData )
+                                    } catch {
+                                        // Could throw error if KatApp.js isn't updated and can't handle
+                                        // when column has meta data of @class, @width, etc.
+                                    }
+
+                                    if ( templateData !== undefined ) {
+                                        el.html( templateContent.format( templateData ) );
                                     }
                                     else {
                                         application.trace("<b style='color: Red;'>RBL WARNING</b>: no data returned for tab=" + tabDefName + ", rbl-source=" + el.attr('rbl-source'), TraceVerbosity.Detailed);
@@ -2533,7 +2539,15 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                                         if ( rblSourceParts.length === 1 || row[ rblSourceParts[ 1 ] ] === rblSourceParts[ 2 ] ) {
                                             // Automatically add the _index0 and _index1 for carousel template
                                             // const templateData = KatApp.extend( {}, row, { _index0: index, _index1: index + 1 } )
-                                            const templateData = KatApp.extend( {}, firstRowSource, row, { _index0: index, _index1: index + 1 } )
+                                            let templateData = KatApp.extend( {}, row, { _index0: index, _index1: index + 1 } )
+
+                                            try {
+                                                templateData = KatApp.extend( {}, firstRowSource, templateData )
+                                            } catch {
+                                                // Could throw error if KatApp.js isn't updated and can't handle
+                                                // when column has meta data of @class, @width, etc.
+                                            }
+
                                             const formattedContent = $(templateContent.format( templateData ));
         
                                             // Recursive call to support nested templates

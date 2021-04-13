@@ -84,7 +84,7 @@ class KatApp
 
             // Always do deep copy
             if ( typeof value === "object" && !Array.isArray( value ) ) {
-                if ( target[key] === undefined || target[key] === "" )
+                if ( target[key] === undefined || typeof target[key] !== "object" )
                 {
                     target[key] = {};
                 }

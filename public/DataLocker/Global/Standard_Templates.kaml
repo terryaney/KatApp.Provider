@@ -235,6 +235,10 @@
     font-weight: bold;
   }
 
+  .katapp-css .needsRBLeConfig {
+    display: none;
+  }
+  
   /* ASP.NET listcontrols render in a table */
   .katapp-css table.bs-listcontrol tr, .katapp-css table.bs-listcontrol td {
       border-width: 0; /* in case nested in another table */

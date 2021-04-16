@@ -2964,7 +2964,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
     
                     let headerHtml = "";
                     let bodyHtml = "";
-    
+
                     tableRows.forEach( row => {
                         const code = row["code"] ?? "";
                         const id = row["@id"] ?? "";
@@ -3082,7 +3082,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                             : tableHtml;
         
                         $(r).empty().append($(html));
-                        }
+                    }
                 }
             });
         }
@@ -4862,12 +4862,13 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                 let jsonValue = valueType == "object" 
                     ? json[propertyName][ "#text" ] ?? json[propertyName]
                     : json[propertyName];
-                    
-                // https://stackoverflow.com/a/6024772/166231
-                if ( jsonValue === "$0" ) {
-                    jsonValue = "$$0";
-                }
                 
+                // https://stackoverflow.com/a/6024772/166231 - first attempt
+                // https://stackoverflow.com/a/13418900/166231
+                if ( typeof jsonValue == "string") {
+                    jsonValue = jsonValue.replace(new RegExp('\\$', 'gm'),'$$$$');
+                }
+
                 that = that.replace(re, jsonValue)
 
                 // If I didn't want to hard code the $0 check, this answer suggested using a function, but I didn't want the overhead

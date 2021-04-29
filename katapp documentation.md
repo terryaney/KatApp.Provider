@@ -638,10 +638,10 @@ Column | Description
 ---|---
 selector | Any valid jQuery selector to use to find element(s).
 html | The html to inject.  If `html` starts with `&` it is appended to existing html of the matched element, otherwise the element's content is replaced with html.<br/><br/>Additionally, `html` can be in the form of `<div rbl-tid="templateId" data-value1="templatevalue1"></div>` (See [Templates](#Templates) for more detail).  If it is a template, it will be 'templated' before injecting into the html.
-addclass<sup>1</sup> | A `space` delimitted list of CSS class names to add to the matched element.
-removeclass<sup>1</sup> | A `space` delimitted list of CSS clsas names to remove from the matched element.
+addClass<sup>1</sup> | A `space` delimitted list of CSS class names to add to the matched element.
+removeClass<sup>1</sup> | A `space` delimitted list of CSS clsas names to remove from the matched element.
 
-<sup>1</sup> `addclass` and `removeclass` are processed after all html content creation is finished so that selectors can be apply to the dynamically created html.
+<sup>1</sup> `addClass` and `removeClass` are processed after all html content creation is finished so that selectors can be apply to the dynamically created html.
 
 # Templates
 

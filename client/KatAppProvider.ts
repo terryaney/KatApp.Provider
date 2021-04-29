@@ -1,4 +1,7 @@
 const providerVersion = 8.38; // eslint-disable-line @typescript-eslint/no-unused-vars
+// Hack to get bootstrap modals in bs5 working without having to bring in the types from bs5.
+// If I brought in types of bs5, I had more compile errors that I didn't want to battle yet.
+declare var bootstrap: any;
 
 KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosity.Detailed);
 
@@ -297,6 +300,12 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
 
                                 const view = $("<div class='katapp-css'>" + content  + "</div>");
                                 const rblConfig = $("rbl-config", view).first();
+
+                                $("rbl-template, [rbl-tid='inline']", view).each(function() {
+                                    const t = $(this);
+                                    t.html(that.ui.encodeTemplateContent(t.html()));
+                                });
+
                                 // Not sure if I need to manually add script or if ie will load them
                                 // https://www.danielcrabtree.com/blog/25/gotchas-with-dynamically-adding-script-tags-to-html
                                 // IE is not loading scripts of my test harness at the moment
@@ -477,13 +486,15 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                     Object.keys(resourceResults).forEach( r => { // eslint-disable-line @typescript-eslint/no-non-null-assertion
                         const data = resourceResults![ r ]; // eslint-disable-line @typescript-eslint/no-non-null-assertion
 
-                        // TOM (your comment, but do we need that container?): create container element 'rbl-templates' with an attribute 'rbl-t' for template content 
-                        // and this attribute used for checking(?)
-                        
                         const rblKatApps = $("rbl-katapps");
-                        const t = $("<rbl-templates rbl-t='" + r.toLowerCase() + "'>" + data.replace( /{thisTemplate}/g, r ) + "</rbl-templates>");
+                        const templateContent = $("<rbl-templates rbl-t='" + r.toLowerCase() + "'>" + data.replace( /{thisTemplate}/g, r ) + "</rbl-templates>");
 
-                        t.appendTo(rblKatApps);
+                        $("rbl-template, [rbl-tid='inline']", templateContent).each(function() {
+                            const t = $(this);
+                            t.html(that.ui.encodeTemplateContent(t.html()));
+                        });
+
+                        templateContent.appendTo(rblKatApps);
 
                         that.trace( r + " injected into markup", TraceVerbosity.Normal );
 
@@ -530,13 +541,17 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
 
                     // Build up template content that DOES NOT use rbl results, but instead just 
                     // uses data-* to create a dataobject.  Normally just making controls with templates here
-                    $("[rbl-tid]:not([rbl-source])", that.element).each(function () {
+                    
+                    $("[rbl-tid]:not([rbl-source])", that.element).not("rbl-template [rbl-tid]").each(function () {
                         const templateId = $(this).attr('rbl-tid');
                         // If templateId still has { } in it, then it is contained in a template and going to be
                         //  dynamically assigned during template processing and rendered later/at that time.
                         if (templateId !== undefined && templateId !== "inline" && templateId.indexOf("{") == -1) {
                             //Replace content with template processing, using data-* items in this pass
-                            that.rble.injectTemplate( $(this), that.ui.getTemplate( templateId, that.dataAttributesToJson($(this), "data-")));
+                            that.rble.injectTemplate( 
+                                $(this), 
+                                that.ui.getTemplate( templateId, that.dataAttributesToJson($(this), "data-") )
+                            );
                         }
                     });
 
@@ -1335,6 +1350,12 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
         trace( message: string, verbosity: TraceVerbosity = TraceVerbosity.Normal ): void {
             KatApp.trace( this, message, verbosity );
         }
+
+        get bootstrapVersion(): number {
+            const version = this.element.attr("rbl-bootstrap") ??
+            $("rbl-config", this.element).attr("bootstrap") ?? "3";
+            return +version;
+        }
     }
     
     // All methods/classes before KatAppProvider class implementation are private methods only
@@ -1420,14 +1441,17 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                 const sCancel = "Cancel";
                 const sContinue = "Continue";
 
+                const isBootstrap5 = this.application.bootstrapVersion == 5;
+                const bsDataAttributePrefix = isBootstrap5 ? "data-bs-" : "data-";
+
                 this.application.element.append(
-                    '<div class="modal fade linkConfirmModal" tabindex="-1" role="dialog" data-keyboard="false" data-backdrop="static">' +
+                    '<div class="modal fade linkConfirmModal" tabindex="-1" role="dialog" ' + bsDataAttributePrefix + 'keyboard="false" ' + bsDataAttributePrefix + 'backdrop="static">' +
                         '<div class="modal-dialog">' +
                             '<div class="modal-content">' +
                                 '<div class="modal-body"></div>' +
                                 '<div class="modal-footer">' +
-                                    '<button class="btn btn-default cancelButton" data-dismiss="modal" aria-hidden="true">' + sCancel + '</button>' +
-                                    '<button type="button" class="btn btn-primary continueButton" data-dismiss="modal">' + sContinue + '</button>' +
+                                    '<button class="btn btn-default cancelButton" ' + bsDataAttributePrefix + 'dismiss="modal" aria-hidden="true">' + sCancel + '</button>' +
+                                    '<button type="button" class="btn btn-primary continueButton" ' + bsDataAttributePrefix + 'dismiss="modal">' + sContinue + '</button>' +
                                 '</div>' +
                             '</div>' +
                         '</div>' +
@@ -1446,7 +1470,13 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                 }
             });            
     
-            $('.linkConfirmModal', this.application.element).modal({ show: true });
+            if (this.application.bootstrapVersion==5) {
+                var myModal = new bootstrap.Modal($('.linkConfirmModal', this.application.element)[0]);
+                myModal.show();
+            }
+            else {
+                $('.linkConfirmModal', this.application.element).modal({ show: true });
+            }
         }
 
         processDropdownItems(dropdown: JQuery<HTMLElement>, rebuild: boolean, dropdownItems: { Value: string | null; Text: string | null; Class: string | undefined; Subtext: string | undefined; Html: string | undefined; Selected: boolean; Visible: boolean }[]): void {
@@ -1537,6 +1567,54 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
             }
         }
 
+        encodeTemplateContent( content: string) : string {
+            return content
+            .replace(/-toggle=/g, "-toggle_=")
+            .replace(/ id=/g, " id_=");
+
+            // couldn't get this to work, if I did $(content), it already stripped out tr/td that
+            // weren't under the proper parent.  I could 'handle' it with template files b/c 'everything' is template
+            // and the content isn't returned without going through 'decode', however, if a view has a template with
+            // tr/td, I couldn't handle that cleanly without replacing everything (even regular content) up front
+            // and figuring out how to clean it up.  So I left this in.
+            /*
+            .replace(/<tr>/g, "<tr_>")
+            .replace(/<tr /g, "<tr_ ")
+            .replace(/<\/tr>/g, "</tr_>")
+            .replace(/<td>/g, "<td_>")
+            .replace(/<td /g, "<td_ ")
+            .replace(/<\/td>/g, "</td_>")
+            */
+        }
+        decodeTemplateContent( content: string ): string {
+            // If templates with bootstrap toggle have issues with 'target' because of {templateValues} inside the
+            // selector attribute, bootstrap crashes and doesn't process rest of the 'valid' toggles.  To fix,
+            // disable bootstrap handling *in the template* by putting _ after toggle, then it is turned when
+            // the rendered template content is injected.
+            let decodedContent = content
+                .replace( / id_=/g, " id=") // changed templates to have id_ so I didn't get browser warning about duplicate IDs inside *template markup*
+                .replace( /-toggle_=/g, "-toggle=" )            
+                .replace( /tr_/g, "tr" ) // tr/td were *not* contained in a table in the template, browsers would just remove them when the template was injected into application, so replace here before injecting template
+                .replace( /td_/g, "td" );
+
+            if ( this.application.bootstrapVersion > 3 ) {
+                decodedContent = decodedContent
+                    .replace( /control-label/g, "col-form-label")
+                    .replace( /glyphicon glyphicon-volume-up/g, "fa fa-volume-up" )            
+                    .replace( /glyphicon glyphicon-info-sign/g, "fa fa-question-circle" );
+            }
+
+            if ( this.application.bootstrapVersion > 4 ) {
+                decodedContent = decodedContent
+                    .replace( / data-placement=/g, " data-bs-placement=")
+                    .replace( / data-trigger=/g, " data-bs-trigger=")
+                    .replace( / data-toggle=/g, " data-bs-toggle=")
+                    .replace( / data-target=/g, " data-bs-target=");
+            }
+
+            return decodedContent;
+        }
+
         getTemplate( templateId: string, data: JQuery.PlainObject ): { Content: string; Type: string | undefined } | undefined {
             const application = this.application;
             // Look first for template overriden directly in markup of view
@@ -1564,17 +1642,16 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                 return {
                     Type: template.attr("type"),
                     Content:
-                        ( contentSelector != undefined ? $(contentSelector, template) : template )
+                        this.decodeTemplateContent( ( contentSelector != undefined ? $(contentSelector, template) : template )
                             .html()
-                            .format( KatApp.extend({}, data, { id: application.id } ) )
-                            .replace( / id_=/g, " id=") // changed templates to have id_ so I didn't get browser warning about duplicate IDs inside *template markup*
-                            .replace( /tr_/g, "tr" ).replace( /td_/g, "td" ) // tr/td were *not* contained in a table in the template, browsers would just remove them when the template was injected into application, so replace here before injecting template
+                            .format( KatApp.extend({}, data, { id: application.id } ) ) )
                 }
             }
         }
 
         processListItems(container: JQuery<HTMLElement>, rebuild: boolean, listItems: { Value: string | null | undefined; Text: string | null | undefined; Help: string | undefined; Selected: boolean; Visible: boolean; Disabled: boolean }[] ): void {
-            const isBootstrap3 = $("rbl-config", this.application.element).attr("bootstrap") == "3";
+            const isBootstrap3 = this.application.bootstrapVersion == 3;
+            const isBootstrap5 = this.application.bootstrapVersion == 5;
             const inputName: string = container.data( "inputname" );
             const id: string = container.data( "id" );
             const horizontal = container.data("horizontal") ?? false;
@@ -1622,18 +1699,21 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
             else if ( itemsContainer.length === 0 ) {
                 const temlpateContent = 
                     this.getTemplate( isRadio ? "input-radiobuttonlist-vertical-container" : "input-checkboxlist-vertical-container", {} )?.Content ??
-                    "<table class='" + itemTypeClass + " bs-listcontrol' border='0'><tbody class='items-container'></tbody></table>"
+                    "<table class='" + itemTypeClass + " bs-listcontrol' border='0'><tbody class='items-container'></tbody></table>";
+
                 container.append($(temlpateContent));
                 itemsContainer = $(".items-container", container);
             }
 
             const that = this;
             const helpIconClass = isBootstrap3 ? "glyphicon glyphicon-info-sign" : "fa fa-question-circle";
+            const bsDataAttributePrefix = isBootstrap5 ? "data-bs-" : "data-";
+
             let configureHelp = false;
 
             const inputTemplate = isRadio
                 ? "<input id='{itemId}' type='radio' name='{id}:{inputName}' value='{value}' />"
-                : "<input id_='{itemId}' type='checkbox' name='{id}:{inputName}:{value}' data-value='{value}' data-input-name='{inputName}' />";
+                : "<input id='{itemId}' type='checkbox' name='{id}:{inputName}:{value}' data-value='{value}' data-input-name='{inputName}' />";
 
             const verticalItemTemplate = 
                 this.getTemplate( isRadio ? "input-radiobuttonlist-vertical-item" : "input-checkboxlist-vertical-item", {} )?.Content ??
@@ -1642,7 +1722,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                         <span class='" + itemTypeClass + "'>\
                             " + inputTemplate + "\
                             <label for='{itemId}'>{text}</label>\
-                            <a rbl-display='{helpIconSelector}' style='display: none;' role='button' tabindex='0' data-toggle='popover' data-trigger='click' data-content-selector='#{id}_{helpSelector}' data-placement='top'><span class='{helpIconCss} help-icon'></span></a>\
+                            <a rbl-display='{helpIconSelector}' style='display: none;' role='button' tabindex='0' " + bsDataAttributePrefix + "toggle='popover' " + bsDataAttributePrefix + "trigger='click' data-content-selector='#{id}_{helpSelector}' " + bsDataAttributePrefix + "placement='top'><span class='{helpIconCss} help-icon'></span></a>\
                             <div rbl-value='{helpSelector}' id='{id}_{helpSelector}' style='display: none;'>{help}</div>\
                             <div rbl-value='{helpSelector}Title' id='{id}_{helpSelector}Title' style='display: none;'></div>\
                         </span>\
@@ -1654,7 +1734,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                 "<div class='form-group " + itemTypeClass + "' rbl-display='{visibleSelector}'>\
                     " + inputTemplate + "\
                     <label for='{itemId}'>{text}</label>\
-                    <a rbl-display='{helpIconSelector}' style='display: none;' role='button' tabindex='0' data-toggle='popover' data-trigger='click' data-content-selector='#{id}_{helpSelector}' data-placement='top'><span class='{helpIconCss} help-icon'></span></a>\
+                    <a rbl-display='{helpIconSelector}' style='display: none;' role='button' tabindex='0' " + bsDataAttributePrefix + "toggle='popover' " + bsDataAttributePrefix + "trigger='click' data-content-selector='#{id}_{helpSelector}' " + bsDataAttributePrefix + "placement='top'><span class='{helpIconCss} help-icon'></span></a>\
                     <div rbl-value='{helpSelector}' id='{id}_{helpSelector}' style='display: none;'>{help}</div>\
                     <div rbl-value='{helpSelector}Title' id='{id}_{helpSelector}Title' style='display: none;'></div>\
                 </div>";
@@ -2340,7 +2420,10 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                             
                             if (templateId !== undefined) {
                                 //Replace content with template processing, using data-* items in this pass
-                                this.injectTemplate( el, this.application.ui.getTemplate( templateId, this.application.dataAttributesToJson(el, "data-") ) );
+                                this.injectTemplate( 
+                                    el, 
+                                    this.application.ui.getTemplate( templateId, this.application.dataAttributesToJson(el, "data-") )
+                                 );
                             }
                             
                             // Append 'templated' content to view
@@ -2467,10 +2550,13 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                         // TOM (don't follow this code) - inline needed for first case?  What does it mean if rbl-tid is blank?  
                         // Need a better attribute name instead of magic 'empty' value
                         const inlineTemplate = tid === undefined ? $("[rbl-tid]", el ) : undefined;
-                        const templateContent = tid === undefined
+                        
+                        let templateContent = tid === undefined
                             ? inlineTemplate === undefined || inlineTemplate.length === 0
                                 ? undefined
-                                : $( inlineTemplate.prop("outerHTML").format( elementData ) ).removeAttr("rbl-tid").prop("outerHTML")
+                                : application.ui.decodeTemplateContent( $( inlineTemplate.prop("outerHTML").format( elementData ) )
+                                    .removeAttr("rbl-tid")
+                                    .prop("outerHTML") )
                             : application.ui.getTemplate( tid, elementData )?.Content; 
     
                         if ( showInspector && !el.hasClass("kat-inspector-source") ) {
@@ -2499,7 +2585,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                         else if ( rblSourceParts === undefined || rblSourceParts.length === 0) {
                             application.trace("<b style='color: Red;'>RBL WARNING</b>: no rbl-source data in tab " + tabDefName, TraceVerbosity.Detailed);
                         }
-                        else if ( rblSourceParts.length > 0 ) {
+                        else {
                             //table in array format.  Clear element, apply template to all table rows and .append
                             const table = that.getResultTable<JSON>( tabDef, rblSourceParts[0] );
                             
@@ -2513,7 +2599,6 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                                         firstRowSource[propertyName] = "";
                                     }
                                 }
-
                                 if ( rblSourceParts.length === 2 ) {
                                     let templateData = KatApp.extend( {}, that.getResultRow<JSON>( tabDef, rblSourceParts[0], rblSourceParts[1] ) );
 
@@ -2548,7 +2633,8 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                                                 // when column has meta data of @class, @width, etc.
                                             }
 
-                                            const formattedContent = $(templateContent.format( templateData ));
+                                            // compiler misstating that templateContent could be undefined
+                                            const formattedContent = $(templateContent!.format( templateData ));
         
                                             // Recursive call to support nested templates
                                             that.processRblSource(formattedContent, showInspector);
@@ -3101,7 +3187,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
             });
         }
     
-        private addValidationItem(summary: JQuery<HTMLElement>, input: JQuery<HTMLElement> | undefined, message: string): void {
+        private addValidationItem(summary: JQuery<HTMLElement>, input: JQuery<HTMLElement> | undefined, message: string, bootstrapVersion: number): void {
             let ul = $("ul", summary);
             if (ul.length === 0) {
                 summary.append("<ul></ul>");
@@ -3120,7 +3206,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                 const valContainer = input.closest('.validator-container').addClass(validationClass);
     
                 const errorSpan = valContainer.find('.error-msg')
-                    .attr('data-original-title', message)
+                    .attr(bootstrapVersion == 5 ? 'data-bs-original-title' : 'data-original-title', message)
                     .empty();
     
                 $("<label/>").css("display", "inline-block")
@@ -3132,10 +3218,11 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
     
         processValidationRows(summary: JQuery<HTMLElement>, errors: ValidationRow[]): void {
             if (errors.length > 0) {
+                var bootstrapVersion = this.application.bootstrapVersion;
                 errors.forEach( r => {
                     const selector = this.application.ui.getJQuerySelector( r["@id"] );
                     const input = selector !== undefined ? $(selector, this.application.element) : undefined;
-                    this.addValidationItem(summary, input, r.text);
+                    this.addValidationItem(summary, input, r.text, bootstrapVersion);
                 });
             }
         }
@@ -3149,7 +3236,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
     
             if (warningSummary.length === 0 && errorSummary.length > 0 ) {
                 // Warning display doesn't exist yet, so add it right before the error display...shouldn't have errors and warnings at same time currently...
-                warningSummary = $("<div id='" + this.application.id + "_ModelerWarnings' style='display: none;' class='validation-warning-summary alert alert-warning' role='alert'><p><span class='glyphicon glyphicon glyphicon-warning-sign' aria-hidden='true'></span> <span class='sr-only'>Warnings</span> Please review the following warnings: </p><ul></ul></div>");
+                warningSummary = $("<div id='" + this.application.id + "_ModelerWarnings' style='display: none;' class='validation-warning-summary alert alert-warning' role='alert'><p><i class='far fa-exclamation-triangle'></i> <span class='sr-only'>Warnings</span> Please review the following warnings: </p><ul></ul></div>");
                 $(warningSummary).insertBefore(errorSummary);
             }            
     
@@ -3882,7 +3969,6 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
     class StandardTemplateBuilder implements StandardTemplateBuilderInterface
     {
         application: KatAppPlugIn;
-        isBootstrap3: boolean = false;
 
         constructor( application: KatAppPlugIn ) {
             this.application = application;   
@@ -4216,7 +4302,12 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
         }
 
         private buildTextBoxes( view: JQuery<HTMLElement> ): void {
-            const isBootstrap3 = this.isBootstrap3;
+            const applicationId = this.application.id;
+            const bootstrapVersion = this.application.bootstrapVersion;
+            const isBootstrap3 = bootstrapVersion == 3;
+            const isBootstrap4 = bootstrapVersion == 4;
+            const isBootstrap5 = bootstrapVersion == 5;
+
             $('[rbl-tid="input-textbox"],[rbl-template-type="katapp-textbox"]', view).not('[data-katapp-initialized="true"]').each(function () {
                 const el = $(this);
                 
@@ -4281,7 +4372,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                 else if ( inputType === "multiline" ) {
                     // Replace textbox with a textarea
                     const rows = el.data("rows") ?? "4";
-                    input.replaceWith($('<textarea name="' + id + '" rows="' + rows + '" id_="' + id + '" class="form-control ' + id + '"></textarea>'))
+                    input.replaceWith($('<textarea name="' + id + '" rows="' + rows + '" id="katapp_' + applicationId + '_' + id + '" class="form-control ' + id + '"></textarea>'))
                     input = $("textarea[name='" + id + "']", el);
                 }
 
@@ -4307,15 +4398,17 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                         validatorContainer.addClass("input-group date");
                         $(".error-msg", validatorContainer).addClass("addon-suffix"); // css aid
 
-                        let addOnContainer = validatorContainer;
-                        
-                        if ( !isBootstrap3 ) {
-                            addOnContainer = $("<div class='input-group-append'></div>");
-                            addOnContainer.append($("<i class='input-group-text fa fa-calendar-day'></i>"));
-                            validatorContainer.append( addOnContainer );
+                        if ( isBootstrap5 ) {
+                            // datepicker library looks for element with input-group-addon class to determine if
+                            // component is inline or popup, so class shouldn't do anything for styling in bs5, but
+                            // need it for date to work the way we want.
+                            validatorContainer.append( $("<div class='input-group-addon input-group-text'><i class='fa fa-calendar-day'></i></div>") );
+                        }
+                        else if ( isBootstrap4 ) {
+                            validatorContainer.append( $("<div class='input-group-append'><i class='input-group-text fa fa-calendar-day'></i></div>") );
                         }
                         else {
-                            addOnContainer.append($("<span class='input-group-addon'><i class='glyphicon glyphicon-calendar'></i></span>"));
+                            validatorContainer.append($("<span class='input-group-addon'><i class='glyphicon glyphicon-calendar'></i></span>"));
                         }
     
                         $('.input-group.date', el)
@@ -4397,12 +4490,18 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
 
                         let addOnContainer = validatorContainer;
                         
-                        if ( !isBootstrap3 ) {
+                        if ( isBootstrap4 ) {
                             validatorContainer.prepend( $("<div class='input-group-prepend'></div>") );
                             addOnContainer = $(".input-group-prepend", validatorContainer);
                         }
                         
-                        addOnContainer.prepend($("<span class='input-group-addon input-group-text'>" + prefix + "</span>"));
+                        const prefixElement = $("<span class='input-group-text'>" + prefix + "</span>");
+
+                        if ( !isBootstrap5 ) {
+                            prefixElement.addClass("input-group-addon");
+                        }
+
+                        addOnContainer.prepend(prefixElement);
                     }
                     else if ( suffix !== undefined ) {
                         validatorContainer.addClass("input-group");
@@ -4410,12 +4509,18 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
 
                         let addOnContainer = validatorContainer;
                         
-                        if ( !isBootstrap3 ) {
+                        if ( isBootstrap4 ) {
                             validatorContainer.append( $("<div class='input-group-prepend'></div>") );
                             addOnContainer = $(".input-group-prepend", validatorContainer);
                         }
                         
-                        addOnContainer.append($("<span class='input-group-addon input-group-text'>" + suffix + "</span>"));
+                        const suffixElement = $("<span class='input-group-text'>" + suffix + "</span>");
+
+                        if ( !isBootstrap5 ) {
+                            suffixElement.addClass("input-group-addon");
+                        }
+
+                        addOnContainer.append( suffixElement );
                     }
                 }
                 else {
@@ -4603,11 +4708,6 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
         }
 
         processUI( container?: JQuery<HTMLElement> ): void {
-            const bootstrapVersion = 
-                this.application.element.attr("rbl-bootstrap") ??
-                $("rbl-config", this.application.element).attr("bootstrap");
-
-            this.isBootstrap3 = bootstrapVersion == "3";
             this.processInputs( container );
             this.processCarousels( container );
             this.processHelpTips( container );
@@ -4616,10 +4716,10 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
 
         processHelpTips( container?: JQuery<HTMLElement> ): void {
             // Couldn't include the Bootstrap.Tooltips.js file b/c it's selector hits entire page, and we want to be localized to our view.
-            const selector = "[data-toggle='tooltip'], [data-toggle='popover'], .tooltip-trigger, .tooltip-text-trigger, .error-trigger";
+            const selector = "[data-toggle='tooltip'], [data-bs-toggle='tooltip'], [data-toggle='popover'], [data-bs-toggle='popover'], .tooltip-trigger, .tooltip-text-trigger, .error-trigger";
             const application = this.application;
             const view = container ?? application.element;
-            const isBootstrap3 = this.isBootstrap3;
+            const isBootstrap3 = this.application.bootstrapVersion == 3;
 
             if ( typeof $.fn.popover !== "function" && $(selector, view).length > 0 ) {
                 this.application.trace("Bootstrap popover/tooltip javascript is not present", TraceVerbosity.None);
@@ -4630,14 +4730,16 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                 .not('.rbl-help, [data-katapp-initialized="true"]')
                 .not('rbl-template [data-toggle="tooltip"], [rbl-tid="inline"] [data-toggle="tooltip"]')
                 .not('rbl-template [data-toggle="popover"], [rbl-tid="inline"] [data-toggle="popover"]')
+                .not('rbl-template [data-bs-toggle="tooltip"], [rbl-tid="inline"] [data-bs-toggle="tooltip"]')
+                .not('rbl-template [data-bs-toggle="popover"], [rbl-tid="inline"] [data-bs-toggle="popover"]')
                 .not('rbl-template .tooltip-trigger, [rbl-tid="inline"] .tooltip-trigger')
                 .not('rbl-template .tooltip-text-trigger, [rbl-tid="inline"] .tooltip-text-trigger')
                 .not('rbl-template .error-trigger, [rbl-tid="inline"] .error-trigger')
                 .each( function() {
                     const isErrorValidator = $(this).hasClass('error-msg');
-                    let placement = $(this).data('placement') || "top";
-                    const trigger = $(this).data('trigger') || "hover";
-                    const container = $(this).data('container') || "body";
+                    let placement = $(this).data('placement') || $(this).data('bs-placement') || "top";
+                    const trigger = $(this).data('trigger') || $(this).data('bs-trigger') || "hover";
+                    const container = $(this).data('container') || $(this).data('bs-container') || "body";
 
                     const options: Bootstrap.PopoverOptions = {
                         html: true,
@@ -4649,9 +4751,9 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                                 ? '<div class="tooltip error katapp-css" role="tooltip"><div class="tooltip-arrow"></div><div class="tooltip-inner"></div></div>' :
                             isBootstrap3 
                                 ? '<div class="popover katapp-css" role="tooltip"><div class="arrow"></div><h3 class="popover-title"></h3><div class="popover-content"></div></div>' :
-                            isErrorValidator 
-                                ? '<div class="tooltip error katapp-css" role="tooltip"><div class="arrow"></div><div class="tooltip-inner"></div></div>'
-                                : '<div class="popover katapp-css" role="tooltip"><div class="arrow"></div><h3 class="popover-header"></h3><div class="popover-body"></div></div>',
+                            isErrorValidator // popover-arrow is for bootstrap 5
+                                ? '<div class="tooltip error katapp-css" role="tooltip"><div class="tooltip-arrow arrow"></div><div class="tooltip-inner"></div></div>'
+                                : '<div class="popover katapp-css" role="tooltip"><div class="popover-arrow arrow"></div><h3 class="popover-header"></h3><div class="popover-body"></div></div>',
                 
                         placement: function (tooltip, trigger) {
                             // Add a class to the .popover element
@@ -4663,7 +4765,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                             }
             
                             // Did they specify a data-width?
-                            dataClass = $(trigger).data('width');
+                            dataClass = $(trigger).data('width') || $(trigger).data('bs-width');
                             if (dataClass != undefined) {
                                 // context is for popups, tooltip-inner is for tooltips (bootstrap css has max-width in css)
                                 $(tooltip).add($(".tooltip-inner", tooltip))
@@ -4694,7 +4796,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                         },
                         content: function () {
                             // See if they specified data-content directly on trigger element.
-                            const dataContent = $(this).data('content');
+                            const dataContent = $(this).data('content') ?? $(this).data('bs-content');
                             const dataContentSelector = $(this).data('content-selector');
                             let content = dataContent == undefined
                                 ? dataContentSelector == undefined ? $(this).next().html() : $(dataContentSelector).html()
@@ -4713,7 +4815,8 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
 
                     if (isErrorValidator) {
                         // Hover for this one...
-                        $(this).tooltip(options)
+                        $(this)
+                            .tooltip(options)
                             .on('inserted.bs.tooltip', function (e) {
                                 const isWarning = $("label.warning", $(e.target)).length == 1;
                                 if (isWarning) {
@@ -4739,11 +4842,15 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                 // the HTML click event one time, so the 'that=this' assignment above would be the first application
                 // and might not match up to the 'currently executing' katapp, so had to make this global anyway
                 const visiblePopover = KatApp[ "visiblePopover" ];
+                
                 // Just in case the tooltip hasn't been configured
-                if ( visiblePopover === undefined || $(visiblePopover).data("bs.popover") === undefined ) return;
-    
+                if ( visiblePopover === undefined || $(visiblePopover).data("katapp-initialized") != true ) return;
+                // Used to use this logic, but it didn't work with bootstrap 5, I've asked a question here:
+                // https://stackoverflow.com/questions/67301932/cannot-access-bootstrap-5-bs-popover-data-with-jquery
+                // if ( visiblePopover === undefined || $(visiblePopover).data("bs.popover") === undefined ) return;
+                
                 // Call this first b/c popover 'hide' event sets visiblePopover = undefined
-                if ( that.isBootstrap3 ) {
+                if ( application.bootstrapVersion == 3 ) {
                     $(visiblePopover).data("bs.popover").inState.click = false
                 }
                 $(visiblePopover).popover("hide");
@@ -4754,8 +4861,14 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                     .on("show.bs.popover.RBLe", function() { hideVisiblePopover(); })
                     .on("shown.bs.popover.RBLe", function( e ) { 
                         KatApp[ "visiblePopover"] = e.target; 
-                        $("div.katapp-css[role='tooltip'] [rbl-action-link]").attr("data-katapp-initialized", "false");
-                        application.templateBuilder.processActionLinks($("div.katapp-css[role='tooltip']"));
+                        
+                        //$("div.katapp-css[role='tooltip'] [rbl-action-link]").attr("data-katapp-initialized", "false");
+                        //application.templateBuilder.processActionLinks($("div.katapp-css[role='tooltip']"));
+                        
+                        // Think scoping here is better
+                        const currentPopover = $(e.target);
+                        $("[rbl-action-link]", currentPopover).attr("data-katapp-initialized", "false");
+                        application.templateBuilder.processActionLinks(currentPopover);
                     })
                     .on("hide.bs.popover.RBLe", function() { 
                         KatApp[ "visiblePopover"] = undefined; 
@@ -4773,7 +4886,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                 $("html")
                     .on("click.RBLe", function( e ) {
                         if ($(e.target).is(".popover-title, .popover-content")) return; // BS3
-                        if ($(e.target).is(".popover-header, .popover-body")) return; // BS4                        
+                        if ($(e.target).is(".popover-header, .popover-body")) return; // BS4/BS5                    
                         hideVisiblePopover();
                     })
                     .attr("data-katapp-initialized-tooltip", "true");
@@ -4781,7 +4894,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
 
             // When helptip <a/> for checkboxes were  moved inside <label/>, attempting to click the help icon simply toggled
             // the radio/check.  This stops that toggle and lets the help icon simply trigger it's own click to show or hide the help.
-            $('.checkbox label a[data-toggle], .abc-checkbox label a[data-toggle]', view)
+            $('.checkbox label a[data-toggle], .checkbox label a[data-bs-toggle], .abc-checkbox label a[data-toggle], .abc-checkbox label a[data-bs-toggle]', view)
                 .not("[data-katapp-checkbox-tips-initialized='true']")
                 .on('click', function (e) {
                     e.stopPropagation();

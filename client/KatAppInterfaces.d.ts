@@ -23,6 +23,7 @@ interface KatAppOptions
     sessionUrl?: string;
     functionUrl?: string;
     rbleUpdatesUrl?: string;
+    bootstrapVersion?: number; // Can override the bootstrap version configured in rbl-config
 
     registerDataWithService?: boolean;
     shareDataWithOtherApplications?: boolean;
@@ -34,7 +35,7 @@ interface KatAppOptions
     requestIP?: string;
     environment?: string;
     currentUICulture?: string;
-
+    
     calcEngines?: CalcEngine[];
 
     relativePathTemplates?: ResourceResults;

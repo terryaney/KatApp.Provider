@@ -1,17 +1,17 @@
-<rbl-config calcengine="Buck_DecisionSupportIRP_SE" templates="Standard_Templates,Input_TemplatesBS4"></rbl-config>
+<rbl-config bootstrap="5" calcengine="Buck_DecisionSupportIRP_SE" templates="Standard_Templates"></rbl-config>
 
 <script>
 	(function() {
-		const view = $("{thisView}");
+		var view = $("{thisView}");
 
 		if ( view.data("debugger" ) == true ) {
 			debugger;
 		}
 
 		view.on( "onInitialized.RBLe", function( event, application ) {
-			let ws = $("<a class='ws-info wsiAnnualFuturePayIncreaseRate' role='button' tabindex='0' title='Click for Advanced Assumptions Worksheet' href='#' data-toggle='modal' data-target='#iAnnualFuturePayIncreaseRate-worksheet'><span class='glyphicons glyphicons-list-alt'></span></a>");
+			var ws = $("<a class='ws-info wsiAnnualFuturePayIncreaseRate' role='button' tabindex='0' title='Click for Advanced Assumptions Worksheet' href='#' data-toggle='modal' data-target='#iAnnualFuturePayIncreaseRate-worksheet'><i class='far fa-list-alt'></i></a>");
 			ws.insertBefore($("[rbl-value=liAnnualFuturePayIncreaseRate]", view));
-			ws = $("<a class='ws-info wsiMedicalCostInflation' role='button' tabindex='0' title='Click for Advanced Assumptions Worksheet' href='#' data-toggle='modal' data-target='#iMedicalCostInflation-worksheet'><span class='glyphicons glyphicons-list-alt'></span></a>");
+			ws = $("<a class='ws-info wsiMedicalCostInflation' role='button' tabindex='0' title='Click for Advanced Assumptions Worksheet' href='#' data-toggle='modal' data-target='#iMedicalCostInflation-worksheet'><i class='far fa-list-alt'></i></a>");
 			ws.insertBefore($("[rbl-value=liMedicalCostInflation]", view));
 
 			$(".assumptionType_{id}", view).on('change', function () {
@@ -41,7 +41,7 @@
 				$(".iAnnualPay", view).trigger("change"); // Run calc
 			});
 
-            const selectPickerAvailable = typeof $.fn.selectpicker === "function";
+            var selectPickerAvailable = typeof $.fn.selectpicker === "function";
 
             if ( selectPickerAvailable ) {
 				$(".assumptionType_{id}", view).selectpicker();
@@ -53,7 +53,7 @@
 			}
 
 			view.on( "onCalculation.RBLe", function( event, calculationResults, calcOptions, application ) {
-				const irpValue = $(".irpValue", view).html() || "0";
+				var irpValue = $(".irpValue", view).html() || "0";
 				application.calculationInputs["iReplaceRatio"] = Number(irpValue.replace(" %", "").replace("%", "")) / 100;
 				if ( $.fn.matchHeight !== undefined ) {
 					// Doesn't look like I can only call 'update' to match height items within my view, so this will update
@@ -101,7 +101,7 @@
 
 <div class="row ajaxContent">
 	<div class="col-md-4">
-		<div class="card mt-0">
+		<div class="card">
 			<div class="card-header"><h4 class="card-title">Assumptions</h4></div>
 			<div class="card-body">
 				<div class="alert alert-warning" role="alert">
@@ -148,7 +148,7 @@
 		</div>
 	</div>
 	<div class="col-md-8">
-		<div class="card mt-0">
+		<div class="card">
 			<div class="card-header"><h4 class="card-title">Results</h4></div>
 			<div class="card-body">
 				<div class="IRPResults">

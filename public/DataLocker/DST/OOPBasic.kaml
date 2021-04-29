@@ -20,7 +20,7 @@
 		Need to do validation on custom inputs all the time
 -->
 
-<rbl-config calcengine="Conduent_Nexgen_OOP_SE" templates="Standard_Templates,Input_TemplatesBS4"></rbl-config>
+<rbl-config bootstrap="5" calcengine="Conduent_Nexgen_OOP_SE" templates="Standard_Templates"></rbl-config>
 
 <script>
 	(function(){

@@ -298,7 +298,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                                         .replace( /\.thisClass/g, thisClassCss )
                                         .replace( /thisClass/g, thisClassCss );
 
-                                const view = $("<div class='katapp-css'>" + content  + "</div>");
+                                const view = $("<div class='katapp-css'>" + that.ui.decodeTemplateContent( content ) + "</div>");
                                 const rblConfig = $("rbl-config", view).first();
 
                                 $("rbl-template, [rbl-tid='inline']", view).each(function() {
@@ -1352,8 +1352,11 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
         }
 
         get bootstrapVersion(): number {
-            const version = this.element.attr("rbl-bootstrap") ??
-            $("rbl-config", this.element).attr("bootstrap") ?? "3";
+            const version = 
+                this.options.bootstrapVersion ??
+                this.element.attr("rbl-bootstrap") ??
+                $("rbl-config", this.element).attr("bootstrap") ?? "3";
+            
             return +version;
         }
     }
@@ -1609,6 +1612,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                     .replace( / data-placement=/g, " data-bs-placement=")
                     .replace( / data-trigger=/g, " data-bs-trigger=")
                     .replace( / data-toggle=/g, " data-bs-toggle=")
+                    .replace( / data-dismiss=/g, " data-bs-dismiss=")
                     .replace( / data-target=/g, " data-bs-target=");
             }
 
@@ -4605,6 +4609,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                 // Do all data-* attributes that we support
                 const id = el.data("inputname");
                 const label = el.data("label");
+                const hideLabel = el.data("hidelabel") ?? false;
                 const help = el.data("help");
                 const multiSelect = el.data("multiselect") ?? false;
                 const liveSearch = el.data("livesearch") ?? true;
@@ -4616,7 +4621,10 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                     $("[rbl-display='v" + id + "']", el).addClass(css);
                 }
 
-                if ( label !== undefined ) {
+                if ( hideLabel ) {
+                    $("label", el).remove();                    
+                }
+                else if ( label !== undefined ) {
                     $("span[rbl-value='l" + id + "']", el).html(label);
                 }
                 

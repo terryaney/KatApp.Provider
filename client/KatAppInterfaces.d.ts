@@ -64,6 +64,8 @@ interface KatAppOptions
     // If custom register data code is needed, can provide implementation here
     registerData?: RegisterDataDelegate;
 
+    handlers?: {};
+
     // If you use on() syntax for initialized, need to set it up before calling KatApp();
     onInitialized?: (this: HTMLElement, application: KatAppPlugInInterface )=> void;
     onDestroyed?: (this: HTMLElement, application: KatAppPlugInInterface )=> void;
@@ -93,9 +95,6 @@ interface KatAppOptions
     onUploadFailed?: (this: HTMLElement, fileUpload: JQuery<HTMLElement>, exception: JSON, application: KatAppPlugInInterface)=> void;
     onUploadComplete?: (this: HTMLElement, fileUpload: JQuery<HTMLElement>, application: KatAppPlugInInterface)=> void;
 }
-// These are the only methods available to call on .KatApp() until onInitialized is triggered (meaning
-// that the provider object has been loaded and replaced the Shim and all methods of the KatAppPlugInInterface 
-// are now implemented)
 
 interface KatAppActionOptions extends KatAppOptions {
     isDownload?: boolean;
@@ -103,6 +102,9 @@ interface KatAppActionOptions extends KatAppOptions {
     customInputs?: {};
 }
 
+// These are the only methods available to call on .KatApp() until onInitialized is triggered (meaning
+// that the provider object has been loaded and replaced the Shim and all methods of the KatAppPlugInInterface 
+// are now implemented)
 interface KatAppPlugInShimInterface {
     options: KatAppOptions;
     element: JQuery;

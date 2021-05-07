@@ -9,7 +9,7 @@
 			<div class="panel-body">
 				<div class="col-12">
                     <div class="{category}-text">{txtDetails}</div>
-					<div class="show-{category}" rbl-tid="chart-highcharts" rbl-chartdata="{chart}" rbl-chartoptions="Bars"></div>
+					<div class="show-{category}" rbl-tid="chart-highcharts" rbl-chartdata="{chart}" rbl-chartoptions="Bars" rbl-display="CompensationTable.{@id}.showChart"></div>
 					<div class="show-{category} mt-3 hidden-xs" rbl-tid="result-table" rbl-tablename="{table}"></div>
                     <div class="show-{category}" rbl-display="CompensationTable.{@id}.hasFootnote">
                         <hr>
@@ -62,8 +62,13 @@
         </div>
         <div class="panel-body">
             <div class="text-center">
-                <div rbl-tid="chart-highcharts" rbl-chartdata="WealthChart" rbl-chartoptions="Pie"></div>
-                <a class="btn btn-primary details-totalwealth" rbl-value="viewWealth"><span>Forecast</span></a>
+                <div rbl-tid="chart-highcharts" rbl-chartdata="WealthChart" rbl-chartoptions="Pie" rbl-display="showWealthChart"></div>
+                <div class="alert alert-success text-left">
+                    <dl style="list-style-type: none;">
+                        <div rbl-tid="footnote" rbl-source="WealthMessages"></div>
+                    </dl>
+                </div>
+                <a class="btn btn-primary details-totalwealth" rbl-value="viewWealth" rbl-display="showForecast"><span>Forecast</span></a>
             </div>
         </div>
     </div>    
@@ -102,7 +107,6 @@
                 </div>
             </div>
         </div>
-        <div class="ajaxloader" style="display: none;"></div>
     </div>
 </rbl-template>
 
@@ -118,7 +122,7 @@
                 </div>
             </div>
         </div>
-        <div class="category-wealth category-cash category-health category-retirement category-other alerts">
+        <div class="category-wealth category-cash category-health category-retirement category-other alerts" rbl-display="suggestions.general.hasSuggestions">
             <div class="panel panel-default">
                 <div class="panel-heading">
                     <h4 class="panel-title" rbl-value="titleSuggestions"></h4>
@@ -147,7 +151,48 @@
     </div>
 </rbl-template>
 
+<rbl-template tid="stock-summary">
+    <p>Total Units Granted: {value2}</p>
+    <p>Total Unvested Units: {value5}</p>
+    <p>Total Unvested Value: {value7}</p>
+</rbl-template>
+
+<rbl-template tid="stock-detail">
+    <div class="alert alert-info" rbl-display="showStockDetail">
+        <p>Grant Date: {value1}</p>
+        <p>Units Right Granted: {value2}</p>
+        <p>Unvested Units: {value5}</p>
+        <p>Unvested Value: {value7}</p>
+    </div>
+</rbl-template>
+
+<rbl-template tid="option-summary">
+    <p>Total Rights Granted: {value2}</p>
+    <p>Total Exercisable Units: {value4}</p>
+    <p>Total Unvested Units: {value5}</p>
+    <p>Total Exercisable Value: {value6}</p>
+    <p>Total Unvested Value: {value7}</p>
+</rbl-template>
+
+<rbl-template tid="option-detail">
+    <div class="alert alert-info" rbl-display="showOptionDetail">
+        <p>Grant Date: {value1}</p>
+        <p>Units Right Granted: {value2}</p>
+        <p>Grant Price: {value3}</p>
+        <p>Exercisable Units: {value4}</p>
+        <p>Unvested Units: {value5}</p>
+        <p>Exercisable Value: {value6}</p>
+        <p>Unvested Value: {value7}</p>
+    </div>
+</rbl-template>
+
 <style>
+	.thisClass .needsRBLeConfig {
+		display: none;
+	}
+	.thisClass .alert.alert-success {
+		background-color: #f5f5f5;
+	}
 	.thisClass span.highcharts-title {
 		font-family: inherit !important;
 	}
@@ -170,78 +215,98 @@
     }
 </style>
 
-<div class="kat-app-css">
-	<div class="ajaxContent">
-		<div class="ajaxloader"></div>
-		<div class="mt-4">
-            <div class="row needsRBLeConfig">
-                <div class="col-12 col-md-8 tr-summary-left">
-                    <div class="row tr-adjust-margin">
-                        <div class="col-12 col-md-6 fd-main fd-totalrewards tr-summary-medium">
-                            <div rbl-tid="tr-chart"></div>
-                            <div class="hidden-xs hidden-sm" rbl-tid="tr-table"></div>
+<div class="ajaxContent">
+    <div class="ajaxloader"></div>
+    <div class="mt-4">
+        <div class="row needsRBLeConfig">
+            <div class="col-12 col-md-8 tr-summary-left">
+                <div class="row tr-adjust-margin">
+                    <div class="col-12 col-md-6 fd-main fd-totalrewards tr-summary-medium">
+                        <div rbl-tid="tr-chart"></div>
+                        <div class="hidden-xs hidden-sm" rbl-tid="tr-table"></div>
+                    </div>
+                    <div class="col-12 hidden-md hidden-lg fd-main fd-totalrewards" rbl-tid="tr-table"></div>
+                    <div class="col-12 col-md-6 fd-main fd-totalwealth">
+                        <div rbl-tid="tw-chart"></div>
+                        <div class="hidden-xs hidden-sm fd-main" rbl-tid="tw-table" rbl-display="showForecast"></div>
+                    </div>
+                    <div class="col-12 hidden-md hidden-lg fd-main" rbl-tid="tw-table" rbl-display="showForecast"></div>
+                    <div class="col-12 col-md-6 fd-totalrewards tr-summary-medium2">
+                        <div rbl-tid="total-rewards-details" rbl-source="CompensationTable.class.detail"></div>
+                    </div>
+                    <div class="col-12 col-md-6 fd-totalwealth" rbl-display="showForecast">
+                        <div rbl-tid="tw-future"></div>
+                    </div>
+                    <div class="col-12 col-md-12 hidden-xs fd-totalwealth" rbl-display="showForecast"> <!-- combined wealth table occupying 8 cols -->
+                        <div class="futureWealth AW-Item">
+                            <div class="mt-3" rbl-tid="result-table" rbl-tablename="FutureWealthTable"></div>
                         </div>
-                        <div class="col-12 hidden-md hidden-lg fd-main fd-totalrewards" rbl-tid="tr-table"></div>
-                        <div class="col-12 col-md-6 fd-main fd-totalwealth">
-                            <div rbl-tid="tw-chart"></div>
-                            <div class="hidden-xs hidden-sm fd-main" rbl-tid="tw-table"></div>
-                        </div>
-                        <div class="col-12 hidden-md hidden-lg fd-main" rbl-tid="tw-table"></div>
-                        <div class="col-12 col-md-6 fd-totalrewards tr-summary-medium2">
-                            <div rbl-tid="total-rewards-details" rbl-source="CompensationTable.class.detail"></div>
-                        </div>
-                        <div class="col-12 col-md-6 fd-totalwealth">
-                            <div rbl-tid="tw-future"></div>
-                        </div>                                
-                        <div class="col-12 col-md-12 hidden-xs fd-totalwealth"> <!-- combined wealth table occupying 8 cols -->
-                            <div class="futureWealth AW-Item">
-                                <div class="mt-3" rbl-tid="result-table" rbl-tablename="FutureWealthTable"></div>
+                    </div>
+                    <div class="col-12 col-md-8 fd-equity">
+                        <div class="panel panel-default mt-0" rbl-display="DividendTable">
+                            <div class="panel-heading">
+                                <h4 class="panel-title" rbl-value="headerEquity3"></h4>
+                            </div>
+                            <div class="panel-body">
+                                <div class="col-12">
+                                    <div class="mt-3" rbl-tid="result-table" rbl-tablename="DividendTable"></div>
+                                </div>
                             </div>
                         </div>
-                        <div class="col-12 col-md-8 fd-equity">
-                            <div class="panel panel-default mt-0" rbl-display="DividendTable">
-                                <div class="panel-heading">
-                                    <h4 class="panel-title" rbl-value="headerEquity3"></h4>
-                                </div>
-                                <div class="panel-body">
-                                    <div class="col-12">
-                                        <div class="mt-3" rbl-tid="result-table" rbl-tablename="DividendTable"></div>
-                                    </div>
+                        <div class="panel panel-default mt-0" rbl-display="RSUTable">
+                            <div class="panel-heading">
+                                <h4 class="panel-title" rbl-value="headerEquity1">RSU</h4>
+                            </div>
+                            <div class="panel-body hidden-xs">
+                                <div class="col-12">
+                                    <div class="mt-3" rbl-tid="result-table" rbl-tablename="RSUTable"></div>
                                 </div>
                             </div>
-                            <div class="panel panel-default mt-0 hidden-xs" rbl-display="RSUTable">
-                                <div class="panel-heading">
-                                    <h4 class="panel-title" rbl-value="headerEquity1">RSU</h4>
-                                </div>
-                                <div class="panel-body">
-                                    <div class="col-12">
-                                        <div class="mt-3" rbl-tid="result-table" rbl-tablename="RSUTable"></div>
+                            <div class="panel-body visible-xs">
+                                <div class="col-12 mt-3">
+                                    <div class="alert alert-info">
+                                        <div rbl-tid="stock-summary" rbl-source="RSUTable.class.total"></div>
                                     </div>
+                                </div>
+                                <div class="col-12 mt-3">
+                                    <div rbl-tid="stock-detail" rbl-source="RSUTable.filter.1"></div>
                                 </div>
                             </div>
-                            <div class="panel panel-default mt-0 hidden-xs" rbl-display="SSARTable">
-                                <div class="panel-heading">
-                                    <h4 class="panel-title"rbl-value="headerEquity2">SSAR</h4>
+                        </div>
+                        <div class="panel panel-default mt-0" rbl-display="SSARTable">
+                            <div class="panel-heading">
+                                <h4 class="panel-title"rbl-value="headerEquity2">SSAR</h4>
+                            </div>
+                            <div class="panel-body hidden-xs">
+                                <div class="col-12">
+                                    <div class="mt-3" rbl-tid="result-table" rbl-tablename="SSARTable"></div>
                                 </div>
-                                <div class="panel-body">
-                                    <div class="col-12">
-                                        <div class="mt-3" rbl-tid="result-table" rbl-tablename="SSARTable"></div>
+                            </div>
+                            <div class="panel-body visible-xs">
+                                <div class="col-12 mt-3">
+                                    <div class="alert alert-info">
+                                        <div rbl-tid="option-summary" rbl-source="SSARTable.class.total"></div>
+                                        <br/>
+                                        <div rbl-tid="input-dropdown" class="col-md-4" data-inputname="iOptionGrantDate" data-liveSearch="false" data-label="Grant Date"></div>
                                     </div>
+                                </div>
+                                <div class="col-12 mt-3">
+                                    <div rbl-tid="option-detail" rbl-source="SSARTable.filter.1"></div>
                                 </div>
                             </div>
                         </div>
                     </div>
                 </div>
-                <div class="col-12 col-md-4 tr-summary-right" rbl-tid="message"></div>
-                <div class="col-12 col-md-4 fd-main">
-                    <hr>
-                    <dl style="list-style-type: none;">
-                        <div rbl-tid="footnote" rbl-source="footnote.category.Messages"></div>
-                    </dl>
-                </div>
             </div>
-		</div>
-	</div>
+            <div class="col-12 col-md-4 tr-summary-right" rbl-tid="message"></div>
+            <div class="col-12 col-md-4 fd-main">
+                <hr>
+                <dl style="list-style-type: none;">
+                    <div rbl-tid="footnote" rbl-source="footnote.category.Messages"></div>
+                </dl>
+            </div>
+        </div>
+    </div>
 </div>	
 
 <script>
@@ -256,6 +321,7 @@
         var application = view.KatApp();
 
 		function fdShowScreen( screen ){
+			$(".fd-main, .fd-totalrewards, .fd-totalwealth, .fd-equity, .AC-Item").hide();
 			if ( screen === "fd-main") {
 				$(".fd-main").show();
 			}
@@ -271,11 +337,11 @@
 		function filterAlerts() {
 			var filterCategory = "general";
 			//general wealth health retirement work-life 
-			if ($("div.futureWealth.AW-Item").is(":visible")) filterCategory = "wealth";
-			else if ($("div.CashCompensation.AC-Item").is(":visible")) filterCategory = "cash";
-			else if ($("div.HealthWelfare.AC-Item").is(":visible")) filterCategory = "health";
-			else if ($("div.RetirementBenefit.AC-Item").is(":visible")) filterCategory = "retirement";
-			else if ($("div.OtherBenefits.AC-Item").is(":visible")) filterCategory = "other";
+			if ($("div.futureWealth.AW-Item").is(":visible") && application.getResultValueByColumn("suggestions", "category", "wealth","hasSuggestions") == "1") filterCategory = "wealth";
+			else if ($("div.CashCompensation.AC-Item").is(":visible") && application.getResultValueByColumn("suggestions", "category", "cash","hasSuggestions") == "1") filterCategory = "cash";
+			else if ($("div.HealthWelfare.AC-Item").is(":visible") && application.getResultValueByColumn("suggestions", "category", "health","hasSuggestions") == "1") filterCategory = "health";
+			else if ($("div.RetirementBenefit.AC-Item").is(":visible") && application.getResultValueByColumn("suggestions", "category", "retirement","hasSuggestions") == "1") filterCategory = "retirement";
+			else if ($("div.OtherBenefits.AC-Item").is(":visible") && application.getResultValueByColumn("suggestions", "category", "other","hasSuggestions") == "1") filterCategory = "other";
 			else if ($("div.Equity.AC-Item").is(":visible")) filterCategory = "equity";
 			else filterCategory = "general";
 			$(".fd-alerts .alerts", view).hide();
@@ -299,11 +365,10 @@
 	});
 
 	view.on( "onConfigureUICalculation.RBLe", function( event, results, options, application ) {
-		$(".fd-main, .fd-totalrewards, .fd-totalwealth, .fd-equity, .AC-Item").hide();
-		$(".fd-main").show();	
-
-        $("span[data-tr-type]", view).show();  // show non link
-        $(".show-Equity").hide();
+		    $(".fd-main, .fd-totalrewards, .fd-totalwealth, .AC-Item").hide();
+		    $(".fd-main").show();	
+        	$("span[data-tr-type]", view).show();  // show non link
+            $(".show-Equity").hide();
 
             $("a[data-tr-type]").on("click", function() {
                 var isEquity = $(this).data("tr-type")=="Equity";

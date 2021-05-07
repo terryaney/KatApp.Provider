@@ -1,4 +1,4 @@
-<rbl-config bootstrap="5" calcengine="Buck_DecisionSupportIRP_SE" templates="Standard_Templates"></rbl-config>
+<rbl-config bootstrap="4" calcengine="Buck_DecisionSupportIRP_SE" templates="Standard_Templates"></rbl-config>
 
 <script>
 	(function() {

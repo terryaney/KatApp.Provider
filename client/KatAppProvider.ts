@@ -8,8 +8,8 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
 // Need this function format to allow for me to reload script over and over (during debugging/rebuilding)
 (function($, window, document, undefined?: undefined): void {
     const tableInputsAndBootstrapButtons = ", .RBLe-input-table :input, .dropdown-toggle, button";
-    const inputsToIgnoreSelector = "[data-itemtype='checkbox'] :input, .notRBLe, .notRBLe :input, .rbl-exclude, .rbl-exclude :input, rbl-template :input, [type='search']" + tableInputsAndBootstrapButtons;
-    const skipBindingInputSelector = ".notRBLe, .notRBLe :input, .rbl-exclude, .rbl-exclude :input, .skipRBLe, .skipRBLe :input, .rbl-nocalc, .rbl-nocalc :input, rbl-template :input, [type='search']" + tableInputsAndBootstrapButtons;
+    const inputsToIgnoreSelector = "[data-itemtype='checkbox'] :input, .notRBLe, .notRBLe :input, .rbl-exclude, .rbl-exclude :input, rbl-template :input, [rbl-tid='inline'] :input, [type='search']" + tableInputsAndBootstrapButtons;
+    const skipBindingInputSelector = ".notRBLe, .notRBLe :input, .rbl-exclude, .rbl-exclude :input, .skipRBLe, .skipRBLe :input, .rbl-nocalc, .rbl-nocalc :input, rbl-template :input, [rbl-tid='inline'] :input, [type='search']" + tableInputsAndBootstrapButtons;
 
     // Reassign options here (extending with what client/host might have already set) allows
     // options (specifically events) to be managed by CMS - adding features when needed.
@@ -39,10 +39,8 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
 
                 const inputSelector = application.element.data("katapp-input-selector");
                 if ( inputSelector !== undefined ) {
-                    $(".slider-control, " + inputSelector, application.element)
-                        // .not(skipBindingInputSelector)
-                        .filter(":not(" + skipBindingInputSelector + ", :disabled)")
-                        // .not(":disabled")
+                    $("div[data-slider-type='nouislider'], " + inputSelector, application.element)
+                        .not(skipBindingInputSelector + ", :disabled")
                         .attr("disabled", "disabled")
                         .attr("kat-disabled", "true");
 
@@ -301,6 +299,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                                 const view = $("<div class='katapp-css'>" + that.ui.decodeTemplateContent( content ) + "</div>");
                                 const rblConfig = $("rbl-config", view).first();
 
+                                // For all templates, massage the markup so it doesn't cause issues
                                 $("rbl-template, [rbl-tid='inline']", view).each(function() {
                                     const t = $(this);
                                     t.html(that.ui.encodeTemplateContent(t.html()));
@@ -312,37 +311,40 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                                 // const scripts = $("script", view);
                                 // $("script", view).remove();
                                 // alert(scripts.length);
+
+                                const viewCalcEngines: CalcEngine[] = [];
+
                                 if ( rblConfig.length !== 1 ) {
                                     that.trace("View " + viewId + " is missing rbl-config element", TraceVerbosity.Quiet);
                                 }
+                                else {
+                                    const attrCalcEngine = rblConfig.attr("calcengine");
+    
+                                    if ( attrCalcEngine != undefined ) {
+                                        viewCalcEngines.push(
+                                            {
+                                                key: "default",
+                                                name: attrCalcEngine,
+                                                inputTab: rblConfig.attr("input-tab"),
+                                                resultTabs: rblConfig.attr("result-tabs")?.split(","),
+                                                preCalcs: rblConfig.attr("precalcs")
+                                            }                                        
+                                        );
+                                    }
+                                    $("calc-engine", rblConfig).each(function ( i, c ) {
+                                        const ce = $(c);
+                                        viewCalcEngines.push(
+                                            {
+                                                key: ce.attr("key") ?? ce.attr("name") ?? "UNAVAILABLE",
+                                                name: ce.attr("name") ?? "UNAVAILABLE",
+                                                inputTab: ce.attr("input-tab"),
+                                                resultTabs: ce.attr("result-tabs")?.split(","),
+                                                preCalcs: ce.attr("precalcs")
+                                            }                                        
+                                        );
+                                    });
+                                    }
 
-                                const attrCalcEngine = rblConfig.attr("calcengine");
-                                const viewCalcEngines: CalcEngine[] = [];
-                                if ( attrCalcEngine != undefined ) {
-                                    viewCalcEngines.push(
-                                        {
-                                            key: "default",
-                                            name: attrCalcEngine,
-                                            inputTab: rblConfig?.attr("input-tab"),
-                                            resultTabs: rblConfig?.attr("result-tabs")?.split(","),
-                                            preCalcs: rblConfig?.attr("precalcs")
-                                        }                                        
-                                    );
-                                }
-                                $("calc-engine", rblConfig).each(function ( i, c ) {
-                                    const ce = $(c);
-                                    viewCalcEngines.push(
-                                        {
-                                            key: ce.attr("key") ?? ce.attr("name") ?? "UNAVAILABLE",
-                                            name: ce.attr("name") ?? "UNAVAILABLE",
-                                            inputTab: ce.attr("input-tab"),
-                                            resultTabs: ce.attr("result-tabs")?.split(","),
-                                            preCalcs: ce.attr("precalcs")
-                                        }                                        
-                                    );
-                                });
-
-                                // If any calcengines configured in view config...
                                 if ( viewCalcEngines.length > 0 ) {
                                     if ( that.options.calcEngines?.length == 1 && viewCalcEngines.length == 1 ) {
                                         // Backward support a bit, if only one calc engine in options/katapp attributes 
@@ -539,21 +541,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                     // Update options.viewTemplates just in case someone is looking at them
                     that.options.viewTemplates = requiredTemplates.join( "," );
 
-                    // Build up template content that DOES NOT use rbl results, but instead just 
-                    // uses data-* to create a dataobject.  Normally just making controls with templates here
-                    
-                    $("[rbl-tid]:not([rbl-source])", that.element).not("rbl-template [rbl-tid]").each(function () {
-                        const templateId = $(this).attr('rbl-tid');
-                        // If templateId still has { } in it, then it is contained in a template and going to be
-                        //  dynamically assigned during template processing and rendered later/at that time.
-                        if (templateId !== undefined && templateId !== "inline" && templateId.indexOf("{") == -1) {
-                            //Replace content with template processing, using data-* items in this pass
-                            that.rble.injectTemplate( 
-                                $(this), 
-                                that.ui.getTemplate( templateId, that.dataAttributesToJson($(this), "data-") )
-                            );
-                        }
-                    });
+                    that.ui.processTemplatesWithoutSource(that.element);
 
                     // This used to be inside Standard_Template.templateOn, but since it is standard and so common, just moved it here.
                     // Original code:
@@ -570,6 +558,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                             templateBuilder.processCarousels();
                         });
                     */
+
                     // Process data-* attributes and bind events
                     that.templateBuilder.processUI();
 
@@ -577,6 +566,9 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
 
                     that.ui.initializeConfirmLinks();
                     
+                    that.ui.handleVoidAnchors();
+                    that.ui.bindRblOnHandlers();
+
                     that.ui.triggerEvent( "onInitialized", that );
 
                     if ( that.options.runConfigureUICalculation ) {
@@ -1069,7 +1061,14 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
 
         updateOptions( options: KatAppOptions ): void { 
             this.options = KatApp.extend( {}, this.options, options )
-            this.ui.unbindCalculationInputs();
+
+            // If not bound, updateOptions called before onInit is finished, so no need
+            // to bind them here b/c they will be bound later in the workflow
+            const inputsBound = this.element.data("katapp-input-selector") != undefined;
+            
+            if ( inputsBound ) {
+                this.ui.unbindCalculationInputs();
+            }
 
             // When calling this method, presummably all the inputs are available
             // and caller wants the input (html element) to be updated.  When passed
@@ -1079,7 +1078,9 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                 this.options.defaultInputs = undefined;
             }
 
-            this.ui.bindCalculationInputs();
+            if ( inputsBound ) {
+                this.ui.bindCalculationInputs();
+            }
             this.ui.triggerEvent( "onOptionsUpdated", this );
         }
 
@@ -1195,7 +1196,9 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                 // Can't use 'view' in selector for validation summary b/c view could be a 'container' instead of entire view
                 // if caller only wants to initialize a newly generated container's html                        
                 const errorSummary = $("#" + this.id + "_ModelerValidationTable", this.element);
-                $('.validator-container.error:not(.server)', this.element).removeClass('error');
+                $('.validator-container.error', this.element)
+                    .not(".server")    
+                    .removeClass('error');
 
                 this.showAjaxBlocker();
 
@@ -1382,6 +1385,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
             });
         
             $("a[data-confirm], a[data-confirm-selector]", this.application.element)
+                .not("rbl-template *, [rbl-tid='inline'] *, [rbl-tid='inline']") // not in templates
                 .not(".confirm-bound, .jquery-validate, .skip-confirm")
                 .addClass("confirm-bound")
                 .on("click", function() { 
@@ -1490,11 +1494,8 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                 ? dropdown
                 : undefined;
 
-            let currentValue = selectPicker?.selectpicker('val') ?? dropdown.val();
-
             if ( rebuild ) {
                 $("." + controlName + " option", this.application.element).remove();
-                currentValue = undefined;
             }
     
             const that = this;
@@ -1542,6 +1543,8 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                 if (!ls.Visible) {
                     // Hide the item...
                     currentItem.hide();
+
+                    const currentValue = selectPicker?.selectpicker('val') ?? dropdown.val();
 
                     // If selected item from dropdown was hidden, need to clear the value
                     if (currentValue === ls.Value) {
@@ -1619,6 +1622,39 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
             return decodedContent;
         }
 
+        processTemplatesWithoutSource(container: JQuery<HTMLElement>): void {
+            const app = this.application;
+            const that = this;
+            $("[rbl-tid]", container)
+                .not("[rbl-source], [rbl-tid='inline']") // not an inline template and not template with data source
+                .not("rbl-template *, [rbl-tid='inline'] *, [rbl-tid='inline']") // not in templates
+                .each(function () {
+                    const item = $(this);
+                    const templateId = item.attr('rbl-tid')!;
+                    that.injectTemplate( item, templateId );
+                });
+            }
+
+        injectTemplate( target: JQuery<HTMLElement>, templateId: string ): void {
+            const template = this.getTemplate( templateId, this.application.dataAttributesToJson(target, "data-"));
+
+            // rbl-template-type is to enable the creation of templates with different ids/names but still
+            // fall in a category of type.  For example, you may want to make a certain style/template of
+            // sliders (while still keeping main slider template usable) that is then capable of applying
+            // all the KatApp programming (data-* attributes applying ranges, and configurations).
+            target.removeAttr("rbl-template-type");
+    
+            if ( template === undefined ) {
+                target.html("");
+            }
+            else {
+                target.html( template.Content );
+                if ( template.Type !== undefined ) {
+                    target.attr("rbl-template-type", template.Type);
+                }
+            }
+        }
+    
         getTemplate( templateId: string, data: JQuery.PlainObject ): { Content: string; Type: string | undefined } | undefined {
             const application = this.application;
             // Look first for template overriden directly in markup of view
@@ -1661,6 +1697,8 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
             const horizontal = container.data("horizontal") ?? false;
             const itemType: string = container.data("itemtype" );
             const isRadio = itemType === "radio";
+
+            const templateContainer = container.closest("[rbl-tid='input-radiobuttonlist'], [rbl-template-type='katapp-radiobuttonlist'], [rbl-tid='input-checkboxlist'], [rbl-template-type='katapp-checkboxlist']")
 
             if ( itemType == "checkbox" ) {
                 /*                
@@ -1885,7 +1923,8 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
             const that: UIUtilities = this;
 
             if ( customOptions.inputSelector !== undefined ) {
-                const validInputs = $(customOptions.inputSelector, this.application.element).not(inputsToIgnoreSelector);
+                const validInputs = 
+                    $(customOptions.inputSelector, this.application.element).not(inputsToIgnoreSelector);
 
                 jQuery.each(validInputs, function () {
                     const input = $(this);
@@ -1901,7 +1940,13 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                 $("[data-itemtype='checkbox']", this.application.element).each(function() {
                     const cbl = $(this);
                     const name = cbl.data("inputname");
-                    const value = $("input:checked:not([kat-visible='0'])", cbl).toArray().map( chk => $(chk).data("value")).join(",");
+                    const value = 
+                        $("input:checked", cbl)
+                            .not("[kat-visible='0']")    
+                            .toArray()
+                            .map( chk => $(chk).data("value"))
+                            .join(",");
+    
                     inputs[name] = value;
                 });
             }
@@ -2009,6 +2054,106 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
             }        
         }
 
+        handleVoidAnchors(): void {
+            const application = this.application;
+            $("a[href='#']", application.element)
+                .not("[data-nonav='true']")
+                .not("rbl-template *, [rbl-tid='inline'] *, [rbl-tid='inline']")
+                .each(function() {
+                    const el = $(this);
+
+                    el.on("click", function(e) {
+                        e.preventDefault();
+                    }).attr("data-nonav", "true");
+                });
+        }
+
+        bindRblOnHandlers(): void {
+            const app = this.application;
+            if ( app.options.handlers != undefined ) {
+                $("[rbl-tid][rbl-on]", app.element)
+                    .not("rbl-template *, [rbl-tid='inline'] *, [rbl-tid='inline']")
+                    .each(function() {
+                        const el = $(this);
+                        const handlers = el.attr("rbl-on")!.split("|");
+                        // Remove to signal no more processing needed, will be added back on as needed below
+                        el.removeAttr("rbl-on");
+                        
+                        const tid = el.attr("rbl-tid");
+                        const tType = el.attr("rbl-template-type");
+
+                        handlers
+                            .forEach( h => {
+                                const handlerParts = h.split(":");
+                                const handler = handlerParts.splice(0, 2).join(":");
+                                const handlerSelector = handlerParts.length > 0 ? handlerParts.join(":") : undefined;
+
+                                let input = handlerSelector != undefined
+                                    ?  $(handlerSelector, el)
+                                    : undefined;
+                                
+                                if ( input == undefined ) {
+                                    if ( tid == "input-dropdown" || tType == "katapp-dropdown" ) {
+                                        input = $("select.form-control", el).not("[data-rblon-initialized='true']");
+                                    }
+                                    else if ( tid == "input-fileupload" || tType == "katapp-fileupload" ) {
+                                        input = $("input[type='file']", el).not("[data-rblon-initialized='true']");
+                                    }
+                                    else {
+                                        input = $(":input", el).not("[data-rblon-initialized='true']");
+    
+                                        if ( tid == "input-slider" || tType == "katapp-slider" ) {
+                                            input = $("div[data-slider-type='nouislider']", input.parent()).not("[data-rblon-initialized='true']");
+                                        }
+                                    }
+                                }
+
+                                const isStandardListControl =
+                                    tid == 'input-radiobuttonlist' || tid == 'input-checkboxlist' ||
+                                    tType == 'katapp-radiobuttonlist' || tType =='katapp-checkboxlist';
+
+                                if ( input.length > 0 ) {
+                                    const currentHandler = input.first().attr("rbl-on");
+                                    input.attr("rbl-on", currentHandler == undefined ? handler : currentHandler + "|" + handler);
+                                }
+
+                                // If nothing found from target most likely content that will be placed
+                                // in an input template after the calculation has ran (i.e. an anchor in the label),
+                                // so don't flag this item as done yet, and let the call to this after calculation hook up the event.
+                                // Standard list control can have items added during each calculation, so need to continue to process this each time
+                                if ( isStandardListControl || input.length == 0 ) {
+                                    const currentHandler = el.attr("rbl-on");
+                                    el.attr("rbl-on", currentHandler == undefined ? h : currentHandler + "|" + h);
+                                }
+                            });
+                    });
+
+                $("[rbl-on]", app.element)
+                    .not("[rbl-tid]")
+                    .not("[data-rblon-initialized='true']")
+                    .not("rbl-template *, [rbl-tid='inline'] *")
+                    .each(function() {
+                        const el = $(this);
+                        const handlers = el.attr("rbl-on")!.split("|");
+
+                        handlers
+                            .forEach( h => {
+                                const handler = h.split(":");
+                                const eventName = handler[0];
+                                const functionName = handler[1];
+
+                                if ( el.attr("data-slider-type") == "nouislider" ) {
+                                    app.ui.getNoUiSlider(el)?.on( eventName + ".ka",  app.options.handlers![ functionName ] );
+                                }
+                                else {
+                                    el.on( eventName + ".ka",  app.options.handlers![ functionName ] );
+                                }
+                            });
+                        el.attr("data-rblon-initialized", "true");
+                    });
+            }
+        }
+
         bindCalculationInputs(): void {
             const application = this.application;
             if ( application.options.inputSelector !== undefined && application.options.calcEngines !== undefined ) {
@@ -2018,7 +2163,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                 const that: UIUtilities = this;
 
                 $(application.options.inputSelector, application.element).not(skipBindingInputSelector).each(function () {
-                    $(this).on("change.RBLe", function () {
+                    $(this).off("change.RBLe").on("change.RBLe", function () {
                         that.changeRBLe($(this));
                     });
                 });
@@ -2068,15 +2213,20 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                 : undefined;
         }
 
-        getNoUiSlider(id: string, view: JQuery<HTMLElement>): noUiSlider.noUiSlider | undefined {
-            const sliderJQuery = $(".slider-" + id, view);
-            if ( sliderJQuery.length === 1 ) {
-                return ( sliderJQuery[0] as noUiSlider.Instance )?.noUiSlider;
-            }
-            return undefined;
+        findNoUiSlider(id: string, view: JQuery<HTMLElement>): noUiSlider.noUiSlider | undefined {
+            const container = this.findNoUiSliderContainer(id, view);
+            return container != undefined
+                ? ( container[ 0 ] as noUiSlider.Instance )?.noUiSlider
+                : undefined;
         }
 
-        getNoUiSliderContainer(id: string, view: JQuery<HTMLElement>): JQuery<HTMLElement> | undefined {
+        getNoUiSlider(container: JQuery<HTMLElement>): noUiSlider.noUiSlider | undefined {
+            return container != undefined && container.length === 1
+                ? ( container[ 0 ] as noUiSlider.Instance )?.noUiSlider
+                : undefined;
+        }
+
+        findNoUiSliderContainer(id: string, view: JQuery<HTMLElement>): JQuery<HTMLElement> | undefined {
             const sliderJQuery = $(".slider-" + id, view);
             if ( sliderJQuery.length === 1 ) {
                 return sliderJQuery;
@@ -2301,6 +2451,11 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
     
             if (tabDef === undefined || rows === undefined) return undefined;
     
+            if ( typeof key != "string" ) {
+                // In case caller passes in diff type, my === below will not work
+                key = key + "";
+            }
+
             const rowLookups = tabDef?._resultRowLookups || ( tabDef._resultRowLookups = {} );
     
             const lookupKey = table + (columnToSearch ?? "");
@@ -2377,28 +2532,12 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
             return tabDef[tableKey] as Array<T> ?? [];
         }
     
-        injectTemplate( target: JQuery<HTMLElement>, template: { Content: string; Type: string | undefined } | undefined ): void {
-            // rbl-template-type is to enable the creation of templates with different ids/names but still
-            // fall in a category of type.  For example, you may want to make a certain style/template of
-            // sliders (while still keeping main slider template usable) that is then capable of applying
-            // all the KatApp programming (data-* attributes applying ranges, and configurations).
-            target.removeAttr("rbl-template-type");
-    
-            if ( template === undefined ) {
-                target.html("");
-            }
-            else {
-                target.html( template.Content );
-                if ( template.Type !== undefined ) {
-                    target.attr("rbl-template-type", template.Type);
-                }
-            }
-        }
-    
         createHtmlFromResultRow( resultRow: HtmlContentRow, processBlank: boolean ): void {
             const view = this.application.element;
             let content = resultRow.content ?? resultRow.html ?? resultRow.value ?? "";
-            const selector = this.application.ui.getJQuerySelector( resultRow.selector ) ?? this.application.ui.getJQuerySelector( resultRow["@id"] ) ?? "";
+            const selector = 
+                this.application.ui.getJQuerySelector( resultRow.selector ) ?? 
+                this.application.ui.getJQuerySelector( resultRow["@id"] ) ?? "";
     
             if (( processBlank || content.length > 0 ) && selector.length > 0) {
     
@@ -2418,20 +2557,19 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                     }
     
                     if ( content.length > 0 ) {
-                        if ( content.startsWith("<") ) {
+                        // Might have to change this at some point to look for rbl-tid= in string, and then enclose content
+                        // in <div>+content+</div> then get the just the innerHTML
+                        if ( content.startsWith("<") && content.endsWith(">") ) {
                             const el = $(content);
                             const templateId = el.attr("rbl-tid");
-                            
-                            if (templateId !== undefined) {
+
+                            if (templateId !== undefined && el.attr("rbl-source") == undefined && el.attr("rbl-source-table") == undefined && templateId != "inline") {
                                 //Replace content with template processing, using data-* items in this pass
-                                this.injectTemplate( 
-                                    el, 
-                                    this.application.ui.getTemplate( templateId, this.application.dataAttributesToJson(el, "data-") )
-                                 );
+                                this.application.ui.injectTemplate( el, templateId );
                             }
                             
-                            // Append 'templated' content to view
-                            el.appendTo($( selector, view ));
+                            // Append 'templated' content
+                            el.appendTo(target);
                         }
                         else {
                             target.append(content);
@@ -2475,46 +2613,47 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
             const that: RBLeUtilities = this;
             const application = this.application;
     
-            //[rbl-value] inserts text value of referenced tabdef result into .html()
-            $("[rbl-value]", application.element).not("rbl-template [rbl-value]").each(function () {
-                const el = $(this);
-    
-                if ( showInspector && !el.hasClass("kat-inspector-value") )
-                {
-                    el.addClass("kat-inspector-value");
-                    let inspectorTitle = "[rbl-value={value}]".format( { "value": el.attr('rbl-value') } );
-                    const existingTitle = el.attr("title");
-                    
-                    if ( existingTitle != undefined ) {
-                        inspectorTitle += "\nOriginal Title: " + existingTitle;
+            $("[rbl-value]", application.element)
+                .not("rbl-template *, [rbl-tid='inline'] *, [rbl-tid='inline']") // Not sure I'd need these to filter out rbl-value elements inside templates because { } should be used for 'values'
+                .each(function () {
+                    const el = $(this);
+        
+                    if ( showInspector && !el.hasClass("kat-inspector-value") )
+                    {
+                        el.addClass("kat-inspector-value");
+                        let inspectorTitle = "[rbl-value={value}]".format( { "value": el.attr('rbl-value') } );
+                        const existingTitle = el.attr("title");
+                        
+                        if ( existingTitle != undefined ) {
+                            inspectorTitle += "\nOriginal Title: " + existingTitle;
+                        }
+                        el.attr("title", inspectorTitle);
                     }
-                    el.attr("title", inspectorTitle);
-                }
-    
-                const rblValueParts = el.attr('rbl-value')!.split('.'); // eslint-disable-line @typescript-eslint/no-non-null-assertion
-                const tabDef = that.getTabDef( el.attr('rbl-tab'), el.attr('rbl-ce') )
-                const value = 
-                    that.getRblSelectorValue( tabDef, "rbl-value", rblValueParts ) ??
-                    that.getRblSelectorValue( tabDef, "ejs-output", rblValueParts );
-    
-                if ( value != undefined ) {
-                    let target = $(this);
-    
-                    if ( target.length === 1 ) {
-                        target = application.ui.getAspNetCheckboxLabel( target ) ?? target;
-                    }
-    
-                    target.html( value );
+        
+                    const rblValueParts = el.attr('rbl-value')!.split('.'); // eslint-disable-line @typescript-eslint/no-non-null-assertion
+                    const tabDef = that.getTabDef( el.attr('rbl-tab'), el.attr('rbl-ce') )
+                    const value = 
+                        that.getRblSelectorValue( tabDef, "rbl-value", rblValueParts ) ??
+                        that.getRblSelectorValue( tabDef, "ejs-output", rblValueParts );
+        
+                    if ( value != undefined ) {
+                        let target = $(this);
+        
+                        if ( target.length === 1 ) {
+                            target = application.ui.getAspNetCheckboxLabel( target ) ?? target;
+                        }
+        
+                        target.html( value );
 
-                    if ( value.indexOf( "rbl-tid" ) > -1 ) {
-                        // recursive call for templates...
-                        that.processRblSource(target, showInspector);                        
+                        if ( value.indexOf( "rbl-tid" ) > -1 ) {
+                            // In case the markup from CE has a template specified...
+                            that.processRblSource(target, showInspector);                        
+                        }
                     }
-                }
-                else {
-                    application.trace("<b style='color: Red;'>RBL WARNING</b>: no data returned for tab=" + tabDef?._fullName + ", rbl-value=" + el.attr('rbl-value'), TraceVerbosity.Detailed);
-                }
-            });
+                    else {
+                        application.trace("<b style='color: Red;'>RBL WARNING</b>: no data returned for tab=" + tabDef?._fullName + ", rbl-value=" + el.attr('rbl-value'), TraceVerbosity.Detailed);
+                    }
+                });
         }
     
         processRblSources(showInspector: boolean): void {
@@ -2526,10 +2665,9 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
             const that: RBLeUtilities = this;
             const application = this.application;
     
-            $("[rbl-source], [rbl-source-table]", root).add(root.is("[rbl-source], [rbl-source-table]") ? root : [] ) // In case only element from first template is a template itself
-                .not("rbl-template [rbl-source], rbl-template [rbl-source-table]") // not in templates
-                .not("[rbl-source] [rbl-source], [rbl-source] [rbl-source-table]") // not nested in rbl-source item
-                .not("[rbl-source-table] [rbl-source], [rbl-source-table] [rbl-source-table]") // not nested in rbl-source-table item
+            $("[rbl-source], [rbl-source-table]", root)
+                .add(root.is("[rbl-source], [rbl-source-table]") ? root : [] ) // In case only element from first template is a template itself
+                .not("rbl-template *, [rbl-tid='inline'] *, [rbl-tid='inline']") // not in templates
                 .each(function () {
                     const el = $(this);
     
@@ -2595,7 +2733,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                             
                             if ( table !== undefined && table.length > 0 ) {
                                 
-                                // Get a row with all values cleared out so that rows with blanks in CE
+                                // Get a 'data' row with all values cleared out so that rows with blanks in CE
                                 // (which aren't exported) are properly handled in templates
                                 const firstRowSource = KatApp.extend( {}, table[0] );
                                 if (Object.keys(firstRowSource).length > 0) {
@@ -2614,14 +2752,23 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                                     }
 
                                     if ( templateData !== undefined ) {
-                                        el.html( templateContent.format( templateData ) );
+                                        const formattedContent = $("<div>" + templateContent.format( templateData ) + "</div>");
+                                        el.children().remove();
+    
+                                        // Nested templates
+                                        that.application.ui.processTemplatesWithoutSource(formattedContent);        
+                                        that.processRblSource(formattedContent, showInspector);
+                                        el.append(formattedContent.children());
                                     }
                                     else {
                                         application.trace("<b style='color: Red;'>RBL WARNING</b>: no data returned for tab=" + tabDefName + ", rbl-source=" + el.attr('rbl-source'), TraceVerbosity.Detailed);
                                     }
                                 }
                                 else if ( rblSourceParts.length === 1 || rblSourceParts.length === 3 ) {
-                                    el.children( ":not(.rbl-preserve, [rbl-tid='inline'])" ).remove();
+                                    el.children()
+                                        .not(".rbl-preserve, [rbl-tid='inline']")
+                                        .remove();
+
                                     const prepend = el.attr('rbl-prepend') === "true";
                                                             
                                     table.forEach( ( row, index ) => {
@@ -2637,17 +2784,18 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                                                 // when column has meta data of @class, @width, etc.
                                             }
 
-                                            // compiler misstating that templateContent could be undefined
-                                            const formattedContent = $(templateContent!.format( templateData ));
+                                            // compiler mis-stating that templateContent could be undefined
+                                            const formattedContent = $("<div>" + templateContent!.format( templateData ) + "</div>");
         
-                                            // Recursive call to support nested templates
+                                            // Nested templates
+                                            that.application.ui.processTemplatesWithoutSource(formattedContent);        
                                             that.processRblSource(formattedContent, showInspector);
         
                                             if ( prepend ) {
-                                                el.prepend( formattedContent );
+                                                el.prepend( formattedContent.children() );
                                             }
                                             else {
-                                                el.append( formattedContent );
+                                                el.append( formattedContent.children() );
                                             }
                                         }
                                     });
@@ -2656,12 +2804,18 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                                     const value = that.getResultValue( tabDef, rblSourceParts[0], rblSourceParts[1], rblSourceParts[2]);
                                     
                                     if ( value !== undefined ) {
-                                        el.html( templateContent.format( { "value": value } ) );                                    
+                                        const formattedContent = $("<div>" + templateContent.format( { "value": value } ) + "</div>");
+                                        el.children().remove();
+    
+                                        // Nested templates
+                                        that.application.ui.processTemplatesWithoutSource(formattedContent);        
+                                        that.processRblSource(formattedContent, showInspector);
+    
+                                        el.append(formattedContent.append());
                                     }
                                     else {
                                         application.trace("<b style='color: Red;'>RBL WARNING</b>: no data returned for tab=" + tabDefName + ", rbl-source=" + el.attr('rbl-source'), TraceVerbosity.Detailed);
-                                    }
-            
+                                    }            
                                 }        
                             } else {
                                 application.trace("<b style='color: Red;'>RBL WARNING</b>: no data returned for tab=" + tabDefName + ", rbl-source=" + el.attr('rbl-source'), TraceVerbosity.Detailed);
@@ -2678,65 +2832,67 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
             // toggle visibility
             //[rbl-display] controls display = none|block(flex?).  
             //Should this be rbl-state ? i.e. other states visibility, disabled, delete
-            $("[rbl-display]", application.element).not("rbl-template [rbl-display]").each(function () {
-                const el = $(this);
-                const rblDisplay = el.attr('rbl-display');
+            $("[rbl-display]", application.element)
+                .not("rbl-template *, [rbl-tid='inline'] *, [rbl-tid='inline']") // not in templates
+                .each(function () {
+                    const el = $(this);
+                    const rblDisplay = el.attr('rbl-display');
 
-                if ( rblDisplay != undefined ) {
-                    if ( showInspector && !el.hasClass("kat-inspector-display") )
-                    {
-                        el.addClass("kat-inspector-display");
-                        let inspectorTitle = "[rbl-display={value}]".format( { value: rblDisplay } );
-                        const existingTitle = el.attr("title");
-                        
-                        if ( existingTitle != undefined ) {
-                            inspectorTitle += el.hasClass( "kat-inspector-value" )
-                                ? "\n" + existingTitle
-                                : "\nOriginal Title: " + existingTitle;
+                    if ( rblDisplay != undefined ) {
+                        if ( showInspector && !el.hasClass("kat-inspector-display") )
+                        {
+                            el.addClass("kat-inspector-display");
+                            let inspectorTitle = "[rbl-display={value}]".format( { value: rblDisplay } );
+                            const existingTitle = el.attr("title");
+                            
+                            if ( existingTitle != undefined ) {
+                                inspectorTitle += el.hasClass( "kat-inspector-value" )
+                                    ? "\n" + existingTitle
+                                    : "\nOriginal Title: " + existingTitle;
+                            }
+                            el.attr("title", inspectorTitle);
                         }
-                        el.attr("title", inspectorTitle);
-                    }
-        
-                    // totalReturned=0
-                    const rblDisplayParts = rblDisplay.split('.');
-                    const tabDef = that.getTabDef( el.attr('rbl-tab'), el.attr('rbl-ce') )
-                    let  tabDefName = tabDef?._fullName ?? ( el.attr( "rbl-ce" ) ?? "default" ) + "." + ( el.attr( "rbl-tab" ) ?? "default" );
-
-                    if ( tabDef != undefined ) {
-                        //check to see if there's an "=" for a simple equality expression
-                        // If rblDisplay = table.id.col=value, rblDisplayParts is: table, id, col=value
-                        // so split the last item and if expression is present, change the last displayParts
-                        // from col=value to just col.  Then get the value.
-                        const expressionParts = rblDisplayParts[ rblDisplayParts.length - 1].split('=');
-                        rblDisplayParts[ rblDisplayParts.length - 1] = expressionParts[0];
-                        
-                        let visibilityValue = 
-                            that.getRblSelectorValue( tabDef, "rbl-display", rblDisplayParts ) ??
-                            that.getRblSelectorValue( tabDef, "ejs-visibility", rblDisplayParts ) ??
-                            that.getRblSelectorValue( tabDef, "ejs-output", rblDisplayParts ); // Should remove this and only check ejs-visibility as the 'default'
             
-                        if (visibilityValue != undefined) {
+                        // totalReturned=0
+                        const rblDisplayParts = rblDisplay.split('.');
+                        const tabDef = that.getTabDef( el.attr('rbl-tab'), el.attr('rbl-ce') )
+                        let  tabDefName = tabDef?._fullName ?? ( el.attr( "rbl-ce" ) ?? "default" ) + "." + ( el.attr( "rbl-tab" ) ?? "default" );
 
-                            // Reassign the value you are checking to 1/0 if they tried to compare with
-                            // an expression of col=value.
-                            if ( expressionParts.length > 1) {
-                                visibilityValue = ( visibilityValue == expressionParts[1] ) ? "1" : "0";
-                            }
-            
-                            if (visibilityValue === "0" || visibilityValue.toLowerCase() === "false" || visibilityValue === "") {
-                                el.hide();
-                            }
-                            else {
-                                el.show();
-                            }
+                        if ( tabDef != undefined ) {
+                            //check to see if there's an "=" for a simple equality expression
+                            // If rblDisplay = table.id.col=value, rblDisplayParts is: table, id, col=value
+                            // so split the last item and if expression is present, change the last displayParts
+                            // from col=value to just col.  Then get the value.
+                            const expressionParts = rblDisplayParts[ rblDisplayParts.length - 1].split('=');
+                            rblDisplayParts[ rblDisplayParts.length - 1] = expressionParts[0];
+                            
+                            let visibilityValue = 
+                                that.getRblSelectorValue( tabDef, "rbl-display", rblDisplayParts ) ??
+                                that.getRblSelectorValue( tabDef, "ejs-visibility", rblDisplayParts ) ??
+                                that.getRblSelectorValue( tabDef, "ejs-output", rblDisplayParts ); // Should remove this and only check ejs-visibility as the 'default'
+                
+                            if (visibilityValue != undefined) {
 
-                            return;
+                                // Reassign the value you are checking to 1/0 if they tried to compare with
+                                // an expression of col=value.
+                                if ( expressionParts.length > 1) {
+                                    visibilityValue = ( visibilityValue == expressionParts[1] ) ? "1" : "0";
+                                }
+                
+                                if (visibilityValue === "0" || visibilityValue.toLowerCase() === "false" || visibilityValue === "") {
+                                    el.hide();
+                                }
+                                else {
+                                    el.show();
+                                }
+
+                                return;
+                            }
                         }
-                    }
 
-                    application.trace("<b style='color: Red;'>RBL WARNING</b>: no data returned for tab=" + tabDefName + ", rbl-display=" + rblDisplay, TraceVerbosity.Detailed);
-                }
-            });
+                        application.trace("<b style='color: Red;'>RBL WARNING</b>: no data returned for tab=" + tabDefName + ", rbl-display=" + rblDisplay, TraceVerbosity.Detailed);
+                    }
+                });
         }
     
         processRblDatas( tabDef: TabDef ): void {
@@ -2779,8 +2935,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                     
                     el.addClass("rbl-nocalc skipRBLe").off(".RBLe");
                     $(":input", el).off(".RBLe");
-    
-                    application.ui.getNoUiSlider(selector.substring(1), application.element)?.off('set.RBLe');
+                    this.application.ui.getNoUiSlider( $("div[data-slider-type='nouislider']", el.parent()) )?.off('.RBLe');
                 }
             });
         }
@@ -2797,10 +2952,10 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                 const isRadioList = listControl.data("itemtype") == "radio";
                 const aspCheckbox = this.application.ui.getAspNetCheckboxInput(input);
                 const radioButtons = isRadioList ? $("input", listControl) : $("input[type='radio']", input);
-                const noUiSlider = this.application.ui.getNoUiSlider(id, this.application.element);
+                const noUiSlider = this.application.ui.findNoUiSlider(id, this.application.element);
     
                 if ( noUiSlider !== undefined ) {
-                    const sliderContainer = this.application.ui.getNoUiSliderContainer(id, this.application.element);
+                    const sliderContainer = this.application.ui.findNoUiSliderContainer(id, this.application.element);
                     if ( sliderContainer !== undefined )
                     {
                         sliderContainer.data("setting-default", 1); // No way to set slider without triggering calc, so setting flag
@@ -2869,14 +3024,14 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                     // slider-@id - noUiSlider
                     const value = row.value ?? "";
                     const input = $(selector + ", " + selector + " input", application.element);
-                    const slider = this.application.ui.getNoUiSliderContainer( id, application.element );
+                    const sliderContainer = this.application.ui.findNoUiSliderContainer( id, application.element );
     
-                    if (slider !== undefined) {
+                    if (sliderContainer !== undefined) {
                         if (value === "1") {
-                            slider.attr("disabled", "true").removeAttr("kat-disabled");
+                            sliderContainer.attr("disabled", "true").removeAttr("kat-disabled");
                         }
                         else {
-                            slider.removeAttr("disabled");
+                            sliderContainer.removeAttr("disabled");
                         }
                     }
                     else if ( input.length > 0 ) {
@@ -2945,236 +3100,238 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
             const view = application.element;
             const that: RBLeUtilities = this;
     
-            $("[rbl-tid='result-table']", view).not("rbl-template [rbl-tid='result-table']").each(function ( i, r ) {
-                const tableName = r.getAttribute( "rbl-tablename" ) ?? r.getAttribute( "rbl-source" );
-                const templateCss = r.getAttribute( "data-css" );
-    
-                if ( tableName !== null ) {
-                    const tabDef = that.getTabDef( r.getAttribute('rbl-tab'), r.getAttribute('rbl-ce') )
-                    const contentRows = application.rble.getResultTable<ContentsRow>( tabDef, "contents" );
-                    
-                    const configRow = 
-                        contentRows.find( row => row.section === "1" && KatApp.stringCompare( row.type, "table", true ) === 0 && row.item === tableName );
-    
-                    const configCss = configRow?.class;
-                    let tableCss = 
-                        configCss != undefined ? "rbl " + tableName + " " + configCss :
-                        templateCss != undefined ? "rbl " + tableName + " " + templateCss :
-                        "table table-striped table-bordered table-condensed rbl " + tableName;
-                        
-                    const tableRows = application.rble.getResultTable<ResultTableRow>( tabDef, tableName );
-    
-                    if ( tableRows.length === 0 ) {
-                        return;
-                    }
-    
-                    const tableConfigRow = tableRows[ 0 ];
-                    const includeAllColumns = false; // This is a param in RBLe.js
-                    const hasResponsiveTable = tableCss.indexOf("table-responsive") > -1;
-                    tableCss = tableCss.replace("table-responsive", "");
-    
-                    const tableColumns = 
-                        Object.keys(tableConfigRow)
-                            .filter(k => k.startsWith("text") || k.startsWith("value") || (includeAllColumns && k !== "@name"))
-                            .map(k => (
-                                { 
-                                    Name: k, 
-                                    Element: tableConfigRow[k], 
-                                    Width: tableConfigRow[k][hasResponsiveTable ? "@r-width" : "@width"] 
-                                })
-                            )
-                            .map(e => ({
-                                name: e.Name,
-                                isTextColumn: e.Name.startsWith("text"),
-                                cssClass: e.Element["@class"],
-                                width: e.Width !== undefined && !e.Width.endsWith("%") ? + e.Width : undefined,
-                                widthPct: e.Width !== undefined && e.Width.endsWith("%") ? e.Width : undefined,
-                                xsColumns: ( e.Element["@xs-width"] != undefined ? e.Element["@xs-width"]*1 : undefined ) || (hasResponsiveTable && e.Element["@width"] != undefined ? e.Element["@width"]*1 : undefined),
-                                smColumns: e.Element["@sm-width"] != undefined ? e.Element["@sm-width"] * 1 : undefined,
-                                mdColumns: e.Element["@md-width"] != undefined ? e.Element["@md-width"] * 1 : undefined,
-                                lgColumns: e.Element["@lg-width"] != undefined ? e.Element["@lg-width"] * 1 : undefined
-                            }) as ResultTableColumnConfiguration );
-                    
-                    const columnConfiguration: { 
-                        [ key: string ]: ResultTableColumnConfiguration;
-                    } = {};
-                
-                    tableColumns.forEach( c => {
-                        columnConfiguration[ c.name ] = c;
-                    });
-    
-                    const hasBootstrapTableWidths = tableColumns.filter(c => c.xsColumns !== undefined || c.smColumns !== undefined || c.mdColumns !== undefined || c.lgColumns !== undefined).length > 0;
-                    const useBootstrapColumnWidths = hasBootstrapTableWidths && !hasResponsiveTable;
-    
-                    let colGroupDef: string | undefined = undefined; // This was an optional param in RBLe
-    
-                    const getBootstrapColumnCss = function( c: ResultTableColumnConfiguration ) {
-                        let bsClass = c.xsColumns !== undefined ? " col-xs-" + c.xsColumns : "";
-                        bsClass += c.smColumns !== undefined ? " col-sm-" + c.smColumns : "";
-                        bsClass += c.mdColumns !== undefined ? " col-md-" + c.mdColumns : "";
-                        bsClass += c.lgColumns !== undefined ? " col-lg-" + c.lgColumns : "";
-
-                        return bsClass.trim();
-                    }
-                    const getBootstrapSpanColumnCss = function( start: number, length: number ) {
-                        const spanCols = tableColumns.filter( ( c, i ) => i >= start && i <= start + length );
-                        const xs = spanCols.reduce( ( sum, curr ) => sum + ( curr.xsColumns ?? 0 ), 0 );
-                        const sm = spanCols.reduce( ( sum, curr ) => sum + ( curr.smColumns ?? 0 ), 0 );
-                        const md = spanCols.reduce( ( sum, curr ) => sum + ( curr.mdColumns ?? 0 ), 0 );
-                        const lg = spanCols.reduce( ( sum, curr ) => sum + ( curr.lgColumns ?? 0 ), 0 );
-                        let bsClass = xs > 0 ? " col-xs-" + xs : "";
-                        bsClass += sm > 0 ? " col-sm-" + sm : "";
-                        bsClass += md > 0 ? " col-md-" + md : "";
-                        bsClass += lg > 0 ? " col-lg-" + lg : "";
-
-                        return bsClass.trim();
-                    }
-
-                    if ( colGroupDef === undefined ) {
-                        colGroupDef = "";
-
-                        if ( !useBootstrapColumnWidths ) {
-                            tableColumns.forEach(c => {
-                                const width = c.width !== undefined || c.widthPct !== undefined
-                                    ? " width=\"{width}\"".format( { width: c.widthPct || (c.width + "px") })
-                                    : "";
+            $("[rbl-tid='result-table']", view)
+                .not("rbl-template *, [rbl-tid='inline'] *, [rbl-tid='inline']") // not in templates
+                .each(function ( i, r ) {
+                    const tableName = r.getAttribute( "rbl-tablename" ) ?? r.getAttribute( "rbl-source" );
+                    const templateCss = r.getAttribute( "data-css" );
         
-                                colGroupDef += "<col class=\"{table}-{column}\"{width} />".format(
-                                    {
-                                        table: tableName,
-                                        column: c.name,
-                                        width: width
-                                    }
-                                );
-                            });
+                    if ( tableName !== null ) {
+                        const tabDef = that.getTabDef( r.getAttribute('rbl-tab'), r.getAttribute('rbl-ce') )
+                        const contentRows = application.rble.getResultTable<ContentsRow>( tabDef, "contents" );
+                        
+                        const configRow = 
+                            contentRows.find( row => row.section === "1" && KatApp.stringCompare( row.type, "table", true ) === 0 && row.item === tableName );
+        
+                        const configCss = configRow?.class;
+                        let tableCss = 
+                            configCss != undefined ? "rbl " + tableName + " " + configCss :
+                            templateCss != undefined ? "rbl " + tableName + " " + templateCss :
+                            "table table-striped table-bordered table-condensed rbl " + tableName;
+                            
+                        const tableRows = application.rble.getResultTable<ResultTableRow>( tabDef, tableName );
+        
+                        if ( tableRows.length === 0 ) {
+                            return;
                         }
-                    }
-    
-                    const colGroup = colGroupDef != "" ? that.createResultTableElement(colGroupDef, "colgroup") : "";
-    
-                    let headerHtml = "";
-                    let bodyHtml = "";
+        
+                        const tableConfigRow = tableRows[ 0 ];
+                        const includeAllColumns = false; // This is a param in RBLe.js
+                        const hasResponsiveTable = tableCss.indexOf("table-responsive") > -1;
+                        tableCss = tableCss.replace("table-responsive", "");
+        
+                        const tableColumns = 
+                            Object.keys(tableConfigRow)
+                                .filter(k => k.startsWith("text") || k.startsWith("value") || (includeAllColumns && k !== "@name"))
+                                .map(k => (
+                                    { 
+                                        Name: k, 
+                                        Element: tableConfigRow[k], 
+                                        Width: tableConfigRow[k][hasResponsiveTable ? "@r-width" : "@width"] 
+                                    })
+                                )
+                                .map(e => ({
+                                    name: e.Name,
+                                    isTextColumn: e.Name.startsWith("text"),
+                                    cssClass: e.Element["@class"],
+                                    width: e.Width !== undefined && !e.Width.endsWith("%") ? + e.Width : undefined,
+                                    widthPct: e.Width !== undefined && e.Width.endsWith("%") ? e.Width : undefined,
+                                    xsColumns: ( e.Element["@xs-width"] != undefined ? e.Element["@xs-width"]*1 : undefined ) || (hasResponsiveTable && e.Element["@width"] != undefined ? e.Element["@width"]*1 : undefined),
+                                    smColumns: e.Element["@sm-width"] != undefined ? e.Element["@sm-width"] * 1 : undefined,
+                                    mdColumns: e.Element["@md-width"] != undefined ? e.Element["@md-width"] * 1 : undefined,
+                                    lgColumns: e.Element["@lg-width"] != undefined ? e.Element["@lg-width"] * 1 : undefined
+                                }) as ResultTableColumnConfiguration );
+                        
+                        const columnConfiguration: { 
+                            [ key: string ]: ResultTableColumnConfiguration;
+                        } = {};
+                    
+                        tableColumns.forEach( c => {
+                            columnConfiguration[ c.name ] = c;
+                        });
+        
+                        const hasBootstrapTableWidths = tableColumns.filter(c => c.xsColumns !== undefined || c.smColumns !== undefined || c.mdColumns !== undefined || c.lgColumns !== undefined).length > 0;
+                        const useBootstrapColumnWidths = hasBootstrapTableWidths && !hasResponsiveTable;
+        
+                        let colGroupDef: string | undefined = undefined; // This was an optional param in RBLe
+        
+                        const getBootstrapColumnCss = function( c: ResultTableColumnConfiguration ) {
+                            let bsClass = c.xsColumns !== undefined ? " col-xs-" + c.xsColumns : "";
+                            bsClass += c.smColumns !== undefined ? " col-sm-" + c.smColumns : "";
+                            bsClass += c.mdColumns !== undefined ? " col-md-" + c.mdColumns : "";
+                            bsClass += c.lgColumns !== undefined ? " col-lg-" + c.lgColumns : "";
 
-                    tableRows.forEach( row => {
-                        const code = row["code"] ?? "";
-                        const id = row["@id"] ?? "";
-                        const isHeaderRow = 
-                            (code === "h" || code.startsWith("header") || code.startsWith("hdr") ) ||
-                            (id === "h" || id.startsWith("header") || id.startsWith("hdr"));
-    
-                        const element = 
-                            useBootstrapColumnWidths ? "div" :
-                            isHeaderRow ? "th" : "td";
+                            return bsClass.trim();
+                        }
+                        const getBootstrapSpanColumnCss = function( start: number, length: number ) {
+                            const spanCols = tableColumns.filter( ( c, i ) => i >= start && i <= start + length );
+                            const xs = spanCols.reduce( ( sum, curr ) => sum + ( curr.xsColumns ?? 0 ), 0 );
+                            const sm = spanCols.reduce( ( sum, curr ) => sum + ( curr.smColumns ?? 0 ), 0 );
+                            const md = spanCols.reduce( ( sum, curr ) => sum + ( curr.mdColumns ?? 0 ), 0 );
+                            const lg = spanCols.reduce( ( sum, curr ) => sum + ( curr.lgColumns ?? 0 ), 0 );
+                            let bsClass = xs > 0 ? " col-xs-" + xs : "";
+                            bsClass += sm > 0 ? " col-sm-" + sm : "";
+                            bsClass += md > 0 ? " col-md-" + md : "";
+                            bsClass += lg > 0 ? " col-lg-" + lg : "";
 
-                        let rowClass = row["@class"] ?? row["class"] ?? "";
-
-                        if ( useBootstrapColumnWidths ) {
-                            rowClass += " row tr-row";
-                            if ( isHeaderRow ) {
-                                rowClass += " h-row"
-                            }
+                            return bsClass.trim();
                         }
 
-                        const span = that.getResultTableValue(row, "span");
-    
-                        let rowHtml = "";
-                        let headerSpanCellName: string | undefined = "";
-    
-                        if (isHeaderRow && span === "" && (headerSpanCellName = that.getHeaderSpanCellName(row)) !== undefined) {
-                            const hClass =
-                                "{valueClass} span-{table}-{column} {bsGrid}".format(
-                                    {
-                                        table: tableName,
-                                        column: headerSpanCellName,
-                                        valueClass: columnConfiguration[headerSpanCellName].isTextColumn ? "text" : "value",
-                                        bsGrid: useBootstrapColumnWidths ? getBootstrapSpanColumnCss( 0, tableColumns.length - 1 ) : ""
-                                    }
-                                );
-                            rowHtml += that.getCellMarkup(row, headerSpanCellName, element, hClass.trim(), tableColumns.length, useBootstrapColumnWidths);
-                        }
-                        else if (span !== "") {
-                            const parts = span.split(":");
-                            let currentCol = 0;
+                        if ( colGroupDef === undefined ) {
+                            colGroupDef = "";
 
-                            for (let p = 0; p < parts.length; p++) {
-                                if (p % 2 === 0) {
-                                    const colSpan = +parts[p + 1];
-    
-                                    // includeBootstrapColumnWidths - need to figure out how to get class in here...
-                                    // parse viewports and add together based on colSpan...
-                                    const colSpanName = parts[p];
-                                    const spanConfig = columnConfiguration[colSpanName];
-                                    const textCol = spanConfig.isTextColumn;
-    
-                                    const sClass =
-                                        "{valueClass}{columnClass} span-{table}-{column} {bsGrid}".format(
-                                            {
-                                                table: tableName,
-                                                column: colSpan,
-                                                valueClass: textCol ? "text" : "value",
-                                                columnClass: spanConfig.cssClass != undefined ? " " + spanConfig.cssClass : "",
-                                                bsGrid: useBootstrapColumnWidths ? getBootstrapSpanColumnCss(currentCol, colSpan - 1) : ""
-                                            }
-                                        );
-                                    
-                                    currentCol += colSpan;
-                                    rowHtml += that.getCellMarkup(row, colSpanName, element, sClass.trim(), colSpan, useBootstrapColumnWidths);
-                                }
-                            }
-                        }
-                        else {
-                            tableColumns.forEach(c => {
-                                const columnClass = useBootstrapColumnWidths
-                                    ? [ getBootstrapColumnCss( c ), c.cssClass ?? "" ]
-                                        .filter( c => c != undefined && c != "" )
-                                        .join( " " )
-                                    : c.cssClass ?? "";
-
-                                const cClass =
-                                    "{valueClass} {columnClass} {table}-{column}".format(
+                            if ( !useBootstrapColumnWidths ) {
+                                tableColumns.forEach(c => {
+                                    const width = c.width !== undefined || c.widthPct !== undefined
+                                        ? " width=\"{width}\"".format( { width: c.widthPct || (c.width + "px") })
+                                        : "";
+            
+                                    colGroupDef += "<col class=\"{table}-{column}\"{width} />".format(
                                         {
                                             table: tableName,
                                             column: c.name,
-                                            valueClass: c.isTextColumn ? "text" : "value",
-                                            columnClass: columnClass
+                                            width: width
                                         }
                                     );
-    
-                                rowHtml += that.getCellMarkup(row, c.name, element, cClass, undefined, useBootstrapColumnWidths );
-                            });
-                        }    
-    
-                        if (!useBootstrapColumnWidths && isHeaderRow && bodyHtml === "") {
-                            headerHtml += that.createResultTableElement(rowHtml, "tr", rowClass.trim());
+                                });
+                            }
+                        }
+        
+                        const colGroup = colGroupDef != "" ? that.createResultTableElement(colGroupDef, "colgroup") : "";
+        
+                        let headerHtml = "";
+                        let bodyHtml = "";
+
+                        tableRows.forEach( row => {
+                            const code = row["code"] ?? "";
+                            const id = row["@id"] ?? "";
+                            const isHeaderRow = 
+                                (code === "h" || code.startsWith("header") || code.startsWith("hdr") ) ||
+                                (id === "h" || id.startsWith("header") || id.startsWith("hdr"));
+        
+                            const element = 
+                                useBootstrapColumnWidths ? "div" :
+                                isHeaderRow ? "th" : "td";
+
+                            let rowClass = row["@class"] ?? row["class"] ?? "";
+
+                            if ( useBootstrapColumnWidths ) {
+                                rowClass += " row tr-row";
+                                if ( isHeaderRow ) {
+                                    rowClass += " h-row"
+                                }
+                            }
+
+                            const span = that.getResultTableValue(row, "span");
+        
+                            let rowHtml = "";
+                            let headerSpanCellName: string | undefined = "";
+        
+                            if (isHeaderRow && span === "" && (headerSpanCellName = that.getHeaderSpanCellName(row)) !== undefined) {
+                                const hClass =
+                                    "{valueClass} span-{table}-{column} {bsGrid}".format(
+                                        {
+                                            table: tableName,
+                                            column: headerSpanCellName,
+                                            valueClass: columnConfiguration[headerSpanCellName].isTextColumn ? "text" : "value",
+                                            bsGrid: useBootstrapColumnWidths ? getBootstrapSpanColumnCss( 0, tableColumns.length - 1 ) : ""
+                                        }
+                                    );
+                                rowHtml += that.getCellMarkup(row, headerSpanCellName, element, hClass.trim(), tableColumns.length, useBootstrapColumnWidths);
+                            }
+                            else if (span !== "") {
+                                const parts = span.split(":");
+                                let currentCol = 0;
+
+                                for (let p = 0; p < parts.length; p++) {
+                                    if (p % 2 === 0) {
+                                        const colSpan = +parts[p + 1];
+        
+                                        // includeBootstrapColumnWidths - need to figure out how to get class in here...
+                                        // parse viewports and add together based on colSpan...
+                                        const colSpanName = parts[p];
+                                        const spanConfig = columnConfiguration[colSpanName];
+                                        const textCol = spanConfig.isTextColumn;
+        
+                                        const sClass =
+                                            "{valueClass}{columnClass} span-{table}-{column} {bsGrid}".format(
+                                                {
+                                                    table: tableName,
+                                                    column: colSpan,
+                                                    valueClass: textCol ? "text" : "value",
+                                                    columnClass: spanConfig.cssClass != undefined ? " " + spanConfig.cssClass : "",
+                                                    bsGrid: useBootstrapColumnWidths ? getBootstrapSpanColumnCss(currentCol, colSpan - 1) : ""
+                                                }
+                                            );
+                                        
+                                        currentCol += colSpan;
+                                        rowHtml += that.getCellMarkup(row, colSpanName, element, sClass.trim(), colSpan, useBootstrapColumnWidths);
+                                    }
+                                }
+                            }
+                            else {
+                                tableColumns.forEach(c => {
+                                    const columnClass = useBootstrapColumnWidths
+                                        ? [ getBootstrapColumnCss( c ), c.cssClass ?? "" ]
+                                            .filter( c => c != undefined && c != "" )
+                                            .join( " " )
+                                        : c.cssClass ?? "";
+
+                                    const cClass =
+                                        "{valueClass} {columnClass} {table}-{column}".format(
+                                            {
+                                                table: tableName,
+                                                column: c.name,
+                                                valueClass: c.isTextColumn ? "text" : "value",
+                                                columnClass: columnClass
+                                            }
+                                        );
+        
+                                    rowHtml += that.getCellMarkup(row, c.name, element, cClass, undefined, useBootstrapColumnWidths );
+                                });
+                            }    
+        
+                            if (!useBootstrapColumnWidths && isHeaderRow && bodyHtml === "") {
+                                headerHtml += that.createResultTableElement(rowHtml, "tr", rowClass.trim());
+                            }
+                            else {
+                                bodyHtml += that.createResultTableElement(rowHtml, useBootstrapColumnWidths ? "div" : "tr", rowClass.trim());
+                            }
+                        });
+                        
+                        if ( useBootstrapColumnWidths ) {
+                            const html = that.createResultTableElement(bodyHtml, "div", "");        
+                            $(r).empty().append($(html));
                         }
                         else {
-                            bodyHtml += that.createResultTableElement(rowHtml, useBootstrapColumnWidths ? "div" : "tr", rowClass.trim());
+                            const tableHtml = that.createResultTableElement(
+                                colGroup + 
+                                ( headerHtml !== "" 
+                                    ? that.createResultTableElement(headerHtml, "thead") 
+                                    : ""
+                                ) + that.createResultTableElement(bodyHtml, "tbody"),
+                                "table border=\"0\" cellspacing=\"0\" cellpadding=\"0\"",
+                                tableCss
+                            );
+            
+                            const html = hasResponsiveTable
+                                ? that.createResultTableElement(tableHtml, "div", "table-responsive")
+                                : tableHtml;
+            
+                            $(r).empty().append($(html));
                         }
-                    });
-                    
-                    if ( useBootstrapColumnWidths ) {
-                        const html = that.createResultTableElement(bodyHtml, "div", "");        
-                        $(r).empty().append($(html));
                     }
-                    else {
-                        const tableHtml = that.createResultTableElement(
-                            colGroup + 
-                            ( headerHtml !== "" 
-                                ? that.createResultTableElement(headerHtml, "thead") 
-                                : ""
-                            ) + that.createResultTableElement(bodyHtml, "tbody"),
-                            "table border=\"0\" cellspacing=\"0\" cellpadding=\"0\"",
-                            tableCss
-                        );
-        
-                        const html = hasResponsiveTable
-                            ? that.createResultTableElement(tableHtml, "div", "table-responsive")
-                            : tableHtml;
-        
-                        $(r).empty().append($(html));
-                    }
-                }
-            });
+                });
         }
     
         processCharts(): void {
@@ -3244,8 +3401,8 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                 $(warningSummary).insertBefore(errorSummary);
             }            
     
-            $('.validator-container.error:not(.server)', view).removeClass('error');
-            $('.validator-container.warning:not(.server)', view).removeClass('warning');
+            $('.validator-container.error', view).not(".server").removeClass('error');
+            $('.validator-container.warning', view).not(".server").removeClass('warning');
     
             [ warningSummary, errorSummary ].forEach( summary => {
                 // Remove all RBLe client side created errors since they would be added back
@@ -3262,11 +3419,11 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                 // I can remove them here
                 if ($("ul li", summary).length === 0) {
                     summary.hide();
-                    $("div:first", summary).hide();
+                    $("div", summary).first().hide();
                 }
                 else {
                     summary.show();
-                    $("div:first", summary).show();
+                    $("div", summary).first().show();
                 }
             });
     
@@ -3409,8 +3566,8 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                         });
         
                         if ( !input.is(".skipRBLe, .skipRBLe :input, .rbl-nocalc, .rbl-nocalc :input") ) {
-                            if (targetInput === undefined /* never trigger run from wizard sliders */) {
-        
+                            
+                            if (targetInput === undefined /* never trigger run from wizard sliders */) {        
                                 // Whenever 'regular' slider changes or is updated via set()...
                                 instance.on('set.RBLe', function ( this: noUiSlider.noUiSlider ) {
         
@@ -3456,7 +3613,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                 const tableName = row.table;
                 const controlName = row["@id"];
                 
-                const dropdown = $("." + controlName + ":not(div)", application.element);
+                const dropdown = $("." + controlName, application.element).not("div");
                 const listControl = $("div." + controlName + "[data-itemtype]", application.element);
                 const listRows = this.getResultTable<ListRow>( tabDef, tableName );
     
@@ -3518,7 +3675,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                 this.application.templateBuilder.processUI();
     
                 // These all need to be after processUI so if any inputs are built
-                // from results, they are done by the time these run (i.e. after processUI)
+                // from results, they are done by the time these run
                 this.processVisibilities( showInspector );
     
                 let sliderConfigIds: ( string | null )[] = [];
@@ -3538,7 +3695,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                                 if ( r.addclass.indexOf("skipRBLe") > -1 || r.addclass.indexOf("rbl-nocalc") > -1 ) {
                                     el.off(".RBLe");
                                     $(":input", el).off(".RBLe");
-                                    this.application.ui.getNoUiSlider(r.selector.substring(1), application.element)?.off('set.RBLe');
+                                    this.application.ui.getNoUiSlider( $("div[data-slider-type='nouislider']", el.parent()) )?.off('.RBLe');
                                 }
                             }
         
@@ -3572,6 +3729,9 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                     this.processDefaults( tabDef );
                     this.processDisabled( tabDef );
                     this.processValidations( tabDef );
+                    
+                    this.application.ui.handleVoidAnchors();
+                    this.application.ui.bindRblOnHandlers();
 
                     application.trace( "Finished processing results for " + tabDef._fullName, TraceVerbosity.Normal );
                 });
@@ -3978,102 +4138,99 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
             this.application = application;   
         }
         
-        private buildCarousel(el: JQuery): JQuery {
-            const carouselName = el.attr("rbl-name");
-
-            // { is for skipping template carousels
-            if (carouselName !== undefined && carouselName.indexOf("{") == -1) {
-                this.application.trace("Processing carousel: " + carouselName, TraceVerbosity.Detailed);
-
-                $(".carousel-inner .item, .carousel-indicators li", el).removeClass("active");
-
-                // add active class to carousel items
-                $(".carousel-inner .item", el).first().addClass("active");
-
-                // add 'target' needed by indicators, referencing name of carousel
-                $(".carousel-indicators li", el)
-                    .attr("data-target", "#carousel-" + carouselName)
-                    .first().addClass("active");
-
-                const carousel = $('.carousel', el);
-
-                //show initial item, start carousel:
-                carousel.carousel(0);
-            }
-
-            return el;
-        }
-
         private processCarousels( container?: JQuery<HTMLElement> ): void {
             const that: StandardTemplateBuilder = this;
-            const view = container ?? this.application.element;
+            const app = this.application;
+            const view = container ?? app.element;
 
-            // Hook up event handlers only when *not* already initialized
-            
-            $('.carousel-control-group', view).not('[data-katapp-initialized="true"], rbl-template .carousel-control-group, [rbl-tid="inline"] .carousel-control-group').each(function () {
-                const el = $(this);
-                const carousel = $('.carousel', el);
-                const carouselAll = $('.carousel-all', el);
+            // Hook up event handlers only when *not* already initialized            
+            $('.carousel-control-group', view)
+                .not("rbl-template *, [rbl-tid='inline'] *, [rbl-tid='inline']") // not in templates
+                .not('[data-katapp-initialized="true"]')
+                .each(function () {
+                    const el = $(this);
 
-                //add buttons to show/hide
-                $(".carousel-indicators .list-btn", el)
-                    .on("click", function () {
-                        carousel.hide();
-                        carouselAll.show();
-                    });
+                    const carouselName = el.attr("rbl-name")!;
 
-                $(".carousel-btn", carouselAll)
-                    .on("click", function () {
-                        carouselAll.hide();
-                        carousel.show();
-                    });
+                    app.trace("Processing carousel: " + carouselName, TraceVerbosity.Detailed);
+        
+                    $(".carousel-inner .item, .carousel-indicators li", el).removeClass("active");
+        
+                    // add active class to carousel items
+                    $(".carousel-inner .item", el).first().addClass("active");
+        
+                    // add 'target' needed by indicators, referencing name of carousel
+                    $(".carousel-indicators li", el)
+                        .attr("data-target", "#carousel-" + carouselName)
+                        .first().addClass("active");
+        
+                    const carousel = $('.carousel', el);
+                    const carouselAll = $('.carousel-all', el);
 
-                el.attr("data-katapp-initialized", "true");
-            });
+                    //add buttons to show/hide
+                    $(".carousel-indicators .list-btn", el)
+                        .on("click", function () {
+                            carousel.hide();
+                            carouselAll.show();
+                        });
 
-            $('.carousel-control-group', view).each(function () {
-                const el = $(this);
-                that.buildCarousel( el );
-            });
+                    $(".carousel-btn", carouselAll)
+                        .on("click", function () {
+                            carouselAll.hide();
+                            carousel.show();
+                        });
+
+                    el.attr("data-katapp-initialized", "true");
+
+                    //show initial item, start carousel:
+                    carousel.carousel(0);
+                });
         }
 
-        private buildCheckboxes( view: JQuery<HTMLElement> ): void {
-            $('[rbl-tid="input-checkbox"],[rbl-template-type="katapp-checkbox"]', view).not('[data-katapp-initialized="true"]').each(function () {
-                const el = $(this);
-                
-                const id = el.data("inputname");
-                const label = el.data("label");
-                const help = el.data("help");
-                const checked = el.data("checked");
-                const css = el.data("css");
-                const inputCss = el.data("inputcss");
+        private buildCheckboxes( container: JQuery<HTMLElement> ): void {
+            const app = this.application;
 
-                if ( css !== undefined ) {
-                    $("[rbl-display='v" + id + "']", el).addClass(css);
-                }
+            $('[rbl-tid="input-checkbox"],[rbl-template-type="katapp-checkbox"]', container)
+                .not("rbl-template *, [rbl-tid='inline'] *, [rbl-tid='inline']") // not in templates
+                .not('[data-katapp-initialized="true"]')
+                .each(function () {
+                    const el = $(this);
+                    const id = el.data("inputname");
+                    const input = $("span." + id + " input", el);
+                    const label = el.data("label");
+                    const help = el.data("help");
+                    const checked = el.data("checked");
+                    const css = el.data("css");
+                    const inputCss = el.data("inputcss");
 
-                if ( help !== undefined ) {
-                    $("div[rbl-value='h" + id + "']", el).html(help);
-                    $("a[rbl-display='vh" + id + "']", el).show();
-                }
-
-                if ( label !== undefined ) {
-                    let target = $("span[rbl-value='l" + id + "'] label span.checkbox-label", el);
-
-                    if ( target.length === 0 ) {
-                        target = $("span[rbl-value='l" + id + "'] label", el);
+                    if ( css !== undefined ) {
+                        $("[rbl-display='v" + id + "']", el).addClass(css);
                     }
-                    target.html(label);
-                }
-                if ( checked ) {
-                    $("span." + id + " input", el).prop("checked", true);
-                }
-                if ( inputCss !== undefined ) {
-                    $("span." + id + " input", el).addClass(inputCss);
-                }
 
-                el.attr("data-katapp-initialized", "true");
-            });
+                    if ( help !== undefined ) {
+                        $("div[rbl-value='h" + id + "']", el).html(help);
+                        $("a[rbl-display='vh" + id + "']", el).show();
+                    }
+
+                    if ( label !== undefined ) {
+                        let target = $("span[rbl-value='l" + id + "'] label span.checkbox-label", el);
+
+                        if ( target.length === 0 ) {
+                            target = $("span[rbl-value='l" + id + "'] label", el);
+                        }
+                        target.html(label);
+                    }
+
+                    if ( checked ) {
+                        input.prop("checked", true);
+                    }
+
+                    if ( inputCss !== undefined ) {
+                        input.addClass(inputCss);
+                    }
+
+                    el.attr("data-katapp-initialized", "true");
+                });
         }
 
         private incrementProgressBars(): void {
@@ -4097,505 +4254,520 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
             const that = this;
             const application = this.application;
 
-            $('[rbl-action-link]', view).not('[data-katapp-initialized="true"], rbl-template [rbl-action-link], [rbl-tid="inline"] [rbl-action-link]').each(function () {
-                $(this).on("click", function(e) {
-                    const actionLink = $(this);
-                    e.preventDefault();
+            $('[rbl-action-link]', view)
+                .not("rbl-template *, [rbl-tid='inline'] *, [rbl-tid='inline']") // not in templates
+                .not('[data-katapp-initialized="true"]')
+                .each(function () {
+                    $(this).on("click", function(e) {
+                        const actionLink = $(this);
+                        e.preventDefault();
 
-                    const katAppCommand = actionLink.attr("rbl-action-link") ?? "NotSupported";
-                    // Couldn't use data-confirm-selector because then two click events would have been
-                    // created and not work in, need entire flow to happen here in one click...
-                    const confirmSelector = actionLink.attr("rbl-action-confirm-selector");
+                        const katAppCommand = actionLink.attr("rbl-action-link") ?? "NotSupported";
+                        // Couldn't use data-confirm-selector because then two click events would have been
+                        // created and not work in, need entire flow to happen here in one click...
+                        const confirmSelector = actionLink.attr("rbl-action-confirm-selector");
 
-                    const action = function (): void {
-                        // JWT Support
-                        // https://stackoverflow.com/a/49725482/166231 (comment about jwt, probably use XMLHttpRequest.setRequestHeader() in my implementation)
-            
-                        // Implementation based off of these questions
-                        // https://stackoverflow.com/a/44435573/166231 (Using XMLHttpRequest to download)
-                        // https://stackoverflow.com/a/29039823/166231 (dynamically changing response type)
-            
-                        // Failed Attempts
-                        // https://stackoverflow.com/a/11520119/166231 (dynamically append/remove a form and post that)
-                        //	Page navigated when error was returned.  Didn't try target=_blank or anything because in current
-                        //	ESS, not used.  The <a/> does postback and if success, response is set to 'content' and it downloads
-                        //	the data and all is good.  If it fails, the entire page rerenders (since just navigating to self).
-                        //	Also, I didn't even try a valid file return with this yet
-                        /*
-                            var inputs =
-                                '<input type="hidden" name="KatAppCommand" value="DocGenDownload" />' +
-                                '<input type="hidden" name="KatAppView" value="' + (application.options.view || "Unknown") + '" />' +
-                                '<input type="hidden" name="KatAppInputs" />';
-            
-                            //send request
-                            var form = $('<form action="' + url + '" method="post">' + inputs + '</form>');
-                            form.appendTo('body');
-            
-                            $("[name='KatAppInputs']", form).val(JSON.stringify(application.getInputs()));
-            
-                            form.submit().remove();
-                        */
-                        // https://gist.github.com/domharrington/884346cc04c30eeb1237
-                        //	Didn't try this one, but has some 'browser compatability' code that I might want/need
-                        // https://stackoverflow.com/a/28002215/166231 (looks promising with full source)
-                        //	Actually didn't attempt this one.
-                        // https://storiknow.com/download-file-with-jquery-and-web-api-2-0-ihttpactionresult/ (most recent answer I could find)
-                        //	This one didn't work (left a comment) because of needing to return text (error) or file (success).
-                        
-                        const parametersJson = application.dataAttributesToJson( actionLink, "data-param-");
-                        const inputsJson = application.dataAttributesToJson( actionLink, "data-input-" );
+                        const action = function (): void {
+                            // JWT Support
+                            // https://stackoverflow.com/a/49725482/166231 (comment about jwt, probably use XMLHttpRequest.setRequestHeader() in my implementation)
+                
+                            // Implementation based off of these questions
+                            // https://stackoverflow.com/a/44435573/166231 (Using XMLHttpRequest to download)
+                            // https://stackoverflow.com/a/29039823/166231 (dynamically changing response type)
+                
+                            // Failed Attempts
+                            // https://stackoverflow.com/a/11520119/166231 (dynamically append/remove a form and post that)
+                            //	Page navigated when error was returned.  Didn't try target=_blank or anything because in current
+                            //	ESS, not used.  The <a/> does postback and if success, response is set to 'content' and it downloads
+                            //	the data and all is good.  If it fails, the entire page rerenders (since just navigating to self).
+                            //	Also, I didn't even try a valid file return with this yet
+                            /*
+                                var inputs =
+                                    '<input type="hidden" name="KatAppCommand" value="DocGenDownload" />' +
+                                    '<input type="hidden" name="KatAppView" value="' + (application.options.view || "Unknown") + '" />' +
+                                    '<input type="hidden" name="KatAppInputs" />';
+                
+                                //send request
+                                var form = $('<form action="' + url + '" method="post">' + inputs + '</form>');
+                                form.appendTo('body');
+                
+                                $("[name='KatAppInputs']", form).val(JSON.stringify(application.getInputs()));
+                
+                                form.submit().remove();
+                            */
+                            // https://gist.github.com/domharrington/884346cc04c30eeb1237
+                            //	Didn't try this one, but has some 'browser compatability' code that I might want/need
+                            // https://stackoverflow.com/a/28002215/166231 (looks promising with full source)
+                            //	Actually didn't attempt this one.
+                            // https://storiknow.com/download-file-with-jquery-and-web-api-2-0-ihttpactionresult/ (most recent answer I could find)
+                            //	This one didn't work (left a comment) because of needing to return text (error) or file (success).
+                            
+                            const parametersJson = application.dataAttributesToJson( actionLink, "data-param-");
+                            const inputsJson = application.dataAttributesToJson( actionLink, "data-input-" );
 
-                        application.apiAction(
-                            katAppCommand, 
-                            { 
-                                isDownload: ( actionLink.attr("rbl-action-download") ?? "false" ) == "true",
-                                customParameters: parametersJson,
-                                customInputs: inputsJson
-                            },
-                            actionLink );
-                    };
-                        
-                    // .on("click", function() { return that.onConfirmLinkClick( $(this)); })
-                    if ( confirmSelector != undefined ) {
-                        const confirm = $(confirmSelector, that.application.element).html() || "";
-                        return that.application.ui.onConfirmLinkClick($(this), confirm, action);
-                    }
-                    else {
-                        action();
-                        return true;
-                    }
-                }).attr("data-katapp-initialized", "true");
-            });
+                            application.apiAction(
+                                katAppCommand, 
+                                { 
+                                    isDownload: ( actionLink.attr("rbl-action-download") ?? "false" ) == "true",
+                                    customParameters: parametersJson,
+                                    customInputs: inputsJson
+                                },
+                                actionLink );
+                        };
+                            
+                        // .on("click", function() { return that.onConfirmLinkClick( $(this)); })
+                        if ( confirmSelector != undefined ) {
+                            const confirm = $(confirmSelector, that.application.element).html() || "";
+                            return that.application.ui.onConfirmLinkClick($(this), confirm, action);
+                        }
+                        else {
+                            action();
+                            return true;
+                        }
+                    }).attr("data-katapp-initialized", "true");
+                });
         }
 
-        private buildFileUploads( view: JQuery<HTMLElement> ): void {
+        private buildFileUploads( container: JQuery<HTMLElement> ): void {
             const that = this;
             const application = this.application;
 
-            $('[rbl-tid="input-fileupload"],[rbl-template-type="katapp-fileupload"]', view).not('[data-katapp-initialized="true"]').each(function () {
-                const el = $(this);
-                
-                const id = el.data("inputname");
-                const label = el.data("label");
-                const help = el.data("help");
-                const css = el.data("css");
-                const formCss = el.data("formcss");
-                const inputCss = el.data("inputcss");
-                const labelCss = el.data("labelcss");
-                const hideLabel = el.data("hidelabel") ?? false;
-                const katAppCommand = el.data("command") ?? "UploadFile";
+            $('[rbl-tid="input-fileupload"],[rbl-template-type="katapp-fileupload"]', container)
+                .not("rbl-template *, [rbl-tid='inline'] *, [rbl-tid='inline']") // not in templates
+                .not('[data-katapp-initialized="true"]')
+                .each(function () {
+                    const el = $(this);
+                    
+                    const id = el.data("inputname");
+                    const label = el.data("label");
+                    const help = el.data("help");
+                    const css = el.data("css");
+                    const formCss = el.data("formcss");
+                    const inputCss = el.data("inputcss");
+                    const labelCss = el.data("labelcss");
+                    const hideLabel = el.data("hidelabel") ?? false;
+                    const katAppCommand = el.data("command") ?? "UploadFile";
 
-                if ( css !== undefined ) {
-                    $("[rbl-display='v" + id + "']", el).addClass(css);
-                }
-                if ( formCss !== undefined ) {
-                    $("[rbl-display='v" + id + "']", el).removeClass("form-group").addClass(formCss);
-                }
-
-                if ( help !== undefined ) {
-                    $("div[rbl-value='h" + id + "']", el).html(help);
-                    $("a[rbl-display='vh" + id + "']", el).show();
-                }
-
-                if ( hideLabel ) {
-                    $("label", el).remove();                    
-                }
-                else {
-                    if ( label !== undefined ) {
-                        $("span[rbl-value='l" + id + "']", el).html(label);
+                    if ( css !== undefined ) {
+                        $("[rbl-display='v" + id + "']", el).addClass(css);
                     }
-                    if ( labelCss !== undefined ) {
-                        $("span[rbl-value='l" + id + "']", el).addClass(labelCss);
+                    if ( formCss !== undefined ) {
+                        $("[rbl-display='v" + id + "']", el).removeClass("form-group").addClass(formCss);
                     }
-                }
 
-                const input = $("input", el);
-
-                if ( inputCss !== undefined ) {
-                    input.addClass(inputCss);
-                }
-
-                $(".btn-file-remove", el).on("click", function () {
-                    const file = $(this).parents('.input-group').find(':file');
-                    file.val("").trigger("change");
-                });
-                $(".btn-file-upload", el).on("click", function () {
-                    const uploadUrl = that.application.options.rbleUpdatesUrl;
-
-                    if ( uploadUrl !== undefined ) {
-                        that.application.showAjaxBlocker();
-                        $(".file-upload .btn", el).addClass("disabled");
-                        that.incrementProgressBars();
-                        $(".file-upload-progress", that.application.element).show();
-
-                        const fileUpload = $(".file-data", $(this).parent());
-                        const fd = that.application.getEndpointFormData(katAppCommand, that.application.options);
-
-                        const files = ( fileUpload[0] as HTMLInputElement ).files;
-                        $.each(files, function(key, value)
-                        {
-                            fd.append(key, value);
-                        });
-
-                        const errors: ValidationRow[] = [];
-                        // Can't use 'view' in selector for validation summary b/c view could be a 'container' instead of entire view
-                        // if caller only wants to initialize a newly generated container's html                        
-                        const errorSummary = $("#" + that.application.id + "_ModelerValidationTable", that.application.element);
-                        $('.validator-container.error:not(.server)', that.application.element).removeClass('error');
-
-                        application.ui.triggerEvent( "onUploadStart", fileUpload, fd, application );
-
-                        $.ajax({
-                            url: uploadUrl,  
-                            type: 'POST',
-                            data: fd,
-                            cache: false,
-                            contentType: false,
-                            processData: false
-                        }).then( 
-                            function( /* payLoad */ ) {
-                                application.ui.triggerEvent( "onUploaded", fileUpload, application );
-                            },
-                            function( _jqXHR  ) {
-                                const responseText = _jqXHR.responseText || "{}";
-                                const jsonResponse = JSON.parse( responseText );
-                                if ( jsonResponse[ "Validations" ] != undefined && errorSummary.length > 0 ) {
-                                    jsonResponse.Validations.forEach((v: { [x: string]: string }) => {
-                                        errors.push( { "@id": v[ "ID" ], text: v[ "Message" ] });
-                                    });
-                                    return;
-                                }
-                                application.ui.triggerEvent( "onUploadFailed", fileUpload, jsonResponse, application );
-                            }
-                        )
-                        .always( function() {
-                            application.ui.triggerEvent( "onUploadComplete", fileUpload, application );
-                            application.rble.processValidationRows(
-                                errorSummary, 
-                                errors
-                            );
-                            // Get file upload control to update its UI (buttons)
-                            fileUpload.val("").trigger("change");
-                            $(".file-upload .btn", el).removeClass("disabled");
-                            $(".file-upload-progress", that.application.element).hide();
-                            that.application.hideAjaxBlocker();
-                        })
+                    if ( help !== undefined ) {
+                        $("div[rbl-value='h" + id + "']", el).html(help);
+                        $("a[rbl-display='vh" + id + "']", el).show();
                     }
-                });
-                $(".btn-file :file", el).on("change", function () {
-                    const fileUpload = $(this),
-                        files = ( fileUpload[0] as HTMLInputElement ).files,
-                        numFiles = files?.length ?? 1,
-                        label = numFiles > 1 ? numFiles + ' files selected' : ( fileUpload.val() as string).replace(/\\/g, '/').replace(/.*\//, ''), // remove c:\fakepath
-                        display = $(this).parents('.input-group').find(':text'),
-                        upload = $(this).parents('.input-group').find('.btn-file-upload'),
-                        remove = $(this).parents('.input-group').find('.btn-file-remove');
-            
-            
-                    display.val(label);
-                    if (numFiles > 0) {
-                        upload.add(remove).removeClass("hidden d-none");
+
+                    if ( hideLabel ) {
+                        $("label", el).remove();                    
                     }
                     else {
-                        upload.add(remove).addClass("hidden d-none");
+                        if ( label !== undefined ) {
+                            $("span[rbl-value='l" + id + "']", el).html(label);
+                        }
+                        if ( labelCss !== undefined ) {
+                            $("span[rbl-value='l" + id + "']", el).addClass(labelCss);
+                        }
                     }
+
+                    const input = $("input", el);
+
+                    if ( inputCss !== undefined ) {
+                        input.addClass(inputCss);
+                    }
+
+                    $(".btn-file-remove", el).on("click", function () {
+                        const file = $(this).parents('.input-group').find(':file');
+                        file.val("").trigger("change");
+                    });
+                    $(".btn-file-upload", el).on("click", function () {
+                        const uploadUrl = that.application.options.rbleUpdatesUrl;
+
+                        if ( uploadUrl !== undefined ) {
+                            that.application.showAjaxBlocker();
+                            $(".file-upload .btn", el).addClass("disabled");
+                            that.incrementProgressBars();
+                            $(".file-upload-progress", that.application.element).show();
+
+                            const fileUpload = $(".file-data", $(this).parent());
+                            const fd = that.application.getEndpointFormData(katAppCommand, that.application.options);
+
+                            const files = ( fileUpload[0] as HTMLInputElement ).files;
+                            $.each(files, function(key, value)
+                            {
+                                fd.append(key, value);
+                            });
+
+                            const errors: ValidationRow[] = [];
+                            // Can't use 'view' in selector for validation summary b/c view could be a 'container' instead of entire view
+                            // if caller only wants to initialize a newly generated container's html                        
+                            const errorSummary = $("#" + that.application.id + "_ModelerValidationTable", that.application.element);
+                            $('.validator-container.error', that.application.element)
+                                .not(".server")
+                                .removeClass('error');
+
+                            application.ui.triggerEvent( "onUploadStart", fileUpload, fd, application );
+
+                            $.ajax({
+                                url: uploadUrl,  
+                                type: 'POST',
+                                data: fd,
+                                cache: false,
+                                contentType: false,
+                                processData: false
+                            }).then( 
+                                function( /* payLoad */ ) {
+                                    application.ui.triggerEvent( "onUploaded", fileUpload, application );
+                                },
+                                function( _jqXHR  ) {
+                                    const responseText = _jqXHR.responseText || "{}";
+                                    const jsonResponse = JSON.parse( responseText );
+                                    if ( jsonResponse[ "Validations" ] != undefined && errorSummary.length > 0 ) {
+                                        jsonResponse.Validations.forEach((v: { [x: string]: string }) => {
+                                            errors.push( { "@id": v[ "ID" ], text: v[ "Message" ] });
+                                        });
+                                        return;
+                                    }
+                                    application.ui.triggerEvent( "onUploadFailed", fileUpload, jsonResponse, application );
+                                }
+                            )
+                            .always( function() {
+                                application.ui.triggerEvent( "onUploadComplete", fileUpload, application );
+                                application.rble.processValidationRows(
+                                    errorSummary, 
+                                    errors
+                                );
+                                // Get file upload control to update its UI (buttons)
+                                fileUpload.val("").trigger("change");
+                                $(".file-upload .btn", el).removeClass("disabled");
+                                $(".file-upload-progress", that.application.element).hide();
+                                that.application.hideAjaxBlocker();
+                            })
+                        }
+                    });
+                    $(".btn-file :file", el).on("change", function () {
+                        const fileUpload = $(this),
+                            files = ( fileUpload[0] as HTMLInputElement ).files,
+                            numFiles = files?.length ?? 1,
+                            label = numFiles > 1 ? numFiles + ' files selected' : ( fileUpload.val() as string).replace(/\\/g, '/').replace(/.*\//, ''), // remove c:\fakepath
+                            display = $(this).parents('.input-group').find(':text'),
+                            upload = $(this).parents('.input-group').find('.btn-file-upload'),
+                            remove = $(this).parents('.input-group').find('.btn-file-remove');
+                
+                
+                        display.val(label);
+                        if (numFiles > 0) {
+                            upload.add(remove).removeClass("hidden d-none");
+                        }
+                        else {
+                            upload.add(remove).addClass("hidden d-none");
+                        }
+                    });
+                
+                    el.attr("data-katapp-initialized", "true");
                 });
-            
-                el.attr("data-katapp-initialized", "true");
-            });
         }
 
-        private buildTextBoxes( view: JQuery<HTMLElement> ): void {
-            const applicationId = this.application.id;
-            const bootstrapVersion = this.application.bootstrapVersion;
+        private buildTextBoxes( container: JQuery<HTMLElement> ): void {
+            const app = this.application;
+            const applicationId = app.id;
+            const bootstrapVersion = app.bootstrapVersion;
             const isBootstrap3 = bootstrapVersion == 3;
             const isBootstrap4 = bootstrapVersion == 4;
             const isBootstrap5 = bootstrapVersion == 5;
 
-            $('[rbl-tid="input-textbox"],[rbl-template-type="katapp-textbox"]', view).not('[data-katapp-initialized="true"]').each(function () {
-                const el = $(this);
-                
-                const id = el.data("inputname");
-                const inputType = el.data("type")?.toLowerCase();
-                const label = el.data("label");
-                const help = el.data("help");
-                const prefix = el.data("prefix");
-                const suffix = el.data("suffix");
-                const placeHolder = el.data("placeholder");
-                const maxlength = el.data("maxlength");
-                const autoComplete = el.data("autocomplete") !== false;
-                const value = el.data("value");
-                const css = el.data("css");
-                const formCss = el.data("formcss");
-                const inputCss = el.data("inputcss");
-                const labelCss = el.data("labelcss");
-                const displayOnly = el.data("displayonly") === true;
-                const hideLabel = el.data("hidelabel") ?? false;
+            $('[rbl-tid="input-textbox"],[rbl-template-type="katapp-textbox"]', container)
+                .not("rbl-template *, [rbl-tid='inline'] *, [rbl-tid='inline']") // not in templates
+                .not('[data-katapp-initialized="true"]')
+                .each(function () {
+                    const el = $(this);
+                    let input = $("input", el);
+                    const id = el.data("inputname");
+                    const inputType = el.data("type")?.toLowerCase();
+                    const label = el.data("label");
+                    const help = el.data("help");
+                    const prefix = el.data("prefix");
+                    const suffix = el.data("suffix");
+                    const placeHolder = el.data("placeholder");
+                    const maxlength = el.data("maxlength");
+                    const autoComplete = el.data("autocomplete") !== false;
+                    const value = el.data("value");
+                    const css = el.data("css");
+                    const formCss = el.data("formcss");
+                    const inputCss = el.data("inputcss");
+                    const labelCss = el.data("labelcss");
+                    const displayOnly = el.data("displayonly") === true;
+                    const hideLabel = el.data("hidelabel") ?? false;
 
-                if ( css !== undefined ) {
-                    $("[rbl-display='v" + id + "']", el).addClass(css);
-                }
-                if ( formCss !== undefined ) {
-                    $("[rbl-display='v" + id + "']", el).removeClass("form-group").addClass(formCss);
-                }
-
-                if ( help !== undefined ) {
-                    $("div[rbl-value='h" + id + "']", el).html(help);
-                    $("a[rbl-display='vh" + id + "']", el).show();
-                }
-
-                if ( hideLabel ) {
-                    $("label", el).remove();                    
-                }
-                else {
-                    if ( label !== undefined ) {
-                        $("span[rbl-value='l" + id + "']", el).html(label);
+                    if ( css !== undefined ) {
+                        $("[rbl-display='v" + id + "']", el).addClass(css);
                     }
-                    if ( labelCss !== undefined ) {
-                        $("span[rbl-value='l" + id + "']", el).addClass(labelCss);
+                    if ( formCss !== undefined ) {
+                        $("[rbl-display='v" + id + "']", el).removeClass("form-group").addClass(formCss);
                     }
-                }
 
-                let input = $("input", el);
-
-                if ( inputCss !== undefined ) {
-                    input.addClass(inputCss);
-                }
-
-                if ( placeHolder !== undefined ) {
-                    input.attr("placeholder", placeHolder);
-                }
-
-                if ( maxlength !== undefined ) {
-                    input.attr("maxlength", maxlength);
-                }
-
-                if ( inputType === "password" ) {
-                    input.attr("type", "password");
-                }
-                else if ( inputType === "multiline" ) {
-                    // Replace textbox with a textarea
-                    const rows = el.data("rows") ?? "4";
-                    input.replaceWith($('<textarea name="' + id + '" rows="' + rows + '" id="katapp_' + applicationId + '_' + id + '" class="form-control ' + id + '"></textarea>'))
-                    input = $("textarea[name='" + id + "']", el);
-                }
-
-                if ( !autoComplete || inputType === "password" ) {
-                    input.attr("autocomplete", "off");
-                }
-                
-                if ( value !== undefined ) {
-                    // Don't use 'input' variable here because some templates are 
-                    // 2 column templates and I want all the styling to apply (i.e. RTX:PensionEstimate)
-                    // to all inputs but default value should only apply to current value
-                    $("input[name='" + id + "']", el).val(value);
-                }
-
-                const validatorContainer = $(".validator-container", el);
-
-                if ( !displayOnly ) {
-                    $(".form-control-display-only", el).remove();
-
-                    const datePickerAvailable = typeof $.fn.datepicker === "function";
-
-                    if ( inputType === "date" && datePickerAvailable ) {
-                        validatorContainer.addClass("input-group date");
-                        $(".error-msg", validatorContainer).addClass("addon-suffix"); // css aid
-
-                        if ( isBootstrap5 ) {
-                            // datepicker library looks for element with input-group-addon class to determine if
-                            // component is inline or popup, so class shouldn't do anything for styling in bs5, but
-                            // need it for date to work the way we want.
-                            validatorContainer.append( $("<div class='input-group-addon input-group-text'><i class='fa fa-calendar-day'></i></div>") );
-                        }
-                        else if ( isBootstrap4 ) {
-                            validatorContainer.append( $("<div class='input-group-append'><i class='input-group-text fa fa-calendar-day'></i></div>") );
-                        }
-                        else {
-                            validatorContainer.append($("<span class='input-group-addon'><i class='glyphicon glyphicon-calendar'></i></span>"));
-                        }
-    
-                        $('.input-group.date', el)
-                            .datepicker({
-                                componentSelector: "i.fa-calendar-day, i.glyphicon-th, i.glyphicon-calendar",
-                                clearBtn: true,
-                                showOnFocus: false,
-                                autoclose: true,
-                                enableOnReadonly: false,
-                                forceParse: false,
-                                language: $(".bootstrapLocale").html(),
-                                format: $(".bootstrapLocaleFormat").html(),
-                                zIndexOffset: 2000 /* admin site sticky bar */
-                            })
-                            .on("show", function () {
-                                // To prevent the datepicker from being 'stuck' open if they are trying
-                                // to click icon *AGAIN* in an attempt to toggle/close the picker.  I
-                                // first check to see if my own custom data is added and if not I inject
-                                // some custom data.  If it is present (meaning it was already shown, I hide
-                                // the datepicker.  Then in the hide event I always remove this custom data.
-                                const dp = $(this);
-                                if (dp.data("datepicker-show") != undefined) {
-                                    dp.datepicker('hide');
-                                }
-                                else {
-                                    dp.data("datepicker-show", true);
-    
-                                    const dateInput = $("input", $(this));
-    
-                                    // Originally, I had an .on("clearDate", ... ) event handler that simply
-                                    // called dateInput.change() to trigger a calc.  But clearing input with keyboard
-                                    // also triggered this, so if I cleared with keyboard, it triggered change, then when
-                                    // I lost focus on input, it triggered 'normal' change event resulting in two calcs.
-                                    // So now I attach click on clear button as well and call change still
-                                    // so that works, but problem is that input isn't cleared before change event happens
-                                    // so I also clear the input myself.
-                                    $(".datepicker-days .clear", view).on("click", function () {
-                                        dateInput.val("");
-                                        dateInput.change();
-                                    });
-                                }
-                            })
-                            .on("hide", function () {
-                                const dp = $(this);
-                                dp.removeData("datepicker-show");
-    
-                                $(".datepicker-days .clear", view).off("click");
-                            })
-                            .on('show.bs.modal', function (event) {
-                                // https://stackoverflow.com/questions/30113228/why-does-bootstrap-datepicker-trigger-show-bs-modal-when-it-is-displayed/31199817
-                                // prevent datepicker from firing bootstrap modal "show.bs.modal"
-                                event.stopPropagation();
-                            });
-    
-                        // Hack for https://github.com/uxsolutions/bootstrap-datepicker/issues/2402
-                        // Still have an issue if they open date picker, then paste (date picker updates) then try to
-                        // click a date...since the input then blurs, it fires a calc and the 'click' into the date picker (a specific day)
-                        // seems to be ignored, but rare case I guess.
-                        $('.input-group.date input', el)
-                            .on("blur", function () {
-                                const dateInput = $(this);
-                                if (dateInput.data("datepicker-paste") != undefined) {
-                                    dateInput.trigger("change");
-                                }
-                                dateInput.removeData("datepicker-paste");
-                            })
-                            .on("paste", function () {
-                                const dateInput = $(this);
-                                dateInput.data("datepicker-paste", true);
-                            })
-                            .on("keypress change", function () {
-                                // If they paste, then type keyboard before blurring, it would calc twice
-                                const dateInput = $(this);
-                                dateInput.removeData("datepicker-paste");
-                            });
+                    if ( help !== undefined ) {
+                        $("div[rbl-value='h" + id + "']", el).html(help);
+                        $("a[rbl-display='vh" + id + "']", el).show();
                     }
-                    else if ( prefix !== undefined ) {
-                        validatorContainer.addClass("input-group");
 
-                        let addOnContainer = validatorContainer;
-                        
-                        if ( isBootstrap4 ) {
-                            validatorContainer.prepend( $("<div class='input-group-prepend'></div>") );
-                            addOnContainer = $(".input-group-prepend", validatorContainer);
-                        }
-                        
-                        const prefixElement = $("<span class='input-group-text'>" + prefix + "</span>");
-
-                        if ( !isBootstrap5 ) {
-                            prefixElement.addClass("input-group-addon");
-                        }
-
-                        addOnContainer.prepend(prefixElement);
+                    if ( hideLabel ) {
+                        $("label", el).remove();                    
                     }
-                    else if ( suffix !== undefined ) {
-                        validatorContainer.addClass("input-group");
-                        $(".error-msg", validatorContainer).addClass("addon-suffix"); // css aid
-
-                        let addOnContainer = validatorContainer;
-                        
-                        if ( isBootstrap4 ) {
-                            validatorContainer.append( $("<div class='input-group-prepend'></div>") );
-                            addOnContainer = $(".input-group-prepend", validatorContainer);
+                    else {
+                        if ( label !== undefined ) {
+                            $("span[rbl-value='l" + id + "']", el).html(label);
                         }
-                        
-                        const suffixElement = $("<span class='input-group-text'>" + suffix + "</span>");
-
-                        if ( !isBootstrap5 ) {
-                            suffixElement.addClass("input-group-addon");
+                        if ( labelCss !== undefined ) {
+                            $("span[rbl-value='l" + id + "']", el).addClass(labelCss);
                         }
-
-                        addOnContainer.append( suffixElement );
                     }
-                }
-                else {
-                    input.css("display", "none");
-                    $("div." + id + "DisplayOnly", el).html(value);
-                }
 
-                el.attr("data-katapp-initialized", "true");
-            });
+                    if ( inputCss !== undefined ) {
+                        input.addClass(inputCss);
+                    }
+
+                    if ( placeHolder !== undefined ) {
+                        input.attr("placeholder", placeHolder);
+                    }
+
+                    if ( maxlength !== undefined ) {
+                        input.attr("maxlength", maxlength);
+                    }
+
+                    if ( inputType === "password" ) {
+                        input.attr("type", "password");
+                    }
+                    else if ( inputType === "multiline" ) {
+                        // Replace textbox with a textarea
+                        const rows = el.data("rows") ?? "4";
+                        input.replaceWith($('<textarea name="' + id + '" rows="' + rows + '" id="katapp_' + applicationId + '_' + id + '" class="form-control ' + id + '"></textarea>'))
+                        input = $("textarea[name='" + id + "']", el);
+                    }
+
+                    if ( !autoComplete || inputType === "password" ) {
+                        input.attr("autocomplete", "off");
+                    }
+                    
+                    if ( value !== undefined ) {
+                        // Don't use 'input' variable here because some templates are 
+                        // 2 column templates and I want all the styling to apply (i.e. Nexgen:PensionEstimate)
+                        // to all inputs but default value should only apply to current value
+                        $("input[name='" + id + "']", el).val(value);
+                    }
+
+                    const validatorContainer = $(".validator-container", el);
+
+                    if ( !displayOnly ) {
+                        $(".form-control-display-only", el).remove();
+
+                        const datePickerAvailable = typeof $.fn.datepicker === "function";
+
+                        if ( inputType === "date" && datePickerAvailable ) {
+                            validatorContainer.addClass("input-group date");
+                            $(".error-msg", validatorContainer).addClass("addon-suffix"); // css aid
+
+                            if ( isBootstrap5 ) {
+                                // datepicker library looks for element with input-group-addon class to determine if
+                                // component is inline or popup, so class shouldn't do anything for styling in bs5, but
+                                // need it for date to work the way we want.
+                                validatorContainer.append( $("<div class='input-group-addon input-group-text'><i class='fa fa-calendar-day'></i></div>") );
+                            }
+                            else if ( isBootstrap4 ) {
+                                validatorContainer.append( $("<div class='input-group-append'><i class='input-group-text fa fa-calendar-day'></i></div>") );
+                            }
+                            else {
+                                validatorContainer.append($("<span class='input-group-addon'><i class='glyphicon glyphicon-calendar'></i></span>"));
+                            }
+        
+                            $('.input-group.date', el)
+                                .datepicker({
+                                    componentSelector: "i.fa-calendar-day, i.glyphicon-th, i.glyphicon-calendar",
+                                    clearBtn: true,
+                                    showOnFocus: false,
+                                    autoclose: true,
+                                    enableOnReadonly: false,
+                                    forceParse: false,
+                                    language: $(".bootstrapLocale").html(),
+                                    format: $(".bootstrapLocaleFormat").html(),
+                                    zIndexOffset: 2000 /* admin site sticky bar */
+                                })
+                                .on("show", function () {
+                                    // To prevent the datepicker from being 'stuck' open if they are trying
+                                    // to click icon *AGAIN* in an attempt to toggle/close the picker.  I
+                                    // first check to see if my own custom data is added and if not I inject
+                                    // some custom data.  If it is present (meaning it was already shown, I hide
+                                    // the datepicker.  Then in the hide event I always remove this custom data.
+                                    const dp = $(this);
+                                    if (dp.data("datepicker-show") != undefined) {
+                                        dp.datepicker('hide');
+                                    }
+                                    else {
+                                        dp.data("datepicker-show", true);
+        
+                                        const dateInput = $("input", dp);
+        
+                                        // Originally, I had an .on("clearDate", ... ) event handler that simply
+                                        // called dateInput.change() to trigger a calc.  But clearing input with keyboard
+                                        // also triggered this, so if I cleared with keyboard, it triggered change, then when
+                                        // I lost focus on input, it triggered 'normal' change event resulting in two calcs.
+                                        // So now I attach click on clear button as well and call change still
+                                        // so that works, but problem is that input isn't cleared before change event happens
+                                        // so I also clear the input myself.
+                                        $(".datepicker-days .clear", dp).on("click", function () {
+                                            dateInput.val("");
+                                            dateInput.change();
+                                        });
+                                    }
+                                })
+                                .on("hide", function () {
+                                    const dp = $(this);
+                                    dp.removeData("datepicker-show");
+        
+                                    $(".datepicker-days .clear", dp).off("click");
+                                })
+                                .on('show.bs.modal', function (event) {
+                                    // https://stackoverflow.com/questions/30113228/why-does-bootstrap-datepicker-trigger-show-bs-modal-when-it-is-displayed/31199817
+                                    // prevent datepicker from firing bootstrap modal "show.bs.modal"
+                                    event.stopPropagation();
+                                });
+        
+                            // Hack for https://github.com/uxsolutions/bootstrap-datepicker/issues/2402
+                            // Still have an issue if they open date picker, then paste (date picker updates) then try to
+                            // click a date...since the input then blurs, it fires a calc and the 'click' into the date picker (a specific day)
+                            // seems to be ignored, but rare case I guess.
+                            $('.input-group.date input', el)
+                                .on("blur", function () {
+                                    const dateInput = $(this);
+                                    if (dateInput.data("datepicker-paste") != undefined) {
+                                        dateInput.trigger("change");
+                                    }
+                                    dateInput.removeData("datepicker-paste");
+                                })
+                                .on("paste", function () {
+                                    const dateInput = $(this);
+                                    dateInput.data("datepicker-paste", true);
+                                })
+                                .on("keypress change", function () {
+                                    // If they paste, then type keyboard before blurring, it would calc twice
+                                    const dateInput = $(this);
+                                    dateInput.removeData("datepicker-paste");
+                                });
+                        }
+                        else if ( prefix !== undefined ) {
+                            validatorContainer.addClass("input-group");
+
+                            let addOnContainer = validatorContainer;
+                            
+                            if ( isBootstrap4 ) {
+                                validatorContainer.prepend( $("<div class='input-group-prepend'></div>") );
+                                addOnContainer = $(".input-group-prepend", validatorContainer);
+                            }
+                            
+                            const prefixElement = $("<span class='input-group-text'>" + prefix + "</span>");
+
+                            if ( !isBootstrap5 ) {
+                                prefixElement.addClass("input-group-addon");
+                            }
+
+                            addOnContainer.prepend(prefixElement);
+                        }
+                        else if ( suffix !== undefined ) {
+                            validatorContainer.addClass("input-group");
+                            $(".error-msg", validatorContainer).addClass("addon-suffix"); // css aid
+
+                            let addOnContainer = validatorContainer;
+                            
+                            if ( isBootstrap4 ) {
+                                validatorContainer.append( $("<div class='input-group-prepend'></div>") );
+                                addOnContainer = $(".input-group-prepend", validatorContainer);
+                            }
+                            
+                            const suffixElement = $("<span class='input-group-text'>" + suffix + "</span>");
+
+                            if ( !isBootstrap5 ) {
+                                suffixElement.addClass("input-group-addon");
+                            }
+
+                            addOnContainer.append( suffixElement );
+                        }
+                    }
+                    else {
+                        input.css("display", "none");
+                        $("div." + id + "DisplayOnly", el).html(value);
+                    }
+
+                    el.attr("data-katapp-initialized", "true");
+                });
         }
 
-        private buildListControls( view: JQuery<HTMLElement> ): void {
-            const listControls = $('[rbl-tid="input-radiobuttonlist"],[rbl-template-type="radiobuttonlist"],[rbl-tid="input-checkboxlist"],[rbl-template-type="checkboxlist"]', view);
+        private buildListControls( container: JQuery<HTMLElement> ): void {
             const that = this;
 
-            listControls.not('[data-katapp-initialized="true"]').each( function() {
-                const el = $(this);
+            $('[rbl-tid="input-radiobuttonlist"],[rbl-template-type="radiobuttonlist"],[rbl-tid="input-checkboxlist"],[rbl-template-type="checkboxlist"]', container)
+                .not("rbl-template *, [rbl-tid='inline'] *, [rbl-tid='inline']") // not in templates
+                .not('[data-katapp-initialized="true"]')
+                .each( function() {
+                    const el = $(this);
 
-                // Do all data-* attributes that we support
-                const id = el.data("inputname");
-                const label = el.data("label");
-                const help = el.data("help");
-                const horizontal = el.data("horizontal") ?? false;
-                const hideLabel = el.data("hidelabel") ?? false;
-                const lookuptable = el.data("lookuptable");
-                const css = el.data("css");
-                const formCss = el.data("formcss");
-                const container = $("." + id, el);
-                                
-                // To make it easier during RBL processing to determine what to do
-                container.attr("data-horizontal", horizontal);
+                    // Do all data-* attributes that we support
+                    const id = el.data("inputname");
+                    const label = el.data("label");
+                    const help = el.data("help");
+                    const horizontal = el.data("horizontal") ?? false;
+                    const hideLabel = el.data("hidelabel") ?? false;
+                    const lookuptable = el.data("lookuptable");
+                    const css = el.data("css");
+                    const formCss = el.data("formcss");
+                    const listContainer = $("." + id, el);
+                                    
+                    // To make it easier during RBL processing to determine what to do
+                    listContainer.attr("data-horizontal", horizontal);
 
-                if ( horizontal ) {
-                    container.addClass("form-group");
-                    $("[rbl-display='v" + id + "']", el).removeClass("form-group");
-                }
+                    if ( horizontal ) {
+                        listContainer.addClass("form-group");
+                        $("[rbl-display='v" + id + "']", el).removeClass("form-group");
+                    }
 
-                if ( css !== undefined ) {
-                    $("[rbl-display='v" + id + "']", el).addClass(css);
-                }
-                if ( formCss !== undefined ) {
-                    $("[rbl-display='v" + id + "']", el).removeClass("form-group").addClass(formCss);
-                }
+                    if ( css !== undefined ) {
+                        $("[rbl-display='v" + id + "']", el).addClass(css);
+                    }
+                    if ( formCss !== undefined ) {
+                        $("[rbl-display='v" + id + "']", el).removeClass("form-group").addClass(formCss);
+                    }
 
-                if ( hideLabel ) {
-                    $("label", el).remove();                    
-                }
-                else if ( label !== undefined ) {
-                    $("span[rbl-value='l" + id + "']", el).html(label);
-                }
-                
-                if ( help !== undefined ) {
-                    $("div[rbl-value='h" + id + "']", el).html(help);
-                    $("a[rbl-display='vh" + id + "']", el).show();
-                }
+                    if ( hideLabel ) {
+                        $("label", el).remove();                    
+                    }
+                    else if ( label !== undefined ) {
+                        $("span[rbl-value='l" + id + "']", el).html(label);
+                    }
+                    
+                    if ( help !== undefined ) {
+                        $("div[rbl-value='h" + id + "']", el).html(help);
+                        $("a[rbl-display='vh" + id + "']", el).show();
+                    }
 
-                if ( lookuptable !== undefined ) {
-                    // Need to fix this
-                    const options =
-                        $("rbl-template[tid='lookup-tables'] DataTable[id='" + lookuptable + "'] TableItem")
-                            .map( ( index, ti ) => ({ Value: ti.getAttribute("key"), Text: ti.getAttribute( "name"), Help: undefined, Selected: index == 0, Visible: true, Disabled: false }));
+                    if ( lookuptable !== undefined ) {
+                        const options =
+                            $("rbl-template[tid='lookup-tables'] DataTable[id='" + lookuptable + "'] TableItem")
+                                .map( ( index, ti ) => ({ Value: ti.getAttribute("key"), Text: ti.getAttribute( "name"), Help: undefined, Selected: index == 0, Visible: true, Disabled: false }));
 
-                    that.application.ui.processListItems(container, false, options.toArray());
-                }
-        
-                el.attr("data-katapp-initialized", "true");
-            });
+                        that.application.ui.processListItems(listContainer, false, options.toArray());
+                    }
+            
+                    el.attr("data-katapp-initialized", "true");
+                });
         }
 
-        private buildDropdowns( view: JQuery<HTMLElement> ): void {
-            const dropdowns = $('[rbl-tid="input-dropdown"],[rbl-template-type="katapp-dropdown"]', view);
+        private buildDropdowns( container: JQuery<HTMLElement> ): void {
+            const dropdowns = 
+                $('[rbl-tid="input-dropdown"],[rbl-template-type="katapp-dropdown"]', container)
+                    .not("rbl-template *, [rbl-tid='inline'] *, [rbl-tid='inline']") // not in templates
+                    .not('[data-katapp-initialized="true"]');
+
             const selectPickerAvailable = typeof $.fn.selectpicker === "function";
             const that = this;
 
@@ -4603,91 +4775,89 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                 this.application.trace("bootstrap-select javascript is not present", TraceVerbosity.None);
             }
 
-            dropdowns.not('[data-katapp-initialized="true"]').each( function() {
-                const el = $(this);
+            dropdowns
+                .each( function() {
+                    const el = $(this);
+                    const input = $(".form-control", el);
+                    const id = el.data("inputname");
+                    const label = el.data("label");
+                    const hideLabel = el.data("hidelabel") ?? false;
+                    const help = el.data("help");
+                    const multiSelect = el.data("multiselect") ?? false;
+                    const liveSearch = el.data("livesearch") ?? true;
+                    const size = el.data("size") ?? "15";
+                    const lookuptable = el.data("lookuptable");
+                    const css = el.data("css");
 
-                // Do all data-* attributes that we support
-                const id = el.data("inputname");
-                const label = el.data("label");
-                const hideLabel = el.data("hidelabel") ?? false;
-                const help = el.data("help");
-                const multiSelect = el.data("multiselect") ?? false;
-                const liveSearch = el.data("livesearch") ?? true;
-                const size = el.data("size") ?? "15";
-                const lookuptable = el.data("lookuptable");
-                const css = el.data("css");
-
-                if ( css !== undefined ) {
-                    $("[rbl-display='v" + id + "']", el).addClass(css);
-                }
-
-                if ( hideLabel ) {
-                    $("label", el).remove();                    
-                }
-                else if ( label !== undefined ) {
-                    $("span[rbl-value='l" + id + "']", el).html(label);
-                }
-                
-                if ( help !== undefined ) {
-                    $("div[rbl-value='h" + id + "']", el).html(help);
-                    $("a[rbl-display='vh" + id + "']", el).show();
-                }
-
-                const input = $(".form-control", el);
-
-                input.attr("data-size", size);
-
-                if ( multiSelect ) {
-                    input.addClass("select-all");
-                    input.attr("multiple", "multiple");
-                    input.attr("data-actions-box", "true");
-                    input.attr("data-selected-text-format", "count > 2");
-                }
-                
-                if ( liveSearch ) {
-                    input.attr("data-live-search", "true");
-                }
-
-                if ( lookuptable !== undefined ) {
-                    that.application.ui.processDropdownItems(
-                        input, 
-                        false,
-                        $("rbl-template[tid='lookup-tables'] DataTable[id='" + lookuptable + "'] TableItem")
-                            .map( ( index, r ) => ({ Value:  r.getAttribute("key"), Text: r.getAttribute( "name"), Class: undefined, Subtext: undefined, Html: undefined, Selected: index === 0, Visible: true }))
-                            .toArray()
-                    );
-                }
-
-                // Merge all other data-* attributes they might want to pass through
-                $.each(this.attributes, function(i, attrib){
-                    const name = attrib.name;
-                    if ( name.startsWith( "data-") ) {
-                        input.attr(name, attrib.value);
+                    if ( css !== undefined ) {
+                        $("[rbl-display='v" + id + "']", el).addClass(css);
                     }
-                 });
 
-                if ( selectPickerAvailable ) {
-                    $(".bootstrap-select", el).selectpicker();
+                    if ( hideLabel ) {
+                        $("label", el).remove();                    
+                    }
+                    else if ( label !== undefined ) {
+                        $("span[rbl-value='l" + id + "']", el).html(label);
+                    }
+                    
+                    if ( help !== undefined ) {
+                        $("div[rbl-value='h" + id + "']", el).html(help);
+                        $("a[rbl-display='vh" + id + "']", el).show();
+                    }
 
-                    $(".bootstrap-select", el)
-                        .attr("data-kat-bootstrap-select-initialized", "true")
-                        .next(".error-msg")
-                        .addClass("selectpicker"); /* aid in css styling */ /* TODO: Don't think this is matching and adding class */
-                }
-        
-                el.attr("data-katapp-initialized", "true");
-            });
+                    input.attr("data-size", size);
+
+                    if ( multiSelect ) {
+                        input.addClass("select-all");
+                        input.attr("multiple", "multiple");
+                        input.attr("data-actions-box", "true");
+                        input.attr("data-selected-text-format", "count > 2");
+                    }
+                    
+                    if ( liveSearch ) {
+                        input.attr("data-live-search", "true");
+                    }
+
+                    if ( lookuptable !== undefined ) {
+                        that.application.ui.processDropdownItems(
+                            input, 
+                            false,
+                            $("rbl-template[tid='lookup-tables'] DataTable[id='" + lookuptable + "'] TableItem")
+                                .map( ( index, r ) => ({ Value:  r.getAttribute("key"), Text: r.getAttribute( "name"), Class: undefined, Subtext: undefined, Html: undefined, Selected: index === 0, Visible: true }))
+                                .toArray()
+                        );
+                    }
+
+                    // Merge all other data-* attributes they might want to pass through to bootstrap-select
+                    $.each(this.attributes, function(i, attrib){
+                        const name = attrib.name;
+                        if ( name.startsWith( "data-") ) {
+                            input.attr(name, attrib.value);
+                        }
+                    });
+
+                    if ( selectPickerAvailable ) {
+                        $(".bootstrap-select", el).selectpicker();
+
+                        $(".bootstrap-select", el)
+                            .attr("data-kat-bootstrap-select-initialized", "true")
+                            .next(".error-msg")
+                            .addClass("selectpicker"); /* aid in css styling */ /* TODO: Don't think this is matching and adding class */
+                    }
+            
+                    el.attr("data-katapp-initialized", "true");
+                });
         }
 
-        private buildSliders( view: JQuery<HTMLElement> ): void {
+        private buildSliders( container: JQuery<HTMLElement> ): void {
             // Only need to process data-* attributes here because RBLeUtilities.processResults will push out 'configuration' changes
-            $('[rbl-tid="input-slider"],[rbl-template-type="katapp-slider"]', view).not('[data-katapp-initialized="true"]').each( function() {
-                const el = $(this);
+            $('[rbl-tid="input-slider"],[rbl-template-type="katapp-slider"]', container)
+                .not("rbl-template *, [rbl-tid='inline'] *, [rbl-tid='inline']") // not in templates
+                .not('[data-katapp-initialized="true"]')
+                .each( function() {
+                    const el = $(this);
 
-                const id = el.data("inputname");
-
-                if ( el.attr("data-katapp-initialized") !== "true" ) {
-                    // Do all data-* attributes that we support
+                    const id = el.data("inputname");
                     const label = el.data("label");
                     const css = el.data("css");
                     const help = el.data("help");
@@ -4709,10 +4879,9 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                     if ( value !== undefined ) {
                         $("input[name='" + id + "']", el).val(value);
                     }
-                }
     
-                el.attr("data-katapp-initialized", "true");
-            });
+                    el.attr("data-katapp-initialized", "true");
+                });
         }
 
         processUI( container?: JQuery<HTMLElement> ): void {
@@ -4736,13 +4905,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
 
             $(selector, view)
                 .not('.rbl-help, [data-katapp-initialized="true"]')
-                .not('rbl-template [data-toggle="tooltip"], [rbl-tid="inline"] [data-toggle="tooltip"]')
-                .not('rbl-template [data-toggle="popover"], [rbl-tid="inline"] [data-toggle="popover"]')
-                .not('rbl-template [data-bs-toggle="tooltip"], [rbl-tid="inline"] [data-bs-toggle="tooltip"]')
-                .not('rbl-template [data-bs-toggle="popover"], [rbl-tid="inline"] [data-bs-toggle="popover"]')
-                .not('rbl-template .tooltip-trigger, [rbl-tid="inline"] .tooltip-trigger')
-                .not('rbl-template .tooltip-text-trigger, [rbl-tid="inline"] .tooltip-text-trigger')
-                .not('rbl-template .error-trigger, [rbl-tid="inline"] .error-trigger')
+                .not("rbl-template *, [rbl-tid='inline'] *, [rbl-tid='inline']") // not in templates
                 .each( function() {
                     const isErrorValidator = $(this).hasClass('error-msg');
                     let placement = $(this).data('placement') || $(this).data('bs-placement') || "top";
@@ -4903,6 +5066,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
             // When helptip <a/> for checkboxes were  moved inside <label/>, attempting to click the help icon simply toggled
             // the radio/check.  This stops that toggle and lets the help icon simply trigger it's own click to show or hide the help.
             $('.checkbox label a[data-toggle], .checkbox label a[data-bs-toggle], .abc-checkbox label a[data-toggle], .abc-checkbox label a[data-bs-toggle]', view)
+                .not("rbl-template *, [rbl-tid='inline'] *, [rbl-tid='inline']") // not in templates
                 .not("[data-katapp-checkbox-tips-initialized='true']")
                 .on('click', function (e) {
                     e.stopPropagation();
@@ -5064,6 +5228,23 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
             writable: true
         });
     }
+
+    // https://stackoverflow.com/a/26657510/166231
+    // https://subscription.packtpub.com/book/web_development/9781783282210/1/ch01lvl1sec20/custom-filters-become-an-expert
+    // $("*:withRblAttribute").length - finds rbl-on elements
+    // $("*:withRblAttribute('rbl-on')").length - finds rbl-on elements
+    $.expr.pseudos.withRblAttribute = $.expr.createPseudo(function(prefix: string) {
+        const p = prefix || "rbl-on";
+
+        return function (el) {
+            for (let i = 0; i < el.attributes.length; i++) {
+                if(el.attributes[i].nodeName.toLowerCase().indexOf(p.toLowerCase()) === 0) {
+                    return true; 
+                }
+            }
+            return false;
+        }        
+    });
 
     $.whenAllDone = function ( deferredParams: Deferred[] ): Deferred {
 		// Update, made this more like Promises.allSettled

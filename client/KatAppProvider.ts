@@ -2616,7 +2616,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
             $("[rbl-value]", application.element)
                 .not("rbl-template *, [rbl-tid='inline'] *, [rbl-tid='inline']") // Not sure I'd need these to filter out rbl-value elements inside templates because { } should be used for 'values'
                 .each(function () {
-                    const el = $(this);
+                    let el = $(this);
         
                     if ( showInspector && !el.hasClass("kat-inspector-value") )
                     {
@@ -2637,17 +2637,15 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                         that.getRblSelectorValue( tabDef, "ejs-output", rblValueParts );
         
                     if ( value != undefined ) {
-                        let target = $(this);
-        
-                        if ( target.length === 1 ) {
-                            target = application.ui.getAspNetCheckboxLabel( target ) ?? target;
+                        if ( el.length === 1 ) {
+                            el = application.ui.getAspNetCheckboxLabel( el ) ?? el;
                         }
         
-                        target.html( value );
+                        el.html( value );
 
                         if ( value.indexOf( "rbl-tid" ) > -1 ) {
                             // In case the markup from CE has a template specified...
-                            that.processRblSource(target, showInspector);                        
+                            that.processRblSource(el, showInspector);                        
                         }
                     }
                     else {
@@ -2656,6 +2654,63 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                 });
         }
     
+        processRblAttributes(showInspector: boolean): void {
+            const that: RBLeUtilities = this;
+            const application = this.application;
+    
+            $("[rbl-attr]", application.element)
+                .not("rbl-template *, [rbl-tid='inline'] *, [rbl-tid='inline']") // Not sure I'd need these to filter out rbl-value elements inside templates because { } should be used for 'values'
+                .each(function () {
+                    let el = $(this);
+        
+                    if ( showInspector && !el.hasClass("kat-inspector-attr") )
+                    {
+                        el.addClass("kat-inspector-attr");
+                        let inspectorTitle = "[rbl-attr={value}]".format( { "value": el.attr('rbl-attr') } );
+                        const existingTitle = el.attr("title");
+                        
+                        if ( existingTitle != undefined ) {
+                            inspectorTitle += "\nOriginal Title: " + existingTitle;
+                        }
+                        el.attr("title", inspectorTitle);
+                    }
+        
+                    const rblAttributes = el.attr("rbl-attr")!.split( " " ); // eslint-disable-line @typescript-eslint/no-non-null-assertion
+
+                    // rbl-attr="attrName:selector[:ce:tab]"
+                    rblAttributes.forEach( a => {
+                        const attrParts = a.split(":");
+                        const attrName = attrParts[ 0 ];
+                        const rblValueParts = attrParts[1].split('.');
+                        const ceName = attrParts.length >= 3 ? attrParts[ 2 ] : undefined;
+                        const tabName = attrParts.length >= 4 ? attrParts[ 3 ] : undefined;
+
+                        const tabDef = that.getTabDef( tabName, ceName )
+                        const value = 
+                            that.getRblSelectorValue( tabDef, "rbl-value", rblValueParts ) ??
+                            that.getRblSelectorValue( tabDef, "ejs-output", rblValueParts );
+            
+                        if ( value != undefined ) {
+                            if ( el.length === 1 ) {
+                                el = application.ui.getAspNetCheckboxLabel( el ) ?? el;
+                            }
+
+                            // set attribute and data
+                            let original = el.data("rbl-attr-" + attrName + "-original");
+                            if ( original == undefined ) {
+                                original = el.attr(attrName) || "";
+                                el.data("rbl-attr-" + attrName + "-original", original);
+                            }
+
+                            el.attr(attrName, original == "" ? value : original + " " + value);
+                        }
+                        else {
+                            application.trace("<b style='color: Red;'>RBL WARNING</b>: no data returned for tab=" + tabDef?._fullName + ", rbl-attr=" + a, TraceVerbosity.Detailed);
+                        }
+                    });
+                });
+        }
+
         processRblSources(showInspector: boolean): void {
             //[rbl-source] processing templates that use rbl results
             this.processRblSource(this.application.element, showInspector);
@@ -3667,6 +3722,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                 application.trace( "Processing all results 'pull' logic", TraceVerbosity.Normal );
                 this.processRblSources( showInspector );
                 this.processRblValues( showInspector );
+                this.processRblAttributes( showInspector );
                 this.processTables();
                 this.processCharts();
     

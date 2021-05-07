@@ -5229,23 +5229,6 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
         });
     }
 
-    // https://stackoverflow.com/a/26657510/166231
-    // https://subscription.packtpub.com/book/web_development/9781783282210/1/ch01lvl1sec20/custom-filters-become-an-expert
-    // $("*:withRblAttribute").length - finds rbl-on elements
-    // $("*:withRblAttribute('rbl-on')").length - finds rbl-on elements
-    $.expr.pseudos.withRblAttribute = $.expr.createPseudo(function(prefix: string) {
-        const p = prefix || "rbl-on";
-
-        return function (el) {
-            for (let i = 0; i < el.attributes.length; i++) {
-                if(el.attributes[i].nodeName.toLowerCase().indexOf(p.toLowerCase()) === 0) {
-                    return true; 
-                }
-            }
-            return false;
-        }        
-    });
-
     $.whenAllDone = function ( deferredParams: Deferred[] ): Deferred {
 		// Update, made this more like Promises.allSettled
         // Understanding promises

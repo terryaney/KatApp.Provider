@@ -1,2 +1,2 @@
-declare const providerVersion = 8.38;
+declare const providerVersion = 9.02;
 declare var bootstrap: any;

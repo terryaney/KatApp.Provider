@@ -1,4 +1,4 @@
-const providerVersion = 8.38; // eslint-disable-line @typescript-eslint/no-unused-vars
+const providerVersion = 9.02; // eslint-disable-line @typescript-eslint/no-unused-vars
 // Hack to get bootstrap modals in bs5 working without having to bring in the types from bs5.
 // If I brought in types of bs5, I had more compile errors that I didn't want to battle yet.
 declare var bootstrap: any;
@@ -541,7 +541,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                     // Update options.viewTemplates just in case someone is looking at them
                     that.options.viewTemplates = requiredTemplates.join( "," );
 
-                    that.ui.processTemplatesWithoutSource(that.element);
+                    that.ui.injectTemplatesWithoutSource(that.element);
 
                     // This used to be inside Standard_Template.templateOn, but since it is standard and so common, just moved it here.
                     // Original code:
@@ -629,6 +629,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
             this.element.removeData("katapp-refresh-calcengine");
             this.element.removeData("katapp-trace-calcengine");
             $('[data-katapp-initialized]', this.element).removeAttr("data-katapp-initialized");
+            $('[data-katapp-template-injected]', this.element).removeAttr("data-katapp-template-injected");            
             this.ui.unbindCalculationInputs();
             this.element.off(".RBLe"); // remove all KatApp handlers
         }
@@ -642,6 +643,39 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
 
         pushNotification(name: string, information: {} | undefined): void {
             this.ui.pushNotification(this, name, information);
+        }
+
+        runRBLeCommand(commandName: string): void {
+            const app = this;
+
+            const logSuccess = function( result: any ): void { 
+                if ( result.payload !== undefined ) {
+                    result = JSON.parse(result.payload);
+                }
+
+                console.log(  JSON.stringify( result ) ); 
+            };
+            const logError = function(xhr: JQuery.jqXHR<any> ): void { 
+                console.log( "Error: " + xhr.status + ", " + xhr.statusText ); 
+            };
+            const data = {
+                "Command":commandName, 
+                "Token": app.options.registeredToken!
+            };
+
+            if ( app.options.submitCalculation != null ) {
+                app.options.submitCalculation( app, data, logSuccess, logError );
+            }
+            else {
+                $.ajax( { 
+                    url: this.options.sessionUrl, 
+                    contentType: "application/json", 
+                    method: "POST", 
+                    data: JSON.stringify( data ), 
+                    success: logSuccess, 
+                    error: logError
+                } );
+            }
         }
 
         calculate( customOptions?: KatAppOptions ): void {
@@ -906,29 +940,14 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                 );
             };
 
-            // Success - updateData
-            // Error - calculateEnd (checks pipeline error before processing)
-            const processResults = function(): void {
-                that.trace("Processing results from calculation", TraceVerbosity.Detailed);
-                const start = new Date();
-                try {
-                    that.processResults( currentOptions );
-                    that.trace("Processing results took " + ( Date.now() - start.getTime() ) + "ms", TraceVerbosity.Detailed);
-                    calculatePipeline( 0 );
-                } catch (error) {
-                    that.trace( "Error during result processing: " + error, TraceVerbosity.None );
-                    that.ui.triggerEvent( "onCalculationErrors", "ProcessResults", error, that.exception, currentOptions, that );
-                    calculatePipeline( 1 );
-                }
-            };
-
-            // Always go calculateEnd
+            // Success - processApiActions
+            // Error - calculateEnd
             const updateData = function(): void {
                 try {
                     const uploadUrl = that.options.rbleUpdatesUrl;
 
                     const jwtToken = {
-                        Tokens: that.getResultTable<JSON>( "jwt-data").map( r => ({ Name: r[ "@id"], Token: r[ "value" ] }) ),
+                        Tokens: that.getResultTable<JSON>( "jwt-data").map( r => ({ Name: r[ "@id"], Token: r[ "value" ] }) )
                     };
     
 					if (jwtToken.Tokens.filter( t => t.Name == "data-updates" ).length > 0 && uploadUrl !== undefined ) {
@@ -974,10 +993,78 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                         calculatePipeline( 0 );
                     }
                 } catch (error) {
-                    that.trace( "Error during jwd update data processing: " + error, TraceVerbosity.None );
+                    that.trace( "Error during jwt update data processing: " + error, TraceVerbosity.None );
                     that.ui.triggerEvent( "onDataUpdateErrors", error, that.exception, currentOptions, that );
-                    calculatePipeline( 0 );
+                    calculatePipeline( 2 );
                 }
+            };
+
+            const base64toBlob = function(base64Data : string, contentType: string = 'application/octet-stream', sliceSize: number = 1024): Blob {
+                // https://stackoverflow.com/a/20151856/166231
+
+                var byteCharacters = atob(base64Data);
+                var bytesLength = byteCharacters.length;
+                var slicesCount = Math.ceil(bytesLength / sliceSize);
+                var byteArrays = new Array(slicesCount);
+            
+                for (var sliceIndex = 0; sliceIndex < slicesCount; ++sliceIndex) {
+                    var begin = sliceIndex * sliceSize;
+                    var end = Math.min(begin + sliceSize, bytesLength);
+            
+                    var bytes = new Array(end - begin);
+                    for (var offset = begin, i = 0; offset < end; ++i, ++offset) {
+                        bytes[i] = byteCharacters[offset].charCodeAt(0);
+                    }
+                    byteArrays[sliceIndex] = new Uint8Array(bytes);
+                }
+                return new Blob(byteArrays, { type: contentType });
+            }
+            
+            const base64toBlobFetch = (base64 : string, type: string = 'application/octet-stream'): Promise<Blob> => 
+                // Can't use in IE :(
+                fetch(`data:${type};base64,${base64}`).then(res => res.blob())
+
+            // Success - processResults if no download, calculateEnd if download
+            // Error - calculateEnd (checks pipeline error before processing)
+            const processApiActions = function(): void {
+                try {
+                    const docGenApiRow = that.getResultRow<JSON>( "api-actions", "DocGen", "action" );
+                    if ( docGenApiRow != undefined ) {
+                        if ( docGenApiRow[ "exception" ] != undefined ) {
+                            // Show some sort of error...for now just logging diagnostics
+                            debugger;
+                        }
+                        else {
+                            const base64 = docGenApiRow[ "content" ];
+                            const contentType = docGenApiRow[ "content-type" ];
+                            const fileName = docGenApiRow[ "file-name" ];
+                            const blob = base64toBlob(base64, contentType);
+                            that.downloadBlob(blob, fileName);
+                        }
+                        calculatePipeline( 1 );
+                    }
+                    else {
+                        calculatePipeline( 0 );
+                    }
+                } catch (error) {
+                    that.trace( "Error during api-actions processing: " + error, TraceVerbosity.None );
+                    that.ui.triggerEvent( "onCalculationErrors", "ProcessApiActions", error, that.exception, currentOptions, that );
+                    calculatePipeline( 1 );
+                }
+            };
+
+            // Always go to calculateEnd
+            const processResults = function(): void {
+                that.trace("Processing results from calculation", TraceVerbosity.Detailed);
+                const start = new Date();
+                try {
+                    that.processResults( currentOptions );
+                    that.trace("Processing results took " + ( Date.now() - start.getTime() ) + "ms", TraceVerbosity.Detailed);
+                } catch (error) {
+                    that.trace( "Error during result processing: " + error, TraceVerbosity.None );
+                    that.ui.triggerEvent( "onCalculationErrors", "ProcessResults", error, that.exception, currentOptions, that );
+                }
+                calculatePipeline( 0 );
             };
 
             const calculateEnd = function(): void {
@@ -998,14 +1085,16 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
             }
             pipeline.push( 
                 submitCalculation,
-                processResults,
                 updateData,
+                processApiActions,
+                processResults,
                 calculateEnd
             )
             pipelineNames.push( 
                 "calculatePipeline.submitCalculation",
-                "calculatePipeline.processResults",
                 "calculatePipeline.updateData",
+                "calculatePipeline.processApiActions",
+                "calculatePipeline.processResults",
                 "calculatePipeline.calculateEnd"
             )
 
@@ -1185,6 +1274,16 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
             this.results = results;
         }
 
+        downloadBlob(blob: Blob, filename: string): void {
+            const tempEl = document.createElement("a");
+            $(tempEl).addClass( "d-none hidden" );
+            const url = window.URL.createObjectURL(blob);
+            tempEl.href = url;
+            tempEl.download = filename;
+            tempEl.click();
+            window.URL.revokeObjectURL(url);
+        }
+
         apiAction( commandName: string, customOptions?: KatAppActionOptions, actionLink?: JQuery<HTMLElement> ): void {
             let url = this.options.rbleUpdatesUrl;
             
@@ -1255,13 +1354,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                             filename = disposition.split('filename=')[1].split(';')[0];
                         }
 
-                        const tempEl = document.createElement("a");
-                        $(tempEl).addClass( "d-none hidden" );
-                        url = window.URL.createObjectURL(blob);
-                        tempEl.href = url;
-                        tempEl.download = filename;
-                        tempEl.click();
-                        window.URL.revokeObjectURL(url);
+                        that.downloadBlob(blob, filename);
                     }
                     that.ui.triggerEvent( "onActionComplete", commandName, that, actionLink );
 
@@ -1622,16 +1715,20 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
             return decodedContent;
         }
 
-        processTemplatesWithoutSource(container: JQuery<HTMLElement>): void {
+        injectTemplatesWithoutSource(container: JQuery<HTMLElement>): void {
             const app = this.application;
             const that = this;
             $("[rbl-tid]", container)
                 .not("[rbl-source], [rbl-tid='inline']") // not an inline template and not template with data source
+                .not('[data-katapp-template-injected="true"]')
                 .not("rbl-template *, [rbl-tid='inline'] *, [rbl-tid='inline']") // not in templates
                 .each(function () {
                     const item = $(this);
                     const templateId = item.attr('rbl-tid')!;
                     that.injectTemplate( item, templateId );
+                    item.attr("data-katapp-template-injected", "true");
+
+                    that.injectTemplatesWithoutSource(item);
                 });
             }
 
@@ -2071,16 +2168,18 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
         bindRblOnHandlers(): void {
             const app = this.application;
             if ( app.options.handlers != undefined ) {
+                // move events on templated output into targets after template is rendered
                 $("[rbl-tid][rbl-on]", app.element)
                     .not("rbl-template *, [rbl-tid='inline'] *, [rbl-tid='inline']")
                     .each(function() {
-                        const el = $(this);
-                        const handlers = el.attr("rbl-on")!.split("|");
+                        const template = $(this);
+                        const handlers = template.attr("rbl-on")!.split("|");
                         // Remove to signal no more processing needed, will be added back on as needed below
-                        el.removeAttr("rbl-on");
+                        // if unable to move to target element
+                        template.removeAttr("rbl-on");
                         
-                        const tid = el.attr("rbl-tid");
-                        const tType = el.attr("rbl-template-type");
+                        const tid = template.attr("rbl-tid");
+                        const tType = template.attr("rbl-template-type");
 
                         handlers
                             .forEach( h => {
@@ -2089,22 +2188,22 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                                 const handlerSelector = handlerParts.length > 0 ? handlerParts.join(":") : undefined;
 
                                 let input = handlerSelector != undefined
-                                    ?  $(handlerSelector, el)
+                                    ?  $(handlerSelector, template)
                                     : undefined;
                                 
                                 if ( input == undefined ) {
                                     if ( tid == "input-dropdown" || tType == "katapp-dropdown" ) {
-                                        input = $("select.form-control", el).not("[data-rblon-initialized='true']");
+                                        input = $("select.form-control", template).not("[data-rblon-initialized='true']");
                                     }
                                     else if ( tid == "input-fileupload" || tType == "katapp-fileupload" ) {
-                                        input = $("input[type='file']", el).not("[data-rblon-initialized='true']");
+                                        input = $("input[type='file']", template).not("[data-rblon-initialized='true']");
+                                    }
+                                    else if ( tid == "input-slider" || tType == "katapp-slider" ) {
+                                        input = $("div[data-slider-type='nouislider']", template).not("[data-rblon-initialized='true']");
                                     }
                                     else {
-                                        input = $(":input", el).not("[data-rblon-initialized='true']");
+                                        input = $(":input", template).not("[data-rblon-initialized='true']");
     
-                                        if ( tid == "input-slider" || tType == "katapp-slider" ) {
-                                            input = $("div[data-slider-type='nouislider']", input.parent()).not("[data-rblon-initialized='true']");
-                                        }
                                     }
                                 }
 
@@ -2112,18 +2211,50 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                                     tid == 'input-radiobuttonlist' || tid == 'input-checkboxlist' ||
                                     tType == 'katapp-radiobuttonlist' || tType =='katapp-checkboxlist';
 
-                                if ( input.length > 0 ) {
-                                    const currentHandler = input.first().attr("rbl-on");
-                                    input.attr("rbl-on", currentHandler == undefined ? handler : currentHandler + "|" + handler);
-                                }
+                                input.each( function() {
+                                    const target = $(this);
+                                    const currentHandler = target.attr("rbl-on");
+                                    target.attr("rbl-on", currentHandler == undefined ? handler : currentHandler + "|" + handler);
+                                });
 
                                 // If nothing found from target most likely content that will be placed
-                                // in an input template after the calculation has ran (i.e. an anchor in the label),
-                                // so don't flag this item as done yet, and let the call to this after calculation hook up the event.
-                                // Standard list control can have items added during each calculation, so need to continue to process this each time
+                                // in an input template after the calculation has ran (i.e. an anchor in the label content of an input template),
+                                // so don't flag this item as done yet - needs to wait for the element to be generated via a calculation.
+
+                                // Standard list control can have items added during each calculation, so unfortunately, need to continue to process 
+                                // the item each and look for possibly new list control inputs.
                                 if ( isStandardListControl || input.length == 0 ) {
-                                    const currentHandler = el.attr("rbl-on");
-                                    el.attr("rbl-on", currentHandler == undefined ? h : currentHandler + "|" + h);
+                                    const currentHandler = template.attr("rbl-on");
+                                    template.attr("rbl-on", currentHandler == undefined ? h : currentHandler + "|" + h);
+                                }
+                            });
+                    });
+
+                // If a handler was put on an html container with a selector but the container was *not*
+                // a template, the handlers were not moved to targets in above method, so have to move them
+                // to the intended targets in this loop
+                $("[rbl-on]", app.element)
+                    .not("[rbl-tid]")
+                    .not("[data-rblon-initialized='true']")
+                    .not("rbl-template *, [rbl-tid='inline'] *")
+                    .each(function() {
+                        const htmlContainer = $(this);
+                        const handlers = htmlContainer.attr("rbl-on")!.split("|");
+
+                        handlers
+                            .forEach( h => {
+                                const handlerParts = h.split(":");
+                                const handler = handlerParts.splice(0, 2);
+                                const handlerSelector = handlerParts.length > 0 ? handlerParts.join(":") : undefined;
+
+                                // Only process if this is an html container that is assigning handlers to 'children'
+                                if ( handlerSelector != undefined ) {
+                                    const targetHandler = handler.join(":");
+                                    $(handlerSelector, htmlContainer).each( function() {
+                                        const target = $(this);
+                                        const currentHandler = target.attr("rbl-on");
+                                        target.attr("rbl-on", currentHandler == undefined ? targetHandler : currentHandler + "|" + targetHandler);
+                                    });
                                 }
                             });
                     });
@@ -2135,21 +2266,31 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                     .each(function() {
                         const el = $(this);
                         const handlers = el.attr("rbl-on")!.split("|");
+                        const isSlider = el.attr("data-slider-type") == "nouislider";
+                        const noUiSlider = isSlider 
+                            ? app.ui.getNoUiSlider(el)
+                            : undefined;
 
-                        handlers
-                            .forEach( h => {
-                                const handler = h.split(":");
-                                const eventName = handler[0];
-                                const functionName = handler[1];
+                        // Slider might not be enabled until after calculation is ran...
+                        if ( !isSlider || noUiSlider != undefined ) {
+                            handlers
+                                .forEach( h => {
+                                    const handlerParts = h.split(":");
+                                    const handler = handlerParts.splice(0, 2);
 
-                                if ( el.attr("data-slider-type") == "nouislider" ) {
-                                    app.ui.getNoUiSlider(el)?.on( eventName + ".ka",  app.options.handlers![ functionName ] );
-                                }
-                                else {
-                                    el.on( eventName + ".ka",  app.options.handlers![ functionName ] );
-                                }
-                            });
-                        el.attr("data-rblon-initialized", "true");
+                                    const eventName = handler[0];
+                                    const functionName = handler[1];
+
+                                    if ( noUiSlider != undefined ) {
+                                        noUiSlider.on( eventName + ".ka",  app.options.handlers![ functionName ] );
+                                    }
+                                    else {
+                                        el.on( eventName + ".ka",  app.options.handlers![ functionName ] );
+                                    }
+                                });
+                            
+                            el.attr("data-rblon-initialized", "true");
+                        }
                     });
             }
         }
@@ -2404,7 +2545,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                         url: currentOptions.registerDataWithService ? currentOptions.sessionUrl : currentOptions.functionUrl,
                         data: JSON.stringify(o),
                         method: "POST",
-                        dataType: "json",
+                        // dataType: "json",
                         headers: currentOptions.registerDataWithService 
                             ? { 'x-rble-session': calculationOptions.Configuration.Token, 'Content-Type': undefined }
                             : undefined
@@ -2696,13 +2837,19 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                             }
 
                             // set attribute and data
-                            let original = el.data("rbl-attr-" + attrName + "-original");
-                            if ( original == undefined ) {
-                                original = el.attr(attrName) || "";
-                                el.data("rbl-attr-" + attrName + "-original", original);
-                            }
+                            const dataName = "rbl-attr-" + attrName + "-previous";
+                            const previous = el.data(dataName);
+                            const currentValue = el.attr(attrName) || "";
+                            const newValue = previous != undefined
+                                ? currentValue.replace(previous, value).trim()
+                                : ( currentValue == "" ? value : currentValue + " " + value ).trim();
 
-                            el.attr(attrName, original == "" ? value : original + " " + value);
+                            if ( newValue == "" ) {
+                                el.removeAttr(attrName).removeData(dataName)
+                            }
+                            else {
+                                el.attr(attrName, newValue).data(dataName, value);
+                            }
                         }
                         else {
                             application.trace("<b style='color: Red;'>RBL WARNING</b>: no data returned for tab=" + tabDef?._fullName + ", rbl-attr=" + a, TraceVerbosity.Detailed);
@@ -2796,24 +2943,43 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                                         firstRowSource[propertyName] = "";
                                     }
                                 }
-                                if ( rblSourceParts.length === 2 ) {
-                                    let templateData = KatApp.extend( {}, that.getResultRow<JSON>( tabDef, rblSourceParts[0], rblSourceParts[1] ) );
 
+                                const generateTemplateData = function(templateData: object, templateContent: string): JQuery<HTMLElement> {                                    
                                     try {
                                         templateData = KatApp.extend( {}, firstRowSource, templateData )
                                     } catch {
                                         // Could throw error if KatApp.js isn't updated and can't handle
                                         // when column has meta data of @class, @width, etc.
                                     }
-
-                                    if ( templateData !== undefined ) {
-                                        const formattedContent = $("<div>" + templateContent.format( templateData ) + "</div>");
-                                        el.children().remove();
     
-                                        // Nested templates
-                                        that.application.ui.processTemplatesWithoutSource(formattedContent);        
-                                        that.processRblSource(formattedContent, showInspector);
-                                        el.append(formattedContent.children());
+                                    const formattedContent = templateContent.format( templateData );
+                                    let el = $(formattedContent);
+
+                                    const hasRoot = el.length == 1;
+
+                                    // nested template processing will not select elements right if there is no root
+                                    if ( !hasRoot ) {
+                                        el = $("<div>" + formattedContent + "</div>");
+                                    }
+
+                                    // Nested templates
+                                    that.application.ui.injectTemplatesWithoutSource(el);
+                                    that.processRblSource(el, showInspector);
+                                    
+                                    return hasRoot ? el : el.children();
+                                };
+
+                                if ( rblSourceParts.length === 2 ) {
+                                    const rowSource = that.getResultRow<JSON>( tabDef, rblSourceParts[0], rblSourceParts[1] );
+
+                                    if ( rowSource !== undefined ) {
+                                        const templateResult = generateTemplateData(
+                                            KatApp.extend( {}, rowSource ),
+                                            templateContent
+                                        );
+
+                                        el.children().remove();
+                                        el.append(templateResult);
                                     }
                                     else {
                                         application.trace("<b style='color: Red;'>RBL WARNING</b>: no data returned for tab=" + tabDefName + ", rbl-source=" + el.attr('rbl-source'), TraceVerbosity.Detailed);
@@ -2830,48 +2996,24 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                                         if ( rblSourceParts.length === 1 || row[ rblSourceParts[ 1 ] ] === rblSourceParts[ 2 ] ) {
                                             // Automatically add the _index0 and _index1 for carousel template
                                             // const templateData = KatApp.extend( {}, row, { _index0: index, _index1: index + 1 } )
-                                            let templateData = KatApp.extend( {}, row, { _index0: index, _index1: index + 1 } )
-
-                                            try {
-                                                templateData = KatApp.extend( {}, firstRowSource, templateData )
-                                            } catch {
-                                                // Could throw error if KatApp.js isn't updated and can't handle
-                                                // when column has meta data of @class, @width, etc.
-                                            }
-
-                                            // compiler mis-stating that templateContent could be undefined
-                                            const formattedContent = $("<div>" + templateContent!.format( templateData ) + "</div>");
-        
-                                            // Nested templates
-                                            that.application.ui.processTemplatesWithoutSource(formattedContent);        
-                                            that.processRblSource(formattedContent, showInspector);
+                                            const templateResult = generateTemplateData(
+                                                KatApp.extend( {}, row, { _index0: index, _index1: index + 1 } ),
+                                                // compiler mis-stating that templateContent could be undefined
+                                                templateContent!
+                                            );
         
                                             if ( prepend ) {
-                                                el.prepend( formattedContent.children() );
+                                                el.prepend( templateResult );
                                             }
                                             else {
-                                                el.append( formattedContent.children() );
+                                                el.append( templateResult );
                                             }
                                         }
                                     });
                                 }
-                                else if ( rblSourceParts.length === 3 ) {                            
-                                    const value = that.getResultValue( tabDef, rblSourceParts[0], rblSourceParts[1], rblSourceParts[2]);
-                                    
-                                    if ( value !== undefined ) {
-                                        const formattedContent = $("<div>" + templateContent.format( { "value": value } ) + "</div>");
-                                        el.children().remove();
-    
-                                        // Nested templates
-                                        that.application.ui.processTemplatesWithoutSource(formattedContent);        
-                                        that.processRblSource(formattedContent, showInspector);
-    
-                                        el.append(formattedContent.append());
-                                    }
-                                    else {
-                                        application.trace("<b style='color: Red;'>RBL WARNING</b>: no data returned for tab=" + tabDefName + ", rbl-source=" + el.attr('rbl-source'), TraceVerbosity.Detailed);
-                                    }            
-                                }        
+                                else {
+                                    application.trace("<b style='color: Red;'>RBL WARNING</b>: Invalid length for rblSourceParts=" + rblSourceParts.join("."), TraceVerbosity.Detailed);
+                                }            
                             } else {
                                 application.trace("<b style='color: Red;'>RBL WARNING</b>: no data returned for tab=" + tabDefName + ", rbl-source=" + el.attr('rbl-source'), TraceVerbosity.Detailed);
                             }
@@ -2990,7 +3132,8 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                     
                     el.addClass("rbl-nocalc skipRBLe").off(".RBLe");
                     $(":input", el).off(".RBLe");
-                    this.application.ui.getNoUiSlider( $("div[data-slider-type='nouislider']", el.parent()) )?.off('.RBLe');
+                    // leave update.RBLe (for updating label) and change.RBLe (for keeping 'wizard sliders' in sync) on...
+                    this.application.ui.getNoUiSlider( $("div[data-slider-type='nouislider']", el.parent()) )?.off('set.RBLe');
                 }
             });
         }
@@ -3398,9 +3541,11 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                 return;
             }            
     
-            $('[rbl-tid="chart-highcharts"], [rbl-template-type="katapp-highcharts"]', view).each(function () {
-                highchartsBuilder.renderChart( $(this) );
-            });
+            $('[rbl-tid="chart-highcharts"], [rbl-template-type="katapp-highcharts"]', view)
+                .not("rbl-template *, [rbl-tid='inline'] *, [rbl-tid='inline']")
+                .each(function () {
+                    highchartsBuilder.renderChart( $(this) );
+                });
         }
     
         private addValidationItem(summary: JQuery<HTMLElement>, input: JQuery<HTMLElement> | undefined, message: string, bootstrapVersion: number): void {
@@ -3857,7 +4002,14 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                 return eval(v);
 			}
 			else if (value.startsWith("function ")) {
-				const f = this.removeRBLEncoding("function f {function} f.call(this);".format( { function: value.substring(value.indexOf("(")) } ));
+                // What I changed it to, so it kept params, but maybe not needed??  FindDr has function ( event ) { }...only works if I DON'T have the (event) in my code
+				// const f = this.removeRBLEncoding("function f {function} f.call(this);".format( { function: value.substring(value.indexOf("(")) } ));
+                // https://bitbucket.org/benefittechnologyresources/katapp/commits/f81b20cb5d76b24d92579613b2791bbe37374eb2#chg-client/KatAppProvider.ts
+                const f = this.removeRBLEncoding("function f() {value} f.call(this);".format( { value: value.substring(value.indexOf("{")) } ));				
+
+                // value = "function ( event ) { debugger; $(\".iChartClick\").val( event.point.id ).trigger('change'); }"
+                // f_1 = this.removeRBLEncoding("function f() {value} f.call(this);".format( { value: value.substring(value.indexOf("{")) } ))
+
 				return function (): any { return eval(f!); } // eslint-disable-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-non-null-assertion
 			}
 			else return this.removeRBLEncoding(value);
@@ -4243,7 +4395,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                 });
         }
 
-        private buildCheckboxes( container: JQuery<HTMLElement> ): void {
+        private processCheckboxes( container: JQuery<HTMLElement> ): void {
             const app = this.application;
 
             $('[rbl-tid="input-checkbox"],[rbl-template-type="katapp-checkbox"]', container)
@@ -4384,7 +4536,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                 });
         }
 
-        private buildFileUploads( container: JQuery<HTMLElement> ): void {
+        private processFileUploads( container: JQuery<HTMLElement> ): void {
             const that = this;
             const application = this.application;
 
@@ -4526,7 +4678,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                 });
         }
 
-        private buildTextBoxes( container: JQuery<HTMLElement> ): void {
+        private processTextBoxes( container: JQuery<HTMLElement> ): void {
             const app = this.application;
             const applicationId = app.id;
             const bootstrapVersion = app.bootstrapVersion;
@@ -4759,7 +4911,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                 });
         }
 
-        private buildListControls( container: JQuery<HTMLElement> ): void {
+        private processListControls( container: JQuery<HTMLElement> ): void {
             const that = this;
 
             $('[rbl-tid="input-radiobuttonlist"],[rbl-template-type="radiobuttonlist"],[rbl-tid="input-checkboxlist"],[rbl-template-type="checkboxlist"]', container)
@@ -4818,7 +4970,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                 });
         }
 
-        private buildDropdowns( container: JQuery<HTMLElement> ): void {
+        private processDropdowns( container: JQuery<HTMLElement> ): void {
             const dropdowns = 
                 $('[rbl-tid="input-dropdown"],[rbl-template-type="katapp-dropdown"]', container)
                     .not("rbl-template *, [rbl-tid='inline'] *, [rbl-tid='inline']") // not in templates
@@ -4905,7 +5057,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                 });
         }
 
-        private buildSliders( container: JQuery<HTMLElement> ): void {
+        private processSliders( container: JQuery<HTMLElement> ): void {
             // Only need to process data-* attributes here because RBLeUtilities.processResults will push out 'configuration' changes
             $('[rbl-tid="input-slider"],[rbl-template-type="katapp-slider"]', container)
                 .not("rbl-template *, [rbl-tid='inline'] *, [rbl-tid='inline']") // not in templates
@@ -5133,12 +5285,12 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
 
         private processInputs( container?: JQuery<HTMLElement> ): void {
             const view = container ?? this.application.element;
-            this.buildTextBoxes( view );
-            this.buildDropdowns( view );
-            this.buildCheckboxes( view );
-            this.buildListControls( view );
-            this.buildSliders( view );
-            this.buildFileUploads( view );
+            this.processTextBoxes( view );
+            this.processDropdowns( view );
+            this.processCheckboxes( view );
+            this.processListControls( view );
+            this.processSliders( view );
+            this.processFileUploads( view );
         }
     }
 

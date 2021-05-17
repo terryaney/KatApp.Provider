@@ -12,8 +12,13 @@
     - [Configuration Precedence](#Configuration-Precedence)
 - [Kaml View Specifications](#Kaml-View-Specifications)
     - [RBLe Attributes used in Kaml View](#RBLe-Attributes-used-in-Kaml-View)
-    - [RBLe Selector Paths](#RBLe-Selector-Paths)
+    - [rbl-value Selector Paths](#rbl-value-Selector-Paths)
+    - [rbl-attr Attribute Details](#rbl-attr-Attribute-Details)
     - [rbl-display Attribute Details](#rbl-display-Attribute-Details)
+    - [rbl-on Event Handlers](#rbl-on-Event-Handlers)
+        - [Assigning Event Handlers to Contained Elements](#Assigning-Event-Handlers-to-Contained-Elements)
+        - [Assigning Multiple Event Handlers](#Assigning-Multiple-Event-Handlers)
+        - [Removing Event Handlers](#Removing-Event-Handlers)        
     - [View Scoping](#View-Scoping)
     - [Legacy _Push_ Processing](#Legacy-_Push_-Processing)
         - [ejs-output Table](#**ejs-output**)
@@ -288,7 +293,7 @@ There is a third and final way to configure CalcEngine information.  This is the
 
 KatApp's are capable of leveraging multiple CalcEngine inside a single Kaml View file.  You can pass these in using two of the described mechanisms above.  Multiple CalcEngines can be configured only by a Javascript configuration object or via the `<rbl-config>` element.
 
-When multiple CalcEngines or result tabs are used, additional information is required to pick the appropriate results.  See [RBLe Selector Paths](#RBLe-Selector-Paths) for more information describing `rbl-ce` and `rbl-tab`.  
+When multiple CalcEngines or result tabs are used, additional information is required to pick the appropriate results.  See [rbl-value Selector Paths](#rbl-value-Selector-Paths) for more information describing `rbl-ce` and `rbl-tab`.  
 
 **Important** - Whenever multiple CalcEngines are used, you must provide a 'key' value minimally on CalcEngines 2...N, but ideally on all of them.  Note that the first CalcEngine has a key value of `default` if not provided.
 
@@ -337,16 +342,18 @@ When building Kaml Views, dynamic content and visiblity is managed via the follo
 
 Attribute | Description
 ---|---
+rbl-value | Inserts a value from RBLe Service
 rbl-ce | If multiple CalcEngines are used, can provide a `key` to a CE to indicate which CalcEngine to pull value from.
 rbl-tab | If multiple tabs are returned from a CalcEngine, can provide a name which tab to pull value from.
-rbl-value | Inserts a value from RBLe Service
-rbl-source<br/>rbl&#x2011;source&#x2011;table | Indicates row(s) from an RBLe result table used to process a template.  Pairs with rbl-tid<br/>&nbsp;
-rbl-tid | Indicates what RBL template to apply to the given source rows.  Results from template and data replace element content.
 rbl-display | Reference to boolean RBLe result data that toggles display style (uses `jQuery.show()` and `jQuery.hide()` ).
+rbl-attr | Update HTML attribute values with combining the syntax of `rbl-value`, `rbl-ce`, and `rbl-tab`.
+rbl-tid | Indicates what RBL template to apply to the given source rows.  Results from template and data replace element content.
+rbl-source<br/>rbl&#x2011;source&#x2011;table | Indicates row(s) from an RBLe result table used to process a template.  Pairs with `rbl-tid`<br/>&nbsp;
+rbl-on | Attached Javascript event handlers to DOM elements
 
 <br/>
 
-## RBLe Selector Paths
+## rbl-value Selector Paths
 There are two ways to use `rbl-value` attribute.  You can provide simply an 'id' that will look inside the `ejs-output` table.  Or you can provide a 'selector path'.  Both mechanisms can be used in conjunction with `rbl-ce` and `rbl-tab`.
 
 Selector&nbsp;Path | Description
@@ -354,6 +361,7 @@ Selector&nbsp;Path | Description
 id | Look in `rbl-value` (legacy `ejs-output`) table for row where row id is `id` and return the value column.
 table.id | Look in `table` table for row where row id is `id` and return the value column.
 table.id.column | Look in `table` table for row where row id is `id` and return the `column` column.
+table.keyColumn.keyValue.column | Look in `table` table for row where `keyColumn` is `keyValue` and return the `column` column.
 
 ```html
 <!-- Table: rbl-value/ejs-output, ID: ret-age, Column: value -->
@@ -384,16 +392,53 @@ Table: rbl-value/ejs-output, ID: ret-age, Column: value
 <span rbl-ce="Shared" rbl-tab="RBLRetire" rbl-value="ret-age"></span>
 ```
 
+## rbl-attr Attribute Details
+Similar to `rbl-value`, attributes can be assigned using selector paths.  However, since only *one* `rbl-attr` attribute is ever present on any HTML DOM element, the syntax is slightly different.  Multiple attributes can be set via a `SPACE` delimitted list.  Optionally, the CalcEngine and TabDef names can be provided if needed.
+
+The syntax for each attribute you wish to set is controlled by a `:` delimitted list:  `attributeName:selectorPath:calcEngineName:tabDefName`.  `calcEngineName` and `tabDefName` are optional.
+
+If the `rbl-attr` selector path returns a value on subsequent calculations, the previously assigned value with be replaced with the new value.
+
+```html
+<!-- Set the 'data-path' attribute to the 'value' column from 'rbl-value' table where 'id' is 'apiNextPagePath' -->
+<a rbl-attr="data-path:apiNextPagePath">Next Page</a>
+
+<!-- 
+1. Set HTML of this anchor to the 'value' column from 'rbl-value' table where 'id' is 'electionButton' 
+2. Set the 'data-action' attribute to the 'value' column from 'rbl-value' table where 'id' is 'election-action' 
+3. Set the 'data-confirm' attribute to the 'value' column from 'rbl-value' table where 'id' is 'election-confirm' 
+-->
+<a rbl-attr="data-action:election-action data-confirm:election-confirm" rbl-value="electionButton"></a>
+
+<!-- 
+Attribute: data-action
+CalcEngine: 'Shared' (key=Shared), Tab: first/default
+Selector: Table: rbl-value, ID: election-action, Column: value
+-->
+<a rbl-attr="data-action:election-action:Shared">Make Election</a>
+
+<!-- 
+Attribute: data-action
+CalcEngine: 'Shared' (key=Shared), Tab: RBLRetire
+Selector: Table: rbl-value, ID: election-action, Column: value
+
+Attribute: data-confirm
+CalcEngine: default, Tab: first/default
+Selector: Table: rbl-value, ID: election-confirm, Column: value
+-->
+<a rbl-attr="data-action:election-action:Shared:RBLRetire data-confirm:election-confirm">Make Election</a>
+```
+
 ## rbl-display Attribute Details
-The `rbl-display` value has all the same 'selector' capabilities described in the _`rbl-value` Attribute Details_.  Once a `value` is selected from a specified table (`ejs-visibility` by default), a boolean 'falsey' logic is applied against the value.  An element will be hidden if the value is `0`, `false` or an empty string.
+The `rbl-display` value has all the same 'selector' capabilities described in the _`rbl-value` Attribute Details_.  Once a `value` is selected from a specified table (with a table priority of `rbl-display`, `ejs-visibility`, then `ejs-output` by default), a boolean 'falsey' logic is applied against the value.  An element will be hidden if the value is `0`, `false` or an empty string.
 
 **Simple Expressions** - In addition to simply returning a visibility value from the CalcEngine, the `rbl-display` attribute can contain a simple equality expression.
 
 ```html
-<!-- Show or hide based on 'value' column from 'ejs-visibility' table where 'id' is 'show-wealth' -->
+<!-- Show or hide based on 'value' column from 'rbl-display' table where 'id' is 'show-wealth' -->
 <div rbl-display="show-wealth">Wealth Information</div>
 
-<!-- Show if 'value' column from 'ejs-visibility' table where 'id' is 'show-wealth' = 1, otherwise hide -->
+<!-- Show if 'value' column from 'rbl-display' table where 'id' is 'show-wealth' = 1, otherwise hide -->
 <div rbl-display="wealth-level=1">Wealth Information</div>
 
 <!-- 
@@ -401,6 +446,122 @@ Using the first/default tab from the 'Shared' CalcEngine (key=Shared)
 Show if 'enabled' column from 'wealth-summary' table where 'id' is 'benefit-start' = 1, otherwise hide 
 -->
 <div rbl-ce="Shared" rbl-display="wealth-summary.benefit-start.enabled=1">Wealth Information</div>
+```
+
+## rbl-on Event Handlers
+
+Event handlers on HTML DOM elements inside Kaml Views can be attached using two mechanisms.  Developers can use jQuery `on(eventName, function() {})` syntax at the appropriate time in KatApp calculation life cycle with the understanding of when the markup, after result and template processing, will be in the correct state for jQuery DOM Selectors to find the desired HTML DOM elements (see [KatApp Lifecycle Events](#KatApp-Lifecycle-Events) or [KatApp Calculation Lifecycle Events](#KatApp-Calculation-Lifecycle-Events)) or simply use the `rbl-on` attribute in Kaml markup and let the framework attach the events at the appropriate time.  
+
+Using `rbl-on` will attach the event correctly regardless of when the element is rendered (i.e. if the element is inside a template).  This makes using the `rbl-on` attribute the preferred mechanism for attaching events the vast majority of the time.  In some complex situations, like conditionally attaching events based on UI state or calculation results may require attaching events via the jQuery `on` method.
+
+To use the `rbl-on` method for attaching events, the KatApp options must have the `handlers` object set with all the handlers assigned in markup.  This can be done by setting the property of the options object passed during the initial `$(".katapp").KatApp( configuration );` call, however, more commonly it is done by using the [updateOptions](#updateOptions) method inside the Kaml View.
+
+```javascript
+// Javascript - Sample of javascript inside Kaml View to correctly use rbl-on handlers.
+
+var view = $("thisClass");
+var application = view.KatApp();
+
+application.updateOptions(
+	{
+		handlers: {
+            foo: function() { /* do something */ },
+            baz: function() { /* do something else */ }
+        }
+    }
+);
+
+// Additional code as needed...
+view.on("onInitialized.RBLe", function () {
+    // Code to run after Kaml View has been initialized...
+});
+```
+
+```html
+<!-- Assigning foo/baz in markup -->
+<p>Please use <a href="#" rbl-on="click:foo">foo</a> or <a href="#" rbl-on="click:baz">baz</a>.</p>
+```
+
+### Assigning Event Handlers to Contained Elements
+
+There are two scenarios when handlers are assigned to elements contained *inside* the element with the `rbl-on` attribute.  In these cases, the handlers are not attached to the element with the `rbl-on`, but rather are attached to items (via a jQuery selector) contained inside the element - which in some cases, are elements generated during template processing.  The two scenarios are as follows:
+
+1. Event handlers that are assigned to elements that are created via templates (i.e. have a `rbl-tid=` attribute)
+2. Event handlers that are intended for multiple/many elements inside a parent container (i.e. to reduce the need to repeating the same `rbl-on=` syntax on each of the intended targets)
+
+In the first scenario, for handlers assigned to elements that also have a `rbl-tid` attribute.  All of the *standard template items* will automatically select the correct item to attach the event to (i.e. the generated *input* element).  The following list is the default behavior for attaching events:
+
+- `rbl-tid="input-textbox"` or `rbl-template-type="katapp-textbox"` - The item selected matches the `:input` selector
+- `rbl-tid="input-checkbox"`, `rbl-tid="input-checkbox-simple"`, or `rbl-template-type="katapp-checkbox"` - The item selected matches the `:input` selector
+- `rbl-tid="input-dropdown"` or `rbl-template-type="katapp-dropdown"` - The item selected matches the `select.form-control` selector
+- `rbl-tid="input-slider"` or `rbl-template-type="katapp-slider"` - The item selected matches the `div[data-slider-type='nouislider']` selector
+- `rbl-tid="input-checkboxlist"` or `rbl-template-type="katapp-checkboxlist"` - The item selected matches the `:input` selector
+- `rbl-tid="input-radiobuttonlist"` or `rbl-template-type="katapp-radiobuttonlist"` - The item selected matches the `:input` selector
+- `rbl-tid="input-fileupload"` or `rbl-template-type="katapp-upload"` - The item selected matches the `input[type='file']` selector
+
+To override this default selector, and the required way to specify the selector for the second scenario above, a third part of the `:` delimitted `rbl-on` value can be used.
+
+```html
+<!-- Assigning handleResource to each a element inside the ul -->
+<p>Please use one of the following:</p>
+<ul rbl-on="click:handleResource:a">
+    <li><a href="#">Resource 1</a></li>
+    <li><a href="#">Resource 2</a></li>
+    <li><a href="#">Resource 3</a></li>
+</ul>
+
+<!-- Assigning handleResource to each a element inside the ul that does not have target attribute -->
+<p>Please use one of the following:</p>
+<ul rbl-on="click:handleResource:a:not([target])">
+    <li><a href="#">Resource 1</a></li>
+    <li><a href="#">Resource 2</a></li>
+    <li><a target="_blank" href="www.conduent.com">Conduent [no rbl-on]</a></li>
+</ul>
+
+<!-- Assigning showDate to an element with data-type='year' attribute assigned -->
+<div rbl-tid="custom-date-input" rbl-template-type="katapp-textbox" rbl-on="change:showDate:input[data-type='year']"></div>
+```
+### Assigning Multiple Event Handlers
+
+You can assign multiple event handlers to the same element by `|` delimitting the list of handlers.
+
+```html
+<!-- 
+    Assigning checkYear to an element with data-type='year' attribute assigned when input changes
+    Assigning checkMonth to an element with data-type='month' attribute assigned when input changes
+-->
+<div rbl-tid="custom-date-input" rbl-template-type="katapp-textbox" rbl-on="change:checkYear:input[data-type='year']|change:checkMonth:input[data-type='month']"></div>
+
+<!-- 
+    Assigning checkYear to an element with data-type='year' attribute assigned  when input changes
+    Assigning displayDate to all input elements when they lose focus
+-->
+<div rbl-tid="custom-date-input" rbl-template-type="katapp-textbox" rbl-on="change:checkYear:input[data-type='year']|blur:displayDate::input"></div>
+```
+
+Similarily, an element can have multiple handlers assigned if `rbl-on` is supplied both on the element itself and on a parent element that selects the same element.
+
+```html
+<!--
+    For *all* a elements, call the handleResource method.
+    Additionaly, for Resource 3, call the customResourceHandler message as well.
+-->
+<ul rbl-on="click:handleResource:a">
+    <li><a href="#">Resource 1</a></li>
+    <li><a href="#">Resource 2</a></li>
+    <li><a href="#" rbl-on="click:customResourceHandler">Resource 3</a></li>
+</ul>
+```
+### Removing Event Handlers
+
+Events bound with the `rbl-on` attribute are bound with a `.ka` namespace.  Therefore, at any point in the application lifecycle, events can be removed specifically, or generically with the namespace.
+
+```javascript
+// Remove the customResourceHandler event handler from all a elements (in example above, only one item has this handler)
+$("ul[rbl-on='click:handleResource:a'] a").off("customResourceHandler.ka");
+
+// Remove all rbl-on event handlers from all a elements (in example above, three handleResource handlers and one customResourceHandler handler)
+$("ul[rbl-on='click:handleResource:a'] a").off(".ka");
 ```
 
 ## View Scoping
@@ -498,7 +659,7 @@ Kaml Views still supports legacy _push_ processing for values and visibility, bu
 
 ### **ejs-output** 
 
-Legacy functionality replaced by `rbl-value` processing.  Set the content for any element based on CSS classes.
+Legacy functionality replaced by `rbl-value` processing.  Set the content for any element based on CSS classes.  Once the Kaml View has all the `rbl-value` attributes correctly defined, this table should be renamed to `rbl-value`.
 
 Column | Description
 ---|---
@@ -511,7 +672,7 @@ value | The content to set.  (Supports text or HTML)
 
 ### **ejs-visibility**
 
-Legacy functionality replaced by `rbl-display` processing.  Set the visiblity for any element based on CSS classes.
+Legacy functionality replaced by `rbl-display` processing.  Set the visiblity for any element based on CSS classes.  Once the Kaml View has all the `rbl-display` attributes correctly defined, this table should be renamed to `rbl-display`.
 
 Column | Description
 ---|---
@@ -1826,6 +1987,7 @@ view | string | Assign the Kaml View to use in this KatApp in the form of `Folde
 inputSelector | string | A jQuery selector that specifies which inputs inside the view are considers RBLe Calculation Service inputs.  By default, _all_ inputs are selected via a selector of `input, textarea, select`.
 viewTemplates | string | A `comma` delimitted list of Kaml Template Files to use in the form of `Folder:Template,Folder:Template,...`.
 ajaxLoaderSelector | string | A jQuery selector that indicates an item to show at the start of calculations and hide upon completion.  By default, `.ajaxloader` is used.
+handlers | object | An object containing functions that will be assigned via [rbl-on Event Handlers](#rbl-on-Event-Handlers).
 calcEngines | [CalcEngine](#CalcEngine-Object)[] | An array of CalcEngine objects specifying which CalcEngine(s) should drive the current Kaml View.
 manualInputs | [OptionInputs](#OptionInputs-Object) | Provide inputs that should _always_ be passed in on a calculation but aren't available in the UI, they can be assigned here.
 defaultInputs | [OptionInputs](#OptionInputs-Object) | Provide default inputs to use when the KatApp is initialized or updated via [method calls](#KatApp-Methods) .  `defaultInputs` are only applied one time.
@@ -2568,6 +2730,8 @@ $(".katapp").KatApp().redraw();
 ## KatApp Events
 
 KatApps trigger several events to during different workflows allowing Kaml View developers to catch and respond to these events as needed.  All events are registered on the 'view' of the application.  The view is simply the HTML element that had the `.KatApp()` method applied to it to build a KatApp.  
+
+To assign event handlers to HTML DOM elements inside Kaml Views, see [rbl-on Event Handlers](#rbl-on-Event-Handlers).
 
 When using events, use the following guidelines:
 

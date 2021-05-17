@@ -200,6 +200,10 @@ interface GetResourceOptions {
     Command: string;
     Resources: KatAppResource[];        
 }
+interface RBLeCommandOptions {
+    Command: string;
+    Token: string;
+}
 interface KatAppResource {
     Resource: string;
     Folder: string;
@@ -322,7 +326,7 @@ interface SubmitCalculationFailure
 }
 
 interface SubmitCalculationDelegate {
-    ( application: KatAppPlugInInterface, options: GetResourceOptions | SubmitCalculationOptions, done: RBLeServiceCallback | ajaxGetResourceSuccessCallback, fail: JQueryFailCallback | ajaxGetResourceFailCallback ): void;
+    ( application: KatAppPlugInInterface, options: GetResourceOptions | SubmitCalculationOptions | RBLeCommandOptions, done: RBLeServiceCallback | ajaxGetResourceSuccessCallback, fail: JQueryFailCallback | ajaxGetResourceFailCallback ): void;
 }
 interface GetDataDelegate {
     ( application: KatAppPlugInInterface, options: KatAppOptions, done: RBLeRESTServiceResultCallback, fail: JQueryFailCallback ): void;

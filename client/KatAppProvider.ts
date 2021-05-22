@@ -5120,6 +5120,13 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                     const trigger = $(this).data('trigger') || $(this).data('bs-trigger') || "hover";
                     const container = $(this).data('container') || $(this).data('bs-container') || "body";
 
+                    if ($(this).attr("href") == "#") {
+                        // Convert simply # links to void so nothing happens
+                        $(this).on("click.RBLe", function (e) {
+                            e.preventDefault();
+                        });
+                    }
+            
                     const options: Bootstrap.PopoverOptions = {
                         html: true,
                         sanitize: false,

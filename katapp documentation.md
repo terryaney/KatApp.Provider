@@ -123,6 +123,7 @@
             - [onDestroyed](#onDestroyed)
             - [onOptionsUpdated](#onOptionsUpdated)
             - [onKatAppNotification](#onKatAppNotification)
+            - [onKatAppNavigation](#onKatAppNavigation)
         - [KatApp Calculation Lifecycle Events](#KatApp-Calculation-Lifecycle-Events)
             - [onCalculateStart](#onCalculateStart)
             - [onRegistration](#onRegistration)
@@ -2858,6 +2859,29 @@ view.on("onKatAppNotification.RBLe", function (event, name, information, applica
                 break;
             }
     }
+});
+```
+
+#### onKatAppNavigation
+
+**`onKatAppNavigation(event: Event, id: string, application: KatApp )`**
+
+When an `rbl-navigate` attribute is provided and the element is clicked, this event is raised to allow the client to perform navigation to a different KatApp.
+
+```javascript
+// During KatApp bootstrap code via configuration
+$(".katapp").KatApp({
+    view: "LAW:WealthDashboard",
+    onKatAppNavigation: function(id) {
+        $(".nexgenNavigation").val(id);
+        $(".lnkNexgenHost")[0].click();
+    }
+});
+
+// Or via javascript on() handler inside View script
+view.on("onKatAppNotification.RBLe", function (id, application) {
+    $(".nexgenNavigation").val(id);
+    $(".lnkNexgenHost")[0].click();
 });
 ```
 

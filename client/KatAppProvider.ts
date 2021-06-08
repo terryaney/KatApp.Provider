@@ -267,6 +267,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
 
             const _templatesUsedByAllApps = $.fn.KatApp.templatesUsedByAllApps;
             const _templateDelegates = $.fn.KatApp.templateDelegates;
+            let viewElement: JQuery<HTMLElement> | undefined = undefined;
 
             // Made all pipeline functions variables just so that I could search on name better instead of 
             // simply a delegate added to the pipeline array.
@@ -296,11 +297,11 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                                         .replace( /\.thisClass/g, thisClassCss )
                                         .replace( /thisClass/g, thisClassCss );
 
-                                const view = $("<div class='katapp-css'>" + that.ui.decodeTemplateContent( content ) + "</div>");
-                                const rblConfig = $("rbl-config", view).first();
+                                viewElement = $("<div class='katapp-css'>" + that.ui.decodeTemplateContent( content ) + "</div>");
+                                const rblConfig = $("rbl-config", viewElement).first();
 
                                 // For all templates, massage the markup so it doesn't cause issues
-                                $("rbl-template, [rbl-tid='inline']", view).each(function() {
+                                $("rbl-template, [rbl-tid='inline']", viewElement).each(function() {
                                     const t = $(this);
                                     t.html(that.ui.encodeTemplateContent(t.html()));
                                 });
@@ -371,8 +372,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
 
                                 }
                                 
-                                that.element.empty().append( view );
-                                
+                                // Don't insert viewElement here...wait until templates are injected so if any styling is needed, it'll be ready/loaded for view
                                 initPipeline( 0 );
                             }
                             else {
@@ -518,7 +518,11 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
             const finalizeInit = function(): void {
                 
                 if ( pipelineError === undefined ) {
-                    
+
+                    if ( viewElement != undefined ) {
+                        that.element.empty().append( viewElement );
+                    }
+
                     // Now, for every unique template reqeusted by client, see if any template delegates were
                     // registered for the template using templateOn().  If so, hook up the 'real' event requested
                     // to the currently running application.  Need to use templateOn() because the template is
@@ -1774,7 +1778,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                 return undefined;
             }
             else {
-                const contentSelector = template.attr("content-selectorx");
+                const contentSelector = template.attr("content-selector");
 
                 return {
                     Type: template.attr("type"),
@@ -2156,13 +2160,10 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
             $("a[href='#']", application.element)
                 .not("[data-nonav='true']")
                 .not("rbl-template *, [rbl-tid='inline'] *, [rbl-tid='inline']")
-                .each(function() {
-                    const el = $(this);
-
-                    el.on("click", function(e) {
-                        e.preventDefault();
-                    }).attr("data-nonav", "true");
-                });
+                .on("click.RBLe", function(e) {
+                    e.preventDefault();
+                    return false;
+                }).attr("data-nonav", "true");
         }
 
         bindRblOnHandlers(): void {
@@ -2289,7 +2290,8 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                                     }
                                 });
                             
-                            el.attr("data-rblon-initialized", "true");
+                            el.attr("data-rblon-initialized", "true")
+                              .attr("href", "#");
                         }
                     });
             }
@@ -4456,7 +4458,30 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                 }
             }, 185);
         }
-                
+        
+        processNavigationLinks( container?: JQuery<HTMLElement> ): void {
+            const view = container ?? this.application.element;
+            const that = this;
+            const application = this.application;
+
+            $('[rbl-navigate]', view)
+                .not("rbl-template *, [rbl-tid='inline'] *, [rbl-tid='inline']") // not in templates
+                .not('[data-katapp-initialized="true"]')
+                .each(function () {
+                    if ( this.tagName == "A" ) {
+                        $(this).attr("href", "#");
+                    }
+                    $(this).on("click", function(e) {
+                        const actionLink = $(this);
+                        e.preventDefault();
+
+                        const id = actionLink.attr("rbl-navigate");
+                        application.ui.triggerEvent( "onKatAppNavigate", id, this );
+                        return false;
+                    }).attr("data-katapp-initialized", "true");
+                });
+        }
+
         processActionLinks( container?: JQuery<HTMLElement> ): void {
             const view = container ?? this.application.element;
             const that = this;
@@ -5097,6 +5122,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
             this.processCarousels( container );
             this.processHelpTips( container );
             this.processActionLinks( container );
+            this.processNavigationLinks( container );
         }
 
         processHelpTips( container?: JQuery<HTMLElement> ): void {

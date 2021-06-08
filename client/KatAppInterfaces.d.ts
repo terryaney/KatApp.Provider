@@ -72,6 +72,7 @@ interface KatAppOptions
     onOptionsUpdated?: (this: HTMLElement, application: KatAppPlugInInterface )=> void;
     // If multiple KatApps are on one page, you can catch notifications from other KatApps that called pushNotification()
     onKatAppNotification?: (this: HTMLElement, notificationName: string, notificationInformation: {}, application: KatAppPlugInInterface )=> void;
+    onKatAppNavigation?: (this: HTMLElement, id: string, application: KatAppPlugInInterface )=> void;
     
     onCalculateStart?: (this: HTMLElement, application: KatAppPlugInInterface )=> void;
     onRegistration?: (this: HTMLElement, calcOptions: KatAppOptions, application: KatAppPlugInInterface )=> void;

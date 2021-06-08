@@ -189,9 +189,6 @@
 </rbl-template>
 
 <style>
-	.thisClass .needsRBLeConfig {
-		display: none;
-	}
 	.thisClass .alert.alert-success {
 		background-color: #f5f5f5;
 	}

@@ -51,9 +51,7 @@
         border: 2px solid #888;
         width: 80%; /* Could be more or less, depending on screen size */
     }
-</style>
 
-<style type="text/css">
     /*sharkfin*/
     /* noUIslider */
     .noUi-handle div {
@@ -354,7 +352,8 @@
                 <li role="presentation" class=""><a data-target="#paneBalanceDisplay" role="tab" data-toggle="tab" class="text-center" aria-expanded="true">Balance Display</a></li>
             </ul>
             <div class="tab-content ajaxContent">
-                <!-- charts -->
+                <div class="ajaxloader"></div>
+
                 <div role="tabpanel" class="tab-pane fade active in" id="paneIncomeDisplay">
                     <div class="row match-height">
                         <div class="col-sm-12">
@@ -376,8 +375,6 @@
                     </div>
                 </div>
 
-                <!-- overlays -->
-                <div class="ajaxloader"></div>
                 <div class="recalc-notice">
                     <div id="alert-recalc" class="alert alert-danger" role="alert" style="width:50%">
                         <h4 class="alert-heading">Please Note</h4>
@@ -388,16 +385,21 @@
                 </div>
             </div>
 
-            <div class="row" style="min-height: 0;">
+            <br/>
+
+            <div class="row">
                 <div class="col-xs-12">
-                    <div class="ModelerValidationTable alert alert-danger" role="alert"
-                        title="Please review the following issues:" style="display: none;">
-                        <p><strong>Please review the following issues:</strong></p>
-                        <div style="display: none;"></div>
+                    <div id="calcAssumptions">
+                        <div class="assumptionsHeader">
+                            <span class="toggleAssumptions" id="toggleAssumptions1">
+                                <a class="collapsed" role="button" data-toggle="collapse" data-parent="#accordion" data-target="#assumptionContent1" aria-expanded="false" aria-controls="assumptionContent1">View All Assumptions</a>
+                            </span>
+                        </div>
+                    </div>
+                    <div class="rblAssumptions col-xs-12" rbl-tid="result-table" rbl-tablename="Assumptions">
                     </div>
                 </div>
             </div>
-
         </div>
 
         <div class="col-md-6">
@@ -427,13 +429,15 @@
                         <div class="col-sm-9">
                             <div rbl-tid="input-radiobuttonlist" data-inputname="iContribType"></div>
                             <div rbl-tid="input-slider" data-inputname="iContribRatePct" rbl-display="viContribRatePct"></div>
-                            <div rbl-tid="input-textbox1" data-inputname="iContribRateDollar" rbl-display="viContribRateDollar" data-prefix="$"></div>
                         </div>
                         <div class="col-sm-3">
                             <div class="text-center retirementIconWrapper">
                                 <span class="lContributionLink"><a href="#/portal/view/CRBT?planNum=01" class="increaseContrib"><span class="glyphicons glyphicons-money"></span></a></span>
                                 <p>Increase your contributions</p>
                             </div>
+                        </div>
+                        <div class="col-sm-12">
+                            <div rbl-tid="input-textbox1" data-inputname="iContribRateDollar" rbl-display="viContribRateDollar" data-prefix="$"></div>
                         </div>
                     </div>
                     <hr style="margin-bottom: 10px;">
@@ -490,35 +494,25 @@
                 <div class="col-xs-12 col-sm-6 text-center">
                     <p><a class="lSaveButton saveButton rblButton_ btn btn-primary btn-sm" data-action="save">Save Inputs</a></p>
                 </div>
-                <div class="col-xs-12 col-sm-6"><span class="lSaveMessage">Important: Click 'Save Inputs' for
-                        your next session.<br>Last saved: 6/30/2019</span></div>
+                <div class="col-xs-12 col-sm-6"><span class="lSaveMessage">Important: Click 'Save Inputs' for your next session.<br>Last saved: 6/30/2019</span></div>
             </div>
             <div class="row">
-                <div class="alert alert-danger saveError" role="alert" title="Please review the following issues:">
-                    <p><strong>Save is not successful. Please try again.</strong></p>
-                </div>
-                <div class="alert alert-success saveSuccess" role="alert" title="Please review the following issues:">
-                    <p><strong>Data is saved successfully.</strong></p>
+                <div class="col-sm-12">
+                    <div class="alert alert-danger saveError" role="alert" title="Please review the following issues:">
+                        <p><strong>Save is not successful. Please try again.</strong></p>
+                    </div>
+                    <div class="alert alert-success saveSuccess" role="alert" title="Please review the following issues:">
+                        <p><strong>Data is saved successfully.</strong></p>
+                    </div>
                 </div>
             </div>
+        </div>
 
+        <div class="col-sm-12">
+            <div rbl-tid="validation-summary"></div>
         </div>
     </div>
 
-    <div class="row">
-        <div class="col-xs-12 col-sm-6">
-            <div id="calcAssumptions">
-                <div class="assumptionsHeader">
-                    <span class="toggleAssumptions" id="toggleAssumptions1">
-                        <a class="collapsed" role="button" data-toggle="collapse" data-parent="#accordion" data-target="#assumptionContent1" aria-expanded="false" aria-controls="assumptionContent1">View All Assumptions</a>
-                    </span>
-                </div>
-            </div>
-            <div class="rblAssumptions col-xs-12" rbl-tid="result-table" rbl-tablename="Assumptions">
-            </div>
-        </div>
-        <div class="hidden-xs col-sm-6"></div>
-    </div>
     <div class="blockapp" style="display: none;"></div>
     <div class="ajaxerror alert alert-danger" role="alert" style="display: none;">
         <p><strong><br>Please review the following issues:</strong></p>
@@ -543,7 +537,7 @@
     </div>
 </div>
 
-<script >
+<script>
     if ( $("{thisView}").data("debugger" ) == true ) debugger;
 
     (function() {
@@ -703,9 +697,6 @@
                 application.options, 
 				{
                     view: "LAW:IRP",
-                    debug: {
-                        saveFirstCalculationLocation: null
-                    },
 					defaultInputs: {
 						iInputsFromModeler: 1,
 						iCurrentAge: application.getResultValue("variable", "iCurrentAge", "value") * 1,

@@ -301,10 +301,12 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                                 const rblConfig = $("rbl-config", viewElement).first();
 
                                 // For all templates, massage the markup so it doesn't cause issues
-                                $("rbl-template, [rbl-tid='inline']", viewElement).each(function() {
-                                    const t = $(this);
-                                    t.html(that.ui.encodeTemplateContent(t.html()));
-                                });
+                                $("rbl-template, [rbl-tid='inline']", viewElement)
+                                    .not("[tid='lookup-tables']") // never injected...
+                                    .each(function() {
+                                        const t = $(this);
+                                        t.html(that.ui.encodeTemplateContent(t.html()));
+                                    });
 
                                 // Not sure if I need to manually add script or if ie will load them
                                 // https://www.danielcrabtree.com/blog/25/gotchas-with-dynamically-adding-script-tags-to-html
@@ -4985,7 +4987,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
 
                     if ( lookuptable !== undefined ) {
                         const options =
-                            $("rbl-template[tid='lookup-tables'] DataTable[id='" + lookuptable + "'] TableItem")
+                            $("rbl-template[tid='lookup-tables'] DataTable[id='" + lookuptable + "'] TableItem", that.application.element)
                                 .map( ( index, ti ) => ({ Value: ti.getAttribute("key"), Text: ti.getAttribute( "name"), Help: undefined, Selected: index == 0, Visible: true, Disabled: false }));
 
                         that.application.ui.processListItems(listContainer, false, options.toArray());
@@ -5055,7 +5057,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                         that.application.ui.processDropdownItems(
                             input, 
                             false,
-                            $("rbl-template[tid='lookup-tables'] DataTable[id='" + lookuptable + "'] TableItem")
+                            $("rbl-template[tid='lookup-tables'] DataTable[id='" + lookuptable + "'] TableItem", that.application.element)
                                 .map( ( index, r ) => ({ Value:  r.getAttribute("key"), Text: r.getAttribute( "name"), Class: undefined, Subtext: undefined, Html: undefined, Selected: index === 0, Visible: true }))
                                 .toArray()
                         );

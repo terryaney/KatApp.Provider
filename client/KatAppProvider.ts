@@ -1566,11 +1566,11 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
 
             $('.linkConfirmModal .modal-body', this.application.element).html(confirm);
 
-            $('.linkConfirmModal .continueButton', this.application.element).off("click").on("click", function () {
+            $('.linkConfirmModal .continueButton', this.application.element).off("click.ka").on("click.ka", function () {
                 onConfirm();
             });
         
-            $('.linkConfirmModal .cancelButton', this.application.element).off("click").on("click", function () {
+            $('.linkConfirmModal .cancelButton', this.application.element).off("click.ka").on("click.ka", function () {
                 if (onCancel != undefined) {
                     onCancel();
                 }
@@ -2164,7 +2164,6 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                 .not("rbl-template *, [rbl-tid='inline'] *, [rbl-tid='inline']")
                 .on("click.RBLe", function(e) {
                     e.preventDefault();
-                    return false;
                 }).attr("data-nonav", "true");
         }
 
@@ -4851,7 +4850,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                                         // So now I attach click on clear button as well and call change still
                                         // so that works, but problem is that input isn't cleared before change event happens
                                         // so I also clear the input myself.
-                                        $(".datepicker-days .clear", dp).on("click", function () {
+                                        $(".datepicker-days .clear", dp).on("click.ka", function () {
                                             dateInput.val("");
                                             dateInput.change();
                                         });
@@ -4861,7 +4860,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                                     const dp = $(this);
                                     dp.removeData("datepicker-show");
         
-                                    $(".datepicker-days .clear", dp).off("click");
+                                    $(".datepicker-days .clear", dp).off("click.ka");
                                 })
                                 .on('show.bs.modal', function (event) {
                                     // https://stackoverflow.com/questions/30113228/why-does-bootstrap-datepicker-trigger-show-bs-modal-when-it-is-displayed/31199817

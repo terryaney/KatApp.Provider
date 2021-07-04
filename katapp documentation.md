@@ -18,7 +18,8 @@
     - [rbl-on Event Handlers](#rbl-on-Event-Handlers)
         - [Assigning Event Handlers to Contained Elements](#Assigning-Event-Handlers-to-Contained-Elements)
         - [Assigning Multiple Event Handlers](#Assigning-Multiple-Event-Handlers)
-        - [Removing Event Handlers](#Removing-Event-Handlers)        
+        - [Removing Event Handlers](#Removing-Event-Handlers)
+    - [rbl-navigate Attribute Details](#rbl-navigate-Attribute-Details)
     - [View Scoping](#View-Scoping)
     - [Legacy _Push_ Processing](#Legacy-_Push_-Processing)
         - [ejs-output Table](#**ejs-output**)
@@ -111,7 +112,7 @@
         - [KatApp Advanced Methods](#KatApp-Advanced-Methods)
             - [apiAction](#apiAction)
             - [serverCalculation](#serverCalculation)
-            - [publishNotification](#publishNotification)
+            - [pushNotification](#pushNotification)
         - [KatApp Debugging Methods](#KatApp-Debugging-Methods)
             - [saveCalcEngine](#saveCalcEngine)
             - [refreshCalcEngine](#refreshCalcEngine)
@@ -132,8 +133,7 @@
             - [onConfigureUICalculation](#onConfigureUICalculation)
             - [onCalculation](#onCalculation)
             - [onCalculationErrors](#onCalculationErrors)
-            - [onDataUpdate](#onDataUpdate)
-            - [onDataUpdateErrors](#onDataUpdateErrors)
+            - [jwt-data Updates](#jwt-data-Updates)
             - [onCalculateEnd](#onCalculateEnd)
         - [KatApp Action Lifecycle Events](#KatApp-Action-Lifecycle-Events)
             - [onActionStart](#onActionStart)
@@ -563,6 +563,15 @@ $("ul[rbl-on='click:handleResource:a'] a").off("customResourceHandler.ka");
 
 // Remove all rbl-on event handlers from all a elements (in example above, three handleResource handlers and one customResourceHandler handler)
 $("ul[rbl-on='click:handleResource:a'] a").off(".ka");
+```
+
+## rbl-navigate Attribute Details
+The `rbl-navigate` value can be used to enable navigate to different KatApps (which are typically different pages).  Different frameworks (i.e. Evolution vs Camelot) have different navigate methods that can be controlled via event handlers.
+
+See 
+
+```html
+Click <a rbl-navigate="DB.Home">here</a> to see your Defined Benefit Portal.
 ```
 
 ## View Scoping
@@ -1998,7 +2007,6 @@ data | [KatAppData](#KatAppData-Object) | Participant data to pass to RBLe Servi
 shareDataWithOtherApplications | boolean | If multiple KatApps on are on page, one data source can be shared across all KatApps by setting this to `true`.
 sessionUrl | url | When `registerDataWithService` is `true`, this url will be called for calculation ajax calls.  Default value is `https://btr.lifeatworkportal.com/services/evolution/Calculation.ashx`.
 functionUrl | url | This url is used for all resource requests and also, if `registerDataWithService` is `false`, all calculation ajax calls.  Default value is `https://btr.lifeatworkportal.com/services/evolution/CalculationFunction.ashx`.
-rbleUpdatesUrl | url | Base end-point url that is used for data updates, file uploads, server calculations, DocGen generation, etc.
 currentPage | string | String identifier for the current page.  This value is passed to CalcEngines in the `iCurrentPage` input.
 requestIP | string | IP Address of client browser.  Used during calculation job logging.
 environment | string | The environment the current Kaml View is running in.  This value is passed to CalcEngines in the `iEnvironment` input.
@@ -2618,7 +2626,7 @@ There is an API Endpoint lifecycle of events that are triggered during the proce
 
 <hr/>
 
-#### publishNotification
+#### pushNotification
 
 **`.pushNotification(name: string, information: {} | undefined)`**
 
@@ -2998,37 +3006,35 @@ view.on( "onCalculation.RBLe", function( event, calculationResults, calculationO
 
 **`onCalculationErrors(event: Event, key: string, message: string, exception: Error, calculationOptions: KatAppOptions, application: KatApp )`**
 
-This event is triggered during `calculate` if an exception happens.  During the `calculate` workflow, if an exception happens inside 'data updating' a [`onDataUpdateErrors`](#onDataUpdateErrors) event will be triggered instead of `onCalculationErrors`.  Use this handler to clean up an UI components that may need processing when calculation results are not available.
+This event is triggered during `calculate` if an exception happens.  During the `calculate` workflow, if an exception happens inside 'data updating' a [`onActionFailed`](#onActionFailed) event will be triggered instead of `onCalculationErrors`.  Use this handler to clean up an UI components that may need processing when calculation results are not available.
 
 The `key` parameter can be `GetData`, `RegisterData`, `SubmitCalculation`, or `ProcessResults` to identify which stage of the `calculate` workflow failed.
 
 <hr/>
 
-#### onDataUpdate
+#### jwt-data Updates
 
-**`onDataUpdate(event: Event, calculationResults: TabDef[], calcOptions: KatAppOptions, application: KatApp)`**
+During `calculate`, if the results returned contain `jwt-data` table, updates are sent to the server via `apiAction`. When this occurs, the standard [KatApp Action Lifecycle Events](#KatApp-Action-Lifecycle-Events) will be triggered with the `commandName` being set to `calculations/jwtupdate`.
 
-This event is triggered during `calculate` upon successful `jwt-data` data updates to the server.  A common use for this handler is to display a status notification that data was updated.
+A common use for these handlers during calculation could be to display a status notification that data was updated.
 
 ```javascript
-view.on("onDataUpdate.RBLe", function (event, results, options, application) {
-    $(".saveSuccess", view).show(500).delay(7000).hide(500);
+view.on("onActionResult.RBLe", function (event, commandName) {
+	if (commandName == "calculations/jwtupdate") {
+		$(".saveSuccess", view).show(500).delay(7000).hide(500);
+	}
 });
 ```
 
-<hr/>
+When `jwt-data` data updates fail, the `onActionFailed` event would be triggered.  A common use for this handler is to display a status notification that data updates failed.
 
-#### onDataUpdateErrors
-
-**`onDataUpdateErrors(event: Event, message: string, exception: Error | undefined, calcOptions: KatAppOptions, application: KatApp)`**
-
-This event is triggered during `calculate` when `jwt-data` data updates fail.  A common use for this handler is to display a status notification that data updates failed.
-
-Note: Even though data updating failed, 'normal calculation processing' was successful.
+Note: Even if data updating fails, 'normal calculation processing' will still be deemed successful.
 
 ```javascript
-view.on("onDataUpdateErrors.RBLe", function (event, message, exception, options, application) {
-    $(".saveError", view).show(500).delay(3000).hide(500);
+view.on("onActionFailed.RBLe", function (event, commandName) {
+	if (commandName == "calculations/jwtupdate") {
+		$(".saveError", view).show(500).delay(3000).hide(500);
+	}
 });
 ```
 
@@ -3055,15 +3061,15 @@ KatApp Action Lifecycle Events are events that occur during the processing of a 
 
 #### onActionStart
 
-**`onActionStart(event: Event, commandName: string, formData: FormData, application: KatAppPlugInInterface, actionLink: JQuery<HTMLElement>)`**
+**`onActionStart(event: Event, commandName: string, submitData: JSON, application: KatAppPlugInInterface, currentOptions: KatAppOptions, actionLink: JQuery<HTMLElement>)`**
 
-This event is triggered immediately before submitting the `formData` to the API endpoint.  This handler could be used to modify the `formData` before submission if required.
+This event is triggered immediately before submitting the `submitData` to the API endpoint.  This handler could be used to modify the `submitData` before submission if required.
 
 <hr/>
 
 #### onActionResult
 
-**`onActionResult(event: Event, commandName: string, resultData: JSON | undefined, application: KatAppPlugInInterface, actionLink: JQuery<HTMLElement>)`**
+**`onActionResult(event: Event, commandName: string, resultData: JSON | undefined, application: KatAppPlugInInterface, currentOptions: KatAppOptions, actionLink: JQuery<HTMLElement>)`**
 
 This event is triggered upon successful submission and response from the API endpoint.  If the action is a 'file download', `resultData` will be `undefined`, otherwise it will be a JSON payload with properties specific to the `commandName`.
 
@@ -3071,7 +3077,7 @@ This event is triggered upon successful submission and response from the API end
 
 #### onActionFailed
 
-**`onActionFailed(event: Event, commandName: string, exception: JSON, application: KatAppPlugInInterface, actionLink: JQuery<HTMLElement>)`**
+**`onActionFailed(event: Event, commandName: string, exception: JSON, application: KatAppPlugInInterface, currentOptions: KatAppOptions, actionLink: JQuery<HTMLElement>)`**
 
 This event is triggered when submission to an API endpoint fails.  The `exception` object will have a `Validations` property that can be examined for more details about the cause of the exception.
 
@@ -3079,7 +3085,7 @@ This event is triggered when submission to an API endpoint fails.  The `exceptio
 
 #### onActionComplete
 
-**`onActionComplete(event: Event, commandName: string, application: KatAppPlugInInterface, actionLink: JQuery<HTMLElement>)`**
+**`onActionComplete(event: Event, commandName: string, application: KatAppPlugInInterface, currentOptions: KatAppOptions, actionLink: JQuery<HTMLElement>)`**
 
 This event is triggered after the `apiAction` has processed and will trigger on both success and failure.  Use this handler to process any UI actions that are required.
 

@@ -22,7 +22,6 @@ interface KatAppOptions
 
     sessionUrl?: string;
     functionUrl?: string;
-    rbleUpdatesUrl?: string;
     bootstrapVersion?: number; // Can override the bootstrap version configured in rbl-config
 
     registerDataWithService?: boolean;
@@ -81,15 +80,13 @@ interface KatAppOptions
     onResultsProcessing?: (this: HTMLElement, calculationResults: JSON, calcOptions: KatAppOptions, application: KatAppPlugInInterface )=> void;
     onConfigureUICalculation?: (this: HTMLElement, calculationResults: JSON, calcOptions: KatAppOptions, application: KatAppPlugInInterface )=> void;
     onCalculation?: (this: HTMLElement, calculationResults: JSON, calcOptions: KatAppOptions, application: KatAppPlugInInterface )=> void;
-    onDataUpdate?: (this: HTMLElement, calculationResults: JSON, calcOptions: KatAppOptions, application: KatAppPlugInInterface)=> void;
-    onDataUpdateErrors?: (this: HTMLElement, message: string, exception: RBLeServiceResults | undefined, calcOptions: KatAppOptions, application: KatAppPlugInInterface)=> void;
     onCalculationErrors?: (this: HTMLElement, key: string, message: string, exception: Error, calcOptions: KatAppOptions, application: KatAppPlugInInterface)=> void;
     onCalculateEnd?: (this: HTMLElement, application: KatAppPlugInInterface )=> void;
 
-    onActionStart?: (this: HTMLElement, commandName: string, formData: FormData, application: KatAppPlugInInterface, actionLink: JQuery<HTMLElement>)=> void;
-    onActionResult?: (this: HTMLElement, commandName: string, result: JSON | undefined, application: KatAppPlugInInterface, actionLink: JQuery<HTMLElement>)=> void;
-    onActionFailed?: (this: HTMLElement, commandName: string, exception: JSON, application: KatAppPlugInInterface, actionLink: JQuery<HTMLElement>)=> void;
-    onActionComplete?: (this: HTMLElement, commandName: string, application: KatAppPlugInInterface, actionLink: JQuery<HTMLElement>)=> void;
+    onActionStart?: (this: HTMLElement, commandName: string, submitData: JSON, application: KatAppPlugInInterface, currentOptions: KatAppOptions, actionLink: JQuery<HTMLElement>)=> void;
+    onActionResult?: (this: HTMLElement, commandName: string, result: JSON | undefined, application: KatAppPlugInInterface, currentOptions: KatAppOptions, actionLink: JQuery<HTMLElement>)=> void;
+    onActionFailed?: (this: HTMLElement, commandName: string, exception: JSON, application: KatAppPlugInInterface, currentOptions: KatAppOptions, actionLink: JQuery<HTMLElement>)=> void;
+    onActionComplete?: (this: HTMLElement, commandName: string, application: KatAppPlugInInterface, currentOptions: KatAppOptions, actionLink: JQuery<HTMLElement>)=> void;
     
     onUploadStart?: (this: HTMLElement, fileUpload: JQuery<HTMLElement>, formData: FormData, application: KatAppPlugInInterface)=> void;
     onUploaded?: (this: HTMLElement, fileUpload: JQuery<HTMLElement>, application: KatAppPlugInInterface)=> void;
@@ -101,6 +98,16 @@ interface KatAppActionOptions extends KatAppOptions {
     isDownload?: boolean;
     customParameters?: {};
     customInputs?: {};
+}
+
+interface KatAppActionSubmitData {
+    Inputs: JSON;
+    Configuration: KatAppActionOptions;
+}
+
+interface KatAppActionResult {
+    Status: number;
+    Message: string;
 }
 
 // These are the only methods available to call on .KatApp() until onInitialized is triggered (meaning
@@ -175,7 +182,7 @@ interface KatAppPlugInInterface extends KatAppPlugInShimInterface {
     setInput: ( id: string, value: string | undefined, calculate: boolean )=> void;
     serverCalculation: ( customInputs: {} | undefined, actionLink?: JQuery<HTMLElement> )=> void;
     
-    apiAction: ( commandName: string, customOptions?: KatAppActionOptions, actionLink?: JQuery<HTMLElement> )=> void
+    apiAction: ( commandName: string, options: KatAppOptions, actionOptions: KatAppActionOptions, actionLink: JQuery<HTMLElement> | undefined, done?: ()=> void )=> void
     // If multiple KatApps are on one page, a KatApp can broadcast notifications to other KatApps
     pushNotification: (name: string, information: {} | undefined)=> void;
 

@@ -79,7 +79,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
             }
         } as KatAppOptions, KatApp.defaultOptions /* default options already set */ );
 
-    class KatAppPlugIn /* implements KatAppPlugInInterface */ {
+    class KatAppPlugIn implements KatAppPlugInInterface {
         // Helper classes, see comment in interfaces class
         rble: RBLeUtilities/*Interface*/;
         ui: UIUtilities/*Interface*/;
@@ -652,6 +652,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
         }
 
         runRBLeCommand(commandName: string): void {
+            // Debugging helper
             const app = this;
 
             const logSuccess = function( result: any ): void { 
@@ -665,7 +666,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                 console.log( "Error: " + xhr.status + ", " + xhr.statusText ); 
             };
             const data = {
-                "Command":commandName, 
+                "Command": commandName, 
                 "Token": app.options.registeredToken!
             };
 
@@ -949,50 +950,33 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
             // Success - processApiActions
             // Error - calculateEnd
             const updateData = function(): void {
-                try {
-                    const uploadUrl = that.options.rbleUpdatesUrl;
+                const jwtUpdateCommand = "calculations/jwtupdate";
 
+                try {
                     const jwtToken = {
-                        Tokens: that.getResultTable<JSON>( "jwt-data").map( r => ({ Name: r[ "@id"], Token: r[ "value" ] }) )
+                        Tokens: that.getResultTable<JSON>( "jwt-data")
+                            .map( r => ({ Name: r[ "@id"], Token: r[ "value" ] }) )
+                            .filter( t => t.Name == "data-updates" )
                     };
     
-					if (jwtToken.Tokens.filter( t => t.Name == "data-updates" ).length > 0 && uploadUrl !== undefined ) {
+					if (jwtToken.Tokens.length > 0 ) {
                         that.trace("Posting jwt update data from results", TraceVerbosity.Detailed);
                         
-                        const fd = that.getEndpointFormData("SaveRBLeUpdates", currentOptions);
-
-                        fd.append("KatAppDataTokens", JSON.stringify(jwtToken));
-
-                        $.ajax({
-                            url: uploadUrl,  
-                            type: 'POST',
-                            data: fd,
-                            cache: false,
-                            contentType: false,
-                            processData: false
-                        })
-                        .then(
-                            // Success
-                            function (response) {
-                                const data = JSON.parse( response );
-                                if (data.Status != 1) {
-                                    console.log("Unable to save data: " + data.Message);
-                                    that.ui.triggerEvent( "onDataUpdateErrors", data.Message, that.exception, currentOptions, that );
-                                }
-                                else {
-                                    that.ui.triggerEvent( "onDataUpdate", that.results, currentOptions, that );
-                                }
+                        that.apiAction( 
+                            jwtUpdateCommand,
+                            currentOptions, 
+                            { 
+                                customParameters: { DataTokens: jwtToken.Tokens }, 
                             },
+                            undefined,
+                            function() {
+                                // Any errors added, add a temp apiAction class so they aren't removed during Calculate workflow
+                                // (apiAction is used for jwt-data updates)
+                                $('.validator-container.error', that.element).not(".server").addClass('apiAction');
 
-                            // Fail
-                            function (_jqXHR, textStatus) {
-                                console.log("Unable to save data: " + textStatus);
-                                that.ui.triggerEvent( "onDataUpdateErrors", textStatus, that.exception, currentOptions, that );
+                                calculatePipeline( 0 );
                             }
-                        )
-                        .always( function() {
-                            calculatePipeline( 0 );
-                        });
+                        );
                     }
                     else
                     {
@@ -1000,35 +984,10 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                     }
                 } catch (error) {
                     that.trace( "Error during jwt update data processing: " + error, TraceVerbosity.None );
-                    that.ui.triggerEvent( "onDataUpdateErrors", error, that.exception, currentOptions, that );
+                    that.ui.triggerEvent( "onActionFailed", jwtUpdateCommand, error, that, currentOptions, undefined );
                     calculatePipeline( 2 );
                 }
             };
-
-            const base64toBlob = function(base64Data : string, contentType: string = 'application/octet-stream', sliceSize: number = 1024): Blob {
-                // https://stackoverflow.com/a/20151856/166231
-
-                var byteCharacters = atob(base64Data);
-                var bytesLength = byteCharacters.length;
-                var slicesCount = Math.ceil(bytesLength / sliceSize);
-                var byteArrays = new Array(slicesCount);
-            
-                for (var sliceIndex = 0; sliceIndex < slicesCount; ++sliceIndex) {
-                    var begin = sliceIndex * sliceSize;
-                    var end = Math.min(begin + sliceSize, bytesLength);
-            
-                    var bytes = new Array(end - begin);
-                    for (var offset = begin, i = 0; offset < end; ++i, ++offset) {
-                        bytes[i] = byteCharacters[offset].charCodeAt(0);
-                    }
-                    byteArrays[sliceIndex] = new Uint8Array(bytes);
-                }
-                return new Blob(byteArrays, { type: contentType });
-            }
-            
-            const base64toBlobFetch = (base64 : string, type: string = 'application/octet-stream'): Promise<Blob> => 
-                // Can't use in IE :(
-                fetch(`data:${type};base64,${base64}`).then(res => res.blob())
 
             // Success - processResults if no download, calculateEnd if download
             // Error - calculateEnd (checks pipeline error before processing)
@@ -1041,6 +1000,29 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                             debugger;
                         }
                         else {
+                            const base64toBlob = function(base64Data : string, contentType: string = 'application/octet-stream', sliceSize: number = 1024): Blob {
+                                // https://stackoverflow.com/a/20151856/166231                
+                                var byteCharacters = atob(base64Data);
+                                var bytesLength = byteCharacters.length;
+                                var slicesCount = Math.ceil(bytesLength / sliceSize);
+                                var byteArrays = new Array(slicesCount);
+                            
+                                for (var sliceIndex = 0; sliceIndex < slicesCount; ++sliceIndex) {
+                                    var begin = sliceIndex * sliceSize;
+                                    var end = Math.min(begin + sliceSize, bytesLength);
+                            
+                                    var bytes = new Array(end - begin);
+                                    for (var offset = begin, i = 0; offset < end; ++i, ++offset) {
+                                        bytes[i] = byteCharacters[offset].charCodeAt(0);
+                                    }
+                                    byteArrays[sliceIndex] = new Uint8Array(bytes);
+                                }
+                                return new Blob(byteArrays, { type: contentType });
+                            }
+                            const base64toBlobFetch = (base64 : string, type: string = 'application/octet-stream'): Promise<Blob> => 
+                                // Can't use in IE :(
+                                fetch(`data:${type};base64,${base64}`).then(res => res.blob())
+
                             const base64 = docGenApiRow[ "content" ];
                             const contentType = docGenApiRow[ "content-type" ];
                             const fileName = docGenApiRow[ "file-name" ];
@@ -1070,11 +1052,16 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                     that.trace( "Error during result processing: " + error, TraceVerbosity.None );
                     that.ui.triggerEvent( "onCalculationErrors", "ProcessResults", error, that.exception, currentOptions, that );
                 }
+
                 calculatePipeline( 0 );
             };
 
             const calculateEnd = function(): void {
+                // Remove temp apiAction error flag now that processing is finished
+                $('.validator-container.error.apiAction', that.element).removeClass('apiAction');
+
                 that.ui.triggerEvent( "onCalculateEnd", that );
+
                 calculatePipeline( 0 );
             };
 
@@ -1108,13 +1095,13 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
             calculatePipeline( 0 );
         }
 
-        getEndpointFormData( endPoint: string, options: KatAppOptions, customOptions?: KatAppOptions): FormData {
+        getEndpointSubmitData( options: KatAppOptions, customOptions: KatAppActionOptions, useFormData: boolean): KatAppActionSubmitData | FormData {
             const currentOptions = KatApp.extend(
                 {}, // make a clone of the options
                 KatApp.clone( 
                     options,
-                    function( _key, value ) {
-                        if ( typeof value === "function" ) {
+                    function( key, value ) {
+                        if ( key == "handlers" || typeof value === "function" ) {
                             return; // don't want any functions passed along to api
                         }
                         return value; 
@@ -1123,12 +1110,48 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                 customOptions, // override options
             ) as KatAppOptions;
 
-            const fd = new FormData();
-            fd.append("KatAppCommand", endPoint);
-            fd.append("KatAppView", this.options.view ?? "Unknown" );
-            fd.append("KatAppInputs", JSON.stringify(this.getInputs()));
-            fd.append("KatAppConfiguration", JSON.stringify(currentOptions));
-            return fd;
+            const submitData = {
+                Inputs: this.getInputs(),
+                Configuration: currentOptions
+            };
+
+            if ( useFormData ) {
+                // https://gist.github.com/ghinda/8442a57f22099bdb2e34#gistcomment-3405266
+                const buildFormData = function (formData: FormData, data: Object, parentKey?: string): void {
+                    if (data && typeof data === 'object' && !(data instanceof Date) && !(data instanceof File) && !(data instanceof Blob)) {
+                        Object.keys(data).forEach(key => {
+                            const formName = parentKey ? `${parentKey}[${key}]` : key;
+
+                            // Hacks b/c I don't know how to bind to just generic JObject
+                            if ( formName == "Configuration[customInputs]" || formName == "Configuration[manualInputs]" ) {
+                                formData.append(formName.replace("]", "Raw]"), JSON.stringify(data[key]));
+                            }
+                            else if ( formName == "Inputs" ) {
+                                formData.append("InputsRaw", JSON.stringify(data[key]));
+                            }
+
+                            buildFormData(formData, data[key], formName);
+                        });
+                    } else if ( data != null ) {
+                        const value = (data instanceof Date) 
+                            ? data.toISOString() 
+                            : data;
+
+                        if ( typeof value !== "function" ) {
+                            formData.append(parentKey!, value);
+                        }
+                    }
+                };
+
+                const fd = new FormData();
+                
+                buildFormData(fd, submitData);
+    
+                return fd;    
+            }
+            else {
+                return submitData;
+            }
         }
 
         private processResults( calculationOptions: KatAppOptions ): void {
@@ -1205,10 +1228,9 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
 
         serverCalculation( customInputs: {} | undefined, actionLink?: JQuery<HTMLElement> ): void {
             this.apiAction(
-                "ServerCalculation", 
-                {
-                    customInputs: customInputs
-                },
+                "calculations/run",
+                this.options, 
+                { customInputs: customInputs },
                 actionLink );
         }
     
@@ -1290,93 +1312,133 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
             window.URL.revokeObjectURL(url);
         }
 
-        apiAction( commandName: string, customOptions?: KatAppActionOptions, actionLink?: JQuery<HTMLElement> ): void {
-            let url = this.options.rbleUpdatesUrl;
+        apiAction( commandName: string, options: KatAppOptions, actionOptions: KatAppActionOptions, actionLink: JQuery<HTMLElement> | undefined, done?: ()=> void ): void {
+            const isDownload = actionOptions.isDownload ?? false;
+            const errors: ValidationRow[] = [];
+            const errorSummary = $("#" + this.id + "_ModelerValidationTable", this.element);
+            $('.validator-container.error', this.element).not(".server").removeClass('error');
+        
+            this.showAjaxBlocker();
+            const application = this;
+        
+            let url = "api/" + commandName;
+            const serviceUrlParts = application.options.sessionUrl?.split( "?" );
+
+            if ( serviceUrlParts != undefined && serviceUrlParts.length === 2 ) {
+                url += "?" + serviceUrlParts[ 1 ];
+            }
             
-            if (url != undefined) {
-                const isDownload = customOptions?.isDownload ?? false;
-                const fd = this.getEndpointFormData(commandName, this.options, customOptions);
+            let errorResponse: JSON;
+            let successResponse: KatAppActionResult | undefined = undefined;
+            // No one was using this yet, not sure I need it
+            // this.ui.triggerEvent( "onActionStart", commandName, data, this, actionLink );
 
-                const errors: ValidationRow[] = [];
-                // Can't use 'view' in selector for validation summary b/c view could be a 'container' instead of entire view
-                // if caller only wants to initialize a newly generated container's html                        
-                const errorSummary = $("#" + this.id + "_ModelerValidationTable", this.element);
-                $('.validator-container.error', this.element)
-                    .not(".server")    
-                    .removeClass('error');
+            const data = application.getEndpointSubmitData(options, actionOptions, false) as KatAppActionSubmitData;
 
-                this.showAjaxBlocker();
+            // Couldn't figure out how to model bind JObject or Dictionary, so hacking with this
+            if ( data.Inputs != undefined ) {
+                data[ "inputsRaw" ] = JSON.stringify( data.Inputs );
+            }
+            if ( data.Configuration.manualInputs != undefined ) {
+                data.Configuration[ "manualInputsRaw" ] = JSON.stringify( data.Configuration.manualInputs );
+            }
+            if ( data.Configuration.customInputs != undefined ) {
+                data.Configuration[ "customInputsRaw" ] = JSON.stringify( data.Configuration.customInputs );
+            }
 
-                const xhr = new XMLHttpRequest();
-                xhr.open('POST', url, true);
+            application.ui.triggerEvent( "onActionStart", commandName, data, application, data.Configuration, actionLink );
 
-                xhr.onreadystatechange = function (): void {
-                    // https://stackoverflow.com/a/29039823/166231
-                    /*
-                    if (xhr.readyState == 4) {
-                        if (xhr.status == 200) {
-                            console.log(typeof xhr.response); // should be a blob
-                        }
-                    } else */
-                    if (xhr.readyState == 2) {
-                        if (isDownload && xhr.status == 200) {
-                            xhr.responseType = "blob";
-                        } else {
-                            xhr.responseType = "text";
-                        }
-                    }
-                };
-
-                const that = this;
-                xhr.onload = function (): void {
-                    if (xhr.responseType == "text") {
-                        const jsonResponse = JSON.parse( xhr.responseText );
-
-                        if ( xhr.status == 500 ) {
-                            if ( jsonResponse[ "Validations" ] != undefined && errorSummary.length > 0 ) {
-                                jsonResponse.Validations.forEach((v: { [x: string]: string }) => {
-                                    errors.push( { "@id": v[ "ID" ], text: v[ "Message" ] });
-                                });
-                            }
-    
-                            if ( errors.length == 0 ) {
-                                that.ui.triggerEvent( "onActionFailed", commandName, jsonResponse, that, actionLink );
-                                console.log("Show error: " + jsonResponse.Message);
-                                errors.push( { "@id": "System", text: "An unexpected error has occurred.  Please try again and if the problem persists, contact technical support." });
+            $.ajax( {
+                method: "POST",
+                url: url,
+                data: data,
+                beforeSend: function( _xhr, settings ) {
+                    // Enable jquery to assign 'binary' results so I can grab later.
+                    settings[ "responseFields" ][ "binary" ] = "responseBinary";
+                },
+                xhr: function() {
+                    var xhr = new XMLHttpRequest();
+                    xhr.onreadystatechange = function() {
+                        // https://stackoverflow.com/a/29039823/166231
+                        if (xhr.readyState == 2) {
+                            if (isDownload && xhr.status == 200) {
+                                xhr.responseType = "blob";
+                            } else {
+                                // We are always returning json (binary/responseBinary) from our endpoints
+                                xhr.responseType = "json";
                             }
                         }
-                        else {
-                            that.ui.triggerEvent( "onActionResult", commandName, jsonResponse, that, actionLink );
-                        }
-                    }
-                    else {
-                        const blob = xhr.response;
-
-                        that.ui.triggerEvent( "onActionResult", commandName, undefined, that, actionLink );
-
+                    };
+                    return xhr;
+                }                
+            }).then(
+                function( result, status, xhr ) {
+                    if ( isDownload ) {
+            
+                        const blob = result; // xhr.response;
+            
                         let filename = "Download.pdf";
                         const disposition = xhr.getResponseHeader('Content-Disposition');
                         if (disposition && disposition.indexOf('attachment') !== -1) {
                             filename = disposition.split('filename=')[1].split(';')[0];
                         }
-
-                        that.downloadBlob(blob, filename);
+            
+                        application.downloadBlob(blob, filename);
                     }
-                    that.ui.triggerEvent( "onActionComplete", commandName, that, actionLink );
+                    else {
+                        var successResponse = result as KatAppActionResult;
+                        if ( successResponse.Status != 1 )
+                        {
+                            errorResponse = result;
+                            errors.push( { "@id": "System", text: successResponse.Message });
+                        }
+                    }
+                },
+                function( xhr, _status, _errorInfo) {
+                    debugger;
+                    errorResponse = xhr[ "responseBinary" ];
+            
+                    if ( errorResponse != undefined && errorResponse[ "Validations" ] != undefined && errorSummary.length > 0 ) {
+                        errorResponse[ "Validations" ].forEach((v: { [x: string]: string }) => {
+                            errors.push( { "@id": v[ "ID" ], text: v[ "Message" ] });
+                        });
+                    }
+            
+                    if ( errors.length == 0 ) {
+                        errors.push( { "@id": "System", text: "An unexpected error has occurred.  Please try again and if the problem persists, contact technical support." });
+                    }
+                }
+            )
+            .always( function() {
+                if ( errors.length > 0 ) {
+                    console.group("Unable to process " + commandName + ": errorResponse");
+                    console.log(errorResponse);
+                    console.groupEnd();
+                    console.group("Unable to process " + commandName + ": errors");
+                    console.log( errors );
+                    console.groupEnd();
 
-                    that.rble.processValidationRows(
+                    application.ui.triggerEvent( "onActionFailed", commandName, errorResponse, application, data.Configuration, actionLink );
+
+                    application.rble.processValidationRows(
                         errorSummary, 
                         errors
                     );
+                    application.rble.finalizeValidationSummaries();
+                }
+                else {
+                    application.ui.triggerEvent( "onActionResult", commandName, successResponse, application, data.Configuration, actionLink );
+                }
 
-                    that.hideAjaxBlocker();
-                }; // don't think I need this .bind(actionLink);
+                application.hideAjaxBlocker();
+                application.ui.triggerEvent( "onActionComplete", commandName, application, data.Configuration, actionLink );
 
-                this.ui.triggerEvent( "onActionStart", commandName, fd, this, actionLink );
-                xhr.send(fd);
-            }
+                if ( done != undefined ) {
+                    done();
+                }
+            });
         }
-
+        
         // Result helper
         getResultTable<T>( tableName: string, tabDef?: string, calcEngine?: string): Array<T> {
             return this.rble.getResultTable<T>( this.rble.getTabDef( tabDef, calcEngine ), tableName );
@@ -1706,7 +1768,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                 decodedContent = decodedContent
                     .replace( /control-label/g, "col-form-label")
                     .replace( /glyphicon glyphicon-volume-up/g, "fa fa-volume-up" )            
-                    .replace( /glyphicon glyphicon-info-sign/g, "fa fa-question-circle" );
+                    .replace( /glyphicon glyphicon-info-sign/g, this.application.bootstrapVersion >= 5 ? "fa-light fa-square-info" : "fa fa-question-circle" );
             }
 
             if ( this.application.bootstrapVersion > 4 ) {
@@ -1794,6 +1856,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
 
         processListItems(container: JQuery<HTMLElement>, rebuild: boolean, listItems: { Value: string | null | undefined; Text: string | null | undefined; Help: string | undefined; Selected: boolean; Visible: boolean; Disabled: boolean }[] ): void {
             const isBootstrap3 = this.application.bootstrapVersion == 3;
+            const isBootstrap4 = this.application.bootstrapVersion == 4;
             const isBootstrap5 = this.application.bootstrapVersion == 5;
             const inputName: string = container.data( "inputname" );
             const id: string = container.data( "id" );
@@ -1851,7 +1914,10 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
             }
 
             const that = this;
-            const helpIconClass = isBootstrap3 ? "glyphicon glyphicon-info-sign" : "fa fa-question-circle";
+            const helpIconClass = 
+                isBootstrap3 ? "glyphicon glyphicon-info-sign" : 
+                isBootstrap4 ? "fa fa-question-circle" : 
+                isBootstrap5 ? "fa-light fa-square-info" : "fa fa-question-circle";
             const bsDataAttributePrefix = isBootstrap5 ? "data-bs-" : "data-";
 
             let configureHelp = false;
@@ -3604,7 +3670,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                 $(warningSummary).insertBefore(errorSummary);
             }            
     
-            $('.validator-container.error', view).not(".server").removeClass('error');
+            $('.validator-container.error', view).not(".server, .apiAction").removeClass('error');
             $('.validator-container.warning', view).not(".server").removeClass('warning');
     
             [ warningSummary, errorSummary ].forEach( summary => {
@@ -3951,7 +4017,6 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                 }                
     
                 this.finalizeValidationSummaries();
-    
                 return true;
             }
             else {
@@ -4541,12 +4606,14 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
 
                             application.apiAction(
                                 katAppCommand, 
+                                application.options, 
                                 { 
-                                    isDownload: ( actionLink.attr("rbl-action-download") ?? "false" ) == "true",
-                                    customParameters: parametersJson,
-                                    customInputs: inputsJson
+                                    isDownload: ( actionLink.attr("rbl-action-download") ?? "false" ) == "true", 
+                                    customParameters: parametersJson, 
+                                    customInputs: inputsJson 
                                 },
-                                actionLink );
+                                actionLink 
+                            );
                         };
                             
                         // .on("click", function() { return that.onConfirmLinkClick( $(this)); })
@@ -4617,70 +4684,75 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                         file.val("").trigger("change");
                     });
                     $(".btn-file-upload", el).on("click", function () {
-                        const uploadUrl = that.application.options.rbleUpdatesUrl;
-
-                        if ( uploadUrl !== undefined ) {
-                            that.application.showAjaxBlocker();
-                            $(".file-upload .btn", el).addClass("disabled");
-                            that.incrementProgressBars();
-                            $(".file-upload-progress", that.application.element).show();
-
-                            const fileUpload = $(".file-data", $(this).parent());
-                            const fd = that.application.getEndpointFormData(katAppCommand, that.application.options);
-
-                            const files = ( fileUpload[0] as HTMLInputElement ).files;
-                            $.each(files, function(key, value)
-                            {
-                                fd.append(key, value);
-                            });
-
-                            const errors: ValidationRow[] = [];
-                            // Can't use 'view' in selector for validation summary b/c view could be a 'container' instead of entire view
-                            // if caller only wants to initialize a newly generated container's html                        
-                            const errorSummary = $("#" + that.application.id + "_ModelerValidationTable", that.application.element);
-                            $('.validator-container.error', that.application.element)
-                                .not(".server")
-                                .removeClass('error');
-
-                            application.ui.triggerEvent( "onUploadStart", fileUpload, fd, application );
-
-                            $.ajax({
-                                url: uploadUrl,  
-                                type: 'POST',
-                                data: fd,
-                                cache: false,
-                                contentType: false,
-                                processData: false
-                            }).then( 
-                                function( /* payLoad */ ) {
-                                    application.ui.triggerEvent( "onUploaded", fileUpload, application );
-                                },
-                                function( _jqXHR  ) {
-                                    const responseText = _jqXHR.responseText || "{}";
-                                    const jsonResponse = JSON.parse( responseText );
-                                    if ( jsonResponse[ "Validations" ] != undefined && errorSummary.length > 0 ) {
-                                        jsonResponse.Validations.forEach((v: { [x: string]: string }) => {
-                                            errors.push( { "@id": v[ "ID" ], text: v[ "Message" ] });
-                                        });
-                                        return;
-                                    }
-                                    application.ui.triggerEvent( "onUploadFailed", fileUpload, jsonResponse, application );
-                                }
-                            )
-                            .always( function() {
-                                application.ui.triggerEvent( "onUploadComplete", fileUpload, application );
-                                application.rble.processValidationRows(
-                                    errorSummary, 
-                                    errors
-                                );
-                                // Get file upload control to update its UI (buttons)
-                                fileUpload.val("").trigger("change");
-                                $(".file-upload .btn", el).removeClass("disabled");
-                                $(".file-upload-progress", that.application.element).hide();
-                                that.application.hideAjaxBlocker();
-                            })
+                        let uploadUrl = "api/" + katAppCommand;
+                        const serviceUrlParts = application.options.sessionUrl?.split( "?" );
+            
+                        if ( serviceUrlParts != undefined && serviceUrlParts.length === 2 ) {
+                            uploadUrl += "?" + serviceUrlParts[ 1 ];
                         }
-                    });
+            
+                        that.application.showAjaxBlocker();
+                        $(".file-upload .btn", el).addClass("disabled");
+                        that.incrementProgressBars();
+                        $(".file-upload-progress", that.application.element).show();
+
+                        const fileUpload = $(".file-data", $(this).parent());
+                        const fd = that.application.getEndpointSubmitData(that.application.options, {}, true) as FormData;
+
+                        const files = ( fileUpload[0] as HTMLInputElement ).files;
+                        $.each(files, function(index, file)
+                        {
+                            fd.append("PostedFiles[" + index + "]", file);
+                        });
+
+                        const errors: ValidationRow[] = [];
+                        // Can't use 'view' in selector for validation summary b/c view could be a 'container' instead of entire view
+                        // if caller only wants to initialize a newly generated container's html                        
+                        const errorSummary = $("#" + that.application.id + "_ModelerValidationTable", that.application.element);
+                        $('.validator-container.error', that.application.element)
+                            .not(".server")
+                            .removeClass('error');
+
+                        application.ui.triggerEvent( "onUploadStart", fileUpload, fd, application );
+
+                        $.ajax({
+                            url: uploadUrl,  
+                            type: 'POST',
+                            data: fd,
+                            cache: false,
+                            contentType: false,
+                            processData: false,
+                            headers: { "Content-Type": undefined }
+                        }).then( 
+                            function( /* payLoad */ ) {
+                                application.ui.triggerEvent( "onUploaded", fileUpload, application );
+                            },
+                            function( _jqXHR  ) {
+                                const responseText = _jqXHR.responseText || "{}";
+                                const jsonResponse = JSON.parse( responseText );
+                                if ( jsonResponse[ "Validations" ] != undefined && errorSummary.length > 0 ) {
+                                    jsonResponse.Validations.forEach((v: { [x: string]: string }) => {
+                                        errors.push( { "@id": v[ "ID" ], text: v[ "Message" ] });
+                                    });
+                                    return;
+                                }
+                                application.ui.triggerEvent( "onUploadFailed", fileUpload, jsonResponse, application );
+                            }
+                        )
+                        .always( function() {
+                            application.ui.triggerEvent( "onUploadComplete", fileUpload, application );
+                            application.rble.processValidationRows(
+                                errorSummary, 
+                                errors
+                            );
+                            // Get file upload control to update its UI (buttons)
+                            fileUpload.val("").trigger("change");
+                            $(".file-upload .btn", el).removeClass("disabled");
+                            $(".file-upload-progress", that.application.element).hide();
+                            that.application.hideAjaxBlocker();
+                        });
+                });
+
                     $(".btn-file :file", el).on("change", function () {
                         const fileUpload = $(this),
                             files = ( fileUpload[0] as HTMLInputElement ).files,
@@ -4807,7 +4879,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                                 // datepicker library looks for element with input-group-addon class to determine if
                                 // component is inline or popup, so class shouldn't do anything for styling in bs5, but
                                 // need it for date to work the way we want.
-                                validatorContainer.append( $("<div class='input-group-addon input-group-text'><i class='fa fa-calendar-day'></i></div>") );
+                                validatorContainer.append( $("<div class='input-group-addon input-group-text'><i class='fa-light fa-calendar-day'></i></div>") );
                             }
                             else if ( isBootstrap4 ) {
                                 validatorContainer.append( $("<div class='input-group-append'><i class='input-group-text fa fa-calendar-day'></i></div>") );

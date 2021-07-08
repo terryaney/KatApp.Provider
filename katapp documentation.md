@@ -2534,15 +2534,26 @@ var currentBonus = application.getResultValueByColumn("pay", "2021", "year", "bo
 
 #### apiAction
 
-**`.apiAction( commandName: string, customOptions?: KatAppActionOptions, actionLink?: JQuery<HTMLElement> )`**
+**`.apiAction( commandName: string, customOptions?: KatAppActionOptions, actionLink?: JQuery<HTMLElement>, , done?: ( successResponse: KatAppActionResult | undefined, failureResponse: JSON | undefined )=> void )`**
 
-KatApps have the ability to call web api endpoints to perform actions that need server side processing (saving data, generating document packages, saving calculations, etc.).  
+KatApps have the ability to call web api endpoints to perform actions that need server side processing (saving data, generating document packages, saving calculations, etc.).  All api endpoints should return an object indicating success or failure.
+
+```javascript
+{
+    Status: 1, // or 0 for failure
+    Message: "Error Message to display", // Optional
+    Validations: [ // Optional validation messages to display
+        { ID: "iInput1", "Message" },
+        { ID: "iInput2", "Message" }
+    ],
+    RBLeInputs: { } // Optional, see 'Web Api Endpiont Return Values' below for more info
+}
+```
 
 `customOptions` can be provided and have the following properties.
 
 Property | Type | Description
 ---|---|---
-isDownload | boolean | Optional. Set this property to `true` if the action results in the downloading of a file.
 customParameters | JSON | Optional.  Any parameter values to be passed back to the server endpoint that are required for processing (i.e. plan id and document id for election required document upload).
 customInputs | JSON | Optional.  Any input values that need to be passed back to the server endpoint and inserted into the input package sent to the RBLe Service calculation.
 
@@ -2569,7 +2580,8 @@ Kaml View developers can leverage calling API endpoints as well by constructing 
 Attribute | Description
 ---|---
 rbl-action-link | Used as the `commandName` passed into `apiAction`.
-rbl-action-download | Used as the `isDownload` property of the `customOptions` parameter.
+rbl-action-download | (true|false) Determines if the action results in the downloading of a file.
+rbl-action-calculate | (true|false) Determines if an `application.calculate()` should be called upon successful `api-action-link` execution.
 data-param-* | Used as the `customParameters` property of the `customOptions` parameter.  (i.e. to pass plan-id parameter to server, use `data-param-plan-id="value"`)
 data-input-* | Used as the `customInputs` property of the `customOptions` parameter.  (i.e. to pass iDownloadForms=1 parameter to server, use `data-input-download-forms="1"`, the server will convert to 'input name' automatically)
 rbl-action-confirm-selector | If the link should prompt before calling the endpoint, this attribute provides a jQuery selector to element containing the markup to display in a modal confirm dialog.
@@ -2594,7 +2606,32 @@ Using input-fileupload template to support file uploads using the `data-command`
 <div rbl-tid="input-fileupload" class="col-md-9" data-hidelabel="false" data-label="File Name" data-inputname="iUpload" data-command="RetireOnline.UploadRequiredDocument"></div>
 ```
 
-There is an API Endpoint lifecycle of events that are triggered during the processing of an action.  See [KatApp Action Lifecycle Events](#KatApp-Action-Lifecycle-Events) for more information.
+Note: There are API Endpoint lifecycle events that are triggered during the processing of an action.  See [KatApp Action Lifecycle Events](#KatApp-Action-Lifecycle-Events) for more information.
+
+**Web Api Endpiont Return Values**
+
+Api endpoints can return RBLe input information that should be injected on every subsequent calculation.  Note, these inputs are  cleared when an api endpoint return failure, or updated/set when an endpoint returns success.
+
+To return input information from an endpoint to pass through to all subsequent calculations, return a `RBLeInputs` property in the format of:
+
+```javascript
+    RBLeInputs: {
+        Inputs: { // Optional, provide a key/value object to have 'input' values injected into RBLe
+            iApiInput1: "Value1",
+            iApiInput2: "Value1",
+        },
+        Tables: { // Optional, provide tables in the following format to have 'input tables' injected into RBLe
+            Table1: [ 
+                { index: "1", col1: "2" }
+                { index: "2", col1: "2" }
+            ],
+            Table2: [ 
+                { index: "1", col1: "2" }
+                { index: "2", col1: "2" }
+            ]
+        }
+    }
+```
 
 <hr/>
 

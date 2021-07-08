@@ -95,19 +95,23 @@ interface KatAppOptions
 }
 
 interface KatAppActionOptions extends KatAppOptions {
-    isDownload?: boolean;
     customParameters?: {};
     customInputs?: {};
 }
 
 interface KatAppActionSubmitData {
-    Inputs: JSON;
+    Inputs: CalculationInputs;
+    InputTables: CalculationInputTable[] | undefined;
     Configuration: KatAppActionOptions;
 }
 
 interface KatAppActionResult {
     Status: number;
     Message: string;
+    RBLeInputs: {
+        Tables: CalculationInputTable[] | undefined;
+        Inputs: JSON | undefined
+    } | undefined;
 }
 
 // These are the only methods available to call on .KatApp() until onInitialized is triggered (meaning
@@ -177,12 +181,12 @@ interface KatAppPlugInInterface extends KatAppPlugInShimInterface {
     getResultValue( table: string, id: string, column: string, defaultValue?: string, tabDef?: string, calcEngine?: string ): string | undefined;
     getResultValueByColumn( table: string, keyColumn: string, key: string, column: string, defaultValue?: string, tabDef?: string, calcEngine?: string ): string | undefined;
     
-    getInputs: ()=> JSON;
+    getInputs: ( currentOptions: KatAppOptions | undefined )=> CalculationInputs;
     setInputs: ( inputs: JSON | CalculationInputs, calculate: boolean )=> void;
     setInput: ( id: string, value: string | undefined, calculate: boolean )=> void;
     serverCalculation: ( customInputs: {} | undefined, actionLink?: JQuery<HTMLElement> )=> void;
     
-    apiAction: ( commandName: string, options: KatAppOptions, actionOptions: KatAppActionOptions, actionLink: JQuery<HTMLElement> | undefined, done?: ()=> void )=> void
+    apiAction: ( commandName: string, options: KatAppOptions, actionOptions: KatAppActionOptions, actionLink: JQuery<HTMLElement> | undefined, done?: ( successResponse: KatAppActionResult | undefined, failureResponse: JSON | undefined )=> void )=> void
     // If multiple KatApps are on one page, a KatApp can broadcast notifications to other KatApps
     pushNotification: (name: string, information: {} | undefined)=> void;
 

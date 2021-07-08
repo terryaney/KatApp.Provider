@@ -56,6 +56,7 @@ interface Function {
         Template: string;
         Events: string;
     }[];
+    endpointRBLeInputsCache: {};
     sharedData: { 
         requesting: boolean;
         lastRequested?: number;

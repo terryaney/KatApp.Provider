@@ -1097,7 +1097,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
             calculatePipeline( 0 );
         }
 
-        getEndpointSubmitData( options: KatAppOptions, customOptions: KatAppActionOptions, useFormData: boolean): KatAppActionSubmitData | FormData {
+        getEndpointSubmitData( options: KatAppOptions, customOptions: KatAppActionOptions): KatAppActionSubmitData | FormData {
             const currentOptions = KatApp.extend(
                 {}, // make a clone of the options
                 KatApp.clone( 
@@ -1120,22 +1120,23 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                 Configuration: currentOptions
             };
 
+            const useFormData = true; // Used to pass this in...but upload and apiAction both use 'FormData'
+
             if ( useFormData ) {
                 // https://gist.github.com/ghinda/8442a57f22099bdb2e34#gistcomment-3405266
-                const buildFormData = function (formData: FormData, data: Object, parentKey?: string): void {
+                const buildFormData = function (formData: FormData, data: Object, parentKey?: string, asDictionary?: boolean): void {
                     if (data && typeof data === 'object' && !(data instanceof Date) && !(data instanceof File) && !(data instanceof Blob)) {
-                        Object.keys(data).forEach(key => {
-                            const formName = parentKey ? `${parentKey}[${key}]` : key;
-
-                            // Hacks b/c I don't know how to bind to just generic JObject
-                            if ( formName == "Configuration[customInputs]" || formName == "Configuration[manualInputs]" ) {
-                                formData.append(formName.replace("]", "Raw]"), JSON.stringify(data[key]));
+                        Object.keys(data).forEach( (key, index) => {
+                            if ( asDictionary ?? false ) {
+                                formData.append(`${parentKey}[${index}].Key`, key);
+                                formData.append(`${parentKey}[${index}].Value`, data[key]);
                             }
-                            else if ( formName == "Inputs" ) {
-                                formData.append("InputsRaw", JSON.stringify(data[key]));
+                            else {
+                                const formName = parentKey ? `${parentKey}[${key}]` : key;
+                                var createDictionary = 
+                                    formName == "Inputs" || formName == "Configuration[customInputs]" || formName == "Configuration[manualInputs]";
+                                buildFormData(formData, data[key], formName, createDictionary);
                             }
-
-                            buildFormData(formData, data[key], formName);
                         });
                     } else if ( data != null ) {
                         const value = (data instanceof Date) 
@@ -1155,6 +1156,18 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                 return fd;    
             }
             else {
+                // Couldn't figure out how to model bind JObject or Dictionary, so hacking with this
+                
+                // If I start using 'raw data' to submit, need to figure out how to make a 'key/value' dictionary like above
+                if ( submitData.Inputs != undefined ) {
+                    submitData[ "inputsRaw" ] = JSON.stringify( submitData.Inputs );
+                }
+                if ( submitData.Configuration.manualInputs != undefined ) {
+                    submitData.Configuration[ "manualInputsRaw" ] = JSON.stringify( submitData.Configuration.manualInputs );
+                }
+                if ( submitData.Configuration[ "customInputs" ] != undefined ) {
+                    submitData.Configuration[ "customInputsRaw" ] = JSON.stringify( submitData.Configuration[ "customInputs" ] );
+                }
                 return submitData;
             }
         }
@@ -1316,14 +1329,15 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
         }
 
         apiAction( commandName: string, options: KatAppOptions, actionOptions: KatAppActionOptions, actionLink: JQuery<HTMLElement> | undefined, done?: ( successResponse: KatAppActionResult | undefined, failureResponse: JSON | undefined )=> void ): void {
+            const application = this;
             const isDownload = actionLink?.attr("rbl-action-download") == "true";
             const runCalculate = actionLink?.attr("rbl-action-calculate") == "true";
             const errors: ValidationRow[] = [];
-            const errorSummary = $("#" + this.id + "_ModelerValidationTable", this.element);
-            $('.validator-container.error', this.element).not(".server").removeClass('error');
+
+            application.rble.initializeValidationSummaries();
+            application.rble.finalizeValidationSummaries( false );
         
             this.showAjaxBlocker();
-            const application = this;
         
             let url = "api/" + commandName;
             const serviceUrlParts = application.options.sessionUrl?.split( "?" );
@@ -1337,18 +1351,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
             // No one was using this yet, not sure I need it
             // this.ui.triggerEvent( "onActionStart", commandName, data, this, actionLink );
 
-            const data = application.getEndpointSubmitData(options, actionOptions, false) as KatAppActionSubmitData;
-
-            // Couldn't figure out how to model bind JObject or Dictionary, so hacking with this
-            if ( data.Inputs != undefined ) {
-                data[ "inputsRaw" ] = JSON.stringify( data.Inputs );
-            }
-            if ( data.Configuration.manualInputs != undefined ) {
-                data.Configuration[ "manualInputsRaw" ] = JSON.stringify( data.Configuration.manualInputs );
-            }
-            if ( data.Configuration.customInputs != undefined ) {
-                data.Configuration[ "customInputsRaw" ] = JSON.stringify( data.Configuration.customInputs );
-            }
+            const data = application.getEndpointSubmitData(options, actionOptions) as KatAppActionSubmitData;
 
             application.ui.triggerEvent( "onActionStart", commandName, data, application, data.Configuration, actionLink );
             const _endpointRBLeInputsCache = $.fn.KatApp.endpointRBLeInputsCache;
@@ -1357,6 +1360,9 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                 method: "POST",
                 url: url,
                 data: data,
+                contentType: false,
+                processData: false,
+                headers: { "Content-Type": undefined },
                 beforeSend: function( _xhr, settings ) {
                     // Enable jquery to assign 'binary' results so I can grab later.
                     settings[ "responseFields" ][ "binary" ] = "responseBinary";
@@ -1417,7 +1423,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                     errorResponse = xhr[ "responseBinary" ];
                     delete _endpointRBLeInputsCache[ commandName ];
             
-                    if ( errorResponse != undefined && errorResponse[ "Validations" ] != undefined && errorSummary.length > 0 ) {
+                    if ( errorResponse != undefined && errorResponse[ "Validations" ] != undefined ) {
                         errorResponse[ "Validations" ].forEach((v: { [x: string]: string }) => {
                             errors.push( { "@id": v[ "ID" ], text: v[ "Message" ] });
                         });
@@ -1438,11 +1444,8 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                     console.groupEnd();
 
                     application.ui.triggerEvent( "onActionFailed", commandName, errorResponse, application, data.Configuration, actionLink );
-
-                    application.rble.processValidationRows(
-                        errorSummary, 
-                        errors
-                    );
+                    const errorSummary = $("#" + application.id + "_ModelerValidationTable", application.element);
+                    application.rble.processValidationRows( errorSummary, errors );
                     application.rble.finalizeValidationSummaries();
                 }
                 else {
@@ -1787,7 +1790,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                 decodedContent = decodedContent
                     .replace( /control-label/g, "col-form-label")
                     .replace( /glyphicon glyphicon-volume-up/g, "fa fa-volume-up" )            
-                    .replace( /glyphicon glyphicon-info-sign/g, this.application.bootstrapVersion >= 5 ? "fa-light fa-square-info" : "fa fa-question-circle" );
+                    .replace( /glyphicon glyphicon-info-sign/g, this.application.bootstrapVersion >= 5 ? "fa-light fa-circle-info" : "fa fa-question-circle" );
             }
 
             if ( this.application.bootstrapVersion > 4 ) {
@@ -1936,7 +1939,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
             const helpIconClass = 
                 isBootstrap3 ? "glyphicon glyphicon-info-sign" : 
                 isBootstrap4 ? "fa fa-question-circle" : 
-                isBootstrap5 ? "fa-light fa-square-info" : "fa fa-question-circle";
+                isBootstrap5 ? "fa-light fa-circle-info" : "fa fa-question-circle";
             const bsDataAttributePrefix = isBootstrap5 ? "data-bs-" : "data-";
 
             let configureHelp = false;
@@ -3745,7 +3748,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                 $("ul li.rble", summary).remove();
             });
         }
-        finalizeValidationSummaries(): void {
+        finalizeValidationSummaries( scrollToSummary = true ): void {
             const view = this.application.element;            
             const errorSummary = $("#" + this.application.id + "_ModelerValidationTable", view);
             const warningSummary = $("#" + this.application.id + "_ModelerWarnings", view);
@@ -3763,7 +3766,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                 }
             });
     
-            if ( this.application.calculationInputs?.iConfigureUI === 1 ) {
+            if ( scrollToSummary && this.application.calculationInputs?.iConfigureUI === 1 ) {
             /*
                 // Scroll target will probably need some work
                 if ($("ul li", warningSummary).length > 0 && warnings.length > 0) {
@@ -3980,7 +3983,8 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
             if ( results !== undefined ) {
                 const showInspector = application.calculationInputs?.iConfigureUI === 1 && ( calculationOptions.debug?.showInspector ?? false );
                 this.initializeValidationSummaries();
-    
+                this.finalizeValidationSummaries( false );
+
                 results.forEach(tabDef => {
                     application.trace( "Processing results for " + tabDef._fullName + "(" + tabDef["@version"] + ")", TraceVerbosity.Normal );
     
@@ -4763,7 +4767,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                         $(".file-upload-progress", that.application.element).show();
 
                         const fileUpload = $(".file-data", $(this).parent());
-                        const fd = that.application.getEndpointSubmitData(that.application.options, {}, true) as FormData;
+                        const fd = that.application.getEndpointSubmitData(that.application.options, {}) as FormData;
 
                         const files = ( fileUpload[0] as HTMLInputElement ).files;
                         $.each(files, function(index, file)
@@ -4772,15 +4776,14 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                         });
 
                         const errors: ValidationRow[] = [];
-                        // Can't use 'view' in selector for validation summary b/c view could be a 'container' instead of entire view
-                        // if caller only wants to initialize a newly generated container's html                        
-                        const errorSummary = $("#" + that.application.id + "_ModelerValidationTable", that.application.element);
-                        $('.validator-container.error', that.application.element)
-                            .not(".server")
-                            .removeClass('error');
 
+                        application.rble.initializeValidationSummaries();
+                        application.rble.finalizeValidationSummaries( false );
+                
                         application.ui.triggerEvent( "onUploadStart", fileUpload, fd, application );
 
+                        let errorResponse: JSON;
+            
                         $.ajax({
                             url: uploadUrl,  
                             type: 'POST',
@@ -4795,29 +4798,39 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                             },
                             function( _jqXHR  ) {
                                 const responseText = _jqXHR.responseText || "{}";
-                                const jsonResponse = JSON.parse( responseText );
-                                if ( jsonResponse[ "Validations" ] != undefined && errorSummary.length > 0 ) {
-                                    jsonResponse.Validations.forEach((v: { [x: string]: string }) => {
+                                errorResponse = JSON.parse( responseText );
+                                if ( errorResponse[ "Validations" ] != undefined ) {
+                                    errorResponse[ "Validations" ].forEach((v: { [x: string]: string }) => {
                                         errors.push( { "@id": v[ "ID" ], text: v[ "Message" ] });
                                     });
                                     return;
                                 }
-                                application.ui.triggerEvent( "onUploadFailed", fileUpload, jsonResponse, application );
                             }
                         )
                         .always( function() {
-                            application.ui.triggerEvent( "onUploadComplete", fileUpload, application );
-                            application.rble.processValidationRows(
-                                errorSummary, 
-                                errors
-                            );
                             // Get file upload control to update its UI (buttons)
                             fileUpload.val("").trigger("change");
                             $(".file-upload .btn", el).removeClass("disabled");
                             $(".file-upload-progress", that.application.element).hide();
+
+                            if ( errors.length > 0 ) {
+                                console.group("Unable to upload file: errors");
+                                console.log( errors );
+                                console.groupEnd();            
+
+                                const errorSummary = $("#" + application.id + "_ModelerValidationTable", application.element);
+                                application.rble.processValidationRows( errorSummary, errors );
+                                application.rble.finalizeValidationSummaries();
+
+                                application.ui.triggerEvent( "onUploadFailed", fileUpload, errorResponse, application );
+                            }
+                            else {
+                                application.ui.triggerEvent( "onUploadComplete", fileUpload, application );
+                            }
+
                             that.application.hideAjaxBlocker();
                         });
-                });
+                    });
 
                     $(".btn-file :file", el).on("change", function () {
                         const fileUpload = $(this),

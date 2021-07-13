@@ -108,6 +108,7 @@ interface KatAppActionSubmitData {
 interface KatAppActionResult {
     Status: number;
     Message: string;
+    ValidationWarnings: { ID: string, Message: string }[] | undefined;
     RBLeInputs: {
         Tables: CalculationInputTable[] | undefined;
         Inputs: JSON | undefined

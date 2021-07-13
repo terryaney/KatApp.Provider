@@ -1097,63 +1097,42 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
             calculatePipeline( 0 );
         }
 
-        getEndpointSubmitData( options: KatAppOptions, customOptions: KatAppActionOptions): KatAppActionSubmitData | FormData {
-            const currentOptions = KatApp.extend(
-                {}, // make a clone of the options
-                KatApp.clone( 
-                    options,
-                    function( key, value ) {
-                        if ( key == "handlers" || typeof value === "function" ) {
-                            return; // don't want any functions passed along to api
+        buildFormData(submitData: KatAppActionSubmitData): FormData {
+            // https://gist.github.com/ghinda/8442a57f22099bdb2e34#gistcomment-3405266
+            const buildForm = function (formData: FormData, data: Object, parentKey?: string, asDictionary?: boolean): void {
+                if (data && typeof data === 'object' && !(data instanceof Date) && !(data instanceof File) && !(data instanceof Blob)) {
+                    Object.keys(data).forEach( (key, index) => {
+                        if ( asDictionary ?? false ) {
+                            formData.append(`${parentKey}[${index}].Key`, key);
+                            formData.append(`${parentKey}[${index}].Value`, data[key]);
                         }
-                        return value; 
+                        else {
+                            const formName = parentKey ? `${parentKey}[${key}]` : key;
+                            var createDictionary = 
+                                formName == "Inputs" || formName == "Configuration[customInputs]" || formName == "Configuration[manualInputs]";
+                                buildForm(formData, data[key], formName, createDictionary);
+                        }
+                    });
+                } else if ( data != null ) {
+                    const value = (data instanceof Date) 
+                        ? data.toISOString() 
+                        : data;
+
+                    if ( typeof value !== "function" ) {
+                        formData.append(parentKey!, value);
                     }
-                ), // original options
-                customOptions, // override options
-            ) as KatAppOptions;
-
-            const calculationOptions = this.rble.getSubmitCalculationOptions( currentOptions, undefined );
-
-            const submitData = {
-                Inputs: calculationOptions.Inputs,
-                InputTables: calculationOptions.InputTables,
-                Configuration: currentOptions
+                }
             };
 
+            const fd = new FormData();
+            
+            buildForm(fd, submitData);
+
+            return fd;    
+            /*
             const useFormData = true; // Used to pass this in...but upload and apiAction both use 'FormData'
 
             if ( useFormData ) {
-                // https://gist.github.com/ghinda/8442a57f22099bdb2e34#gistcomment-3405266
-                const buildFormData = function (formData: FormData, data: Object, parentKey?: string, asDictionary?: boolean): void {
-                    if (data && typeof data === 'object' && !(data instanceof Date) && !(data instanceof File) && !(data instanceof Blob)) {
-                        Object.keys(data).forEach( (key, index) => {
-                            if ( asDictionary ?? false ) {
-                                formData.append(`${parentKey}[${index}].Key`, key);
-                                formData.append(`${parentKey}[${index}].Value`, data[key]);
-                            }
-                            else {
-                                const formName = parentKey ? `${parentKey}[${key}]` : key;
-                                var createDictionary = 
-                                    formName == "Inputs" || formName == "Configuration[customInputs]" || formName == "Configuration[manualInputs]";
-                                buildFormData(formData, data[key], formName, createDictionary);
-                            }
-                        });
-                    } else if ( data != null ) {
-                        const value = (data instanceof Date) 
-                            ? data.toISOString() 
-                            : data;
-
-                        if ( typeof value !== "function" ) {
-                            formData.append(parentKey!, value);
-                        }
-                    }
-                };
-
-                const fd = new FormData();
-                
-                buildFormData(fd, submitData);
-    
-                return fd;    
             }
             else {
                 // Couldn't figure out how to model bind JObject or Dictionary, so hacking with this
@@ -1170,6 +1149,32 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                 }
                 return submitData;
             }
+            */
+        }
+
+        getEndpointSubmitData( options: KatAppOptions, customOptions: KatAppActionOptions): KatAppActionSubmitData {
+            const currentOptions = KatApp.extend(
+                {}, // make a clone of the options
+                KatApp.clone( 
+                    options,
+                    function( key, value ) {
+                        if ( key == "handlers" || typeof value === "function" ) {
+                            return; // don't want any functions passed along to api
+                        }
+                        return value; 
+                    }
+                ), // original options
+                customOptions, // override options
+            ) as KatAppOptions;
+
+            const calculationOptions = this.rble.getSubmitCalculationOptions( currentOptions, undefined );
+
+            const submitData: KatAppActionSubmitData = {
+                Inputs: calculationOptions.Inputs,
+                InputTables: calculationOptions.InputTables,
+                Configuration: currentOptions
+            };
+            return submitData;
         }
 
         private processResults( calculationOptions: KatAppOptions ): void {
@@ -1333,6 +1338,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
             const isDownload = actionLink?.attr("rbl-action-download") == "true";
             const runCalculate = actionLink?.attr("rbl-action-calculate") == "true";
             const errors: ValidationRow[] = [];
+            const warnings: ValidationRow[] = [];
 
             application.rble.initializeValidationSummaries();
             application.rble.finalizeValidationSummaries( false );
@@ -1351,15 +1357,20 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
             // No one was using this yet, not sure I need it
             // this.ui.triggerEvent( "onActionStart", commandName, data, this, actionLink );
 
-            const data = application.getEndpointSubmitData(options, actionOptions) as KatAppActionSubmitData;
+            const data = application.getEndpointSubmitData(options, actionOptions);
 
             application.ui.triggerEvent( "onActionStart", commandName, data, application, data.Configuration, actionLink );
             const _endpointRBLeInputsCache = $.fn.KatApp.endpointRBLeInputsCache;
 
+            // Couldn't figure out how to model bind JObject or Dictionary, so hacking with this
+            data[ "inputTablesRaw" ] = data.InputTables != undefined ? JSON.stringify( data.InputTables ) : undefined;
+
+            var fd = application.buildFormData( data );
+
             $.ajax( {
                 method: "POST",
                 url: url,
-                data: data,
+                data: fd,
                 contentType: false,
                 processData: false,
                 headers: { "Content-Type": undefined },
@@ -1406,6 +1417,12 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                             delete _endpointRBLeInputsCache[ commandName ];
                         }
                         else {
+                            if ( successResponse.ValidationWarnings != undefined ) {
+                                successResponse.ValidationWarnings.forEach( vr => {
+                                    warnings.push( { "@id": vr.ID, text: vr.Message });
+                                });
+                            }
+
                             if ( successResponse.RBLeInputs != undefined ) {
                                 _endpointRBLeInputsCache[ commandName ] = successResponse.RBLeInputs;
                             }
@@ -1419,8 +1436,8 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                     }
                 },
                 function( xhr, _status, _errorInfo) {
-                    debugger;
                     errorResponse = xhr[ "responseBinary" ];
+                    debugger;
                     delete _endpointRBLeInputsCache[ commandName ];
             
                     if ( errorResponse != undefined && errorResponse[ "Validations" ] != undefined ) {
@@ -1445,7 +1462,9 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
 
                     application.ui.triggerEvent( "onActionFailed", commandName, errorResponse, application, data.Configuration, actionLink );
                     const errorSummary = $("#" + application.id + "_ModelerValidationTable", application.element);
+                    const warningSummary = $("#" + application.id + "_ModelerWarnings", application.element);
                     application.rble.processValidationRows( errorSummary, errors );
+                    application.rble.processValidationRows( warningSummary, warnings );
                     application.rble.finalizeValidationSummaries();
                 }
                 else {
@@ -4767,7 +4786,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                         $(".file-upload-progress", that.application.element).show();
 
                         const fileUpload = $(".file-data", $(this).parent());
-                        const fd = that.application.getEndpointSubmitData(that.application.options, {}) as FormData;
+                        const fd = that.application.buildFormData( that.application.getEndpointSubmitData(that.application.options, {}) );
 
                         const files = ( fileUpload[0] as HTMLInputElement ).files;
                         $.each(files, function(index, file)

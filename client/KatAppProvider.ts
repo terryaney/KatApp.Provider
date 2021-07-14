@@ -2701,6 +2701,32 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                     payload = JSON.parse(payload.payload);
                 }
     
+                const traceCalcEngine = application.element.data("katapp-trace-calcengine") === "1";
+                    
+                if ( traceCalcEngine && payload.Diagnostics != null ) {
+                    console.group(calcEngine.name + " " + payload.Diagnostics.CalcEngineVersion + " Diagnostics");
+
+                    const timings: string[] = [];
+                    if ( payload.Diagnostics.Timings != null ) {
+                        const utcDateLength = 28;
+                        payload.Diagnostics.Timings.Status.forEach( ( t, i ) => {
+                            const start = ( t["@Start"] + "       " ).substring(0,utcDateLength);
+                            timings.push( start + ": " + t["#text"] );
+                        })
+                    }
+
+                    const diag = {
+                        Server: payload.Diagnostics.RBLeServer,
+                        Session: payload.Diagnostics.SessionID,
+                        Url: payload.Diagnostics.ServiceUrl,
+                        Timings: timings,
+                        Trace: payload.Diagnostics.Trace?.Item.map( i => i.substring( 2 ))
+                    };
+                    console.log(diag);
+
+                    console.groupEnd();
+                }
+
                 if ( payload.Exception === undefined ) {
                     submitCalculationHandler( undefined, payload.RBL );
                 }

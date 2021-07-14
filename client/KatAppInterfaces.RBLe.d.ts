@@ -107,7 +107,23 @@ interface RBLeServiceResults {
         StackTrace?: string;
     };
 
-    Diagnostics?: JSON; // Should define interface for nested items
+    Diagnostics?: {
+        CalcEngine: string;
+        CalcEngineVersion: string;
+        CalculationType: string;
+        RBLeServer: string;
+        ServiceUrl: string;
+        SessionID: string;
+        Timings?: {
+            Status: {
+                "@Start": string;
+                "#text": string;            
+            }[]
+        };
+        Trace?: {
+            Item: string[];
+        };
+    };
     
     // Only present after successful 'get resource' call
     Resources?: {

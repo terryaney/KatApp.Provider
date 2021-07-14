@@ -685,7 +685,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
             }
         }
 
-        calculate( customOptions?: KatAppOptions ): void {
+        calculate( customOptions?: KatAppOptions, pipelineDone?: ()=> void ): void {
             const _sharedData = $.fn.KatApp.sharedData;
 
             // Shouldn't change 'share' option with a customOptions object, so just use original options to check
@@ -724,7 +724,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
 
             const calculatePipeline = function( offset: number ): void {
                 if ( pipelineIndex > 0 ) {
-                    that.trace( pipelineNames[ pipelineIndex - 1 ] + ".finish", TraceVerbosity.Detailed );
+                    that.trace( pipelineNames[ pipelineIndex - 1 ] + ".finish", TraceVerbosity.Detailed );              
                 }
             
                 pipelineIndex += offset;
@@ -732,6 +732,9 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                 if ( pipelineIndex < pipeline.length ) {
                     that.trace( pipelineNames[ pipelineIndex ] + ".start", TraceVerbosity.Detailed );
                     pipeline[ pipelineIndex++ ]();
+                }
+                else if ( pipelineDone != undefined ) {
+                    pipelineDone();
                 }
             };
 
@@ -885,6 +888,8 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
             };
 
             // Always go processResults
+            // .calculate() cannot be called with expectation of synchronous execution because of this
+            // pipeline function that uses Deferred objects to handle asynchronous submission of 1..N CalcEngines
             const submitCalculation = function(): void {
                 
                 const calculations = currentOptions.calcEngines != undefined && currentOptions.calcEngines.length > 0
@@ -973,7 +978,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                                 if ( failureReponse != undefined ) {
                                     // Any errors added, add a temp apiAction class so they aren't removed during Calculate workflow
                                     // (apiAction is used for jwt-data updates)
-                                    $('.validator-container.error', that.element).not(".server").addClass('apiAction');
+                                    $('.validator-container.error', that.element).not(".server").addClass("apiAction");
                                 }
 
                                 calculatePipeline( 0 );
@@ -1060,7 +1065,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
 
             const calculateEnd = function(): void {
                 // Remove temp apiAction error flag now that processing is finished
-                $('.validator-container.error.apiAction', that.element).removeClass('apiAction');
+                $('.validator-container.error.apiAction, .validator-container.warning.apiAction', that.element).removeClass('apiAction');
 
                 that.ui.triggerEvent( "onCalculateEnd", that );
 
@@ -1367,6 +1372,35 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
 
             var fd = application.buildFormData( data );
 
+            const finishApiAction = function() {
+                const errorSummary = $("#" + application.id + "_ModelerValidationTable", application.element);
+                const warningSummary = $("#" + application.id + "_ModelerWarnings", application.element);
+                application.rble.processValidationRows( errorSummary, errors );
+                application.rble.processValidationRows( warningSummary, warnings );
+                application.rble.finalizeValidationSummaries();
+
+                if ( errors.length > 0 ) {
+                    console.group("Unable to process " + commandName + ": errorResponse");
+                    console.log(errorResponse);
+                    console.groupEnd();
+                    console.group("Unable to process " + commandName + ": errors");
+                    console.log( errors );
+                    console.groupEnd();
+
+                    application.ui.triggerEvent( "onActionFailed", commandName, errorResponse, application, data.Configuration, actionLink );
+                }
+                else {
+                    application.ui.triggerEvent( "onActionResult", commandName, successResponse, application, data.Configuration, actionLink );
+                }
+
+                application.hideAjaxBlocker();
+                application.ui.triggerEvent( "onActionComplete", commandName, application, data.Configuration, actionLink );
+
+                if ( done != undefined ) {
+                    done( successResponse, errorResponse);
+                }
+            };
+
             $.ajax( {
                 method: "POST",
                 url: url,
@@ -1430,7 +1464,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                                 delete _endpointRBLeInputsCache[ commandName ];
                             }
                             if ( runCalculate ) {
-                                application.calculate();
+                                application.calculate( undefined, finishApiAction );
                             }
                         }
                     }
@@ -1453,29 +1487,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
             )
             .always( function() {
                 if ( errors.length > 0 ) {
-                    console.group("Unable to process " + commandName + ": errorResponse");
-                    console.log(errorResponse);
-                    console.groupEnd();
-                    console.group("Unable to process " + commandName + ": errors");
-                    console.log( errors );
-                    console.groupEnd();
-
-                    application.ui.triggerEvent( "onActionFailed", commandName, errorResponse, application, data.Configuration, actionLink );
-                    const errorSummary = $("#" + application.id + "_ModelerValidationTable", application.element);
-                    const warningSummary = $("#" + application.id + "_ModelerWarnings", application.element);
-                    application.rble.processValidationRows( errorSummary, errors );
-                    application.rble.processValidationRows( warningSummary, warnings );
-                    application.rble.finalizeValidationSummaries();
-                }
-                else {
-                    application.ui.triggerEvent( "onActionResult", commandName, successResponse, application, data.Configuration, actionLink );
-                }
-
-                application.hideAjaxBlocker();
-                application.ui.triggerEvent( "onActionComplete", commandName, application, data.Configuration, actionLink );
-
-                if ( done != undefined ) {
-                    done( successResponse, errorResponse);
+                    finishApiAction();
                 }
             });
         }
@@ -2588,7 +2600,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                 delete currentOptions.defaultInputs.iInputTrigger;
             }
 
-            const inputs: CalculationInputs = this.getInputs( currentOptions ); 
+            const inputs = this.getInputs( currentOptions ); 
             const inputTables = this.getInputTables() ?? [];
 
             const _endpointRBLeInputsCache = $.fn.KatApp.endpointRBLeInputsCache;
@@ -2610,6 +2622,14 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                             };
             
                             inputTables.push(inputTable);        
+                        });
+                    }
+
+                    const inputsCache = inputCache[ "Inputs" ];
+
+                    if ( inputsCache != undefined ) {
+                        Object.keys(inputsCache).forEach( k => {
+                            inputs[ k ] = inputsCache[ k ];
                         });
                     }
                 }
@@ -3715,11 +3735,15 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
     
             // Backward compat to remove validation with same id as input, but have changed it to 
             // id + Error so that $(id) doesn't get confused picking the li item.
-            const inputName = input !== undefined ? this.application.ui.getInputName(input) : "undefined";
-            $("ul li." + inputName + ", ul li." + inputName + "Error", summary).remove();
+            let inputName = "Input" + $("ul li", summary).length;
+            if ( input !== undefined && input.length > 0 ) {
+                inputName = this.application.ui.getInputName(input);
+                $("ul li." + inputName + ", ul li." + inputName + "Error", summary).remove();
+            }
+            
             ul.append("<li class=\"rble " + inputName + "Error\">" + message + "</li>");
     
-            if ( input !== undefined ) {
+            if ( input !== undefined && input.length > 0 ) {
                 const isWarning = summary.hasClass("ModelerWarnings");
                 const validationClass = isWarning ? "warning" : "error";
                 const valContainer = input.closest('.validator-container').addClass(validationClass);
@@ -3760,7 +3784,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
             }            
     
             $('.validator-container.error', view).not(".server, .apiAction").removeClass('error');
-            $('.validator-container.warning', view).not(".server").removeClass('warning');
+            $('.validator-container.warning', view).not(".server, .apiAction").removeClass('warning');
     
             [ warningSummary, errorSummary ].forEach( summary => {
                 // Remove all RBLe client side created errors since they would be added back

@@ -1859,9 +1859,9 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
             // rbl-template-type is to enable the creation of templates with different ids/names but still
             // fall in a category of type.  For example, you may want to make a certain style/template of
             // sliders (while still keeping main slider template usable) that is then capable of applying
-            // all the KatApp programming (data-* attributes applying ranges, and configurations).
+            // all the KatApp programming (data-* attributes applying ranges, and configurations).            
             target.removeAttr("rbl-template-type");
-    
+
             if ( template === undefined ) {
                 target.html("");
             }
@@ -4147,12 +4147,13 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                 });
     
                 if ( application.calculationInputs?.iConfigureUI === 1 ) {
-                    $('[rbl-tid="input-slider"],[rbl-template-type="katapp-slider"]', application.element)
+                    $('div[data-slider-type="nouislider"]', application.element)
+                        .map( ( i, r ) => $("input", $(r).parent()).attr("name") || "missing" )
                         .filter( ( i, r ) => {
-                            return sliderConfigIds.indexOf( r.getAttribute( "data-inputname" ) ) < 0;
+                            return sliderConfigIds.indexOf( r ) < 0;
                         })
                         .each( ( i, r ) => {
-                            application.trace("<b style='color: Red;'>RBL WARNING</b>: No slider configuration can be found for " + r.getAttribute( "data-inputname" ) + ".", TraceVerbosity.Detailed);
+                            application.trace("<b style='color: Red;'>RBL WARNING</b>: No slider configuration can be found for " + r + ".", TraceVerbosity.Detailed);
                         });
                 }                
     
@@ -4554,117 +4555,205 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
             this.application = application;   
         }
         
-        private processCarousels( container?: JQuery<HTMLElement> ): void {
-            const that: StandardTemplateBuilder = this;
-            const app = this.application;
-            const view = container ?? app.element;
-
-            // Hook up event handlers only when *not* already initialized            
-            $('.carousel-control-group', view)
-                .not("rbl-template *, [rbl-tid='inline'] *, [rbl-tid='inline']") // not in templates
-                .not('[data-katapp-initialized="true"]')
-                .each(function () {
-                    const el = $(this);
-
-                    const carouselName = el.attr("rbl-name")!;
-
-                    app.trace("Processing carousel: " + carouselName, TraceVerbosity.Detailed);
-        
-                    $(".carousel-inner .item, .carousel-indicators li", el).removeClass("active");
-        
-                    // add active class to carousel items
-                    $(".carousel-inner .item", el).first().addClass("active");
-        
-                    // add 'target' needed by indicators, referencing name of carousel
-                    $(".carousel-indicators li", el)
-                        .attr("data-target", "#carousel-" + carouselName)
-                        .first().addClass("active");
-        
-                    const carousel = $('.carousel', el);
-                    const carouselAll = $('.carousel-all', el);
-
-                    //add buttons to show/hide
-                    $(".carousel-indicators .list-btn", el)
-                        .on("click", function () {
-                            carousel.hide();
-                            carouselAll.show();
-                        });
-
-                    $(".carousel-btn", carouselAll)
-                        .on("click", function () {
-                            carouselAll.hide();
-                            carousel.show();
-                        });
-
-                    el.attr("data-katapp-initialized", "true");
-
-                    //show initial item, start carousel:
-                    carousel.carousel(0);
-                });
+        processUI( container?: JQuery<HTMLElement> ): void {
+            this.processInputs( container );
+            this.processCarousels( container );
+            this.processHelpTips( container );
+            this.processActionLinks( container );
+            this.processNavigationLinks( container );
         }
 
-        private processCheckboxes( container: JQuery<HTMLElement> ): void {
-            const app = this.application;
+        processHelpTips( container?: JQuery<HTMLElement> ): void {
+            // Couldn't include the Bootstrap.Tooltips.js file b/c it's selector hits entire page, and we want to be localized to our view.
+            const selector = "[data-toggle='tooltip'], [data-bs-toggle='tooltip'], [data-toggle='popover'], [data-bs-toggle='popover'], .tooltip-trigger, .tooltip-text-trigger, .error-trigger";
+            const application = this.application;
+            const view = container ?? application.element;
+            const isBootstrap3 = this.application.bootstrapVersion == 3;
 
-            $('[rbl-tid="input-checkbox"],[rbl-template-type="katapp-checkbox"]', container)
+            if ( typeof $.fn.popover !== "function" && $(selector, view).length > 0 ) {
+                this.application.trace("Bootstrap popover/tooltip javascript is not present", TraceVerbosity.None);
+                return;
+            }
+
+            $(selector, view)
+                .not('.rbl-help, [data-katapp-initialized="true"]')
                 .not("rbl-template *, [rbl-tid='inline'] *, [rbl-tid='inline']") // not in templates
-                .not('[data-katapp-initialized="true"]')
-                .each(function () {
-                    const el = $(this);
-                    const id = el.data("inputname");
-                    const input = $("span." + id + " input", el);
-                    const label = el.data("label");
-                    const help = el.data("help");
-                    const checked = el.data("checked");
-                    const css = el.data("css");
-                    const inputCss = el.data("inputcss");
+                .each( function() {
+                    const isErrorValidator = $(this).hasClass('error-msg');
+                    let placement = $(this).data('placement') || $(this).data('bs-placement') || "top";
+                    const trigger = $(this).data('trigger') || $(this).data('bs-trigger') || "hover";
+                    const container = $(this).data('container') || $(this).data('bs-container') || "body";
 
-                    if ( css !== undefined ) {
-                        $("[rbl-display='v" + id + "']", el).addClass(css);
+                    if ($(this).attr("href") == "#") {
+                        // Convert simply # links to void so nothing happens
+                        $(this).on("click.RBLe", function (e) {
+                            e.preventDefault();
+                        });
                     }
+            
+                    const options: Bootstrap.PopoverOptions = {
+                        html: true,
+                        sanitize: false,
+                        trigger: trigger,
+                        container: container,
+                        template: 
+                            isErrorValidator && isBootstrap3 
+                                ? '<div class="tooltip error katapp-css" role="tooltip"><div class="tooltip-arrow"></div><div class="tooltip-inner"></div></div>' :
+                            isBootstrap3 
+                                ? '<div class="popover katapp-css" role="tooltip"><div class="arrow"></div><h3 class="popover-title"></h3><div class="popover-content"></div></div>' :
+                            isErrorValidator // popover-arrow is for bootstrap 5
+                                ? '<div class="tooltip error katapp-css" role="tooltip"><div class="tooltip-arrow arrow"></div><div class="tooltip-inner"></div></div>'
+                                : '<div class="popover katapp-css" role="tooltip"><div class="popover-arrow arrow"></div><h3 class="popover-header"></h3><div class="popover-body"></div></div>',
+                
+                        placement: function (tooltip, trigger) {
+                            // Add a class to the .popover element
+            
+                            // http://stackoverflow.com/a/19875813/166231
+                            let dataClass = $(trigger).data('class');
+                            if (dataClass != undefined) {
+                                $(tooltip).addClass(dataClass);
+                            }
+            
+                            // Did they specify a data-width?
+                            dataClass = $(trigger).data('width') || $(trigger).data('bs-width');
+                            if (dataClass != undefined) {
+                                // context is for popups, tooltip-inner is for tooltips (bootstrap css has max-width in css)
+                                $(tooltip).add($(".tooltip-inner", tooltip))
+                                            .css("width", dataClass)
+                                            .css("max-width", dataClass);
+            
+                            }
+            
+                            if ( !isBootstrap3 ) {
+                                // Bootstrap 4 no longer supports 'left auto' (two placements) so just in case any markup has that still
+                                // remove it (unless it is only thing specified - which 'popper' supports.)
+                                const autoToken = /\s?auto?\s?/i
+                                const autoPlace = autoToken.test(placement)
+                                if (autoPlace) placement = placement.replace(autoToken, '') || 'auto';
+                            }
 
-                    if ( help !== undefined ) {
-                        $("div[rbl-value='h" + id + "']", el).html(help);
-                        $("a[rbl-display='vh" + id + "']", el).show();
-                    }
-
-                    if ( label !== undefined ) {
-                        let target = $("span[rbl-value='l" + id + "'] label span.checkbox-label", el);
-
-                        if ( target.length === 0 ) {
-                            target = $("span[rbl-value='l" + id + "'] label", el);
+                            return placement;
+                        },
+                        title: function () {
+                            const  titleSelector = $(this).data('content-selector');
+                            if (titleSelector != undefined) {
+                                const title = $(titleSelector + "Title").text();
+                                if (title != undefined) {
+                                    return title;
+                                }
+                            }                    
+                            return "";            
+                        },
+                        content: function () {
+                            // See if they specified data-content directly on trigger element.
+                            const dataContent = $(this).data('content') ?? $(this).data('bs-content');
+                            const dataContentSelector = $(this).data('content-selector');
+                            let content = dataContent == undefined
+                                ? dataContentSelector == undefined ? $(this).next().html() : $(dataContentSelector).html()
+                                : dataContent;
+            
+                            // Replace {Label} in content with the trigger provided...used in Error Messages
+                            const labelFix = $(this).data("label-fix");
+            
+                            if (labelFix != undefined) {
+                                content = content.replace(/\{Label}/g, $("." + labelFix).html());
+                            }
+            
+                            return content;
                         }
-                        target.html(label);
+                    };   
+
+                    if (isErrorValidator) {
+                        // Hover for this one...
+                        $(this)
+                            .tooltip(options)
+                            .on('inserted.bs.tooltip', function (e) {
+                                const isWarning = $("label.warning", $(e.target)).length == 1;
+                                if (isWarning) {
+                                    const templateId = "#" + $(e.target).attr("aria-describedby");
+                                    $(templateId, view).removeClass("error").addClass("warning");
+                                }
+                            });
                     }
-
-                    if ( checked ) {
-                        input.prop("checked", true);
+                    else {
+                        $(this).popover(options);
                     }
+                                
+                })
+                .attr("data-katapp-initialized", "true");
 
-                    if ( inputCss !== undefined ) {
-                        input.addClass(inputCss);
-                    }
-
-                    el.attr("data-katapp-initialized", "true");
-                });
-        }
-
-        private incrementProgressBars(): void {
-            let progressBarValue = 0;
             const that = this;
-            const progressBarInterval = setInterval(function () {
-                progressBarValue += 1;
-        
-                $(".progress-bar", that.application.element)
-                    .css("width", progressBarValue + "%")
-                    .attr("aria-valuenow", progressBarValue);
-        
-                if (progressBarValue >= 100) {
-                    clearInterval(progressBarInterval);
+
+            // Code to hide tooltips if you click anywhere outside the tooltip
+            // Combo of http://stackoverflow.com/a/17375353/166231 and https://stackoverflow.com/a/21007629/166231 (and 3rd comment)
+            // This one looked interesting too: https://stackoverflow.com/a/24289767/166231 but I didn't test this one yet
+            const hideVisiblePopover = function(): void {
+                // Going against entire KatApp (all apps) instead of a local variable because I only setup
+                // the HTML click event one time, so the 'that=this' assignment above would be the first application
+                // and might not match up to the 'currently executing' katapp, so had to make this global anyway
+                const visiblePopover = KatApp[ "visiblePopover" ];
+                
+                // Just in case the tooltip hasn't been configured
+                if ( visiblePopover === undefined || $(visiblePopover).data("katapp-initialized") != true ) return;
+                // Used to use this logic, but it didn't work with bootstrap 5, I've asked a question here:
+                // https://stackoverflow.com/questions/67301932/cannot-access-bootstrap-5-bs-popover-data-with-jquery
+                // if ( visiblePopover === undefined || $(visiblePopover).data("bs.popover") === undefined ) return;
+                
+                // Call this first b/c popover 'hide' event sets visiblePopover = undefined
+                if ( application.bootstrapVersion == 3 ) {
+                    $(visiblePopover).data("bs.popover").inState.click = false
                 }
-            }, 185);
+                $(visiblePopover).popover("hide");
+            };
+
+            if ( application.element.attr("data-katapp-initialized-tooltip") != "true" ) {
+                application.element
+                    .on("show.bs.popover.RBLe", function() { hideVisiblePopover(); })
+                    .on("shown.bs.popover.RBLe", function( e ) { 
+                        KatApp[ "visiblePopover"] = e.target; 
+                        
+                        //$("div.katapp-css[role='tooltip'] [rbl-action-link]").attr("data-katapp-initialized", "false");
+                        //application.templateBuilder.processActionLinks($("div.katapp-css[role='tooltip']"));
+                        
+                        // Think scoping here is better
+                        const currentPopover = $(e.target);
+                        $("[rbl-action-link]", currentPopover).attr("data-katapp-initialized", "false");
+                        application.templateBuilder.processActionLinks(currentPopover);
+                    })
+                    .on("hide.bs.popover.RBLe", function() { 
+                        KatApp[ "visiblePopover"] = undefined; 
+                    })
+                    .on("keyup.RBLe", function( e ) {
+                        if (e.keyCode != 27) // esc
+                            return;
+
+                        hideVisiblePopover();
+                        e.preventDefault();
+                    })
+                    .attr("data-katapp-initialized-tooltip", "true");
+            }
+            if ( $("html").attr("data-katapp-initialized-tooltip") != "true" ) {
+                $("html")
+                    .on("click.RBLe", function( e ) {
+                        if ($(e.target).is(".popover-title, .popover-content")) return; // BS3
+                        if ($(e.target).is(".popover-header, .popover-body")) return; // BS4/BS5                    
+                        hideVisiblePopover();
+                    })
+                    .attr("data-katapp-initialized-tooltip", "true");
+            }
+
+            // When helptip <a/> for checkboxes were  moved inside <label/>, attempting to click the help icon simply toggled
+            // the radio/check.  This stops that toggle and lets the help icon simply trigger it's own click to show or hide the help.
+            $('.checkbox label a[data-toggle], .checkbox label a[data-bs-toggle], .abc-checkbox label a[data-toggle], .abc-checkbox label a[data-bs-toggle]', view)
+                .not("rbl-template *, [rbl-tid='inline'] *, [rbl-tid='inline']") // not in templates
+                .not("[data-katapp-checkbox-tips-initialized='true']")
+                .on('click', function (e) {
+                    e.stopPropagation();
+                    return false;
+                })
+                .attr("data-katapp-checkbox-tips-initialized", "true");
         }
-        
+
         processNavigationLinks( container?: JQuery<HTMLElement> ): void {
             const view = container ?? this.application.element;
             const that = this;
@@ -4768,6 +4857,140 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                 });
         }
 
+        private incrementProgressBars(): void {
+            let progressBarValue = 0;
+            const that = this;
+            const progressBarInterval = setInterval(function () {
+                progressBarValue += 1;
+        
+                $(".progress-bar", that.application.element)
+                    .css("width", progressBarValue + "%")
+                    .attr("aria-valuenow", progressBarValue);
+        
+                if (progressBarValue >= 100) {
+                    clearInterval(progressBarInterval);
+                }
+            }, 185);
+        }
+        
+        private ensureRblDisplay( templateContainer: JQuery<HTMLElement> ): void {
+            const rblDisplayItems = templateContainer.children("[rbl-display]");
+            if ( rblDisplayItems.length == 1 ) {
+                // If rendered template has first element with rbl-display, duplicate
+                // it on the rbl-tid item, otherwise reponsibility of kaml author to put
+                // rbl-display on rbl-tid item.
+                templateContainer.attr("rbl-display", rblDisplayItems.attr("rbl-display")!)
+            }
+        }
+
+        private processInputs( container?: JQuery<HTMLElement> ): void {
+            const view = container ?? this.application.element;
+            this.processTextBoxes( view );
+            this.processDropdowns( view );
+            this.processCheckboxes( view );
+            this.processListControls( view );
+            this.processSliders( view );
+            this.processFileUploads( view );
+        }
+
+        private processCarousels( container?: JQuery<HTMLElement> ): void {
+            const that: StandardTemplateBuilder = this;
+            const app = this.application;
+            const view = container ?? app.element;
+
+            // Hook up event handlers only when *not* already initialized            
+            $('.carousel-control-group', view)
+                .not("rbl-template *, [rbl-tid='inline'] *, [rbl-tid='inline']") // not in templates
+                .not('[data-katapp-initialized="true"]')
+                .each(function () {
+                    const el = $(this);
+
+                    const carouselName = el.attr("rbl-name")!;
+
+                    app.trace("Processing carousel: " + carouselName, TraceVerbosity.Detailed);
+        
+                    $(".carousel-inner .item, .carousel-indicators li", el).removeClass("active");
+        
+                    // add active class to carousel items
+                    $(".carousel-inner .item", el).first().addClass("active");
+        
+                    // add 'target' needed by indicators, referencing name of carousel
+                    $(".carousel-indicators li", el)
+                        .attr("data-target", "#carousel-" + carouselName)
+                        .first().addClass("active");
+        
+                    const carousel = $('.carousel', el);
+                    const carouselAll = $('.carousel-all', el);
+
+                    //add buttons to show/hide
+                    $(".carousel-indicators .list-btn", el)
+                        .on("click", function () {
+                            carousel.hide();
+                            carouselAll.show();
+                        });
+
+                    $(".carousel-btn", carouselAll)
+                        .on("click", function () {
+                            carouselAll.hide();
+                            carousel.show();
+                        });
+
+                    el.attr("data-katapp-initialized", "true");
+
+                    //show initial item, start carousel:
+                    carousel.carousel(0);
+                });
+        }
+
+        private processCheckboxes( container: JQuery<HTMLElement> ): void {
+            const app = this.application;
+            const builder = this;
+
+            $('[rbl-tid="input-checkbox"],[rbl-template-type="katapp-checkbox"]', container)
+                .not("rbl-template *, [rbl-tid='inline'] *, [rbl-tid='inline']") // not in templates
+                .not('[data-katapp-initialized="true"]')
+                .each(function () {
+                    const el = $(this);
+                    const id = el.data("inputname");
+                    const input = $("span." + id + " input", el);
+                    const label = el.data("label");
+                    const help = el.data("help");
+                    const checked = el.data("checked");
+                    const css = el.data("css");
+                    const inputCss = el.data("inputcss");
+
+                    builder.ensureRblDisplay( el );
+
+                    if ( css !== undefined ) {
+                        $("[rbl-display='v" + id + "']", el).addClass(css);
+                    }
+
+                    if ( help !== undefined ) {
+                        $("div[rbl-value='h" + id + "']", el).html(help);
+                        $("a[rbl-display='vh" + id + "']", el).show();
+                    }
+
+                    if ( label !== undefined ) {
+                        let target = $("span[rbl-value='l" + id + "'] label span.checkbox-label", el);
+
+                        if ( target.length === 0 ) {
+                            target = $("span[rbl-value='l" + id + "'] label", el);
+                        }
+                        target.html(label);
+                    }
+
+                    if ( checked ) {
+                        input.prop("checked", true);
+                    }
+
+                    if ( inputCss !== undefined ) {
+                        input.addClass(inputCss);
+                    }
+
+                    el.attr("data-katapp-initialized", "true");
+                });
+        }
+
         private processFileUploads( container: JQuery<HTMLElement> ): void {
             const that = this;
             const application = this.application;
@@ -4787,6 +5010,8 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                     const labelCss = el.data("labelcss");
                     const hideLabel = el.data("hidelabel") ?? false;
                     const katAppCommand = el.data("command") ?? "UploadFile";
+
+                    that.ensureRblDisplay( el );
 
                     if ( css !== undefined ) {
                         $("[rbl-display='v" + id + "']", el).addClass(css);
@@ -4931,6 +5156,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
             const isBootstrap3 = bootstrapVersion == 3;
             const isBootstrap4 = bootstrapVersion == 4;
             const isBootstrap5 = bootstrapVersion == 5;
+            const builder = this;
 
             $('[rbl-tid="input-textbox"],[rbl-template-type="katapp-textbox"]', container)
                 .not("rbl-template *, [rbl-tid='inline'] *, [rbl-tid='inline']") // not in templates
@@ -4954,6 +5180,8 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                     const labelCss = el.data("labelcss");
                     const displayOnly = el.data("displayonly") === true;
                     const hideLabel = el.data("hidelabel") ?? false;
+
+                    builder.ensureRblDisplay( el );
 
                     if ( css !== undefined ) {
                         $("[rbl-display='v" + id + "']", el).addClass(css);
@@ -5177,6 +5405,8 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                     const formCss = el.data("formcss");
                     const listContainer = $("." + id, el);
                                     
+                    that.ensureRblDisplay( el );
+
                     // To make it easier during RBL processing to determine what to do
                     listContainer.attr("data-horizontal", horizontal);
 
@@ -5243,6 +5473,8 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                     const lookuptable = el.data("lookuptable");
                     const css = el.data("css");
 
+                    that.ensureRblDisplay( el );
+
                     if ( css !== undefined ) {
                         $("[rbl-display='v" + id + "']", el).addClass(css);
                     }
@@ -5304,6 +5536,8 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
         }
 
         private processSliders( container: JQuery<HTMLElement> ): void {
+            const builder = this;
+
             // Only need to process data-* attributes here because RBLeUtilities.processResults will push out 'configuration' changes
             $('[rbl-tid="input-slider"],[rbl-template-type="katapp-slider"]', container)
                 .not("rbl-template *, [rbl-tid='inline'] *, [rbl-tid='inline']") // not in templates
@@ -5317,6 +5551,8 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                     const help = el.data("help");
                     const value = el.data("value");
                             
+                    builder.ensureRblDisplay( el );
+
                     if ( css !== undefined ) {
                         $("[rbl-display='v" + id + "']", el).addClass(css);
                     }
@@ -5336,215 +5572,6 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
     
                     el.attr("data-katapp-initialized", "true");
                 });
-        }
-
-        processUI( container?: JQuery<HTMLElement> ): void {
-            this.processInputs( container );
-            this.processCarousels( container );
-            this.processHelpTips( container );
-            this.processActionLinks( container );
-            this.processNavigationLinks( container );
-        }
-
-        processHelpTips( container?: JQuery<HTMLElement> ): void {
-            // Couldn't include the Bootstrap.Tooltips.js file b/c it's selector hits entire page, and we want to be localized to our view.
-            const selector = "[data-toggle='tooltip'], [data-bs-toggle='tooltip'], [data-toggle='popover'], [data-bs-toggle='popover'], .tooltip-trigger, .tooltip-text-trigger, .error-trigger";
-            const application = this.application;
-            const view = container ?? application.element;
-            const isBootstrap3 = this.application.bootstrapVersion == 3;
-
-            if ( typeof $.fn.popover !== "function" && $(selector, view).length > 0 ) {
-                this.application.trace("Bootstrap popover/tooltip javascript is not present", TraceVerbosity.None);
-                return;
-            }
-
-            $(selector, view)
-                .not('.rbl-help, [data-katapp-initialized="true"]')
-                .not("rbl-template *, [rbl-tid='inline'] *, [rbl-tid='inline']") // not in templates
-                .each( function() {
-                    const isErrorValidator = $(this).hasClass('error-msg');
-                    let placement = $(this).data('placement') || $(this).data('bs-placement') || "top";
-                    const trigger = $(this).data('trigger') || $(this).data('bs-trigger') || "hover";
-                    const container = $(this).data('container') || $(this).data('bs-container') || "body";
-
-                    if ($(this).attr("href") == "#") {
-                        // Convert simply # links to void so nothing happens
-                        $(this).on("click.RBLe", function (e) {
-                            e.preventDefault();
-                        });
-                    }
-            
-                    const options: Bootstrap.PopoverOptions = {
-                        html: true,
-                        sanitize: false,
-                        trigger: trigger,
-                        container: container,
-                        template: 
-                            isErrorValidator && isBootstrap3 
-                                ? '<div class="tooltip error katapp-css" role="tooltip"><div class="tooltip-arrow"></div><div class="tooltip-inner"></div></div>' :
-                            isBootstrap3 
-                                ? '<div class="popover katapp-css" role="tooltip"><div class="arrow"></div><h3 class="popover-title"></h3><div class="popover-content"></div></div>' :
-                            isErrorValidator // popover-arrow is for bootstrap 5
-                                ? '<div class="tooltip error katapp-css" role="tooltip"><div class="tooltip-arrow arrow"></div><div class="tooltip-inner"></div></div>'
-                                : '<div class="popover katapp-css" role="tooltip"><div class="popover-arrow arrow"></div><h3 class="popover-header"></h3><div class="popover-body"></div></div>',
-                
-                        placement: function (tooltip, trigger) {
-                            // Add a class to the .popover element
-            
-                            // http://stackoverflow.com/a/19875813/166231
-                            let dataClass = $(trigger).data('class');
-                            if (dataClass != undefined) {
-                                $(tooltip).addClass(dataClass);
-                            }
-            
-                            // Did they specify a data-width?
-                            dataClass = $(trigger).data('width') || $(trigger).data('bs-width');
-                            if (dataClass != undefined) {
-                                // context is for popups, tooltip-inner is for tooltips (bootstrap css has max-width in css)
-                                $(tooltip).add($(".tooltip-inner", tooltip))
-                                            .css("width", dataClass)
-                                            .css("max-width", dataClass);
-            
-                            }
-            
-                            if ( !isBootstrap3 ) {
-                                // Bootstrap 4 no longer supports 'left auto' (two placements) so just in case any markup has that still
-                                // remove it (unless it is only thing specified - which 'popper' supports.)
-                                const autoToken = /\s?auto?\s?/i
-                                const autoPlace = autoToken.test(placement)
-                                if (autoPlace) placement = placement.replace(autoToken, '') || 'auto';
-                            }
-
-                            return placement;
-                        },
-                        title: function () {
-                            const  titleSelector = $(this).data('content-selector');
-                            if (titleSelector != undefined) {
-                                const title = $(titleSelector + "Title").text();
-                                if (title != undefined) {
-                                    return title;
-                                }
-                            }                    
-                            return "";            
-                        },
-                        content: function () {
-                            // See if they specified data-content directly on trigger element.
-                            const dataContent = $(this).data('content') ?? $(this).data('bs-content');
-                            const dataContentSelector = $(this).data('content-selector');
-                            let content = dataContent == undefined
-                                ? dataContentSelector == undefined ? $(this).next().html() : $(dataContentSelector).html()
-                                : dataContent;
-            
-                            // Replace {Label} in content with the trigger provided...used in Error Messages
-                            const labelFix = $(this).data("label-fix");
-            
-                            if (labelFix != undefined) {
-                                content = content.replace(/\{Label}/g, $("." + labelFix).html());
-                            }
-            
-                            return content;
-                        }
-                    };   
-
-                    if (isErrorValidator) {
-                        // Hover for this one...
-                        $(this)
-                            .tooltip(options)
-                            .on('inserted.bs.tooltip', function (e) {
-                                const isWarning = $("label.warning", $(e.target)).length == 1;
-                                if (isWarning) {
-                                    const templateId = "#" + $(e.target).attr("aria-describedby");
-                                    $(templateId, view).removeClass("error").addClass("warning");
-                                }
-                            });
-                    }
-                    else {
-                        $(this).popover(options);
-                    }
-                                
-                })
-                .attr("data-katapp-initialized", "true");
-
-            const that = this;
-
-            // Code to hide tooltips if you click anywhere outside the tooltip
-            // Combo of http://stackoverflow.com/a/17375353/166231 and https://stackoverflow.com/a/21007629/166231 (and 3rd comment)
-            // This one looked interesting too: https://stackoverflow.com/a/24289767/166231 but I didn't test this one yet
-            const hideVisiblePopover = function(): void {
-                // Going against entire KatApp (all apps) instead of a local variable because I only setup
-                // the HTML click event one time, so the 'that=this' assignment above would be the first application
-                // and might not match up to the 'currently executing' katapp, so had to make this global anyway
-                const visiblePopover = KatApp[ "visiblePopover" ];
-                
-                // Just in case the tooltip hasn't been configured
-                if ( visiblePopover === undefined || $(visiblePopover).data("katapp-initialized") != true ) return;
-                // Used to use this logic, but it didn't work with bootstrap 5, I've asked a question here:
-                // https://stackoverflow.com/questions/67301932/cannot-access-bootstrap-5-bs-popover-data-with-jquery
-                // if ( visiblePopover === undefined || $(visiblePopover).data("bs.popover") === undefined ) return;
-                
-                // Call this first b/c popover 'hide' event sets visiblePopover = undefined
-                if ( application.bootstrapVersion == 3 ) {
-                    $(visiblePopover).data("bs.popover").inState.click = false
-                }
-                $(visiblePopover).popover("hide");
-            };
-
-            if ( application.element.attr("data-katapp-initialized-tooltip") != "true" ) {
-                application.element
-                    .on("show.bs.popover.RBLe", function() { hideVisiblePopover(); })
-                    .on("shown.bs.popover.RBLe", function( e ) { 
-                        KatApp[ "visiblePopover"] = e.target; 
-                        
-                        //$("div.katapp-css[role='tooltip'] [rbl-action-link]").attr("data-katapp-initialized", "false");
-                        //application.templateBuilder.processActionLinks($("div.katapp-css[role='tooltip']"));
-                        
-                        // Think scoping here is better
-                        const currentPopover = $(e.target);
-                        $("[rbl-action-link]", currentPopover).attr("data-katapp-initialized", "false");
-                        application.templateBuilder.processActionLinks(currentPopover);
-                    })
-                    .on("hide.bs.popover.RBLe", function() { 
-                        KatApp[ "visiblePopover"] = undefined; 
-                    })
-                    .on("keyup.RBLe", function( e ) {
-                        if (e.keyCode != 27) // esc
-                            return;
-
-                        hideVisiblePopover();
-                        e.preventDefault();
-                    })
-                    .attr("data-katapp-initialized-tooltip", "true");
-            }
-            if ( $("html").attr("data-katapp-initialized-tooltip") != "true" ) {
-                $("html")
-                    .on("click.RBLe", function( e ) {
-                        if ($(e.target).is(".popover-title, .popover-content")) return; // BS3
-                        if ($(e.target).is(".popover-header, .popover-body")) return; // BS4/BS5                    
-                        hideVisiblePopover();
-                    })
-                    .attr("data-katapp-initialized-tooltip", "true");
-            }
-
-            // When helptip <a/> for checkboxes were  moved inside <label/>, attempting to click the help icon simply toggled
-            // the radio/check.  This stops that toggle and lets the help icon simply trigger it's own click to show or hide the help.
-            $('.checkbox label a[data-toggle], .checkbox label a[data-bs-toggle], .abc-checkbox label a[data-toggle], .abc-checkbox label a[data-bs-toggle]', view)
-                .not("rbl-template *, [rbl-tid='inline'] *, [rbl-tid='inline']") // not in templates
-                .not("[data-katapp-checkbox-tips-initialized='true']")
-                .on('click', function (e) {
-                    e.stopPropagation();
-                    return false;
-                })
-                .attr("data-katapp-checkbox-tips-initialized", "true");
-        }
-
-        private processInputs( container?: JQuery<HTMLElement> ): void {
-            const view = container ?? this.application.element;
-            this.processTextBoxes( view );
-            this.processDropdowns( view );
-            this.processCheckboxes( view );
-            this.processListControls( view );
-            this.processSliders( view );
-            this.processFileUploads( view );
         }
     }
 

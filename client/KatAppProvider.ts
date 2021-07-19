@@ -326,7 +326,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                                     if ( attrCalcEngine != undefined ) {
                                         viewCalcEngines.push(
                                             {
-                                                key: "default",
+                                                key: rblConfig.attr("calcengine-key") ?? "default",
                                                 name: attrCalcEngine,
                                                 inputTab: rblConfig.attr("input-tab"),
                                                 resultTabs: rblConfig.attr("result-tabs")?.split(","),
@@ -1257,7 +1257,8 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                 "calculations/run",
                 this.options, 
                 { customInputs: customInputs },
-                actionLink );
+                actionLink
+             );
         }
     
         blockerCount = 0;
@@ -1473,11 +1474,16 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                     errorResponse = xhr[ "responseBinary" ];
                     debugger;
                     delete _endpointRBLeInputsCache[ commandName ];
-            
-                    if ( errorResponse != undefined && errorResponse[ "Validations" ] != undefined ) {
-                        errorResponse[ "Validations" ].forEach((v: { [x: string]: string }) => {
-                            errors.push( { "@id": v[ "ID" ], text: v[ "Message" ] });
-                        });
+                    if ( errorResponse != undefined ) {
+                        if ( errorResponse[ "Validations" ] != undefined ) {
+                            errorResponse[ "Validations" ].forEach((v: { [x: string]: string }) => {
+                                errors.push( { "@id": v[ "ID" ], text: v[ "Message" ] });
+                            });
+                        }
+                        else if ( errorResponse[ "ExceptionMessage" ] != undefined && errorResponse[ "Message" ] != undefined ) {
+                            // Just want generic system message I think...
+                            // errors.push( { "@id": "System", text: errorResponse[ "Message" ] });
+                        }
                     }
             
                     if ( errors.length == 0 ) {
@@ -1486,7 +1492,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                 }
             )
             .always( function() {
-                if ( errors.length > 0 ) {
+                if ( errors.length > 0 || !runCalculate ) {
                     finishApiAction();
                 }
             });
@@ -1744,8 +1750,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                         dropdown.append(currentItem);
                     }
                 }
-
-                if ( ls.Text != undefined && ls.Text != "" ) {
+                else if ( ls.Text != undefined && ls.Text != "" ) {
                     currentItem.text(ls.Text);
                 }
 
@@ -2206,11 +2211,11 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
         handleVoidAnchors(): void {
             const application = this.application;
             $("a[href='#']", application.element)
-                .not("[data-nonav='true']")
+                .not("[data-katapp-nonav='true']")
                 .not("rbl-template *, [rbl-tid='inline'] *, [rbl-tid='inline']")
                 .on("click.RBLe", function(e) {
                     e.preventDefault();
-                }).attr("data-nonav", "true");
+                }).attr("data-katapp-nonav", "true");
         }
 
         bindRblOnHandlers(): void {
@@ -2954,7 +2959,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
             return undefined;
         }
         
-        processRblValues(showInspector: boolean): void {
+        processRblValues(defaultCalcEngineKey: string, showInspector: boolean): void {
             const that: RBLeUtilities = this;
             const application = this.application;
     
@@ -2990,7 +2995,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
 
                         if ( value.indexOf( "rbl-tid" ) > -1 ) {
                             // In case the markup from CE has a template specified...
-                            that.processRblSource(el, showInspector);                        
+                            that.processRblSource(el, defaultCalcEngineKey, showInspector);                        
                         }
                     }
                     else {
@@ -3062,12 +3067,12 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                 });
         }
 
-        processRblSources(showInspector: boolean): void {
+        processRblSources(defaultCalcEngineKey: string, showInspector: boolean): void {
             //[rbl-source] processing templates that use rbl results
-            this.processRblSource(this.application.element, showInspector);
+            this.processRblSource(this.application.element, defaultCalcEngineKey, showInspector);
         }
     
-        processRblSource(root: JQuery<HTMLElement>, showInspector: boolean): void {
+        processRblSource(root: JQuery<HTMLElement>, defaultCalcEngineKey: string, showInspector: boolean): void {
             const that: RBLeUtilities = this;
             const application = this.application;
     
@@ -3084,7 +3089,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                         const tid = el.attr('rbl-tid');
                         const rblSourceTableParts = el.attr('rbl-source-table')?.split('.');
                         const tabDef = that.getTabDef( el.attr('rbl-tab'), el.attr('rbl-ce') )
-                        const tabDefName = tabDef?._fullName ?? ( el.attr( "rbl-ce" ) ?? "default" ) + "." + ( el.attr( "rbl-tab" ) ?? "default" );
+                        const tabDefName = tabDef?._fullName ?? ( el.attr( "rbl-ce" ) ?? defaultCalcEngineKey ) + "." + ( el.attr( "rbl-tab" ) ?? "default" );
 
                         // rbl-source-table - if provided, is a standard selector path in then form of
                         // table.id.valueColumn or table.columnToSearch.id.valueColumn and can be used to 
@@ -3168,7 +3173,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
 
                                     // Nested templates
                                     that.application.ui.injectTemplatesWithoutSource(el);
-                                    that.processRblSource(el, showInspector);
+                                    that.processRblSource(el, defaultCalcEngineKey, showInspector);
                                     
                                     return hasRoot ? el : el.children();
                                 };
@@ -3195,7 +3200,8 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                                         .remove();
 
                                     const prepend = el.attr('rbl-prepend') === "true";
-                                                            
+                                    const prependBeforePreserve = el.attr('rbl-prepend') === "before-preserve";
+
                                     table.forEach( ( row, index ) => {
                                         if ( rblSourceParts.length === 1 || row[ rblSourceParts[ 1 ] ] === rblSourceParts[ 2 ] ) {
                                             // Automatically add the _index0 and _index1 for carousel template
@@ -3208,6 +3214,9 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
         
                                             if ( prepend ) {
                                                 el.prepend( templateResult );
+                                            }
+                                            else if ( prependBeforePreserve ) {
+                                                templateResult.insertBefore( $(".rbl-preserve", el).first() );
                                             }
                                             else {
                                                 el.append( templateResult );
@@ -3226,7 +3235,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                 });
         }
     
-        processVisibilities( showInspector: boolean): void {
+        processVisibilities( defaultCalcEngineKey: string, showInspector: boolean): void {
             const that: RBLeUtilities = this;
             const application = this.application;
     
@@ -3257,10 +3266,10 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                         // totalReturned=0
                         const rblDisplayParts = rblDisplay.split('.');
                         const tabDef = that.getTabDef( el.attr('rbl-tab'), el.attr('rbl-ce') )
-                        let  tabDefName = tabDef?._fullName ?? ( el.attr( "rbl-ce" ) ?? "default" ) + "." + ( el.attr( "rbl-tab" ) ?? "default" );
+                        let  tabDefName = tabDef?._fullName ?? ( el.attr( "rbl-ce" ) ?? defaultCalcEngineKey ) + "." + ( el.attr( "rbl-tab" ) ?? "default" );
 
                         if ( tabDef != undefined ) {
-                            //check to see if there's an "=" for a simple equality expression
+                            // Check to see if there's an "=" for a simple equality expression
                             // If rblDisplay = table.id.col=value, rblDisplayParts is: table, id, col=value
                             // so split the last item and if expression is present, change the last displayParts
                             // from col=value to just col.  Then get the value.
@@ -4074,8 +4083,9 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                 // rows have been processed and all ejs-output in case they injected 'rbl-' items
                 // in markup that has to be processed
                 application.trace( "Processing all results 'pull' logic", TraceVerbosity.Normal );
-                this.processRblSources( showInspector );
-                this.processRblValues( showInspector );
+                const defaultCalcEngineKey = calculationOptions.calcEngines![0].key ?? "default";
+                this.processRblSources( defaultCalcEngineKey, showInspector );
+                this.processRblValues( defaultCalcEngineKey, showInspector );
                 this.processRblAttributes( showInspector );
                 this.processTables();
                 this.processCharts();
@@ -4086,7 +4096,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
     
                 // These all need to be after processUI so if any inputs are built
                 // from results, they are done by the time these run
-                this.processVisibilities( showInspector );
+                this.processVisibilities( defaultCalcEngineKey, showInspector );
     
                 let sliderConfigIds: ( string | null )[] = [];
     
@@ -4786,6 +4796,9 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                 .not("rbl-template *, [rbl-tid='inline'] *, [rbl-tid='inline']") // not in templates
                 .not('[data-katapp-initialized="true"]')
                 .each(function () {
+                    if ( $(this).attr("href") == undefined ) {
+                        $(this).attr("href", "#");
+                    }
                     $(this).on("click", function(e) {
                         const actionLink = $(this);
                         e.preventDefault();
@@ -4874,12 +4887,14 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
         }
         
         private ensureRblDisplay( templateContainer: JQuery<HTMLElement> ): void {
-            const rblDisplayItems = templateContainer.children("[rbl-display]");
-            if ( rblDisplayItems.length == 1 ) {
-                // If rendered template has first element with rbl-display, duplicate
-                // it on the rbl-tid item, otherwise reponsibility of kaml author to put
-                // rbl-display on rbl-tid item.
-                templateContainer.attr("rbl-display", rblDisplayItems.attr("rbl-display")!)
+            if ( templateContainer.attr("rbl-display") == undefined ) {
+                const rblDisplayItems = templateContainer.children("[rbl-display]");
+                if ( rblDisplayItems.length == 1 ) {
+                    // If rendered template has first element with rbl-display, duplicate
+                    // it on the rbl-tid item, otherwise reponsibility of kaml author to put
+                    // rbl-display on rbl-tid item.
+                    templateContainer.attr("rbl-display", rblDisplayItems.attr("rbl-display")!)
+                }
             }
         }
 
@@ -4899,46 +4914,45 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
             const view = container ?? app.element;
 
             // Hook up event handlers only when *not* already initialized            
-            $('.carousel-control-group', view)
+            $('[rbl-tid="carousel"],[rbl-template-type="katapp-carousel"]', view)            
                 .not("rbl-template *, [rbl-tid='inline'] *, [rbl-tid='inline']") // not in templates
-                .not('[data-katapp-initialized="true"]')
+                // .not('[data-katapp-initialized="true"]')
                 .each(function () {
                     const el = $(this);
 
-                    const carouselName = el.attr("rbl-name")!;
-
-                    app.trace("Processing carousel: " + carouselName, TraceVerbosity.Detailed);
+                    // Need to see if it has had items injected from results yet...
+                    if ( el.data("katapp-initialized") != "true" && $(".carousel-indicators button[data-bs-slide-to]", el).length > 0) {
+                        app.trace("Processing carousel: " + el.data("source"), TraceVerbosity.Detailed);
         
-                    $(".carousel-inner .item, .carousel-indicators li", el).removeClass("active");
-        
-                    // add active class to carousel items
-                    $(".carousel-inner .item", el).first().addClass("active");
-        
-                    // add 'target' needed by indicators, referencing name of carousel
-                    $(".carousel-indicators li", el)
-                        .attr("data-target", "#carousel-" + carouselName)
-                        .first().addClass("active");
-        
-                    const carousel = $('.carousel', el);
-                    const carouselAll = $('.carousel-all', el);
+                        const carousel = $('.carousel', el);
 
-                    //add buttons to show/hide
-                    $(".carousel-indicators .list-btn", el)
-                        .on("click", function () {
-                            carousel.hide();
-                            carouselAll.show();
-                        });
-
-                    $(".carousel-btn", carouselAll)
-                        .on("click", function () {
-                            carouselAll.hide();
-                            carousel.show();
-                        });
-
-                    el.attr("data-katapp-initialized", "true");
-
-                    //show initial item, start carousel:
-                    carousel.carousel(0);
+                        // add active class to carousel items
+                        $(".carousel-inner .carousel-item", el).not("[rbl-tid='inline']")
+                            .first().addClass("active");
+    
+                        $(".carousel-indicators button", el).not("[rbl-tid='inline']")
+                            .attr("data-bs-target", "#" + carousel.attr("id")!)
+                            .first().addClass("active").attr("aria-current", "true");
+    
+                        const carouselAll = $('.carousel-all', el);
+    
+                        //add buttons to show/hide
+                        $(".carousel-indicators button[data-show-all='true']", el)
+                            .on("click", function () {
+                                carousel.hide();
+                                carouselAll.show();
+                            });
+                        $(".carousel-all button[data-show-all='false']", el)
+                            .on("click", function () {
+                                carouselAll.hide();
+                                carousel.show();
+                            });
+    
+                        el.attr("data-katapp-initialized", "true");
+    
+                        //show initial item, start carousel
+                        carousel.carousel(0);
+                    }
                 });
         }
 

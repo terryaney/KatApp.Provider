@@ -7,37 +7,48 @@
   <p>{text}</p>
 </rbl-template>
 
-<rbl-template tid="carousel">
-  <div class="carousel-control-group" rbl-name="{id}-{name}">
-    <div id="carousel-{id}-{name}" class="carousel-default carousel slide" data-ride="false">
-      <ol class="carousel-indicators align-items-center" rbl-tid="carousel-indicator" rbl-source="{source}" rbl-prepend="true">
-        <a style="display:none" class="list-btn" rbl-preserve="true"> Show More</a>
-      </ol>
-      <div class="carousel-inner" role="listbox" rbl-tid="carousel-item" rbl-source="{source}"></div>
-      <a class="left carousel-control" data-target="#carousel-{id}-{name}" role="button" data-slide="prev">
-        <i class="fa fa-caret-left" aria-hidden="true"></i>
-      </a>
-      <a class="right carousel-control" data-target="#carousel-{id}-{name}" role="button" data-slide="next">
-        <i class="fa fa-caret-right" aria-hidden="true"></i>
-      </a>
-    </div>
-    <div id="all-{id}-{name}" class="carousel-all" style="display: none;" rbl-tid="carousel-item" rbl-source="{source}"
-      rbl-prepend="true">
-      <div class="text-center" rbl-preserve="true">
-        <a class="carousel-btn"> Show Less</a>
-      </div>
-    </div>
-  </div>
+<rbl-template tid="carousel-indicators">
+  <button type="button" data-bs-target="ProviderProcessed" data-bs-slide-to="{_index0}" aria-label="{header}"></button>
 </rbl-template>
 
 <rbl-template tid="carousel-item">
-  <div class="item"><span class="number">{_index1}</span>
-    <p>{text}</p>
+  <div class="carousel-item">
+    <!-- <span class="number">{_index1}</span> -->
+    {image}
+    <div class="carousel-caption d-none d-md-block">
+      <h5>{header}</h5>
+      <p>{html}</p>
+    </div>
   </div>
 </rbl-template>
 
-<rbl-template tid="carousel-indicator">
-  <li data-slide-to="{_index0}" class=""></li>
+<rbl-template tid="carousel" type="katapp-carousel">
+  <div id="carousel-{id}-{name}" class="carousel slide {css-carousel}" data-bs-ride="false">
+    <div class="carousel-indicators" rbl-source="{source}" rbl-tid="carousel-indicators" rbl-prepend="before-preserve">
+      <button type="button" class="d-none rbl-preserve" data-show-all="true">Show More</button>
+    </div>
+    <div class="carousel-inner" rbl-source="{source}" rbl-tid="carousel-item"></div>
+    <!-- Not showing next/previous, could add {} data element to control visiblity
+    <button class="carousel-control-prev" type="button" data-bs-target="#carousel-{id}-{name}" data-bs-slide="prev">
+      <span class="carousel-control-prev-icon" aria-hidden="true"></span>
+      <span class="visually-hidden">Previous</span>
+    </button>
+    <button class="carousel-control-next" type="button" data-bs-target="#carousel-{id}-{name}" data-bs-slide="next">
+      <span class="carousel-control-next-icon" aria-hidden="true"></span>
+      <span class="visually-hidden">Next</span>
+    </button>
+     -->
+  </div>
+  <!-- Original Carousel had feature to 'show all items'...not surpported right now, also the carousel-item could be a template, since used above as well
+  <div id="all-{id}-{name}" class="carousel-all" style="display: none;" rbl-tid="carousel-item" rbl-source="{source}" rbl-prepend="true">
+      <div rbl-tid="inline" class="carousel-item">
+        <span class="number">{_index1}</span>
+        <p>{text}</p>
+        <img src="..." class="d-block w-100" alt="...">
+      </div>
+      <div class="text-center" rbl-preserve="true"><a href="#" data-show-all="false"> Show Less</a></div>
+  </div>
+  -->
 </rbl-template>
 
 <rbl-template tid="validation-summary">

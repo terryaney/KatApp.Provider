@@ -284,7 +284,9 @@ $("#KatApp-wealth").KatApp({
 There is a third and final way to configure CalcEngine information.  This is the most common use case as it keeps the KatApp markup and Javascript in the hosting client the simplest and is easist to implement.  Inside each Kaml View file is a required `<rbl-config>` element.  The first element in any Kaml View file should be the `<rbl-config>` element.
 
 ```html
-<rbl-config calcengine="LAW_Wealth_CE"
+<rbl-config 
+    calcengine="LAW_Wealth_CE"
+    calcengine-key="default"
     input-tab="RBLInput"
     result-tabs="RBLResult"
     templates="Standard_Templates,LAW:Law_Templates"></rbl-config>
@@ -353,6 +355,8 @@ rbl-source<br/>rbl&#x2011;source&#x2011;table | Indicates row(s) from an RBLe re
 rbl-on | Attached Javascript event handlers to DOM elements
 
 <br/>
+
+Note: `<rbl-config calcengine-key=""/>` is optional (and `default` is the default key) and would be used when a CalcEngine is a used as both a primary and a secondary (Multiple) CalcEngine are the results are shared across markup templates.  For example, if a Sample_Shared CalcEngine was used as a secondary CalcEngine with a key of `Shared`, the template would have to specify `rbl-ce="Shared"` as a source to a Selector Path.  When Sample_Shared is the single/primary CalcEngine used in a Kaml view, its key would be `default`.  When the same markup template is used, the `rbl-ce="Shared"` source would result in no matches.  To correct this, use `<rbl-config calcengine="Sample_Shared" calcengine-key="Shared"/>`.
 
 ## rbl-value Selector Paths
 There are two ways to use `rbl-value` attribute.  You can provide simply an 'id' that will look inside the `ejs-output` table.  Or you can provide a 'selector path'.  Both mechanisms can be used in conjunction with `rbl-ce` and `rbl-tab`.
@@ -929,7 +933,7 @@ There is additional control that can be applied when processing Kaml templates.
 Attribute | Description
 ---|---
 rbl&#x2011;preserve | Normal processing of a template starts off with all child content of the target being removed.  Setting the content to the templated content.  If you want some content to be preserved, add the `rbl-preserve` _CSS class_ to any child elements that should not be replaced.
-rbl&#x2011;preprend | When templated content is inserted into the Kaml View, by default it is inserted at the end of the element content.  If you are preserving items and you want it inserted at the beginning of the element content, set `rbl-prepend` attribute to `true`.
+rbl&#x2011;preprend | When templated content is inserted into the Kaml View, by default it is inserted at the end of the element content.  If you are preserving items and you want it inserted at the beginning of the element content, set `rbl-prepend` attribute to `true`.  By default, `true` will put items in 'reverse' order because each data source processed will be added as the first element on the template.  If you want them in the order they are processed, you can use `rbl-prepend="before-preserve"` and each data source processed will be inserted before the first `.rbl-preserve` item found.
 
 ```html
 <!-- 

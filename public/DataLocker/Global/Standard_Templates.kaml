@@ -23,8 +23,6 @@
         <p>{html}</p>
       </div>
     </div>
-    
-    
   </div>
 </rbl-template>
 

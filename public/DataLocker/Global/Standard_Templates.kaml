@@ -14,11 +14,17 @@
 <rbl-template tid="carousel-item">
   <div class="carousel-item">
     <!-- <span class="number">{_index1}</span> -->
-    {image}
-    <div class="carousel-caption d-none d-md-block">
-      <h5>{header}</h5>
-      <p>{html}</p>
+    <div class="row">
+      <div class="col-6">
+        {image}
+      </div>
+      <div class="col-6 d-flex align-self-center d-none d-md-block text-start">
+        <h5>{header}</h5>
+        <p>{html}</p>
+      </div>
     </div>
+    
+    
   </div>
 </rbl-template>
 

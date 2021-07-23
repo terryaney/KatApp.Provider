@@ -435,9 +435,9 @@ Selector: Table: rbl-value, ID: election-confirm, Column: value
 ```
 
 ## rbl-display Attribute Details
-The `rbl-display` value has all the same 'selector' capabilities described in the _`rbl-value` Attribute Details_.  Once a `value` is selected from a specified table (with a table priority of `rbl-display`, `ejs-visibility`, then `ejs-output` by default), a boolean 'falsey' logic is applied against the value.  An element will be hidden if the value is `0`, `false` or an empty string.
+The `rbl-display` attribute has all the same 'selector' capabilities described in the _`rbl-value` Attribute Details_.  Once a `value` is selected from a specified table (with a table priority of `rbl-display`, `ejs-visibility`, then `ejs-output` by default), a boolean 'falsey' logic is applied against the value.  An element will be hidden if the value is `0`, `false` or an empty string.
 
-**Simple Expressions** - In addition to simply returning a visibility value from the CalcEngine, the `rbl-display` attribute can contain a simple equality expression.
+**Simple Expressions** - In addition to simply returning a visibility value from the CalcEngine, the `rbl-display` attribute can contain simple operator expressions.  Operators supported are `=`, `!=`, `>=`, `>`, `<=`, and `<`.
 
 ```html
 <!-- Show or hide based on 'value' column from 'rbl-display' table where 'id' is 'show-wealth' -->
@@ -451,6 +451,17 @@ Using the first/default tab from the 'Shared' CalcEngine (key=Shared)
 Show if 'enabled' column from 'wealth-summary' table where 'id' is 'benefit-start' = 1, otherwise hide 
 -->
 <div rbl-ce="Shared" rbl-display="wealth-summary.benefit-start.enabled=1">Wealth Information</div>
+```
+
+**Template Value Expressions**
+The `rbl-display` attribute usually works off of values from a CalcEngine result directly.  However, inside [Templates](#Templates), visibility can be controlled by looking at values on the current data being processed by the template, using the simply expressions above.  To accomplish this, a `v:` (for value) prefix is added.
+
+For example, if the data processed by a template had a `code` and `count` column, the following could be leveraged.
+
+```html
+<div rbl-display="v:{code}=YES">Show if the `code` column is `YES`.</div>
+
+<div rbl-display="v:{count}>=2">Show if the `count` column is greater than or equal to 2.</div>
 ```
 
 ## rbl-on Event Handlers
@@ -899,6 +910,27 @@ The most common use of templates with RBLe results is for repetitive result item
 <ul rbl-tid="li-foundingfathers" rbl-source="foundingfathers">
     <li>James Madison, 4th US President</li>
     <li>Alexander Hamilton, Former US Treasury Secretary</li>
+</ul>
+```
+
+## rbl-source-defaults Attribute
+
+When templates process a data source provided via `rbl-source`, if the data row doesn't have a column requested in the template (i.e. `{requested-column}`), a replace doesn't happen and the templated content returns `{requested-column}`.  If you want to provide default values for columns requested in a template, you can use the `rbl-source-defaults` attribute with values delimited by `;`.
+
+```html
+<!-- Template -->
+<rbl-template tid="li-foundingfathers">
+    <li rbl-display="v:{show}!=0">{first} {last} ({age}), {title}, {location}</li>
+</rbl-template>
+
+<!-- Markup, note that columns without =value provided automatically default to blank. -->
+<ul rbl-tid="li-foundingfathers" rbl-source="foundingfathers" rbl-source-defaults="age=Old;title=Unknown;location;show=1">
+</ul>
+
+<!-- Markup Results (same data source provided in samples above) -->
+<ul rbl-tid="li-foundingfathers" rbl-source="foundingfathers">
+    <li rbl-display="v:1!=0">James Madison (Old), 4th US President, </li>
+    <li rbl-display="v:1!=0">Alexander Hamilton (Old), Former US Treasury Secretary, </li>
 </ul>
 ```
 

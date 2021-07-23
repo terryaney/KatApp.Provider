@@ -3153,6 +3153,16 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                                     }
                                 }
 
+                                const rblSourceDefaults = el.attr( "rbl-source-defaults" );
+                                if ( rblSourceDefaults != undefined ) {
+                                    rblSourceDefaults
+                                        .split( ';' )
+                                        .forEach( def => {
+                                            const defParts = def.split('=');
+                                            firstRowSource[ defParts[ 0 ] ] = defParts.length == 2 ? defParts[ 1 ] : "";
+                                        });
+                                }
+
                                 const generateTemplateData = function(templateData: object, templateContent: string): JQuery<HTMLElement> {                                    
                                     try {
                                         templateData = KatApp.extend( {}, firstRowSource, templateData )
@@ -3273,20 +3283,40 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                             // If rblDisplay = table.id.col=value, rblDisplayParts is: table, id, col=value
                             // so split the last item and if expression is present, change the last displayParts
                             // from col=value to just col.  Then get the value.
-                            const expressionParts = rblDisplayParts[ rblDisplayParts.length - 1].split('=');
+                            const isInequality = rblDisplayParts[ rblDisplayParts.length - 1].indexOf("!=") > -1;
+                            const isLTE = rblDisplayParts[ rblDisplayParts.length - 1].indexOf("<=") > -1;
+                            const isLT = rblDisplayParts[ rblDisplayParts.length - 1].indexOf("<") > -1;
+                            const isGTE = rblDisplayParts[ rblDisplayParts.length - 1].indexOf(">=") > -1;
+                            const isGT = rblDisplayParts[ rblDisplayParts.length - 1].indexOf(">") > -1;
+
+                            const splitOperator =
+                                isInequality ? '!=' : 
+                                isLTE ? '<=' :
+                                isLT ? '<' :
+                                isGTE ? '>=' :
+                                isGT ? '>' : '=';
+
+                            const expressionParts = rblDisplayParts[ rblDisplayParts.length - 1].split(splitOperator);
                             rblDisplayParts[ rblDisplayParts.length - 1] = expressionParts[0];
                             
                             let visibilityValue = 
-                                that.getRblSelectorValue( tabDef, "rbl-display", rblDisplayParts ) ??
-                                that.getRblSelectorValue( tabDef, "ejs-visibility", rblDisplayParts ) ??
-                                that.getRblSelectorValue( tabDef, "ejs-output", rblDisplayParts ); // Should remove this and only check ejs-visibility as the 'default'
+                                rblDisplayParts[ 0 ].startsWith( "v:" ) ? rblDisplayParts[ 0 ].substring( 2 ) :
+                                    that.getRblSelectorValue( tabDef, "rbl-display", rblDisplayParts ) ??
+                                    that.getRblSelectorValue( tabDef, "ejs-visibility", rblDisplayParts ) ??
+                                    that.getRblSelectorValue( tabDef, "ejs-output", rblDisplayParts ); // Should remove this and only check ejs-visibility as the 'default'
                 
                             if (visibilityValue != undefined) {
 
                                 // Reassign the value you are checking to 1/0 if they tried to compare with
                                 // an expression of col=value.
                                 if ( expressionParts.length > 1) {
-                                    visibilityValue = ( visibilityValue == expressionParts[1] ) ? "1" : "0";
+                                    visibilityValue = 
+                                        isInequality ? ( visibilityValue != expressionParts[1] ? "1" : "0" ) : 
+                                        isLTE ? ( +visibilityValue <= +expressionParts[1] ? "1" : "0" ) :
+                                        isLT ? ( +visibilityValue < +expressionParts[1] ? "1" : "0" ) :
+                                        isGTE ? ( +visibilityValue >= +expressionParts[1] ? "1" : "0" ) :
+                                        isGT ? ( +visibilityValue > +expressionParts[1] ? "1" : "0" ) :
+                                        ( visibilityValue == expressionParts[1] ? "1" : "0" );
                                 }
                 
                                 if (visibilityValue === "0" || visibilityValue.toLowerCase() === "false" || visibilityValue === "") {

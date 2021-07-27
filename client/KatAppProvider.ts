@@ -4833,7 +4833,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                         const actionLink = $(this);
                         e.preventDefault();
 
-                        const katAppCommand = actionLink.attr("rbl-action-link") ?? "NotSupported";
+                        const actionEndpoint = actionLink.attr("rbl-action-link") ?? "NotSupported";
                         // Couldn't use data-confirm-selector because then two click events would have been
                         // created and not work in, need entire flow to happen here in one click...
                         const confirmSelector = actionLink.attr("rbl-action-confirm-selector");
@@ -4877,7 +4877,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                             const inputsJson = application.dataAttributesToJson( actionLink, "data-input-" );
 
                             application.apiAction(
-                                katAppCommand, 
+                                actionEndpoint, 
                                 application.options, 
                                 { 
                                     customParameters: parametersJson, 
@@ -5053,7 +5053,8 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                     const inputCss = el.data("inputcss");
                     const labelCss = el.data("labelcss");
                     const hideLabel = el.data("hidelabel") ?? false;
-                    const katAppCommand = el.data("command") ?? "UploadFile";
+                    // Command is legacy until nexgen 4.0 is removed
+                    const actionEndpoint = el.data("rbl-action") ?? el.data("command") ?? "UploadFile";
 
                     that.ensureRblDisplay( el );
 
@@ -5092,20 +5093,34 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                         file.val("").trigger("change");
                     });
                     $(".btn-file-upload", el).on("click", function () {
-                        let uploadUrl = "api/" + katAppCommand;
+                        let uploadUrl = "api/" + actionEndpoint;
                         const serviceUrlParts = application.options.sessionUrl?.split( "?" );
             
                         if ( serviceUrlParts != undefined && serviceUrlParts.length === 2 ) {
                             uploadUrl += "?" + serviceUrlParts[ 1 ];
                         }
             
-                        that.application.showAjaxBlocker();
+                        application.showAjaxBlocker();
                         $(".file-upload .btn", el).addClass("disabled");
                         that.incrementProgressBars();
-                        $(".file-upload-progress", that.application.element).show();
+                        $(".file-upload-progress", application.element).show();
 
                         const fileUpload = $(".file-data", $(this).parent());
-                        const fd = that.application.buildFormData( that.application.getEndpointSubmitData(that.application.options, {}) );
+
+
+                        const parametersJson = application.dataAttributesToJson( el, "data-param-");
+                        const inputsJson = application.dataAttributesToJson( el, "data-input-" );
+
+                        const fd = 
+                            application.buildFormData( 
+                                that.application.getEndpointSubmitData(
+                                    application.options, 
+                                    { 
+                                        customParameters: parametersJson, 
+                                        customInputs: inputsJson 
+                                    }
+                                ) 
+                            );
 
                         const files = ( fileUpload[0] as HTMLInputElement ).files;
                         $.each(files, function(index, file)

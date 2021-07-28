@@ -124,7 +124,7 @@
             - [onDestroyed](#onDestroyed)
             - [onOptionsUpdated](#onOptionsUpdated)
             - [onKatAppNotification](#onKatAppNotification)
-            - [onKatAppNavigation](#onKatAppNavigation)
+            - [onKatAppNavigate](#onKatAppNavigate)
         - [KatApp Calculation Lifecycle Events](#KatApp-Calculation-Lifecycle-Events)
             - [onCalculateStart](#onCalculateStart)
             - [onRegistration](#onRegistration)
@@ -581,12 +581,26 @@ $("ul[rbl-on='click:handleResource:a'] a").off(".ka");
 ```
 
 ## rbl-navigate Attribute Details
-The `rbl-navigate` value can be used to enable navigate to different KatApps (which are typically different pages).  Different frameworks (i.e. Evolution vs Camelot) have different navigate methods that can be controlled via event handlers.
-
-See 
+The `rbl-navigate` value can be used to enable navigate to different KatApps (which are typically different pages).  Different frameworks (i.e. Evolution vs Camelot) have different mechanisms for navigation that can be controlled via event handlers.  See [onKatAppNavigate](#onKatAppNavigate) for more information.
 
 ```html
 Click <a rbl-navigate="DB.Home">here</a> to see your Defined Benefit Portal.
+```
+
+**Passing Default Inputs to the Next KatApp**
+If you need to pass inputs to the KatApp that is being navigated to assign defaults, the `rbl-navigate-input-selector` attribute can be used.  Any input that matches the JQuery selector provided will be pass to the next KatApp to be used as default inputs, similar to the `defaultInputs` property of the [KatAppOptions Object](#KatAppOptions-Object).
+
+```html
+Click <a rbl-navigate="Benefits.HPF" rbl-navigate-input-selector=".iProviderTypeIds">here</a> to find a Benefit Provider.
+```
+
+In addition to rbl-navigate-input-selector, `data-input-*` attributes can be used, similar to [apiAction](#apiAction) attributes, to pass custom values.
+
+```html
+<!--
+    Create a default input of iProviderTypeIds="ABC,XYZ"
+-->
+Click <a rbl-navigate="Benefits.HPF" data-input-provider-type-ids="ABC,XYZ">here</a> to find a Benefit Provider.
 ```
 
 ## View Scoping
@@ -2695,7 +2709,42 @@ $(".saveButtonAction", view).on('click', function (e) {
 });
 ```
 
-There is an API Endpoint lifecycle of events that are triggered during the processing of an server side calculation.  See [KatApp Action Lifecycle Events](#KatApp-Action-Lifecycle-Events) for more information.
+#### setDefaultInputsOnNavigate
+
+**`.setDefaultInputsOnNavigate( inputs: {} | undefined, inputSelector?: string )`**
+
+`setDefaultInputsOnNavigate` is primarily used as an internal helper, however, default inputs could be programmatically set if needed.  These inputs would be used after the next navigation in which a KatApp is rendered.
+
+```javascript
+// Set the iCurrentAge default (calculated from CE) to be used in next KatApp after navigation
+view.on("onCalculationOptions.RBLe", function (event, calculationOptions, application) {
+    const currentAge: application.getResultValue("defaults", "iCurrentAge", "value") * 1
+    application.setDefaultInputsOnNavigate( { "iCurrentAge": currentAge } );
+});
+
+// Create defaults from any input with .default-from-ce class (calculated from CE and assigned via ejs-defaults) 
+// to be used in next KatApp after navigation
+view.on("onCalculationOptions.RBLe", function (event, calculationOptions, application) {
+    application.setDefaultInputsOnNavigate( undefined, ".default-from-ce" );
+});
+```
+
+<hr/>
+
+#### navigate
+
+**`.navigate( navigationId: string, defaultInputs?: {} | undefined )`**
+
+`navigate` can be programmatically called to navigate to a new KatApp/page.  It is equivalent to using [rbl-navigate](#rbl-navigate-Attribute-Details) attribute in markup.
+
+Similar to a `rbl-navigate` link using `data-input-*` attributes to pass inputs, the `defaultInputs` parameter can be provided to pass along default inputs for the next KatApp.
+
+```javascript
+// Set up a click handler that calls a serverCalculation to save the calculated results to storage
+$(".showProvider", view).on('click', function (e) {
+    application.navigate( "Benefits.HPF", { iProviderTypeIds: "ABC,XYZ" });
+});
+```
 
 <hr/>
 
@@ -2943,9 +2992,9 @@ view.on("onKatAppNotification.RBLe", function (event, name, information, applica
 });
 ```
 
-#### onKatAppNavigation
+#### onKatAppNavigate
 
-**`onKatAppNavigation(event: Event, id: string, application: KatApp )`**
+**`onKatAppNavigate(event: Event, id: string, application: KatApp )`**
 
 When an `rbl-navigate` attribute is provided and the element is clicked, this event is raised to allow the client to perform navigation to a different KatApp.
 
@@ -2953,7 +3002,7 @@ When an `rbl-navigate` attribute is provided and the element is clicked, this ev
 // During KatApp bootstrap code via configuration
 $(".katapp").KatApp({
     view: "LAW:WealthDashboard",
-    onKatAppNavigation: function(id) {
+    onKatAppNavigate: function(id) {
         $(".nexgenNavigation").val(id);
         $(".lnkNexgenHost")[0].click();
     }

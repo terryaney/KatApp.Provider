@@ -112,6 +112,8 @@
         - [KatApp Advanced Methods](#KatApp-Advanced-Methods)
             - [apiAction](#apiAction)
             - [serverCalculation](#serverCalculation)
+            - [setDefaultInputsOnNavigate](#setDefaultInputsOnNavigate)
+            - [navigate](#navigate)
             - [pushNotification](#pushNotification)
         - [KatApp Debugging Methods](#KatApp-Debugging-Methods)
             - [saveCalcEngine](#saveCalcEngine)
@@ -146,6 +148,8 @@
             - [onUploadFailed](#onUploadFailed)
             - [onUploadComplete](#onUploadComplete)
         - [Template Event Handlers](#Template-Event-Handlers)
+    - [Global Methods](#Global-Methods)
+        - [static setDefaultInputsOnNavigate](#static-setDefaultInputsOnNavigate)
 
 # Overview
 A KatApp is a dynamic html application delivered to a host platform such as Life@Work.  Conceptually, its like a CMS, but instead of static content, it provides for dynamic content containing potentially complex business logic and controls and data and results.
@@ -454,6 +458,7 @@ Show if 'enabled' column from 'wealth-summary' table where 'id' is 'benefit-star
 ```
 
 **Template Value Expressions**
+
 The `rbl-display` attribute usually works off of values from a CalcEngine result directly.  However, inside [Templates](#Templates), visibility can be controlled by looking at values on the current data being processed by the template, using the simply expressions above.  To accomplish this, a `v:` (for value) prefix is added.
 
 For example, if the data processed by a template had a `code` and `count` column, the following could be leveraged.
@@ -3273,3 +3278,19 @@ $.fn.KatApp.templateOn("{thisTemplate}", "onInitialized.RBLe", function (event, 
     // custom code here to run inside each application that uses this template
 });
 ```
+
+## Global Methods
+
+For almost all code written revolving around KatApps, it will be based on a KatApp 'application' object as described throughout this document.  However, there are times when there is code _related_ to KatApp applications but occurs outside of a running KatApp.  Below is the list of methods that are available and when they are useful.
+
+#### static setDefaultInputsOnNavigate
+
+**`.setDefaultInputsOnNavigate( inputs: {} | undefined )`**
+
+The static version of `setDefaultInputsOnNavigate` is almost identical to the application [setDefaultInputsOnNavigate](#setDefaultInputsOnNavigate) method.  Default inputs can be programmatically set for the next rendering of a KatApp if needed.  The difference is that the static version does not accept an `inputsSelector` parameter since it is not running inside the context of an application.  After this method is called, these inputs would be used when the next KatApp is rendered.  The primary use for this function is to set inputs immediately before navigation to a KatApp.
+
+```html
+<!-- Set the iCurrentAge default before navigating to HPF KatApp -->
+<a href="#" onclick="KatApp.setDefaultInputsOnNavigate( { iCurrentAge: 64 } );NavigateToKatApp( 'Benefits.HPF' );">Navigate to HPF</a>
+```
+<hr/>

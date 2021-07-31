@@ -151,6 +151,23 @@ class KatApp
         }
     }
 
+    static setDefaultInputsOnNavigate( inputsToPass: {} | undefined ): void {
+        const currentInputsJson = sessionStorage.getItem("katapp:tempData:defaultInputs");
+        const currentInputs: inputsToPassOnNavigate = currentInputsJson != undefined 
+            ? JSON.parse( currentInputsJson ) 
+            : { Applications: [] };
+        const applicationInputs = currentInputs.Applications.find( a => a.id == "GLOBAL" );
+
+        if ( applicationInputs != undefined ) {
+            applicationInputs.inputs = inputsToPass;
+        }
+        else if ( inputsToPass != undefined ) {
+            currentInputs.Applications.push( { id: "GLOBAL", inputs: inputsToPass } );
+        }
+
+        sessionStorage.setItem("katapp:tempData:defaultInputs", JSON.stringify(currentInputs) );
+    }
+
     // ping and getResources duplicated in KatAppProvider now.  This allows for Views of L@W 
     // (or other clients that have own copy of KatApp.js but are unable to update it) to be served
     // from local server if enabled.
@@ -445,7 +462,6 @@ class KatApp
                                             scriptLines.pop();
                                             scriptContent = scriptLines.join("\n");
                                         }
-            
                                         script.innerHTML = scriptContent;
                                         body.appendChild(script);
                                     }
@@ -461,6 +477,7 @@ class KatApp
                                     callbackResults[ r.key ] = r.content!;
                                 });
 
+                            
                             getResourcesCallback( undefined, callbackResults );
                         }
                     }

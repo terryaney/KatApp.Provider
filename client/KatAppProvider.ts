@@ -607,6 +607,9 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                         that.trace( "Calling configureUI calculation...", TraceVerbosity.Detailed );
                         that.configureUI();
                     }
+                    else if ( that.options.manualResults != undefined ) {
+                        that.processResults( that.options );
+                    }
                 }
                 else {
                     that.trace( "Error during Provider.init: " + pipelineError, TraceVerbosity.Quiet );
@@ -745,14 +748,21 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                 customOptions, // override options
             ) as KatAppOptions;
 
-            if ( currentOptions.calcEngines === undefined ) {
-                return;
-            }
-
             const cancelCalculation = !this.ui.triggerEvent( "onCalculateStart", this );
 
             if ( cancelCalculation ) {
                 this.ui.triggerEvent( "onCalculateEnd", this );
+                return;
+            }
+
+            if ( currentOptions.calcEngines === undefined ) {
+
+                if ( currentOptions.manualResults != undefined ) {
+                    this.setResults( [], currentOptions );
+                    this.processResults( currentOptions );
+                    this.ui.triggerEvent( "onCalculateEnd", this );
+                }
+
                 return;
             }
 
@@ -1089,16 +1099,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
 
             // Always go to calculateEnd
             const processResults = function(): void {
-                that.trace("Processing results from calculation", TraceVerbosity.Detailed);
-                const start = new Date();
-                try {
-                    that.processResults( currentOptions );
-                    that.trace("Processing results took " + ( Date.now() - start.getTime() ) + "ms", TraceVerbosity.Detailed);
-                } catch (error) {
-                    that.trace( "Error during result processing: " + error, TraceVerbosity.None );
-                    that.ui.triggerEvent( "onCalculationErrors", "ProcessResults", error, that.exception, currentOptions, that );
-                }
-
+                that.processResults( currentOptions );
                 calculatePipeline( 0 );
             };
 
@@ -1222,21 +1223,30 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
         }
 
         private processResults( calculationOptions: KatAppOptions ): void {
-            this.element.removeData("katapp-save-calcengine");
-            this.element.removeData("katapp-trace-calcengine");
-            this.element.removeData("katapp-refresh-calcengine");
-            this.options.defaultInputs = undefined;
-
-
-            this.ui.triggerEvent( "onResultsProcessing", this.results, calculationOptions, this );
-            
-            this.rble.processResults( calculationOptions );
-           
-            if ( this.calculationInputs?.iConfigureUI === 1 ) {
-                this.ui.triggerEvent( "onConfigureUICalculation", this.results, calculationOptions, this );
+            this.trace("Processing results from calculation", TraceVerbosity.Detailed);
+            const start = new Date();
+            try {
+                this.element.removeData("katapp-save-calcengine");
+                this.element.removeData("katapp-trace-calcengine");
+                this.element.removeData("katapp-refresh-calcengine");
+                this.options.defaultInputs = undefined;
+    
+                this.ui.triggerEvent( "onResultsProcessing", this.results, calculationOptions, this );
+                
+                this.rble.processResults( calculationOptions );
+               
+                if ( this.calculationInputs?.iConfigureUI === 1 ) {
+                    this.ui.triggerEvent( "onConfigureUICalculation", this.results, calculationOptions, this );
+                }
+    
+                this.ui.triggerEvent( "onCalculation", this.results, calculationOptions, this );
+            } catch (error) {
+                this.trace( "Error during result processing: " + error, TraceVerbosity.None );
+                this.ui.triggerEvent( "onCalculationErrors", "ProcessResults", error, this.exception, calculationOptions, this );
             }
-
-            this.ui.triggerEvent( "onCalculation", this.results, calculationOptions, this );
+            finally {
+                this.trace("Processing results took " + ( Date.now() - start.getTime() ) + "ms", TraceVerbosity.Detailed);
+            }
         }
 
         configureUI( customOptions?: KatAppOptions ): void {
@@ -1262,11 +1272,15 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
             
             if ( inputsBound ) {
                 this.ui.unbindCalculationInputs();
+                this.ui.bindCalculationInputs();
+
+                if ( options.manualResults != undefined ) {
+                    // Need to process results...
+                    this.setResults( this.results?.filter( r => r._name != "ManualResults" ), this.options );
+                    this.processResults(this.options);
+                }
             }
 
-            if ( inputsBound ) {
-                this.ui.bindCalculationInputs();
-            }
             this.ui.triggerEvent( "onOptionsUpdated", this );
         }
 
@@ -1328,11 +1342,23 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
         }
         setResults( results: TabDef[] | undefined, calculationOptions: KatAppOptions = this.options ): void {
             const calcEngines = calculationOptions.calcEngines;
-            if ( calcEngines !== undefined && results !== undefined ) {
-                const defaultCEName = calcEngines[ 0 ].name;
+
+            if ( calculationOptions.manualResults != undefined ) {
+                if ( results == undefined ) {
+                    results = [];
+                }
+                
+                calculationOptions.manualResults["@calcEngine"] = "ManualResults";
+                calculationOptions.manualResults["@name"] = "RBLResults";
+                calculationOptions.manualResults[ "_ManualResults" ] = true;
+                results.push( calculationOptions.manualResults );
+            }
+
+            if ( results !== undefined ) {
+                const defaultCEName = calcEngines != undefined ? calcEngines[ 0 ].name : undefined;
                 results.forEach( t => {
                     // Breakpoint to test tabDef name
-                    t._resultKeys = Object.keys(t).filter( k => !k.startsWith( "@" ) );
+                    t._resultKeys = Object.keys(t).filter( k => !k.startsWith( "@" ) && k != "_ManualResults" );
                     
                     const ceName = t["@calcEngine"].split(".")[ 0 ].replace("_Test", "");
                     
@@ -1346,10 +1372,13 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                             { key: "ce1", name: "clientCe"},
                             { key: "ce2", name: "clientCe"}
                         ]
-                    */                    
-                    calcEngines.filter( c => c.name == ceName ).forEach( c => {
-                        t[ "_" +  c.key ] = true;
-                    });
+                    */
+                    if ( calcEngines != undefined )
+                    {
+                        calcEngines.filter( c => c.name == ceName ).forEach( c => {
+                            t[ "_" +  c.key ] = true;
+                        });
+                    }                    
 
                     t._name = t["@name"];
                     t._fullName = ceName + "." + t._name;
@@ -1584,14 +1613,10 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                     return;
                 }
 
-                try {
-                    that.processResults(rebuildOptions);
-                } catch (error) {
-                    // this.setResults( undefined );
-                    that.trace( "Error during result processing: " + error, TraceVerbosity.None );
-                    that.ui.triggerEvent( "onCalculationErrors", "ProcessResults", error, that.exception, that.options, that );
-                }
+                that.processResults(rebuildOptions);
+
                 that.ui.triggerEvent( "onCalculateEnd", that );
+                
                 that.element.off( "onInitialized.RBLe", redrawInit);
             };
 
@@ -3257,7 +3282,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                                     const prependBeforePreserve = el.attr('rbl-prepend') === "before-preserve";
 
                                     table.forEach( ( row, index ) => {
-                                        if ( rblSourceParts.length === 1 || row[ rblSourceParts[ 1 ] ] === rblSourceParts[ 2 ] ) {
+                                        if ( rblSourceParts.length === 1 || row[ rblSourceParts[ 1 ] ] == rblSourceParts[ 2 ] ) {
                                             // Automatically add the _index0 and _index1 for carousel template
                                             // const templateData = KatApp.extend( {}, row, { _index0: index, _index1: index + 1 } )
                                             const templateResult = generateTemplateData(
@@ -4157,7 +4182,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                 // rows have been processed and all ejs-output in case they injected 'rbl-' items
                 // in markup that has to be processed
                 application.trace( "Processing all results 'pull' logic", TraceVerbosity.Normal );
-                const defaultCalcEngineKey = calculationOptions.calcEngines![0].key ?? "default";
+                const defaultCalcEngineKey = ( calculationOptions.calcEngines != undefined ? calculationOptions.calcEngines[0].key : undefined ) ?? "default";
                 this.processRblSources( defaultCalcEngineKey, showInspector );
                 this.processRblValues( defaultCalcEngineKey, showInspector );
                 this.processRblAttributes( showInspector );
@@ -4649,7 +4674,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
 
         processHelpTips( container?: JQuery<HTMLElement> ): void {
             // Couldn't include the Bootstrap.Tooltips.js file b/c it's selector hits entire page, and we want to be localized to our view.
-            const selector = "[data-toggle='tooltip'], [data-bs-toggle='tooltip'], [data-toggle='popover'], [data-bs-toggle='popover'], .tooltip-trigger, .tooltip-text-trigger, .error-trigger";
+            const selector = ".error-msg[data-toggle='tooltip'], .error-msg[data-bs-toggle='tooltip'], [data-toggle='popover'], [data-bs-toggle='popover']";
             const application = this.application;
             const view = container ?? application.element;
             const isBootstrap3 = this.application.bootstrapVersion == 3;

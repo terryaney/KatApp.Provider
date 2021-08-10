@@ -295,6 +295,50 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
             const _templateDelegates = $.fn.KatApp.templateDelegates;
             let viewElement: JQuery<HTMLElement> | undefined = undefined;
 
+            let inlineContainer = $("rbl-katapps > rbl-templates[rbl-t='_INLINE']");
+            if ( inlineContainer.length == 0 ) {
+                inlineContainer = $("<rbl-templates rbl-t='_INLINE'></rbl-templates>");
+                $("rbl-katapps").append(inlineContainer);
+            }
+            
+            const processTemplates = function(templateContainer: JQuery<HTMLElement>, containerName: string ): void {
+                let inlineTemplates: JQuery<HTMLElement>;
+                // Get all lowest level inlines and walk 'up'
+                while( ( inlineTemplates = $("[rbl-tid='inline']", templateContainer).filter( function() { return $("[rbl-tid='inline']", $(this)).length == 0; } ) ).length > 0 )
+                {
+                    inlineTemplates.each(function() {
+                        const inlineTemplate = $(this);
+                        const inlineParent = inlineTemplate.parent();
+                        if ( inlineParent.attr("rbl-source") == undefined ) {
+                            that.trace( "Inline template's parent does not have rbl-source. " + this.outerHTML.substr(0, 75).replace( /</g, "&lt;").replace( />/g, "&gt;"), TraceVerbosity.None);
+                        }
+                        else if ( inlineParent.attr("rbl-tid") != undefined ) {
+                            that.trace( "Inline template is present, but parent has rbl-tid of " + inlineParent.attr("rbl-tid"), TraceVerbosity.None);
+                        }
+                        else {
+                            const tId = "_inline_" + KatApp.generateId();
+                            const rblTemplateContent = that.ui.encodeTemplateContent(inlineTemplate.removeAttr("rbl-tid")[0].outerHTML);
+                            const rblTemplate = 
+                                $("<rbl-template/>")
+                                    .attr("tid", tId)
+                                    .attr("container", containerName)
+                                    .html(rblTemplateContent);
+                            inlineContainer.append(rblTemplate);
+                            inlineParent.attr( "rbl-tid", tId );
+                            inlineTemplate.remove();
+                        }
+                    });
+                }
+
+                // For all remaining templates, massage the markup so it doesn't cause issues (tr/td being dropped if not direct child of table/tbody)
+                $("rbl-template", templateContainer)
+                    .not("[tid='lookup-tables']") // never injected...
+                    .each(function() {
+                        const t = $(this);
+                        t.html(that.ui.encodeTemplateContent(t.html()));
+                    });
+            };
+            
             // Made all pipeline functions variables just so that I could search on name better instead of 
             // simply a delegate added to the pipeline array.
             const loadView = function(): void { 
@@ -323,16 +367,10 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                                         .replace( /\.thisClass/g, thisClassCss )
                                         .replace( /thisClass/g, thisClassCss );
 
-                                viewElement = $("<div class='katapp-css'>" + that.ui.decodeTemplateContent( content ) + "</div>");
+                                viewElement = $("<div class='katapp-css'>" + content + "</div>");
                                 const rblConfig = $("rbl-config", viewElement).first();
 
-                                // For all templates, massage the markup so it doesn't cause issues
-                                $("rbl-template, [rbl-tid='inline']", viewElement)
-                                    .not("[tid='lookup-tables']") // never injected...
-                                    .each(function() {
-                                        const t = $(this);
-                                        t.html(that.ui.encodeTemplateContent(t.html()));
-                                    });
+                                processTemplates(viewElement, viewId);
 
                                 // Not sure if I need to manually add script or if ie will load them
                                 // https://www.danielcrabtree.com/blog/25/gotchas-with-dynamically-adding-script-tags-to-html
@@ -519,10 +557,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                         const rblKatApps = $("rbl-katapps");
                         const templateContent = $("<rbl-templates rbl-t='" + r.toLowerCase() + "'>" + data.replace( /{thisTemplate}/g, r ) + "</rbl-templates>");
 
-                        $("rbl-template, [rbl-tid='inline']", templateContent).each(function() {
-                            const t = $(this);
-                            t.html(that.ui.encodeTemplateContent(t.html()));
-                        });
+                        processTemplates(templateContent, r);
 
                         templateContent.appendTo(rblKatApps);
 
@@ -1858,22 +1893,14 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
 
         encodeTemplateContent( content: string) : string {
             return content
-            .replace(/-toggle=/g, "-toggle_=")
-            .replace(/ id=/g, " id_=");
-
-            // couldn't get this to work, if I did $(content), it already stripped out tr/td that
-            // weren't under the proper parent.  I could 'handle' it with template files b/c 'everything' is template
-            // and the content isn't returned without going through 'decode', however, if a view has a template with
-            // tr/td, I couldn't handle that cleanly without replacing everything (even regular content) up front
-            // and figuring out how to clean it up.  So I left this in.
-            /*
-            .replace(/<tr>/g, "<tr_>")
-            .replace(/<tr /g, "<tr_ ")
-            .replace(/<\/tr>/g, "</tr_>")
-            .replace(/<td>/g, "<td_>")
-            .replace(/<td /g, "<td_ ")
-            .replace(/<\/td>/g, "</td_>")
-            */
+                .replace(/-toggle=/g, "-toggle_=")
+                .replace(/ id=/g, " id_=")
+                .replace(/<tr>/g, "<tr_>")
+                .replace(/<tr /g, "<tr_ ")
+                .replace(/<\/tr>/g, "</tr_>")
+                .replace(/<td>/g, "<td_>")
+                .replace(/<td /g, "<td_ ")
+                .replace(/<\/td>/g, "</td_>");
         }
         decodeTemplateContent( content: string ): string {
             // If templates with bootstrap toggle have issues with 'target' because of {templateValues} inside the
@@ -1882,8 +1909,8 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
             // the rendered template content is injected.
             let decodedContent = content
                 .replace( / id_=/g, " id=") // changed templates to have id_ so I didn't get browser warning about duplicate IDs inside *template markup*
-                .replace( /-toggle_=/g, "-toggle=" )            
-                .replace( /tr_/g, "tr" ) // tr/td were *not* contained in a table in the template, browsers would just remove them when the template was injected into application, so replace here before injecting template
+                .replace( /-toggle_=/g, "-toggle=" ) // changed templates to have -toggle_ so that BS didn't 'process' items that were in templates
+                .replace( /tr_/g, "tr" ) // if tr/td were *not* contained in a table in the template, browsers would just remove them when the template was injected into application, so replace here before injecting template
                 .replace( /td_/g, "td" );
 
             if ( this.application.bootstrapVersion > 3 ) {
@@ -1908,6 +1935,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
         injectTemplatesWithoutSource(container: JQuery<HTMLElement>): void {
             const app = this.application;
             const that = this;
+            
             $("[rbl-tid]", container)
                 .not("[rbl-source], [rbl-tid='inline']") // not an inline template and not template with data source
                 .not('[data-katapp-template-injected="true"]')
@@ -1942,10 +1970,69 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
             }
         }
     
+        formatTemplate( template: JQuery<HTMLElement>, data: JQuery.PlainObject ): string {
+            // Don't see anyone that uses content-selector, can try to remove
+            const contentSelector = template.attr("content-selector");
+            
+            // Clone b/c I do'nt want my 'closest' method below to search entire DOM, only the current
+            // template (which should be pretty small given it is a template)
+            let content = ( contentSelector != undefined ? $(contentSelector, template) : template ).clone();
+            content.attr("data-katapp-parent-template", 1);
+
+            const templateData = KatApp.extend({}, data, { id: this.application.id } );
+            
+            let nestedTemplates = $("[rbl-tid='inline']", content);
+            
+            // Need to remove all nested inline templates before doing .format() so that
+            // we can support nested {} col names of same name and the .format() only replaces
+            // columns for the current 'context'
+            const templateQueue: JQuery<HTMLElement>[] = [];
+            nestedTemplates.each( function( i ) {
+                const nestedInline = $(this);
+
+                // Only push 'top level' inline items, so either 'content' is NOT an inline or the
+                // parentInline that is found IS 'content'
+                const parentInline = nestedInline.parent().closest("[rbl-tid='inline']");
+                if ( parentInline.length == 0 || parentInline.attr("data-katapp-parent-template") != undefined ) {
+                    templateQueue.push(nestedInline);
+                    // Use same tagName so TR/TD are retained/processed correctly
+                    const tagName = nestedInline[0].tagName;
+                    nestedInline.replaceWith($("<{tag} rbl-queue-id='{index}'></{tag}>".format({tag: tagName, index: i})));
+                }
+            });
+
+            // Had to re-create content instead of doing:
+            // content = $(this.decodeTemplateContent( content[0].outerHTML.format( templateData ) ) );
+            // because if content.html() was a 'tr', when you do $( {html} ) when tr is NOT the parent
+            // if it is not inside a tbody, it would strip it out, but if it was the 'root', it would 
+            // leave it and also retain it when I do an append()
+            content = $( content[0].outerHTML.format( templateData ) );
+            /*
+            content = 
+                $( "<div />" )
+                    .append( 
+                        $( content.html().format( templateData ) )
+                     )
+            */
+            nestedTemplates = $("[rbl-queue-id]", content);
+
+            // Put all 'inline' templates back in the markup to be processed recursively
+            nestedTemplates.each( function() {
+                const t = $(this);
+                const id = +t.attr("rbl-queue-id")!;
+                t.replaceWith(templateQueue[ id ]);
+            });
+
+            return this.decodeTemplateContent( content.html() );
+        }
+
         getTemplate( templateId: string, data: JQuery.PlainObject ): { Content: string; Type: string | undefined } | undefined {
             const application = this.application;
+            
             // Look first for template overriden directly in markup of view
-            let template = $("rbl-template[tid=" + templateId + "]", application.element).first();
+            let template = templateId.startsWith("_inline_")
+                ? $("rbl-templates rbl-template[tid='" + templateId + "']").first()
+                : $("rbl-template[tid=" + templateId + "]", application.element).first();
 
             // Now try to find template given precedence of views provided (last template file given highest)
             if ( template.length === 0 && application.options.viewTemplates != undefined ) {
@@ -1965,14 +2052,19 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
             }
             else {
                 const contentSelector = template.attr("content-selector");
-
                 return {
                     Type: template.attr("type"),
                     Content:
                         this.decodeTemplateContent( ( contentSelector != undefined ? $(contentSelector, template) : template )
                             .html()
                             .format( KatApp.extend({}, data, { id: application.id } ) ) )
-                }
+                };
+                /*
+                return {
+                    Type: template.attr("type"),
+                    Content: this.formatTemplate(template, data)
+                };
+                */
             }
         }
 
@@ -2977,12 +3069,15 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
     
                     if ( content.length > 0 ) {
                         // Might have to change this at some point to look for rbl-tid= in string, and then enclose content
-                        // in <div>+content+</div> then get the just the innerHTML
-                        if ( content.startsWith("<") && content.endsWith(">") ) {
+                        // in <div>+content+</div> then get the just the innerHTML.
+                        if ( content.startsWith("<") && content.endsWith(">") ) {                            
                             const el = $(content);
                             const templateId = el.attr("rbl-tid");
 
-                            if (templateId !== undefined && el.attr("rbl-source") == undefined && el.attr("rbl-source-table") == undefined && templateId != "inline") {
+                            // UPDATE: Continuing comment above, this looks to only process 'control' templates if only one returned in markup
+                            // row, but probably need to change to look for any items in el.  Then additionally, move 'inline' to templates as well
+                            // but for now, don't think anyone uses this, was more of a POC concept.
+                            if (templateId !== undefined && templateId != "inline" && el.attr("rbl-source") == undefined && el.attr("rbl-source-table") == undefined) {
                                 //Replace content with template processing, using data-* items in this pass
                                 this.application.ui.injectTemplate( el, templateId );
                             }
@@ -3145,8 +3240,15 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
             const that: RBLeUtilities = this;
             const application = this.application;
     
+            // If root itself is a templated item, I need to add (append) it to the list of
+            // items to process, b/c selector below looking 'inside' root will not hit it.
+            // The markup for this might look like:
+            //
+            //  <rbl-template tid="parent-template">
+            //      <div rbl-source="child-rows" rbl-tid="child-template"></div>
+            //  </rbl-template>
             $("[rbl-source], [rbl-source-table]", root)
-                .add(root.is("[rbl-source], [rbl-source-table]") ? root : [] ) // In case only element from first template is a template itself
+                .add(root.is("[rbl-source], [rbl-source-table]") ? root : [] ) 
                 .not("rbl-template *, [rbl-tid='inline'] *, [rbl-tid='inline']") // not in templates
                 .each(function () {
                     const el = $(this);
@@ -3169,10 +3271,9 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                                 ? [ that.getResultValue( tabDef, rblSourceTableParts[ 0 ], rblSourceTableParts[ 1 ], rblSourceTableParts[ 2 ] ) ?? "unknown" ]
                                 : [ that.getResultValueByColumn( tabDef, rblSourceTableParts[ 0 ], rblSourceTableParts[ 1 ], rblSourceTableParts[ 2 ], rblSourceTableParts[ 3 ] ) ?? "unknown" ];
     
-                        // TOM (don't follow this code) - inline needed for first case?  What does it mean if rbl-tid is blank?  
-                        // Need a better attribute name instead of magic 'empty' value
-                        const inlineTemplate = tid === undefined ? $("[rbl-tid]", el ) : undefined;
-                        
+                        const inlineTemplate = tid === undefined ? el.children("[rbl-tid='inline']") : undefined;
+                        // const inlineTemplate = tid === undefined ? $("[rbl-tid]", el ) : undefined;
+
                         let templateContent = tid === undefined
                             ? inlineTemplate === undefined || inlineTemplate.length === 0
                                 ? undefined
@@ -3181,6 +3282,17 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                                     .prop("outerHTML") )
                             : application.ui.getTemplate( tid, elementData )?.Content; 
     
+                        /*
+                        const inlineTemplateToFormat = inlineTemplate !== undefined && inlineTemplate.length === 1
+                            ? $( "<div />" ).append( $( inlineTemplate.prop("outerHTML") ).removeAttr( "rbl-tid" ) )
+                            : undefined;
+                        let templateContent = tid === undefined
+                            ? inlineTemplateToFormat != undefined
+                                ? application.ui.formatTemplate( inlineTemplateToFormat, elementData )
+                                : undefined
+                            : application.ui.getTemplate( tid, elementData )?.Content; 
+                        */
+
                         if ( showInspector && !el.hasClass("kat-inspector-source") ) {
                             el.addClass("kat-inspector-source");
                             const inspectorName = el.attr("rbl-source") != undefined ? "rbl-source" : "rbl-source-table";

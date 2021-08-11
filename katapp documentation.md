@@ -1032,7 +1032,7 @@ rbl&#x2011;preprend | When templated content is inserted into the Kaml View, by 
 ```
 
 ## Inline Templates
-Normally, templates are created via a `<rbl-template tid="template-name">...</div>` element and used via a `<div rbl-tid="template-name"></div>` element.  You can also use inline templates by using the `rbl-tid="inline"` attribute on the child element.  The `rbl-tid="inline"` _must_ be the first element inside the `rbl-source="table"` element.
+Normally, templates are created via a `<rbl-template tid="template-name">...</div>` element and used via a `<div rbl-tid="template-name"></div>` element.  You can also use inline templates by using the `rbl-tid="inline"` attribute on the child element.  The `rbl-tid="inline"` _must_ be the first element inside the `rbl-source="source"` element.
 
 ```xml
 <!-- markup in inline template; noted with child element attrib [rbl-tid] -->
@@ -1046,7 +1046,19 @@ Normally, templates are created via a `<rbl-template tid="template-name">...</di
     <li>Alexander Hamilton, Former US Treasury Secretary</li>
 </ul>
 ```
-**Note**: All elements with a `rbl-tid` attribute are automatically hidden from the UI.
+**Note**: All elements with a `rbl-tid` attribute are automatically hidden from the UI and when rendered, inline templates are simply converted into standard `<rbl-template/>` templates.
+
+When using inline templates, if the template is simply a call to another template, you may have to use the `rbl-inline-tid` attribute.  When inline templates are converted to a standard `<rbl-template/>`, if `rbl-inline-tid` is present, it is moved to the `rbl-tid` attribute so that it will be processed as the specified template ID when the template is called.
+
+```html
+<!-- 
+    For each row in dashboards, using the inline template, render a div.col* container and call a 
+    template specified by the {name} column.
+-->
+<div class="row" rbl-source="dashboards">
+	<div class="col-12 col-md-{col-md}" rbl-tid="inline" rbl-inline-tid="{name}"></div>
+</div>
+```
 
 ## Automatically Processed Templates
 

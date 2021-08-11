@@ -317,7 +317,15 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                         }
                         else {
                             const tId = "_inline_" + KatApp.generateId();
-                            const rblTemplateContent = that.ui.encodeTemplateContent(inlineTemplate.removeAttr("rbl-tid")[0].outerHTML);
+
+                            inlineTemplate.removeAttr("rbl-tid");
+                            const inlineTemplateId = inlineTemplate.attr("rbl-inline-tid");
+                            if ( inlineTemplateId != undefined ) {
+                                inlineTemplate.attr("rbl-tid", inlineTemplateId);
+                                inlineTemplate.removeAttr("rbl-inline-tid");
+                            }
+
+                            const rblTemplateContent = that.ui.encodeTemplateContent(inlineTemplate[0].outerHTML);
                             const rblTemplate = 
                                 $("<rbl-template/>")
                                     .attr("tid", tId)
@@ -1937,14 +1945,28 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
             const that = this;
             
             $("[rbl-tid]", container)
-                .not("[rbl-source], [data-katapp-template-injected='true'], rbl-template *") // not an template with data source, not in templates
+                .not("[rbl-source], [rbl-source-table], [data-katapp-template-injected='true']") // not an template with data source, not processed
+                .add(container.is("[rbl-tid]") && container.not("[rbl-source], [rbl-source-table], [data-katapp-template-injected='true']") ? container : [] ) 
                 .each(function () {
                     const item = $(this);
-                    const templateId = item.attr('rbl-tid')!;
-                    that.injectTemplate( item, templateId );
-                    item.attr("data-katapp-template-injected", "true");
+                    
+                    const templateParent = item.parent("rbl-template");
+                    // If not contained in an rbl-template, or contained in the template currently being processed
+                    if ( templateParent.length == 0 || templateParent[0] == container[0] ) {
+                        const templateId = item.attr('rbl-tid')!;
+                        that.injectTemplate( item, templateId );
 
-                    that.injectTemplatesWithoutSource(item);
+                        // 'container' is always added if it is a templated item without a source, however, we can't all recursively if
+                        // processing that item, otherwise it'll just keep processing it infinitely
+                        if ( item[0] != container[0]) {
+                            // If not inside a template, mark it done 'forever', otherwise, don't mark this
+                            // so that each time a template processes, it'll process the item
+                            if ( templateParent.length == 0 ) {
+                                item.attr("data-katapp-template-injected", "true");
+                            }
+                            that.injectTemplatesWithoutSource(item);
+                        }
+                    }
                 });
             }
 

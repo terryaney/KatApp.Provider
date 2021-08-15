@@ -58,6 +58,8 @@
 - [RBLe Service](#RBLe-Service)
     - [ResultBuilder Framework](#ResultBuilder-Framework)
         - [Table Template Processing](#Table-Template-Processing)
+            - [Unique Summary Configuration](#Unique-Summary-Configuration)
+            - [Table Nesting Configuration](#Table-Nesting-Configuration)
             - [table-output-control](#table-output-control)
             - [colgroup processing](#colgroup-Processing)
             - [Header Rows](#Header-Rows)
@@ -1611,10 +1613,193 @@ table-output-control | Table Name | Similar to the `on` Column Name and Row ID, 
 export-blanks | Column Switch | By default, blank values/columns are not returned from RBLe service.  If table processing requires all columns to be present even when blank, use the `/export-blanks` switch on the column header.
 work-table | Table Switch | By default, all tables on a CalcEngine result tab are exported (until two blank columns are encountered).  To flag a table as simply a temp/work table that doesn't need to be processed, use the `/work-table` switch on the table name.
 configure-ui | Table Switch | To configure a table to _only_ export during a Configure UI calculation (`iConfigureUI=1`), use the `/configure-ui` switch on the table name.  This removes the need of putting `on` or `table-output-control` logic that checks the `iConfigureUI` input explicitly.
+unique-summary | Table Switch | RBLe has an automatic 'grouping' aggregator to produce a unique list of values for input tables (UI inputs, Data Tables, or Global Tables).  See [Unique Summary Configuration](#Unique-Summary-Configuration) for more information.
+child-only | Table Switch | By default, any tables used as a child table are still exported normally, so the data appears twice in the results; once nested, and once at root level.  If you want to supress the exporting of data at the normal/root level, you can add the `/child-only` flag indicating that it will only appear in the results nested in its parent table.  _If the parent is not exported, child tables remain supressed._ See [Table Nesting Configuration](#Table-Nesting-Configuration) for more information.
 sort-field | Table Switch | To configure how the data is sorted on an _Input Tab Table_, use the `/sort-field:field-name` switch on the table name.  To specify multiple columns to use in the sort, provide a comma delimitted list of field names.
 sort-direction | Table Switch | Optional sort control (`asc` or `desc`) used in conjunction with `sort-field`.  By default, data will be sorted ascending.  Use the `/sort-direction:direction` to control how field(s) specified in the `/sort-field` switch are sorted.  If `/sort-direction:` is provided, there must be the same number of comma delimitted values as the number of comma delimitted fields found in `/sort-field`.
 sort-number | Table Switch | Optional switch (`true` or `false`) used in conjunction with `sort-field`.  By default, data will be sorted using a `string` comparison.  Use the `/sort-number:true` to indicate that field(s) specified in the `/sort-field` switch should be treated as numeric when sorting.  If `/sort-number:` is provided, there must be the same number of comma delimitted values as the number of comma delimitted fields found in `/sort-field`.
+text | Column Switch | Optional switch used on input table columns to indicate whether or not to force the provided data to be formatted as 'text'.  If `/text` is not provided and a textual value that converts to a number is provided, it can change the value.  For example, if `01` is provided to a column without the `\text` flag, the CalcEngine would convert `01` to `1`.  With the `\text` flag, the leading `0` would be preserved.
+Nesting `[]` | Column Switch | Optional syntax to specify that a column contains nested information.  See [Table Nesting Configuration](#Table-Nesting-Configuration) for more information.
 
+<br/>
+
+#### Unique Summary Configuration
+
+Producing a unique list of values in CalcEngines can be difficult (especially when the unique _key_ is a combination of multiple columns). To alleviate this problem, RBLe can produce a unique list of values from input tables (UI inputs, Data Tables `<>` or Global Tables `<<>>`).  The configuration is controlled by the `/unique-summary:detailTable` flag and the columns specified in the summary table.
+
+1. The `/unique-summary:detailTable` flags a table as a _summary_ table and the `detailTable` name indicates the table that should be summarized.
+2. When creating a summary table, you indicate what type of table (input, data, or global) the detail table is by using the same naming convention: `<>` (data), `<<>>` (global), or no `<>` for user input tables.
+3. In the summary table, only columns that generate the _unique_ list of values desired should be specified.  Additional columns (i.e. for additional details) *can not* be used.
+
+In the example below, `benefitSummary` will contain values that generate a unique list across the `benefitType` and `optionId` columns from the `benefitDetails` table.
+
+*\<benefitDetails\> table*
+id | benefitType/text | optionId/text | coverageLevel/text
+---|---|---|---
+1 | 01 | 02 | 05
+2 | 01 | 02 | 04
+3 | 02 | 02 | 05
+4 | 02 | 01 | 03
+5 | 03 | 01 | 01
+
+*\<benefitSummary\> table*
+benefitType/text | optionId/text
+---|---
+01 | 02
+02 | 02
+02 | 01
+03 | 01
+
+<br/>
+
+#### Table Nesting Configuration
+
+Traditionally, RBLe exports all tables specified in the CalcEngine as root level table row arrays with no nesting; each row containing only the properties (columns from CalcEngine) defined on the table.  For better API support from other systems calling into RBLe, result tables can be configured so that nesting occurs and rich object hierarchies can be built.  
+
+When a column has `[]` in its name, this signals that this column will have an array of children rows.  The column header name specified before the `[` will be the name of the property on this parent row.  Note that if any `/switch` flags are to be used on this column (i.e. `/text`), they should appear _after_ the closing `]`.  There are two ways to configure nesting.
+
+If only `[]` is used in the name, the nesting configuration will be supplied in the _column value_ of each row, however, if every parent row nests the same child table but simply filters the child rows by a value, the syntax of `[childTable:childKeyColumn]` can be used.
+
+Configuration | Value | Description
+---|---|---
+`[]` | `childTable` | When the column only has `[]` provided, and the value only specifies a `childTable`, every row present in `childTable` will be nested under this column.
+`[]` | `childTable:childKeyColumn=value` | Each row can specify a filter into the specified `childTable`.  The table and filter are separated by a `:` and a simply expression using `=` is all that is supported.  This would nest all rows from `childTable` where the column `childKeyColumn` has a value of `value`.
+`[childTable:childKeyColumn]` | `value` | When this syntax is used, the `value` provided in each row is used as a filter for the `childKeyColumn` column.
+
+
+*Example of `[childTable:childKeyColumn]` syntax.*
+
+*orders table*
+id | date | amount | items\[orderItems:orderId\] 
+---|---|---|---
+1 | 2021-07-13 | 45 | 1
+2 | 2021-08-13 | 33 | 2
+
+*orderItems table*
+id | orderId | sku | price | quantity 
+---|---|---|---|---
+1 | 1 | PRD4321 | 10 | 3
+2 | 1 | PRD5678 | 5 | 2
+3 | 1 | PRD3344 | 5 | 1
+4 | 2 | PRD6677 | 33 | 1
+
+This CalcEngine nesting configuration would result in the following JSON
+
+```javascript
+{
+    orders: [
+        {
+            "@id": 1,
+            date: "2021-07-13",
+            amount: 45
+            items: [
+                { "@id": 1, orderId: 1, sku: "PRD4321", price: 10, quantity: 3 },
+                { "@id": 2, orderId: 1, sku: "PRD5678", price: 5, quantity: 2 },
+                { "@id": 3, orderId: 1, sku: "PRD3344", price: 5, quantity: 1 }
+            ]
+        },
+        {
+            "@id": 2,
+            date: "2021-08-13",
+            amount: 33
+            items: [
+                { "@id": 4, orderId: 2, sku: "PRD6677", price: 33, quantity: 1 }
+            ]
+        }
+    ],
+    orderItems: [
+        { "@id": 1, orderId: 1, sku: "PRD4321", price: 10, quantity: 3 },
+        { "@id": 2, orderId: 1, sku: "PRD5678", price: 5, quantity: 2 },
+        { "@id": 3, orderId: 1, sku: "PRD3344", price: 5, quantity: 1 },
+        { "@id": 4, orderId: 2, sku: "PRD6677", price: 33, quantity: 1 }
+    ]
+}
+```
+
+*Example of `[]` syntax.*
+
+*plans table*
+id | name | subPlans\[\] 
+---|---|---
+DB | Retirement | retirementPlans
+SDB | Special Retirement | specialRetirementPlans
+HSA | HSA Savings | savingsPlans:type=HSA
+FSA | FSA Savings | savingsPlans:type=FSA
+MISC | Misc Savings | savingsPlans:type=MISC
+SIMPLE | Simple (no subPlans) |
+
+*retirementPlans/child-only table*
+id | name
+---|---
+1 | Plan 1
+2 | Plan 2
+3 | Plan 3
+
+*specialRetirementPlans/child-only table has no rows*
+
+*savingsPlans/child-only table - with no MISC type rows*
+id | name | type
+---|---|---
+HSA-1 | Savings 1 | HSA
+HSA-2 | Savings 2 | HSA
+HSA-3 | Savings 3 | HSA
+FSA-1 | Savings 1 | FSA
+
+This CalcEngine nesting configuration would result in the following JSON
+
+```javascript
+// Since /child-only was used on all child tables, their results are not exported
+{
+    plans: [
+        {
+            "@id": "DB",
+            name: "Retirement",
+            subPlans: [
+                { "@id": 1, name: "Plan 1" },
+                { "@id": 2, name: "Plan 2" },
+                { "@id": 3, name: "Plan 3" }
+            ]
+        },
+        {
+            "@id": "SDB",
+            name: "Special Retirement"
+        },
+        {
+            "@id": "HSA",
+            name: "HSA Savings",
+            subPlans: [
+                { "@id": "HSA-1", name: "Savings 1" },
+                { "@id": "HSA-2", name: "Savings 2" },
+                { "@id": "HSA-3", name: "Savings 3" }
+            ]
+        },
+        {
+            "@id": "FSA",
+            name: "FSA Savings",
+            subPlans: [
+                { "@id": "FSA-1", name: "Savings 1" }
+            ]
+        },
+        {
+            "@id": "MISC",
+            name: "Misc Savings"
+        },
+        {
+            "@id": "SIMPLE",
+            name: "Simple (no subPlans)"
+        }
+    ]
+}
+```
+
+Notes about nesting:
+
+1. A parent table can have more than one property column configured as a nesting column.
+2. Nesting can be configured to nest 1..N levels deep.
+3. If no child rows are present, the property is simply removed from the parent row.  There *is not* an empty array property specified.
+4. When using `[]`, no nesting is attempted if no column value is provided, if `childTable` is provided, but that table has no rows, or if applying the `childKeyColumn=value` filter results in no rows.
+5. When using `[childTable:childKeyColumn]`, no nesting is attempted if no column value is provided or if the `childKeyColumn` has no row matching the column value.
+6. By default, tables that are the 'child' tables of a nest configuration are still exported as root level table rows.  If the data should _only_ appear in the nested relationship, the `child-only` table flag can be used to supress the normal exporting process.
 
 <br/>
 

@@ -1946,7 +1946,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
             
             $("[rbl-tid]", container)
                 .not("[rbl-source], [rbl-source-table], [data-katapp-template-injected='true']") // not an template with data source, not processed
-                .add(container.is("[rbl-tid]") && container.not("[rbl-source], [rbl-source-table], [data-katapp-template-injected='true']") ? container : [] ) 
+                .add(container.is("[rbl-tid]:not([rbl-source], [rbl-source-table], [data-katapp-template-injected='true'])") ? container : [] ) 
                 .each(function () {
                     const item = $(this);
                     
@@ -2795,7 +2795,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                     SaveCE: saveCalcEngineLocation,
                     RefreshCalcEngine: refreshCalcEngine || ( currentOptions.debug?.refreshCalcEngine ?? false ),
                     PreCalcs: preCalcs,
-                    
+
                     // In case a non-session submission, pass these along
                     // TODO: should we be using JWT for AuthID, AdminAuthID, Client?
                     AuthID: currentOptions.data?.AuthID ?? "NODATA",
@@ -2805,7 +2805,8 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                     CurrentPage: currentOptions.currentPage ?? "KatApp:" + ( currentOptions.view ?? "UnknownView" ),
                     RequestIP: currentOptions.requestIP ?? "1.1.1.1",
                     CurrentUICulture: currentOptions.currentUICulture ?? "en-US",
-                    Environment: currentOptions.environment ?? "PITT.PROD"
+                    Environment: currentOptions.environment ?? "PITT.PROD",
+                    Framework: "KatApp"
                 }
             };
 

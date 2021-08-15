@@ -270,6 +270,7 @@ interface SubmitCalculationOptions
         RequestIP: string;
         CurrentUICulture: string;
         Environment: string;
+        Framework: string;
     };
 }
 

@@ -1642,7 +1642,7 @@ id | benefitType/text | optionId/text | coverageLevel/text
 4 | 02 | 01 | 03
 5 | 03 | 01 | 01
 
-*\<benefitSummary\> table*
+*\<benefitSummary\>/unique-summary:benefitDetails table*
 benefitType/text | optionId/text
 ---|---
 01 | 02

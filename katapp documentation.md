@@ -550,6 +550,14 @@ You can assign multiple event handlers to the same element by `|` delimitting th
 
 ```html
 <!-- 
+    Assigning 'activateRecalc' to all inputs (date/text) AND sliders contained inside div.inputsContainer.
+
+    This is assigned to a 'change' event, but take note for sliders, you need to use the `set` event.
+-->
+<div class="inputsContainer" rbl-on="change:activateRecalc:input|set:activateRecalc:div.slider-control"></div>
+
+
+<!-- 
     Assigning checkYear to an element with data-type='year' attribute assigned when input changes
     Assigning checkMonth to an element with data-type='month' attribute assigned when input changes
 -->

@@ -310,9 +310,11 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                         const inlineTemplate = $(this);
                         const inlineParent = inlineTemplate.parent();
                         if ( inlineParent.attr("rbl-source") == undefined ) {
+                            inlineTemplate.attr("rbl-tid", "inline-no-rbl-source");
                             that.trace( "Inline template's parent does not have rbl-source. " + this.outerHTML.substr(0, 75).replace( /</g, "&lt;").replace( />/g, "&gt;"), TraceVerbosity.None);
                         }
                         else if ( inlineParent.attr("rbl-tid") != undefined ) {
+                            inlineTemplate.attr("rbl-tid", "inline-parent-has-template-already");
                             that.trace( "Inline template is present, but parent has rbl-tid of " + inlineParent.attr("rbl-tid"), TraceVerbosity.None);
                         }
                         else {

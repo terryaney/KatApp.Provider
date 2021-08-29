@@ -1905,6 +1905,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
             return content
                 .replace(/-toggle=/g, "-toggle_=")
                 .replace(/ id=/g, " id_=")
+                .replace(/ src=/g, " src_=")
                 .replace(/<tr>/g, "<tr_>")
                 .replace(/<tr /g, "<tr_ ")
                 .replace(/<\/tr>/g, "</tr_>")
@@ -1918,6 +1919,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
             // disable bootstrap handling *in the template* by putting _ after toggle, then it is turned when
             // the rendered template content is injected.
             let decodedContent = content
+                .replace( / src_=/g, " src=") // changed templates to have src_ so I didn't get browser warning about 404
                 .replace( / id_=/g, " id=") // changed templates to have id_ so I didn't get browser warning about duplicate IDs inside *template markup*
                 .replace( /-toggle_=/g, "-toggle=" ) // changed templates to have -toggle_ so that BS didn't 'process' items that were in templates
                 .replace( /tr_/g, "tr" ) // if tr/td were *not* contained in a table in the template, browsers would just remove them when the template was injected into application, so replace here before injecting template

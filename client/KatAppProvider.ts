@@ -1994,6 +1994,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
             }
 
         injectTemplate( target: JQuery<HTMLElement>, templateId: string ): void {
+
             const template = this.getTemplate( templateId, this.application.dataAttributesToJson(target, "data-"));
 
             // rbl-template-type is to enable the creation of templates with different ids/names but still
@@ -2040,12 +2041,13 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
             else {
                 // Don't see anyone that uses content-selector, can try to remove
                 const contentSelector = template.attr("content-selector");
+                const templateDefaults = application.dataAttributesToJson(template, "default-");
                 return {
                     Type: template.attr("type"),
                     Content:
                         this.decodeTemplateContent( ( contentSelector != undefined ? $(contentSelector, template) : template )
                             .html()
-                            .format( KatApp.extend({}, data, { id: application.id } ) ) )
+                            .format( KatApp.extend({}, templateDefaults, data, { id: application.id } ) ) )
                 };
             }
         }
@@ -3289,24 +3291,17 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                             
                             if ( table !== undefined && table.length > 0 ) {
                                 
+                                const templateDefaults = application.dataAttributesToJson(el, "default-");
+
                                 // Get a 'data' row with all values cleared out so that rows with blanks in CE
                                 // (which aren't exported) are properly handled in templates
-                                const firstRowSource = KatApp.extend( {}, table[0] );
-                                if (Object.keys(firstRowSource).length > 0) {
-                                    for (const propertyName in firstRowSource) {
-                                        firstRowSource[propertyName] = "";
+                                const firstRow = KatApp.extend( {}, table[0] );
+                                if (Object.keys(firstRow).length > 0) {
+                                    for (const propertyName in firstRow) {
+                                        firstRow[propertyName] = "";
                                     }
                                 }
-
-                                const rblSourceDefaults = el.attr( "rbl-source-defaults" );
-                                if ( rblSourceDefaults != undefined ) {
-                                    rblSourceDefaults
-                                        .split( ';' )
-                                        .forEach( def => {
-                                            const defParts = def.split('=');
-                                            firstRowSource[ defParts[ 0 ] ] = defParts.length == 2 ? defParts[ 1 ] : "";
-                                        });
-                                }
+                                const firstRowSource = KatApp.extend( {}, firstRow, templateDefaults );
 
                                 const generateTemplateData = function(templateData: object, templateContent: string): JQuery<HTMLElement> {                                    
                                     try {

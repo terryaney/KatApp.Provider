@@ -6,7 +6,7 @@
     - [Configuring via KatApp Attributes](#Configuring-via-KatApp-Attributes)
     - [Configuring via Javascript Configuration Object](#Configuring-via-Javascript-Configuration-Object)
     - [Initialize multiple KatApps](#Initialize-Multiple-KatApps)
-    - [Configuring CalcEngines and Input/Result Tabs](#Configuring-CalcEngines-and-Input/Result-Tabs)
+    - [Configuring CalcEngines and Input/Result Tabs](#Configuring-CalcEngines-and-InputResult-Tabs)
     - [Using Kaml View's `<rbl-config>` for Configuration](#Using-Kaml-View's-<rbl-config>-for-Configuration)
     - [Multiple CalcEngines and Result Tabs](#Multiple-CalcEngines-and-Result-Tabs)
     - [Configuration Precedence](#Configuration-Precedence)
@@ -34,6 +34,7 @@
         - [errors And warnings Tables](#**errors/warnings**)
         - [ejs-markup Table](#**ejs-markup**)
 - [Templates](#Templates)
+    - [Template Default Attributes](#Template-Default-Attributes)
     - [Template Precedence](#Template-Precedence)
     - [Template Attributes](#Template-Attributes)
     - [Inline Templates](#Inline-Templates)
@@ -942,19 +943,25 @@ The most common use of templates with RBLe results is for repetitive result item
 </ul>
 ```
 
-## rbl-source-defaults Attribute
+## Template Default Attributes
 
-When templates process a data source provided via `rbl-source`, if the data row doesn't have a column requested in the template (i.e. `{requested-column}`), a replace doesn't happen and the templated content returns `{requested-column}`.  If you want to provide default values for columns requested in a template, you can use the `rbl-source-defaults` attribute with values delimited by `;`.
+Templates can be provided default values in case a `{value}` is not provided via the caller with `data-value='xyz'` syntax, or not present in the `rbl-source` data used to render the template.
+
+To provide defaults on a template, simply specify values via `default-` prefixed attributes.  For example, to provide a default value for a `{value}` subsitution, specify `default-value='xyz'` on the `<rbl-template>` or `<div rbl-tid="inline">` element.
+
+When templates are processed, if the data source (`data-` attributes or data row from `rbl-source` driven templates) doesn't have a column requested in the template (i.e. `{missing-column}`), a replace doesn't happen and the templated content returns the static string `{requested-column}` in the markup. Providing defaults allows the Kaml View developers to avoid this situation..
 
 ```html
-<!-- Template -->
-<rbl-template tid="li-foundingfathers">
+<!-- Template, note that columns without =value provided automatically default to blank. -->
+<rbl-template tid="li-foundingfathers" default-age="Old" default-title="Unknown" default-location="" default-show="1">
     <li rbl-display="v:{show}!=0">{first} {last} ({age}), {title}, {location}</li>
 </rbl-template>
 
-<!-- Markup, note that columns without =value provided automatically default to blank. -->
-<ul rbl-tid="li-foundingfathers" rbl-source="foundingfathers" rbl-source-defaults="age=Old;title=Unknown;location;show=1">
-</ul>
+<!-- Markup -->
+<ul rbl-tid="li-foundingfathers" rbl-source="foundingfathers"></ul>
+
+<!-- Markup, using data-* instead of defaults -->
+<ul rbl-tid="li-foundingfathers" rbl-source="foundingfathers" data-age="Old" data-title="Unknown" data-location="" data-show="1"></ul>
 
 <!-- Markup Results (same data source provided in samples above) -->
 <ul rbl-tid="li-foundingfathers" rbl-source="foundingfathers">

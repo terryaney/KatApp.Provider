@@ -462,6 +462,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                     initPipeline( 0 );
                 }
             };
+
             const loadTemplates = function(): void { 
                 // Total number of resources already requested that I have to wait for
                 let otherResourcesNeeded = 0;
@@ -605,6 +606,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
 
                 initPipeline( 0 );
             };
+
             const finalizeInit = function(): void {
                 
                 if ( pipelineError === undefined ) {
@@ -801,7 +803,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                 this.options._sharedDataLastRequested = _sharedData.lastRequested;
             }
 
-            this.exception = this.results = undefined;
+            this.exception = this.results = this.calculationInputs = undefined;
 
             // Build up complete set of options to use for this calculation call
             const currentOptions = KatApp.extend(
@@ -1046,7 +1048,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                             });
 
                             pipelineError = failures[ 0 ].reason.errorMessage; 
-                            that.ui.triggerEvent( "onCalculationErrors", "SubmitCalculation", pipelineError, that.exception, currentOptions, that );
+                            that.ui.triggerEvent( "onCalculationErrors", "SubmitCalculation" + ( that.calculationInputs?.iConfigureUI == 1 ? ".ConfigureUI" : "" ), pipelineError, that.exception, currentOptions, that );
                             calculatePipeline( 2 );
                         }
                         else {
@@ -3258,11 +3260,12 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                             el.addClass("kat-inspector-source");
                             const inspectorName = el.attr("rbl-source") != undefined ? "rbl-source" : "rbl-source-table";
                             const inspectorData = { 
+                                "id": tid ?? "[ID MISSING!]",
                                 "name": inspectorName, 
                                 "value": el.attr(inspectorName),
                                 "template": templateContent ?? "[No template found]"
                             };
-                            let inspectorTitle = "[{name}={value}]\n{template}".format( inspectorData );
+                            let inspectorTitle = "Template: {id}\n{name}: {value}\n\n{template}".format( inspectorData );
                             const existingTitle = el.attr("title");
                             
                             if ( existingTitle != undefined ) {

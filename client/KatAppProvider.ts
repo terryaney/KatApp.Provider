@@ -262,7 +262,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                 2. Get all requiredTemplates ...
                     a. For any required templates *already* requested...
                         1. Can not leave this pipeline step until notified for each template
-                        2. Register callbacks that will be called with template is ready. Each callback...
+                        2. Register callbacks that will be called when template is ready. Each callback...
                             a. If error occurred on any previous template callback, exit function doing nothing
                             b. If not waiting for any more templates, continue to next pipeline
                             c. If waiting for more, set flag and continue to wait
@@ -301,7 +301,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                 $("rbl-katapps").append(inlineContainer);
             }
             
-            const processTemplates = function(templateContainer: JQuery<HTMLElement>, containerName: string ): void {
+            const processInlineTemplates = function(templateContainer: JQuery<HTMLElement>, containerName: string ): void {
                 let inlineTemplates: JQuery<HTMLElement>;
                 // Get all lowest level inlines and walk 'up'
                 while( ( inlineTemplates = $("[rbl-tid='inline']", templateContainer).filter( function() { return $("[rbl-tid='inline']", $(this)).length == 0; } ) ).length > 0 )
@@ -380,7 +380,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                                 viewElement = $("<div class='katapp-css'>" + content + "</div>");
                                 const rblConfig = $("rbl-config", viewElement).first();
 
-                                processTemplates(viewElement, viewId);
+                                processInlineTemplates(viewElement, viewId);
 
                                 // Not sure if I need to manually add script or if ie will load them
                                 // https://www.danielcrabtree.com/blog/25/gotchas-with-dynamically-adding-script-tags-to-html
@@ -420,7 +420,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                                             }                                        
                                         );
                                     });
-                                    }
+                                }
 
                                 if ( viewCalcEngines.length > 0 ) {
                                     if ( that.options.calcEngines?.length == 1 && viewCalcEngines.length == 1 ) {
@@ -443,10 +443,10 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                                     requiredTemplates = 
                                         requiredTemplates
                                             .concat( toFetch.split(",").map( r => r.ensureGlobalPrefix() ) )
-                                            // unique templates only
+                                            // unique templates only (in case global options specified templates)
                                             .filter((v, i, a) => v !== undefined && v.length != 0 && a.indexOf(v) === i );
-
                                 }
+                                that.trace("View needs templates: " + requiredTemplates.join( "," ), TraceVerbosity.Detailed);
                                 
                                 // Don't insert viewElement here...wait until templates are injected so if any styling is needed, it'll be ready/loaded for view
                                 initPipeline( 0 );
@@ -465,63 +465,77 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
             const loadTemplates = function(): void { 
                 // Total number of resources already requested that I have to wait for
                 let otherResourcesNeeded = 0;
-                
+
+                // Array of items this app will fetch that is *NOT* already requested for download or finished
+                const toFetch =
+                    requiredTemplates
+                        .filter( r => !( _templatesUsedByAllApps[ r ]?.requested ?? false ) && _templatesUsedByAllApps[ r ]?.data === undefined );
+                const toWait =
+                    requiredTemplates
+                        .filter( r => ( _templatesUsedByAllApps[ r ]?.requested ?? false ) );
+
+                // Need the following allFetchedIsComplete flag due to following scenario:
+                // 1. KatAppA already requested Template1 that KatAppB need. So KatAppB adds a callback to be notified when Template1 is done
+                // 2. KatAppB starts download of Template2...(results would be put into resourceResults when done)
+                // 3. KatAppA Template1 finishes and notifies KatAppB via callback
+                // 4. KatAppB decrements otherResourcesNeeded and since it was then 0, it calls injectTemplates() (Template2 is still downloading)
+                // 5. However, since Template2 didn't finish in time, it was never put into resourceResults, so injectTemplates() for KatAppB does nothing (skipping Template2)
+                let allFetchedIsComplete = toFetch.length == 0;
+
+                // For every template this app is fetching, add it to the fetch list and set the state to 'requesting'
+                toFetch.forEach( function( r ) {
+                    _templatesUsedByAllApps[ r ] = { requested: true, callbacks: [] };
+                });
+
                 // For all templates that are already being fetched, create a callback to move on when 
-                // not waiting for any more resources
-                requiredTemplates.filter( r => ( _templatesUsedByAllApps[ r ]?.requested ?? false ) )
-                    .forEach( function( r ) {                                
-                        otherResourcesNeeded++;
+                // not waiting for any more resources 
+                toWait.forEach( function( r ) {                                
+                    otherResourcesNeeded++;
+                    that.trace("Need to wait for already requested template: " + r, TraceVerbosity.Detailed);
 
-                        that.trace("Need to wait for already requested template: " + r, TraceVerbosity.Detailed);
+                    _templatesUsedByAllApps[ r ].callbacks.push(
+                        function( errorMessage ) {
+                            that.trace("Template: " + r + " is now ready", TraceVerbosity.Detailed);
 
-                        _templatesUsedByAllApps[ r ].callbacks.push(
-                            function( errorMessage ) {
-                                that.trace("Template: " + r + " is now ready", TraceVerbosity.Detailed);
+                            // only process (moving to finish or next step) if not already assigned an error
+                            // from templates that were requested directly from current KatApp
+                            if ( pipelineError !== undefined ) return;
 
-                                // only process (moving to finish or next step) if not already assigned an error
-                                if ( pipelineError === undefined ) {
-                                    if ( errorMessage === undefined ) {
-                                        otherResourcesNeeded--;
-                                        if ( otherResourcesNeeded === 0 ) {
-                                            that.trace("No more templates needed, process 'inject templates' pipeline", TraceVerbosity.Diagnostic);
-                                            initPipeline( 0 ); // move to next step if not waiting for anything else
-                                        }
-                                        else {
-                                            that.trace("Waiting for " + otherResourcesNeeded + " more templates", TraceVerbosity.Diagnostic);
-                                        }
-                                    }
-                                    else {
-                                        that.trace("Template " + r + " error: " + errorMessage, TraceVerbosity.Quiet );
-                                        pipelineError = errorMessage;
-                                        initPipeline( 1 ); // jump to finish
-                                    }
-                                }
+                            if ( errorMessage !== undefined ) {
+                                that.trace("Template " + r + " error: " + errorMessage, TraceVerbosity.Quiet );
+                                pipelineError = errorMessage;
+                                initPipeline( 1 ); // jump to finish
+                                return;
                             }
-                        );
-                    });
 
-                // Array of items this app will fetch because not requested yet
-                const toFetch: string[] = [];
+                            otherResourcesNeeded--;
 
-                // For every template this app needs that is *NOT* already requested for download
-                // or finished, add it to the fetch list and set the state to 'requesting'
-                requiredTemplates
-                    .filter( r => !( _templatesUsedByAllApps[ r ]?.requested ?? false ) && _templatesUsedByAllApps[ r ]?.data === undefined )
-                    .forEach( function( r ) {
-                        _templatesUsedByAllApps[ r ] = { requested: true, callbacks: [] };
-                        toFetch.push(r);
-                    });
+                            if ( allFetchedIsComplete && otherResourcesNeeded === 0 ) {
+                                that.trace("No more templates needed, process 'inject templates' pipeline", TraceVerbosity.Diagnostic);
+                                initPipeline( 0 ); // move to next step if not waiting for anything else
+                            }
+                            else if ( !allFetchedIsComplete ) {
+                                that.trace("Waiting for toFetch to complete", TraceVerbosity.Diagnostic);
+                            }
+                            else {
+                                that.trace("Waiting for " + otherResourcesNeeded + " more templates", TraceVerbosity.Diagnostic);
+                            }
+                        }
+                    );
+                });
 
                 if ( toFetch.length > 0 ) {
 
                     const toFetchList = toFetch.join(",");
-                    that.trace(toFetchList + " requested from CMS", TraceVerbosity.Detailed);
-
                     const debugResourcesDomain = that.options.debug?.debugResourcesDomain;
 
-                    that.trace("Downloading " + toFetchList + " from " + debugResourcesDomain ?? functionUrl, TraceVerbosity.Diagnostic );
+                    that.trace("Downloading " + toFetchList, TraceVerbosity.Detailed );
+                    that.trace("debugResourcesDomain: " + debugResourcesDomain, TraceVerbosity.Diagnostic );
+                    that.trace("functionUrl: " + functionUrl, TraceVerbosity.Diagnostic );
+                    
                     KatApp.getResources( that, toFetchList, useTestView, false, debugResourcesDomain,
                         ( errorMessage, data ) => {                                
+                            allFetchedIsComplete = true;
 
                             if ( errorMessage === undefined ) {
                                 resourceResults = data as ResourceResults;
@@ -533,7 +547,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                                     initPipeline( 0 );
                                 }
                                 else {
-                                    that.trace("Can't move to next step because waiting on templates", TraceVerbosity.Diagnostic);
+                                    that.trace("Can't move to next step because waiting on " + otherResourcesNeeded + " more templates", TraceVerbosity.Diagnostic);
                                 }
                             }
                             else {
@@ -542,11 +556,13 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                                     let currentCallback: ( ( errorMessage: string )=> void ) | undefined = undefined;
                                     while( ( currentCallback = _templatesUsedByAllApps[ r ].callbacks.pop() ) !== undefined )
                                     {
+                                        that.trace("Calling error message callback on " + r + ": " + errorMessage, TraceVerbosity.Diagnostic);
                                         currentCallback( errorMessage );
                                     }
                                     _templatesUsedByAllApps[ r ].requested = false; // remove it so someone else might try to download again
                                 });
 
+                                that.trace("Downloading " + toFetchList + " from " + ( debugResourcesDomain ?? functionUrl ) + " failed.  Jumping to finish.", TraceVerbosity.Diagnostic );
                                 pipelineError = errorMessage;
                                 initPipeline( 1 ); // jump to finish
                             }
@@ -557,6 +573,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                     initPipeline( 1 ); // jump to finish
                 }
             };
+
             const injectTemplates = function(): void {
                     
                 if ( resourceResults != null ) {
@@ -567,7 +584,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                         const rblKatApps = $("rbl-katapps");
                         const templateContent = $("<rbl-templates rbl-t='" + r.toLowerCase() + "'>" + data.replace( /{thisTemplate}/g, r ) + "</rbl-templates>");
 
-                        processTemplates(templateContent, r);
+                        processInlineTemplates(templateContent, r);
 
                         templateContent.appendTo(rblKatApps);
 

@@ -1995,7 +1995,12 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
 
         injectTemplate( target: JQuery<HTMLElement>, templateId: string ): void {
 
-            const template = this.getTemplate( templateId, this.application.dataAttributesToJson(target, "data-"));
+            const template = 
+                this.getTemplate( 
+                    templateId, 
+                    this.application.dataAttributesToJson(target, "data-"),
+                    true
+                );
 
             // rbl-template-type is to enable the creation of templates with different ids/names but still
             // fall in a category of type.  For example, you may want to make a certain style/template of
@@ -2014,7 +2019,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
             }
         }
     
-        getTemplate( templateId: string, data: JQuery.PlainObject ): { Content: string; Type: string | undefined } | undefined {
+        getTemplate( templateId: string, data: JQuery.PlainObject, includeDefaults: boolean ): { Content: string; Type: string | undefined } | undefined {
             const application = this.application;
             
             // Look first for template overriden directly in markup of view
@@ -2041,7 +2046,8 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
             else {
                 // Don't see anyone that uses content-selector, can try to remove
                 const contentSelector = template.attr("content-selector");
-                const templateDefaults = application.dataAttributesToJson(template, "default-");
+                const templateDefaults = includeDefaults ? application.dataAttributesToJson(template, "default-") : {};
+
                 return {
                     Type: template.attr("type"),
                     Content:
@@ -2104,7 +2110,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
             }
             else if ( itemsContainer.length === 0 ) {
                 const temlpateContent = 
-                    this.getTemplate( isRadio ? "input-radiobuttonlist-vertical-container" : "input-checkboxlist-vertical-container", {} )?.Content ??
+                    this.getTemplate( isRadio ? "input-radiobuttonlist-vertical-container" : "input-checkboxlist-vertical-container", {}, false )?.Content ??
                     "<table class='" + itemTypeClass + " bs-listcontrol' border='0'><tbody class='items-container'></tbody></table>";
 
                 container.append($(temlpateContent));
@@ -2125,7 +2131,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                 : "<input id='{itemId}' type='checkbox' name='{id}:{inputName}:{value}' data-value='{value}' data-input-name='{inputName}' />";
 
             const verticalItemTemplate = 
-                this.getTemplate( isRadio ? "input-radiobuttonlist-vertical-item" : "input-checkboxlist-vertical-item", {} )?.Content ??
+                this.getTemplate( isRadio ? "input-radiobuttonlist-vertical-item" : "input-checkboxlist-vertical-item", {}, false )?.Content ??
                 "<tr rbl-display='{visibleSelector}'>\
                     <td>\
                         <span class='" + itemTypeClass + "'>\
@@ -2139,7 +2145,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                 </tr>";
 
             const horizontalItemTemplate =
-                this.getTemplate( isRadio ? "input-radiobuttonlist-horizontal-item" : "input-checkboxlist-horizontal-item", {} )?.Content ??
+                this.getTemplate( isRadio ? "input-radiobuttonlist-horizontal-item" : "input-checkboxlist-horizontal-item", {}, false )?.Content ??
                 "<div class='form-group " + itemTypeClass + "' rbl-display='{visibleSelector}'>\
                     " + inputTemplate + "\
                     <label for='{itemId}'>{text}</label>\
@@ -3256,7 +3262,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                                 ? [ that.getResultValue( tabDef, rblSourceTableParts[ 0 ], rblSourceTableParts[ 1 ], rblSourceTableParts[ 2 ] ) ?? "unknown" ]
                                 : [ that.getResultValueByColumn( tabDef, rblSourceTableParts[ 0 ], rblSourceTableParts[ 1 ], rblSourceTableParts[ 2 ], rblSourceTableParts[ 3 ] ) ?? "unknown" ];
     
-                        let templateContent = tid != undefined ? application.ui.getTemplate( tid, elementData )?.Content : undefined;
+                        let templateContent = tid != undefined ? application.ui.getTemplate( tid, elementData, false )?.Content : undefined;
     
                         if ( showInspector && !el.hasClass("kat-inspector-source") ) {
                             el.addClass("kat-inspector-source");

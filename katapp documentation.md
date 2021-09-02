@@ -458,11 +458,17 @@ Using the first/default tab from the 'Shared' CalcEngine (key=Shared)
 Show if 'enabled' column from 'wealth-summary' table where 'id' is 'benefit-start' = 1, otherwise hide 
 -->
 <div rbl-ce="Shared" rbl-display="wealth-summary.benefit-start.enabled=1">Wealth Information</div>
+
+<!-- 
+Checking existence of a table given a known key 'benefit-start' by using the built in @id value.
+Show if wealth-summary row with id=benefit-start exists.
+-->
+<div rbl-display="wealth-summary.benefit-start.@id=benefit-start">benefit-start row exists</div>
 ```
 
 **Template Value Expressions**
 
-The `rbl-display` attribute usually works off of values from a CalcEngine result directly.  However, inside [Templates](#Templates), visibility can be controlled by looking at values on the current data being processed by the template, using the simply expressions above.  To accomplish this, a `v:` (for value) prefix is added.
+The `rbl-display` attribute usually works off of values from a CalcEngine result directly.  However, inside [Templates](#Templates), visibility can be controlled by looking at values on the current data being processed by the template, using the simple expressions above.  To accomplish this, a `v:` (for value) prefix is added.
 
 For example, if the data processed by a template had a `code` and `count` column, the following could be leveraged.
 
@@ -470,6 +476,8 @@ For example, if the data processed by a template had a `code` and `count` column
 <div rbl-display="v:{code}=YES">Show if the `code` column is `YES`.</div>
 
 <div rbl-display="v:{count}>=2">Show if the `count` column is greater than or equal to 2.</div>
+
+<div rbl-display="v:{field}=">Show if the `field` column is blank.</div>
 ```
 
 ## rbl-on Event Handlers

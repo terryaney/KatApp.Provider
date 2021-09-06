@@ -637,7 +637,8 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                     // Update options.viewTemplates just in case someone is looking at them
                     that.options.viewTemplates = requiredTemplates.join( "," );
 
-                    that.ui.injectTemplatesWithoutSource(that.element);
+                    const showInspector = that.options.debug?.showInspector ?? false;
+                    that.ui.injectTemplatesWithoutSource(that.element, showInspector);
 
                     // This used to be inside Standard_Template.templateOn, but since it is standard and so common, just moved it here.
                     // Original code:
@@ -746,7 +747,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
 
         runRBLeCommand(commandName: string): void {
             // Debugging helper
-            const app = this;
+            const application = this;
 
             const logSuccess = function( result: any ): void { 
                 if ( result.payload !== undefined ) {
@@ -760,11 +761,11 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
             };
             const data = {
                 "Command": commandName, 
-                "Token": app.options.registeredToken!
+                "Token": application.options.registeredToken!
             };
 
-            if ( app.options.submitCalculation != null ) {
-                app.options.submitCalculation( app, data, logSuccess, logError );
+            if ( application.options.submitCalculation != null ) {
+                application.options.submitCalculation( application, data, logSuccess, logError );
             }
             else {
                 $.ajax( { 
@@ -1286,33 +1287,6 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
             */
         }
 
-        private processResults( calculationOptions: KatAppOptions ): void {
-            this.trace("Processing results from calculation", TraceVerbosity.Detailed);
-            const start = new Date();
-            try {
-                this.element.removeData("katapp-save-calcengine");
-                this.element.removeData("katapp-trace-calcengine");
-                this.element.removeData("katapp-refresh-calcengine");
-                this.options.defaultInputs = undefined;
-    
-                this.ui.triggerEvent( "onResultsProcessing", this.results, calculationOptions, this );
-                
-                this.rble.processResults( calculationOptions );
-               
-                if ( this.calculationInputs?.iConfigureUI === 1 ) {
-                    this.ui.triggerEvent( "onConfigureUICalculation", this.results, calculationOptions, this );
-                }
-    
-                this.ui.triggerEvent( "onCalculation", this.results, calculationOptions, this );
-            } catch (error) {
-                this.trace( "Error during result processing: " + error, TraceVerbosity.None );
-                this.ui.triggerEvent( "onCalculationErrors", "ProcessResults", error, this.exception, calculationOptions, this );
-            }
-            finally {
-                this.trace("Processing results took " + ( Date.now() - start.getTime() ) + "ms", TraceVerbosity.Detailed);
-            }
-        }
-
         configureUI( customOptions?: KatAppOptions ): void {
             const manualInputs: KatAppOptions = { manualInputs: { iConfigureUI: 1, iDataBind: 1 } };
             this.calculate( KatApp.extend( {}, customOptions, manualInputs ) );
@@ -1362,6 +1336,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                 this.calculate();
             }
         }
+
         setInput( id: string, value: string | undefined, calculate = false): void {
             this.rble.setInput(id, value);
 
@@ -1390,6 +1365,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                 }
             }
         }
+
         hideAjaxBlocker(): void {
             this.blockerCount--;
 
@@ -1404,6 +1380,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                 this.blockerCount = 0;
             }
         }
+
         setResults( results: TabDef[] | undefined, calculationOptions: KatAppOptions = this.options ): void {
             const calcEngines = calculationOptions.calcEngines;
 
@@ -1630,6 +1607,33 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
             });
         }
         
+        private processResults( calculationOptions: KatAppOptions ): void {
+            this.trace("Processing results from calculation", TraceVerbosity.Detailed);
+            const start = new Date();
+            try {
+                this.element.removeData("katapp-save-calcengine");
+                this.element.removeData("katapp-trace-calcengine");
+                this.element.removeData("katapp-refresh-calcengine");
+                this.options.defaultInputs = undefined;
+    
+                this.ui.triggerEvent( "onResultsProcessing", this.results, calculationOptions, this );
+                
+                this.rble.processResults( calculationOptions );
+               
+                if ( this.calculationInputs?.iConfigureUI === 1 ) {
+                    this.ui.triggerEvent( "onConfigureUICalculation", this.results, calculationOptions, this );
+                }
+    
+                this.ui.triggerEvent( "onCalculation", this.results, calculationOptions, this );
+            } catch (error) {
+                this.trace( "Error during result processing: " + error, TraceVerbosity.None );
+                this.ui.triggerEvent( "onCalculationErrors", "ProcessResults", error, this.exception, calculationOptions, this );
+            }
+            finally {
+                this.trace("Processing results took " + ( Date.now() - start.getTime() ) + "ms", TraceVerbosity.Detailed);
+            }
+        }
+
         // Result helper
         getResultTable<T>( tableName: string, tabDef?: string, calcEngine?: string): Array<T> {
             return this.rble.getResultTable<T>( this.rble.getTabDef( tabDef, calcEngine ), tableName );
@@ -1709,6 +1713,10 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                 $("rbl-config", this.element).attr("bootstrap") ?? "3";
             
             return +version;
+        }
+
+        get defaultCalcEngineKey(): string {
+            return ( this.options.calcEngines != undefined ? this.options.calcEngines[0].key : undefined ) ?? "default";
         }
     }
     
@@ -1895,12 +1903,18 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
 
                     // If selected item from dropdown was hidden, need to clear the value
                     if (currentValue === ls.Value) {
+                        dropdown.val("");
+
+                        /* Think I should always just set dropdown val and 
+                            selectPicker.refresh will take care of rest
+
                         if (selectPicker !== undefined) {
                             selectPicker.selectpicker("val", "");
                         }
                         else {
                             dropdown.val("");
                         }
+                        */
                     }
                 }
                 else {
@@ -1963,35 +1977,37 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
             return decodedContent;
         }
 
-        injectTemplatesWithoutSource(container: JQuery<HTMLElement>): void {
-            const app = this.application;
+        injectTemplatesWithoutSource(container: JQuery<HTMLElement>, showInspector: boolean): void {
             const that = this;
-            
-            $("[rbl-tid]", container)
-                .not("[rbl-source], [rbl-source-table], [data-katapp-template-injected='true']") // not an template with data source, not processed
-                .add(container.is("[rbl-tid]:not([rbl-source], [rbl-source-table], [data-katapp-template-injected='true'])") ? container : [] ) 
-                .each(function () {
-                    const item = $(this);
-                    
-                    const templateParent = item.parent("rbl-template");
-                    // If not contained in an rbl-template, or contained in the template currently being processed
-                    if ( templateParent.length == 0 || templateParent[0] == container[0] ) {
-                        const templateId = item.attr('rbl-tid')!;
-                        that.injectTemplate( item, templateId );
 
-                        // 'container' is always added if it is a templated item without a source, however, we can't all recursively if
-                        // processing that item, otherwise it'll just keep processing it infinitely
-                        if ( item[0] != container[0]) {
-                            // If not inside a template, mark it done 'forever', otherwise, don't mark this
-                            // so that each time a template processes, it'll process the item
-                            if ( templateParent.length == 0 ) {
-                                item.attr("data-katapp-template-injected", "true");
-                            }
-                            that.injectTemplatesWithoutSource(item);
-                        }
+            const itemsToProcess = 
+                $("[rbl-tid]", container)
+                    .not("[rbl-source], [rbl-source-table], [data-katapp-template-injected='true']") // not an template with data source, not processed
+                    .add(container.is("[rbl-tid]:not([rbl-source], [rbl-source-table], [data-katapp-template-injected='true'])") ? container : [] );
+
+            itemsToProcess.each(function () {
+                const item = $(this);                    
+                const templateParent = item.parent("rbl-template");
+
+                // If not contained in an rbl-template, or contained in the template currently being processed
+                if ( templateParent.length == 0 || templateParent[0] == container[0] ) {
+                    if ( templateParent.length != 0 ) {
+                        debugger; // Want to see what type of template causes this to be true, I can't think of case where this would be true
                     }
-                });
-            }
+
+                    const templateId = item.attr('rbl-tid')!;
+                    that.injectTemplate( item, templateId );
+
+                    // If not inside a template, mark it done 'forever', otherwise, don't mark this
+                    // so that each time a template processes, it'll process the item
+                    if ( templateParent.length == 0 ) {
+                        item.attr("data-katapp-template-injected", "true");
+                    }
+
+                    that.injectTemplatesWithoutSource(item, showInspector);
+                }
+            });
+        }
 
         injectTemplate( target: JQuery<HTMLElement>, templateId: string ): void {
 
@@ -2365,10 +2381,10 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
         }
 
         bindRblOnHandlers(): void {
-            const app = this.application;
-            if ( app.options.handlers != undefined ) {
+            const application = this.application;
+            if ( application.options.handlers != undefined ) {
                 // move events on templated output into targets after template is rendered
-                $("[rbl-tid][rbl-on]", app.element)
+                $("[rbl-tid][rbl-on]", application.element)
                     .not("rbl-template *")
                     .each(function() {
                         const template = $(this);
@@ -2432,7 +2448,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                 // If a handler was put on an html container with a selector but the container was *not*
                 // a template, the handlers were not moved to targets in above method, so have to move them
                 // to the intended targets in this loop
-                $("[rbl-on]", app.element)
+                $("[rbl-on]", application.element)
                     .not("[rbl-tid]")
                     .not("[data-rblon-initialized='true']")
                     .not("rbl-template *")
@@ -2458,7 +2474,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                             });
                     });
 
-                $("[rbl-on]", app.element)
+                $("[rbl-on]", application.element)
                     .not("[rbl-tid]")
                     .not("[data-rblon-initialized='true']")
                     .not("rbl-template *")
@@ -2467,7 +2483,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                         const handlers = el.attr("rbl-on")!.split("|");
                         const isSlider = el.attr("data-slider-type") == "nouislider";
                         const noUiSlider = isSlider 
-                            ? app.ui.getNoUiSlider(el)
+                            ? application.ui.getNoUiSlider(el)
                             : undefined;
 
                         // Slider might not be enabled until after calculation is ran...
@@ -2481,10 +2497,10 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                                     const functionName = handler[1];
 
                                     if ( noUiSlider != undefined ) {
-                                        noUiSlider.on( eventName + ".ka",  app.options.handlers![ functionName ] );
+                                        noUiSlider.on( eventName + ".ka",  application.options.handlers![ functionName ] );
                                     }
                                     else {
-                                        el.on( eventName + ".ka",  app.options.handlers![ functionName ] );
+                                        el.on( eventName + ".ka",  application.options.handlers![ functionName ] );
                                     }
                                 });
                             
@@ -3114,9 +3130,10 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
             return undefined;
         }
         
-        processRblValues(defaultCalcEngineKey: string, showInspector: boolean): void {
+        processRblValues(defaultCalcEngineKey: string | undefined, showInspector: boolean): void {
             const that: RBLeUtilities = this;
             const application = this.application;
+            const defaultCEKey = defaultCalcEngineKey ?? application.defaultCalcEngineKey;
     
             $("[rbl-value]", application.element)
                 .not("rbl-template *") // Not sure I'd need these to filter out rbl-value elements inside templates because { } should be used for 'values'
@@ -3150,7 +3167,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
 
                         if ( value.indexOf( "rbl-tid" ) > -1 ) {
                             // In case the markup from CE has a template specified...
-                            that.processRblSource(el, defaultCalcEngineKey, showInspector);                        
+                            that.processRblSource(el, defaultCEKey, showInspector);                        
                         }
                     }
                     else {
@@ -3222,15 +3239,15 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                 });
         }
 
-        processRblSources(defaultCalcEngineKey: string, showInspector: boolean): void {
+        processRblSources(defaultCalcEngineKey: string | undefined, showInspector: boolean): void {
             //[rbl-source] processing templates that use rbl results
             this.processRblSource(this.application.element, defaultCalcEngineKey, showInspector);
         }
     
-        processRblSource(root: JQuery<HTMLElement>, defaultCalcEngineKey: string, showInspector: boolean): void {
+        processRblSource(root: JQuery<HTMLElement>, defaultCalcEngineKey: string | undefined, showInspector: boolean): void {
             const that: RBLeUtilities = this;
             const application = this.application;
-    
+            const defaultCEKey = defaultCalcEngineKey ?? application.defaultCalcEngineKey;
             // If root itself is a templated item, I need to add (append) it to the list of
             // items to process, b/c selector below looking 'inside' root will not hit it.
             // The markup for this might look like:
@@ -3251,7 +3268,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                         const tid = el.attr('rbl-tid');
                         const rblSourceTableParts = el.attr('rbl-source-table')?.split('.');
                         const tabDef = that.getTabDef( el.attr('rbl-tab'), el.attr('rbl-ce') )
-                        const tabDefName = tabDef?._fullName ?? ( el.attr( "rbl-ce" ) ?? defaultCalcEngineKey ) + "." + ( el.attr( "rbl-tab" ) ?? "default" );
+                        const tabDefName = tabDef?._fullName ?? ( el.attr( "rbl-ce" ) ?? defaultCEKey ) + "." + ( el.attr( "rbl-tab" ) ?? "default" );
 
                         // rbl-source-table - if provided, is a standard selector path in then form of
                         // table.id.valueColumn or table.columnToSearch.id.valueColumn and can be used to 
@@ -3328,8 +3345,8 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                                     }
 
                                     // Nested templates
-                                    that.application.ui.injectTemplatesWithoutSource(el);
-                                    that.processRblSource(el, defaultCalcEngineKey, showInspector);
+                                    that.application.ui.injectTemplatesWithoutSource(el, showInspector);
+                                    that.processRblSource(el, defaultCEKey, showInspector);
                                     
                                     return hasRoot ? el : el.children();
                                 };
@@ -3391,9 +3408,10 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                 });
         }
     
-        processVisibilities( defaultCalcEngineKey: string, showInspector: boolean): void {
+        processVisibilities( defaultCalcEngineKey: string | undefined, showInspector: boolean): void {
             const that: RBLeUtilities = this;
             const application = this.application;
+            const defaultCEKey = defaultCalcEngineKey ?? application.defaultCalcEngineKey;
     
             // toggle visibility
             //[rbl-display] controls display = none|block(flex?).  
@@ -3422,7 +3440,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                         // totalReturned=0
                         const rblDisplayParts = rblDisplay.split('.');
                         const tabDef = that.getTabDef( el.attr('rbl-tab'), el.attr('rbl-ce') )
-                        let  tabDefName = tabDef?._fullName ?? ( el.attr( "rbl-ce" ) ?? defaultCalcEngineKey ) + "." + ( el.attr( "rbl-tab" ) ?? "default" );
+                        let  tabDefName = tabDef?._fullName ?? ( el.attr( "rbl-ce" ) ?? defaultCEKey ) + "." + ( el.attr( "rbl-tab" ) ?? "default" );
 
                         if ( tabDef != undefined ) {
                             // Check to see if there's an "=" for a simple equality expression
@@ -4236,6 +4254,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
     
             if ( results !== undefined ) {
                 const showInspector = application.calculationInputs?.iConfigureUI === 1 && ( calculationOptions.debug?.showInspector ?? false );
+                
                 this.initializeValidationSummaries();
                 this.finalizeValidationSummaries( false );
 
@@ -4259,7 +4278,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                 // rows have been processed and all ejs-output in case they injected 'rbl-' items
                 // in markup that has to be processed
                 application.trace( "Processing all results 'pull' logic", TraceVerbosity.Normal );
-                const defaultCalcEngineKey = ( calculationOptions.calcEngines != undefined ? calculationOptions.calcEngines[0].key : undefined ) ?? "default";
+                const defaultCalcEngineKey = calculationOptions.calcEngines != undefined ? calculationOptions.calcEngines[0].key : undefined;
                 this.processRblSources( defaultCalcEngineKey, showInspector );
                 this.processRblValues( defaultCalcEngineKey, showInspector );
                 this.processRblAttributes( showInspector );
@@ -4681,7 +4700,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
 
                 const application = this.application;
                 const tabDef = application.rble.getTabDef( el.attr('rbl-tab'), el.attr('rbl-ce') )
-                const overrideRows = application.rble.getResultTable<HighChartsOverrideRow>( tabDef,"HighCharts-Overrides").filter( r => KatApp.stringCompare(r["@id"], dataName, true) === 0);
+                const overrideRows = application.rble.getResultTable<HighChartsOverrideRow>( tabDef, "HighCharts-Overrides").filter( r => KatApp.stringCompare(r["@id"], dataName, true) === 0);
                 const optionRows = application.rble.getResultTable<HighChartsOptionRow>( tabDef, "HighCharts-" + optionsName + "-Options");
                 const allDataRows = application.rble.getResultTable<HighChartsDataRow>( tabDef, "HighCharts-" + dataName + "-Data");
                 const dataRows = allDataRows.filter(e => !(e.category || "").startsWith("config-"));
@@ -5093,8 +5112,8 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
 
         private processCarousels( container?: JQuery<HTMLElement> ): void {
             const that: StandardTemplateBuilder = this;
-            const app = this.application;
-            const view = container ?? app.element;
+            const application = this.application;
+            const view = container ?? application.element;
 
             // Hook up event handlers only when *not* already initialized            
             $('[rbl-tid="carousel"],[rbl-template-type="katapp-carousel"]', view)            
@@ -5105,7 +5124,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
 
                     // Need to see if it has had items injected from results yet...
                     if ( el.data("katapp-initialized") != "true" && $(".carousel-indicators button[data-bs-slide-to]", el).length > 0) {
-                        app.trace("Processing carousel: " + el.data("source"), TraceVerbosity.Detailed);
+                        application.trace("Processing carousel: " + el.data("source"), TraceVerbosity.Detailed);
         
                         const carousel = $('.carousel', el);
 
@@ -5140,7 +5159,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
         }
 
         private processCheckboxes( container: JQuery<HTMLElement> ): void {
-            const app = this.application;
+            const application = this.application;
             const builder = this;
 
             $('[rbl-tid="input-checkbox"],[rbl-template-type="katapp-checkbox"]', container)
@@ -5387,9 +5406,9 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
         }
 
         private processTextBoxes( container: JQuery<HTMLElement> ): void {
-            const app = this.application;
-            const applicationId = app.id;
-            const bootstrapVersion = app.bootstrapVersion;
+            const application = this.application;
+            const applicationId = application.id;
+            const bootstrapVersion = application.bootstrapVersion;
             const isBootstrap3 = bootstrapVersion == 3;
             const isBootstrap4 = bootstrapVersion == 4;
             const isBootstrap5 = bootstrapVersion == 5;
@@ -5760,12 +5779,11 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                     });
 
                     if ( selectPickerAvailable ) {
-                        $(".bootstrap-select", el).selectpicker();
-
                         $(".bootstrap-select", el)
+                            .selectpicker()
                             .attr("data-kat-bootstrap-select-initialized", "true")
                             .next(".error-msg")
-                            .addClass("selectpicker"); /* aid in css styling */ /* TODO: Don't think this is matching and adding class */
+                                .addClass("selectpicker"); /* aid in css styling */ /* TODO: Don't think this is matching and adding class */
                     }
             
                     el.attr("data-katapp-initialized", "true");

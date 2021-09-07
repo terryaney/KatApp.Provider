@@ -1939,9 +1939,15 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                 .replace(/-toggle=/g, "-toggle_=")
                 .replace(/ id=/g, " id_=")
                 .replace(/ src=/g, " src_=")
+                .replace(/<table>/g, "<table_>")
+                .replace(/<table /g, "<table_ ")
+                .replace(/<\/table>/g, "</table_>")
                 .replace(/<tr>/g, "<tr_>")
                 .replace(/<tr /g, "<tr_ ")
                 .replace(/<\/tr>/g, "</tr_>")
+                .replace(/<th>/g, "<th_>")
+                .replace(/<th /g, "<th_ ")
+                .replace(/<\/th>/g, "</th_>")
                 .replace(/<td>/g, "<td_>")
                 .replace(/<td /g, "<td_ ")
                 .replace(/<\/td>/g, "</td_>");
@@ -1955,7 +1961,9 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                 .replace( / src_=/g, " src=") // changed templates to have src_ so I didn't get browser warning about 404
                 .replace( / id_=/g, " id=") // changed templates to have id_ so I didn't get browser warning about duplicate IDs inside *template markup*
                 .replace( /-toggle_=/g, "-toggle=" ) // changed templates to have -toggle_ so that BS didn't 'process' items that were in templates
+                .replace( /table_/g, "table" ) // if table is in template and we replace tr -> tr_ when table added to DOM, it removes all the tr_ as 'invalid' and places them before the (now empty) table
                 .replace( /tr_/g, "tr" ) // if tr/td were *not* contained in a table in the template, browsers would just remove them when the template was injected into application, so replace here before injecting template
+                .replace( /th_/g, "th" )
                 .replace( /td_/g, "td" );
 
             if ( this.application.bootstrapVersion > 3 ) {
@@ -5729,6 +5737,8 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                     const lookuptable = el.data("lookuptable");
                     const css = el.data("css");
 
+                    const dataItemsProcessed = [ "data-inputname", "data-label", "data-hidelabel", "data-help", "data-multiselect", "data-livesearch", "data-size", "data-lookuptable", "data-css" ];
+
                     that.ensureRblDisplay( el );
 
                     if ( css !== undefined ) {
@@ -5773,7 +5783,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                     // Merge all other data-* attributes they might want to pass through to bootstrap-select
                     $.each(this.attributes, function(i, attrib){
                         const name = attrib.name;
-                        if ( name.startsWith( "data-") ) {
+                        if ( name.startsWith( "data-") && dataItemsProcessed.indexOf(name) == -1 ) {
                             input.attr(name, attrib.value);
                         }
                     });

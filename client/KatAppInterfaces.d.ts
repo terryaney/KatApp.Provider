@@ -43,7 +43,7 @@ interface KatAppOptions
     // If there are some inputs that should always be passed in on a calculation but aren't available in the UI, 
     // they can be assigned here.  The most common use of this is iConfigureUI/iDataBind/iInputTrigger
     manualInputs?: CalculationInputs;
-    manualResults?: TabDef | undefined
+    manualResults?: TabDef[] | undefined
     
     // Used during updateOptions and init to set default inputs. After inputs are set, defaultInputs
     // property on the options object is set to undefined so they are only applied one time.

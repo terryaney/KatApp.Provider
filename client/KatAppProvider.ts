@@ -1382,24 +1382,29 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
         }
 
         setResults( results: TabDef[] | undefined, calculationOptions: KatAppOptions = this.options ): void {
-            const calcEngines = calculationOptions.calcEngines;
+            const calcEngines = ( calculationOptions.calcEngines ?? [] ).map( ce => ({ name: ce.name, key: ce.key }) );
 
             if ( calculationOptions.manualResults != undefined ) {
+                calcEngines.push( { name: "ManualResults", key: "ManualResults" } );
+
                 if ( results == undefined ) {
                     results = [];
                 }
                 
-                calculationOptions.manualResults["@calcEngine"] = "ManualResults";
-                calculationOptions.manualResults["@name"] = "RBLResults";
-                calculationOptions.manualResults[ "_ManualResults" ] = true;
-                results.push( calculationOptions.manualResults );
+                calculationOptions.manualResults.forEach( ( t, i ) => {
+                    t["@calcEngine"] = "ManualResults";
+                    if ( t["@name"] == undefined ) {
+                        t["@name"] = "RBLResults" + ( i + 1 );
+                    }
+                    results!.push( t );
+                });                
             }
 
+            const defaultCEName = calcEngines[ 0 ].name;
+
             if ( results !== undefined ) {
-                const defaultCEName = calcEngines != undefined ? calcEngines[ 0 ].name : undefined;
                 results.forEach( t => {
-                    // Breakpoint to test tabDef name
-                    t._resultKeys = Object.keys(t).filter( k => !k.startsWith( "@" ) && k != "_ManualResults" );
+                    t._resultKeys = Object.keys(t).filter( k => !k.startsWith( "@" ) );
                     
                     const ceName = t["@calcEngine"].split(".")[ 0 ].replace("_Test", "");
                     
@@ -1414,12 +1419,9 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                             { key: "ce2", name: "clientCe"}
                         ]
                     */
-                    if ( calcEngines != undefined )
-                    {
-                        calcEngines.filter( c => c.name == ceName ).forEach( c => {
-                            t[ "_" +  c.key ] = true;
-                        });
-                    }                    
+                    calcEngines.filter( c => c.name == ceName ).forEach( c => {
+                        t[ "_" +  c.key ] = true;
+                    });
 
                     t._name = t["@name"];
                     t._fullName = ceName + "." + t._name;
@@ -1942,6 +1944,15 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                 .replace(/<table>/g, "<table_>")
                 .replace(/<table /g, "<table_ ")
                 .replace(/<\/table>/g, "</table_>")
+                .replace(/<thead>/g, "<thead_>")
+                .replace(/<thead /g, "<thead_ ")
+                .replace(/<\/thead>/g, "</thead_>")
+                .replace(/<tbody>/g, "<tbody_>")
+                .replace(/<tbody /g, "<tbody_ ")
+                .replace(/<\/tbody>/g, "</tbody_>")
+                .replace(/<tfoot>/g, "<tfoot_>")
+                .replace(/<tfoot /g, "<tfoot_ ")
+                .replace(/<\/tfoot>/g, "</tfoot_>")
                 .replace(/<tr>/g, "<tr_>")
                 .replace(/<tr /g, "<tr_ ")
                 .replace(/<\/tr>/g, "</tr_>")
@@ -1962,6 +1973,9 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                 .replace( / id_=/g, " id=") // changed templates to have id_ so I didn't get browser warning about duplicate IDs inside *template markup*
                 .replace( /-toggle_=/g, "-toggle=" ) // changed templates to have -toggle_ so that BS didn't 'process' items that were in templates
                 .replace( /table_/g, "table" ) // if table is in template and we replace tr -> tr_ when table added to DOM, it removes all the tr_ as 'invalid' and places them before the (now empty) table
+                .replace( /thead_/g, "thead" ) // if table is in template and we replace tr -> tr_ when table added to DOM, it removes all the tr_ as 'invalid' and places them before the (now empty) table
+                .replace( /tbody_/g, "tbody" ) // if table is in template and we replace tr -> tr_ when table added to DOM, it removes all the tr_ as 'invalid' and places them before the (now empty) table
+                .replace( /tfoot_/g, "tfoot" ) // if table is in template and we replace tr -> tr_ when table added to DOM, it removes all the tr_ as 'invalid' and places them before the (now empty) table
                 .replace( /tr_/g, "tr" ) // if tr/td were *not* contained in a table in the template, browsers would just remove them when the template was injected into application, so replace here before injecting template
                 .replace( /th_/g, "th" )
                 .replace( /td_/g, "td" );

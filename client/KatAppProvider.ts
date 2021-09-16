@@ -1899,7 +1899,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
 
                 if (!ls.Visible) {
                     // Hide the item...
-                    currentItem.hide();
+                    currentItem.hide().prop("disabled", true);
 
                     const currentValue = selectPicker?.selectpicker('val') ?? dropdown.val();
 
@@ -1920,7 +1920,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                     }
                 }
                 else {
-                    currentItem.show();
+                    currentItem.show().prop("disabled", false);
                 }
             });
 
@@ -3292,7 +3292,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                         const tabDef = that.getTabDef( el.attr('rbl-tab'), el.attr('rbl-ce') )
                         const tabDefName = tabDef?._fullName ?? ( el.attr( "rbl-ce" ) ?? defaultCEKey ) + "." + ( el.attr( "rbl-tab" ) ?? "default" );
 
-                        // rbl-source-table - if provided, is a standard selector path in then form of
+                        // rbl-source-table - if provided, is a standard selector path in the form of
                         // table.id.valueColumn or table.columnToSearch.id.valueColumn and can be used to 
                         // return dynamic table name for rbl-source from CalcEngine
                         const rblSourceParts = rblSourceTableParts === undefined
@@ -3348,7 +3348,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                                 }
                                 const firstRowSource = KatApp.extend( {}, firstRow, templateDefaults );
 
-                                const generateTemplateData = function(templateData: object, templateContent: string): JQuery<HTMLElement> {                                    
+                                const generateTemplateData = function(templateData: object, templateContent: string): JQuery<HTMLElement> {
                                     try {
                                         templateData = KatApp.extend( {}, firstRowSource, templateData )
                                     } catch {

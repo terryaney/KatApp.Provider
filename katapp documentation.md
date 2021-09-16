@@ -1649,15 +1649,16 @@ Nesting `[]` | Column Switch | Optional syntax to specify that a column contains
 
 #### Unique Summary Configuration
 
-Producing a unique list of values in CalcEngines can be difficult (especially when the unique _key_ is a combination of multiple columns). To alleviate this problem, RBLe can produce a unique list of values from input tables (UI inputs, Data Tables `<>` or Global Tables `<<>>`).  The configuration is controlled by the `/unique-summary:detailTable` flag and the columns specified in the summary table.
+Producing a unique list of values in CalcEngines can be difficult (especially when the unique _key_ is a combination of multiple columns). To alleviate this problem, RBLe can produce a unique list of values from input tables (UI inputs, `<data-tables>` or `<<global-tables>>`).  The configuration is controlled by the `/unique-summary:detailTable` flag and the columns specified in the summary table.
 
 1. The `/unique-summary:detailTable` flags a table as a _summary_ table and the `detailTable` name indicates the table that should be summarized.
-2. When creating a summary table, you indicate what type of table (input, data, or global) the detail table is by using the same naming convention: `<>` (data), `<<>>` (global), or no `<>` for user input tables.
+2. When creating a summary table, you indicate what type of table (input, data, or global) the detail table is by using the same naming convention: `<data>`, `<<global>>`, or no `<>` for user input tables.
 3. In the summary table, only columns that generate the _unique_ list of values desired should be specified.  Additional columns (i.e. for additional details) *can not* be used.
 
 In the example below, `benefitSummary` will contain values that generate a unique list across the `benefitType` and `optionId` columns from the `benefitDetails` table.
 
-*\<benefitDetails\> table*
+*&lt;benefitDetails&gt; table*
+
 id | benefitType/text | optionId/text | coverageLevel/text
 ---|---|---|---
 1 | 01 | 02 | 05
@@ -1666,7 +1667,8 @@ id | benefitType/text | optionId/text | coverageLevel/text
 4 | 02 | 01 | 03
 5 | 03 | 01 | 01
 
-*\<benefitSummary\>/unique-summary:benefitDetails table*
+*&lt;benefitSummary&gt;/unique-summary:benefitDetails table*
+
 benefitType/text | optionId/text
 ---|---
 01 | 02

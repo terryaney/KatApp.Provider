@@ -2987,7 +2987,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
         }
     
         getResultRow<T>( tabDef: TabDef | undefined, table: string, key: string, columnToSearch?: string ): T | undefined { 
-            const rows = tabDef?.[table];
+            const rows = this.getResultTable<T>( tabDef, table );
     
             if (tabDef === undefined || rows === undefined) return undefined;
     
@@ -2996,7 +2996,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                 key = key + "";
             }
 
-            const rowLookups = tabDef?._resultRowLookups || ( tabDef._resultRowLookups = {} );
+            const rowLookups = tabDef._resultRowLookups || ( tabDef._resultRowLookups = {} );
     
             const lookupKey = table + (columnToSearch ?? "");
             const lookupColumn = columnToSearch ?? "@id";
@@ -3126,23 +3126,23 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
             if ( tabDef != undefined ) {
                 if ( selectorParts.length === 1 ) 
                 {
-                    return this.getResultValue( tabDef, defaultTableName, selectorParts[0], "value") ??
-                        ( this.getResultRow<JSON>( tabDef, defaultTableName, selectorParts[0] ) !== undefined ? "" : undefined );
+                    const row = this.getResultRow<JSON>( tabDef, defaultTableName, selectorParts[0] );
+                    return row !== undefined ? row[ "value" ] ?? "" : undefined;
                 }
                 else if (selectorParts.length === 2) 
                 {
-                    return this.getResultValue( tabDef, selectorParts[0], selectorParts[1], "value") ??
-                        ( this.getResultRow<JSON>( tabDef, selectorParts[0], selectorParts[1] ) !== undefined ? "" : undefined );
+                    const row = this.getResultRow<JSON>( tabDef, selectorParts[0], selectorParts[1] );
+                    return row !== undefined ? row[ "value" ] ?? "" : undefined;
                 }
                 else if (selectorParts.length === 3) 
                 {
-                    return this.getResultValue( tabDef, selectorParts[0], selectorParts[1], selectorParts[2]) ??
-                        ( this.getResultRow<JSON>( tabDef, selectorParts[0], selectorParts[1] ) !== undefined ? "" : undefined );
+                    const row = this.getResultRow<JSON>( tabDef, selectorParts[0], selectorParts[1] );
+                    return row !== undefined ? row[ selectorParts[2] ] ?? "" : undefined;
                 }
                 else if (selectorParts.length === 4) 
                 {
-                    return this.getResultValueByColumn( tabDef, selectorParts[0], selectorParts[1], selectorParts[2], selectorParts[3]) ??
-                        ( this.getResultRow<JSON>( tabDef, selectorParts[0], selectorParts[2], selectorParts[1] ) !== undefined ? "" : undefined );
+                    const row = this.getResultRow<JSON>( tabDef, selectorParts[0], selectorParts[2], selectorParts[1] );
+                    return row !== undefined ? row[ selectorParts[3] ] ?? "" : undefined;
                 }
                 else {
                     this.application.trace( "Invalid selector length for [" + tabDef._fullName + "." + selectorParts.join(".") + "]", TraceVerbosity.Quiet );
@@ -3162,8 +3162,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                 .each(function () {
                     let el = $(this);
         
-                    if ( showInspector && !el.hasClass("kat-inspector-value") )
-                    {
+                    if ( showInspector && !el.hasClass("kat-inspector-value") ) {
                         el.addClass("kat-inspector-value");
                         let inspectorTitle = "[rbl-value={value}]".format( { "value": el.attr('rbl-value') } );
                         const existingTitle = el.attr("title");
@@ -3207,8 +3206,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                 .each(function () {
                     let el = $(this);
         
-                    if ( showInspector && !el.hasClass("kat-inspector-attr") )
-                    {
+                    if ( showInspector && !el.hasClass("kat-inspector-attr") ) {
                         el.addClass("kat-inspector-attr");
                         let inspectorTitle = "[rbl-attr={value}]".format( { "value": el.attr('rbl-attr') } );
                         const existingTitle = el.attr("title");
@@ -3290,7 +3288,17 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                         const tid = el.attr('rbl-tid');
                         const tabDef = that.getTabDef( el.attr('rbl-tab'), el.attr('rbl-ce') )
                         const tabDefName = tabDef?._fullName ?? ( el.attr( "rbl-ce" ) ?? defaultCEKey ) + "." + ( el.attr( "rbl-tab" ) ?? "default" );
-                        const rblSourceParts = el.attr('rbl-source')?.split('.');
+                        const isTableExpression = el.attr('rbl-source') != undefined && el.attr('rbl-source')!.indexOf("[") > -1;
+                        
+                        // rbl-source:
+                        // tableName - all rows
+                        // tableName.idValue - row where @id = idValue
+                        // tableName.columnName.columnValue - rows where columnName = columnValue
+                        // tableName[javascript] - rows where javascript expression evaluates to true
+                        const rblSourceParts = 
+                            isTableExpression 
+                                ? [ el.attr("rbl-source")! ]
+                                : el.attr('rbl-source')?.split('.');
     
                         let templateContent = tid != undefined ? application.ui.getTemplate( tid, elementData, false )?.Content : undefined;
     
@@ -3324,8 +3332,9 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                             }
                         }
                         else {
-                            //table in array format.  Clear element, apply template to all table rows and .append
-                            const table = that.getResultTable<JSON>( tabDef, rblSourceParts[0] );
+                            //table in array format.  Clear element, apply template to all table rows and .append                            
+                            const tableName = rblSourceParts[0].split("[")[ 0 ];
+                            const table = that.getResultTable<JSON>( tabDef, tableName );
                             
                             if ( table !== undefined && table.length > 0 ) {
                                 
@@ -3367,7 +3376,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                                 };
 
                                 if ( rblSourceParts.length === 2 ) {
-                                    const rowSource = that.getResultRow<JSON>( tabDef, rblSourceParts[0], rblSourceParts[1] );
+                                    const rowSource = that.getResultRow<JSON>( tabDef, tableName, rblSourceParts[1] );
 
                                     if ( rowSource !== undefined ) {
                                         const templateResult = generateTemplateData(
@@ -3392,22 +3401,42 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
 
                                     table.forEach( ( row, index ) => {
                                         if ( rblSourceParts.length === 1 || row[ rblSourceParts[ 1 ] ] == rblSourceParts[ 2 ] ) {
-                                            // Automatically add the _index0 and _index1 for carousel template
-                                            // const templateData = KatApp.extend( {}, row, { _index0: index, _index1: index + 1 } )
-                                            const templateResult = generateTemplateData(
-                                                KatApp.extend( {}, row, { _index0: index, _index1: index + 1 } ),
-                                                // compiler mis-stating that templateContent could be undefined
-                                                templateContent!
-                                            );
-        
-                                            if ( prepend ) {
-                                                el.prepend( templateResult );
+                                            let processTableRow = true;
+
+                                            if ( isTableExpression ) {
+                                                const expressionStart = rblSourceParts[ 0 ].indexOf("[");
+
+                                                let tableExpressionScript = 
+                                                    rblSourceParts[ 0 ].substring(
+                                                        rblSourceParts[ 0 ].indexOf("[")+1,
+                                                        rblSourceParts[ 0 ].lastIndexOf("]")
+                                                    );
+
+                                                if ( !tableExpressionScript.endsWith(";" ) ) {
+                                                    tableExpressionScript += ";";
+                                                }
+                                                const tableExpression =  function (): any { return eval(tableExpressionScript); } // eslint-disable-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-non-null-assertion
+                                                processTableRow = tableExpression.call(row);
                                             }
-                                            else if ( prependBeforePreserve ) {
-                                                templateResult.insertBefore( $(".rbl-preserve", el).first() );
-                                            }
-                                            else {
-                                                el.append( templateResult );
+    
+                                            if ( processTableRow ) {
+                                                // Automatically add the _index0 and _index1 for carousel template
+                                                // const templateData = KatApp.extend( {}, row, { _index0: index, _index1: index + 1 } )
+                                                const templateResult = generateTemplateData(
+                                                    KatApp.extend( {}, row, { _index0: index, _index1: index + 1 } ),
+                                                    // compiler mis-stating that templateContent could be undefined
+                                                    templateContent!
+                                                );
+            
+                                                if ( prepend ) {
+                                                    el.prepend( templateResult );
+                                                }
+                                                else if ( prependBeforePreserve ) {
+                                                    templateResult.insertBefore( $(".rbl-preserve", el).first() );
+                                                }
+                                                else {
+                                                    el.append( templateResult );
+                                                }
                                             }
                                         }
                                     });
@@ -3423,6 +3452,44 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                 });
         }
     
+        getSimpleExpression(expression: string): { field: string, operator: string, value: string, isNumber: boolean, evaluate: ( value: string )=> string } | undefined {
+            // Check to see if there's an "=" for a simple equality expression
+            // If rblDisplay = table.id.col=value, rblDisplayParts is: table, id, col=value
+            // so split the last item and if expression is present, change the last displayParts
+            // from col=value to just col.  Then get the value.
+            const isInequality = expression.indexOf("!=") > -1;
+            const isLTE = expression.indexOf("<=") > -1;
+            const isLT = !isLTE && expression.indexOf("<") > -1;
+            const isGTE = expression.indexOf(">=") > -1;
+            const isGT = !isGTE && expression.indexOf(">") > -1;
+
+            const splitOperator =
+                isInequality ? '!=' : 
+                isLTE ? '<=' :
+                isLT ? '<' :
+                isGTE ? '>=' :
+                isGT ? '>' : '=';
+
+            const expressionParts = expression.split(splitOperator);
+                
+            if ( expressionParts.length == 2 ) {
+                return {
+                    field: expressionParts[ 0 ],
+                    operator: splitOperator == "=" ? "==" : splitOperator,
+                    value: expressionParts[ 1 ],
+                    isNumber: isLTE || isLT || isGTE || isGT,
+                    evaluate: function( value ) {
+                        const expression = this.isNumber
+                            ? "{v1} {op} {v2}".format( { v1: +value, op: this.operator, v2: +this.value } )
+                            : "\"{v1}\" {op} \"{v2}\"".format( { v1: value, op: this.operator, v2: this.value } );
+                        return <boolean>eval(expression) ? "1" : "0";
+                    }
+                };
+            }
+
+            return undefined;
+        };
+
         processVisibilities( defaultCalcEngineKey: string | undefined, showInspector: boolean): void {
             const that: RBLeUtilities = this;
             const application = this.application;
@@ -3437,9 +3504,20 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                     const el = $(this);
                     const rblDisplay = el.attr('rbl-display');
 
+                    // rbl-display
+                    // id - rbl-display[@id=id]/value || ejs-visibilty[@id=id]/value returns falsy
+                    // table.idValue - table[@id=idValue]/value returns falsy
+                    // table.idValue.column - table[@id=idValue]/column returns falsy
+                    // table.keyColumn.keyValue.column - table[keyColumn=keyValue]/column returns falsy
+                    
+                    // Expressions:
+                    // table[expression] - If expression for any row returns falsy
+                    //  table[this['@id']='idValue' ? this.column : true]
+                    // table.idValue[expression] - If expression for table[@id=idValue] row returns falsy
+                    //  table[this.column.indexOf('hide') > -1 ? false : true]
+
                     if ( rblDisplay != undefined ) {
-                        if ( showInspector && !el.hasClass("kat-inspector-display") )
-                        {
+                        if ( showInspector && !el.hasClass("kat-inspector-display") ) {
                             el.addClass("kat-inspector-display");
                             let inspectorTitle = "[rbl-display={value}]".format( { value: rblDisplay } );
                             const existingTitle = el.attr("title");
@@ -3452,31 +3530,15 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                             el.attr("title", inspectorTitle);
                         }
             
-                        // totalReturned=0
                         const rblDisplayParts = rblDisplay.split('.');
                         const tabDef = that.getTabDef( el.attr('rbl-tab'), el.attr('rbl-ce') )
-                        let  tabDefName = tabDef?._fullName ?? ( el.attr( "rbl-ce" ) ?? defaultCEKey ) + "." + ( el.attr( "rbl-tab" ) ?? "default" );
 
                         if ( tabDef != undefined ) {
-                            // Check to see if there's an "=" for a simple equality expression
-                            // If rblDisplay = table.id.col=value, rblDisplayParts is: table, id, col=value
-                            // so split the last item and if expression is present, change the last displayParts
-                            // from col=value to just col.  Then get the value.
-                            const isInequality = rblDisplayParts[ rblDisplayParts.length - 1].indexOf("!=") > -1;
-                            const isLTE = rblDisplayParts[ rblDisplayParts.length - 1].indexOf("<=") > -1;
-                            const isLT = rblDisplayParts[ rblDisplayParts.length - 1].indexOf("<") > -1;
-                            const isGTE = rblDisplayParts[ rblDisplayParts.length - 1].indexOf(">=") > -1;
-                            const isGT = rblDisplayParts[ rblDisplayParts.length - 1].indexOf(">") > -1;
+                            const simpleExpression = that.getSimpleExpression(rblDisplayParts[ rblDisplayParts.length - 1]);
 
-                            const splitOperator =
-                                isInequality ? '!=' : 
-                                isLTE ? '<=' :
-                                isLT ? '<' :
-                                isGTE ? '>=' :
-                                isGT ? '>' : '=';
-
-                            const expressionParts = rblDisplayParts[ rblDisplayParts.length - 1].split(splitOperator);
-                            rblDisplayParts[ rblDisplayParts.length - 1] = expressionParts[0];
+                            if ( simpleExpression != undefined ) {
+                                rblDisplayParts[ rblDisplayParts.length - 1] = simpleExpression.field;
+                            }
                             
                             let visibilityValue = 
                                 rblDisplayParts[ 0 ].startsWith( "v:" ) ? rblDisplayParts[ 0 ].substring( 2 ) :
@@ -3486,16 +3548,9 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                 
                             if (visibilityValue != undefined) {
 
-                                // Reassign the value you are checking to 1/0 if they tried to compare with
-                                // an expression of col=value.
-                                if ( expressionParts.length > 1) {
-                                    visibilityValue = 
-                                        isInequality ? ( visibilityValue != expressionParts[1] ? "1" : "0" ) : 
-                                        isLTE ? ( +visibilityValue <= +expressionParts[1] ? "1" : "0" ) :
-                                        isLT ? ( +visibilityValue < +expressionParts[1] ? "1" : "0" ) :
-                                        isGTE ? ( +visibilityValue >= +expressionParts[1] ? "1" : "0" ) :
-                                        isGT ? ( +visibilityValue > +expressionParts[1] ? "1" : "0" ) :
-                                        ( visibilityValue == expressionParts[1] ? "1" : "0" );
+                                // Reassign the value you are checking if they are using simple expressions
+                                if ( simpleExpression != undefined) {
+                                    visibilityValue = simpleExpression.evaluate(visibilityValue);
                                 }
                 
                                 if (visibilityValue === "0" || visibilityValue.toLowerCase() === "false" || visibilityValue === "") {
@@ -3509,7 +3564,8 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                             }
                         }
 
-                        application.trace("<b style='color: Red;'>RBL WARNING</b>: no data returned for tab=" + tabDefName + ", rbl-display=" + rblDisplay, TraceVerbosity.Detailed);
+                        const tabDefName = tabDef?._fullName ?? ( el.attr( "rbl-ce" ) ?? defaultCEKey ) + "." + ( el.attr( "rbl-tab" ) ?? "default" );
+                        application.trace("<b style='color: Red;'>RBL WARNING</b>: no tab found for " + tabDefName + ", rbl-display=" + rblDisplay, TraceVerbosity.Detailed);
                     }
                 });
         }
@@ -4431,13 +4487,22 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                 return eval(v);
 			}
 			else if (value.startsWith("function ")) {
-                // What I changed it to, so it kept params, but maybe not needed??  FindDr has function ( event ) { }...only works if I DON'T have the (event) in my code
-				// const f = this.removeRBLEncoding("function f {function} f.call(this);".format( { function: value.substring(value.indexOf("(")) } ));
+                // FindDr has: 
+                //  function ( event ) { $(\".iChartClick\").val( event.point.id ).trigger('change'); }
+                // Only works if I DON'T have the (event) in my code, so substring after ( didn't work
+                // and only substring after { worked. 
+				// const f = 
+                //  this.removeRBLEncoding("function f {function} f.call(this);"
+                //      .format( { function: value.substring(value.indexOf("(")) } ));
                 // https://bitbucket.org/benefittechnologyresources/katapp/commits/f81b20cb5d76b24d92579613b2791bbe37374eb2#chg-client/KatAppProvider.ts
-                const f = this.removeRBLEncoding("function f() {value} f.call(this);".format( { value: value.substring(value.indexOf("{")) } ));				
-
-                // value = "function ( event ) { debugger; $(\".iChartClick\").val( event.point.id ).trigger('change'); }"
-                // f_1 = this.removeRBLEncoding("function f() {value} f.call(this);".format( { value: value.substring(value.indexOf("{")) } ))
+                //
+                // **BUT** I don't understand how 'event' (or other parms described in Highcharts documentation) 
+                // are available when they aren't really mentioned anywhere.
+                // **NOTE**: Also, if I simply use what's inside { } instead of the function f() { ... } f.call(this);
+                //           it also seems to work.
+                const f = 
+                    this.removeRBLEncoding("function f() {function} f.call(this);"
+                        .format( { function: value.substring(value.indexOf("{")) } ));				
 
 				return function (): any { return eval(f!); } // eslint-disable-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-non-null-assertion
 			}

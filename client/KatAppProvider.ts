@@ -2004,8 +2004,8 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
 
             const itemsToProcess = 
                 $("[rbl-tid]", container)
-                    .not("[rbl-source], [rbl-source-table], [data-katapp-template-injected='true']") // not an template with data source, not processed
-                    .add(container.is("[rbl-tid]:not([rbl-source], [rbl-source-table], [data-katapp-template-injected='true'])") ? container : [] );
+                    .not("[rbl-source], [data-katapp-template-injected='true']") // not an template with data source, not processed
+                    .add(container.is("[rbl-tid]:not([rbl-source], [data-katapp-template-injected='true'])") ? container : [] );
 
             itemsToProcess.each(function () {
                 const item = $(this);                    
@@ -3106,7 +3106,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                             // UPDATE: Continuing comment above, this looks to only process 'control' templates if only one returned in markup
                             // row, but probably need to change to look for any items in el.  Then additionally, move 'inline' to templates as well
                             // but for now, don't think anyone uses this, was more of a POC concept.
-                            if (templateId !== undefined && templateId != "inline" && el.attr("rbl-source") == undefined && el.attr("rbl-source-table") == undefined) {
+                            if (templateId !== undefined && templateId != "inline" && el.attr("rbl-source") == undefined) {
                                 //Replace content with template processing, using data-* items in this pass
                                 this.application.ui.injectTemplate( el, templateId );
                             }
@@ -3277,8 +3277,8 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
             //  <rbl-template tid="parent-template">
             //      <div rbl-source="child-rows" rbl-tid="child-template"></div>
             //  </rbl-template>
-            $("[rbl-source], [rbl-source-table]", root)
-                .add(root.is("[rbl-source], [rbl-source-table]") ? root : [] ) 
+            $("[rbl-source]", root)
+                .add(root.is("[rbl-source]") ? root : [] ) 
                 .not("rbl-template *") // not in templates
                 .each(function () {
                     const el = $(this);
@@ -3288,28 +3288,18 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
     
                         const elementData = application.dataAttributesToJson(el, "data-");
                         const tid = el.attr('rbl-tid');
-                        const rblSourceTableParts = el.attr('rbl-source-table')?.split('.');
                         const tabDef = that.getTabDef( el.attr('rbl-tab'), el.attr('rbl-ce') )
                         const tabDefName = tabDef?._fullName ?? ( el.attr( "rbl-ce" ) ?? defaultCEKey ) + "." + ( el.attr( "rbl-tab" ) ?? "default" );
-
-                        // rbl-source-table - if provided, is a standard selector path in the form of
-                        // table.id.valueColumn or table.columnToSearch.id.valueColumn and can be used to 
-                        // return dynamic table name for rbl-source from CalcEngine
-                        const rblSourceParts = rblSourceTableParts === undefined
-                            ? el.attr('rbl-source')?.split('.')
-                            : rblSourceTableParts.length === 3
-                                ? [ that.getResultValue( tabDef, rblSourceTableParts[ 0 ], rblSourceTableParts[ 1 ], rblSourceTableParts[ 2 ] ) ?? "unknown" ]
-                                : [ that.getResultValueByColumn( tabDef, rblSourceTableParts[ 0 ], rblSourceTableParts[ 1 ], rblSourceTableParts[ 2 ], rblSourceTableParts[ 3 ] ) ?? "unknown" ];
+                        const rblSourceParts = el.attr('rbl-source')?.split('.');
     
                         let templateContent = tid != undefined ? application.ui.getTemplate( tid, elementData, false )?.Content : undefined;
     
                         if ( showInspector && !el.hasClass("kat-inspector-source") ) {
                             el.addClass("kat-inspector-source");
-                            const inspectorName = el.attr("rbl-source") != undefined ? "rbl-source" : "rbl-source-table";
                             const inspectorData = { 
                                 "id": tid ?? "[ID MISSING!]",
-                                "name": inspectorName, 
-                                "value": el.attr(inspectorName),
+                                "name": "rbl-source", 
+                                "value": el.attr("rbl-source"),
                                 "template": templateContent ?? "[No template found]"
                             };
                             let inspectorTitle = "Template: {id}\n{name}: {value}\n\n{template}".format( inspectorData );
@@ -3324,11 +3314,14 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                         if ( templateContent === undefined ) {
                             // Result tables are processed later
                             if ( el.attr("rbl-tid") !== "result-table" ) {
-                                application.trace("<b style='color: Red;'>RBL WARNING</b>: Template content could not be found. Tab = " + tabDefName + " [" + ( tid ?? "Missing rbl-tid for " + ( el.attr('rbl-source') ?? el.attr('rbl-source-table') ) ) + "]", TraceVerbosity.Detailed);
+                                application.trace("<b style='color: Red;'>RBL WARNING</b>: Template content could not be found. Tab = " + tabDefName + " [" + ( tid ?? "Missing rbl-tid for " + el.attr('rbl-source') ) + "]", TraceVerbosity.Detailed);
                             }
                         }
                         else if ( rblSourceParts === undefined || rblSourceParts.length === 0) {
                             application.trace("<b style='color: Red;'>RBL WARNING</b>: no rbl-source data in tab " + tabDefName, TraceVerbosity.Detailed);
+                            if ( el.attr('rbl-source-table') != undefined ) {
+                                application.trace("<b style='color: Red;'>RBL WARNING</b>: rbl-source-table in tab " + tabDefName + " no longer supported.", TraceVerbosity.Detailed);
+                            }
                         }
                         else {
                             //table in array format.  Clear element, apply template to all table rows and .append

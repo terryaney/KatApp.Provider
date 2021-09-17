@@ -1057,7 +1057,13 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                                 .forEach( p => {
                                     const success = p.value as SubmitCalculationSuccess;
                                     const tabDef = success.result.Profile.Data.TabDef;
-                                    tabDefs = tabDefs.concat( tabDef != undefined && !Array.isArray( tabDef ) ? [ tabDef ] : tabDef );
+                                    const resultTabs = tabDef != undefined && !Array.isArray( tabDef ) ? [ tabDef ] : tabDef;
+
+                                    resultTabs.forEach( t => {
+                                        t["@calcEngineKey"] = success.calcEngine.key;
+                                    });                
+
+                                    tabDefs = tabDefs.concat( resultTabs );
                                 });
                             that.setResults( tabDefs, currentOptions );
                             calculatePipeline( 0 );
@@ -1393,38 +1399,28 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                 
                 calculationOptions.manualResults.forEach( ( t, i ) => {
                     t["@calcEngine"] = "ManualResults";
+                    t["@calcEngineKey"] = "ManualResults";
                     if ( t["@name"] == undefined ) {
                         t["@name"] = "RBLResults" + ( i + 1 );
                     }
                     results!.push( t );
-                });                
+                });
             }
 
-            const defaultCEName = calcEngines[ 0 ].name;
+            const defaultCEKey = calcEngines[ 0 ].key;
 
             if ( results !== undefined ) {
                 results.forEach( t => {
                     t._resultKeys = Object.keys(t).filter( k => !k.startsWith( "@" ) );
                     
+                    const ceKey = t["@calcEngineKey"];
                     const ceName = t["@calcEngine"].split(".")[ 0 ].replace("_Test", "");
                     
                     // Is this tab part of defaultCalcEngine?
-                    t._defaultCalcEngine = ceName == defaultCEName;
-                    
-                    // Put every key that ce is associated with, in case client override uses 1 CE to
-                    // implement all functionality for view that might have been configured for two CEs...
-                    /*
-                        [
-                            { key: "ce1", name: "clientCe"},
-                            { key: "ce2", name: "clientCe"}
-                        ]
-                    */
-                    calcEngines.filter( c => c.name == ceName ).forEach( c => {
-                        t[ "_" +  c.key ] = true;
-                    });
-
+                    t._defaultCalcEngine = ceKey == defaultCEKey;
+                    t[ "_" +  ceKey ] = true;
                     t._name = t["@name"];
-                    t._fullName = ceName + "." + t._name;
+                    t._fullName = ceKey + "." + ceName + "." + t._name;
 
                     // Ensure that all tables are an array
                     t._resultKeys.forEach( k => {
@@ -1433,8 +1429,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                         if (!(table instanceof Array) && table != null ) {
                             t[ k ] = [table];
                         }
-                    });
-    
+                    });    
                 } );
             }
 
@@ -2961,20 +2956,32 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
             const results = this.application?.results;
             
             /*
-                Have a little problem here...if view is coded with CE in markup...a mapping can be configured to match it...and it might look like:
+            Have a little problem here...If client overrides a view that had two CEs configured, 
+            but client only uses 1 CE to implement all functionality for view/templates, might need
+            a mechanism to specify multiple keys for one CE so that templates/rbl-ce that reference the
+            second CE key are able to still work, maybe comma delim list of keys??
+
+            Original View
+            [
+                { key: "ce1", name: "ce1Name"},
+                { key: "ce2", name: "ce2Name"}
+            ]
     
-                [
-                    { key: "ce1", name: "clientCe"},
-                    { key: "ce2", name: "clientCe"}
-                ]
+            Client wants to do something like this
+            [
+                { key: "ce1", name: "clientCE"},
+                { key: "ce2", name: "clientCE"}
+            ]
+
+            But this is bad b/c it'll run same calculation twice.  Would need to figure out how to not
+            call two calcs.  
+            
+            Another problem is if the tab names don't match up...if view/template had...
     
-                With this, if view had ce1/ce2 as two sep CE's but client wanted to just implement with one custom one, they could do this.
-                (NOTE: need to figure out how to not call two calcs)  The problem is if the tab names don't match up...if view had...
+            rbl-* attributes of ce1.tab1, ce2.tab2
     
-                ce1.tab1, ce2.tab2
-    
-                If client made one clientCe.tab1 to handle everything, all the tab2 references would not work, so would have to introduce
-                some form of tab mapping as well.  Leaving off for now.
+            If client made one clientCe.tab1 to handle everything, all the tab2 references would not work, so would have to introduce
+            some form of tab mapping as well.  Leaving off for now.
             */
             if ( results != undefined ) {
                 return calcEngine != undefined && tabDef != undefined ? results.find( t => t["_" + calcEngine] == true && t._name == tabDef ) :

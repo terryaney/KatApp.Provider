@@ -34,6 +34,7 @@
         - [errors And warnings Tables](#**errors/warnings**)
         - [ejs-markup Table](#**ejs-markup**)
 - [Templates](#Templates)
+    - [rbl-source Selector Paths](#rbl-source-Selector-Paths)
     - [Template Default Attributes](#Template-Default-Attributes)
     - [Template Precedence](#Template-Precedence)
     - [Template Attributes](#Template-Attributes)
@@ -56,6 +57,10 @@
         - [carousel](#carousel)
         - [Additional Template Components](#Additional-Template-Components)
         - [Using Template Type Attribute](#Using-Template-Type-Attribute)
+- [View and Template Expressions](#View-and-Template-Expressions)
+    - [Simple rbl-display Expression Selector](#Simple-rbl-display-Expression-Selector)
+    - [Complex rbl-source Expression Selector](#Complex-rbl-source-Expression-Selector)
+    - [rbl-display Template v: Expression](#rbl-display-Template-v:-Expression)
 - [RBLe Service](#RBLe-Service)
     - [ResultBuilder Framework](#ResultBuilder-Framework)
         - [Table Template Processing](#Table-Template-Processing)
@@ -371,9 +376,11 @@ There are two ways to use `rbl-value` attribute.  You can provide simply an 'id'
 Selector&nbsp;Path | Description
 ---|---
 id | Look in `rbl-value` (legacy `ejs-output`) table for row where row id is `id` and return the value column.
-table.id | Look in `table` table for row where row id is `id` and return the value column.
-table.id.column | Look in `table` table for row where row id is `id` and return the `column` column.
+table.idValue | Look in `table` table for row where row id is `idValue` and return the value column.
+table.idValue.column | Look in `table` table for row where row id is `idValue` and return the `column` column.
 table.keyColumn.keyValue.column | Look in `table` table for row where `keyColumn` is `keyValue` and return the `column` column.
+
+See [View and Template Expressions](#View-and-Template-Expressions) for information on how to use simple and complex expressions when selecting and processing `rbl-value` attributes.
 
 ```html
 <!-- Table: rbl-value/ejs-output, ID: ret-age, Column: value -->
@@ -442,43 +449,20 @@ Selector: Table: rbl-value, ID: election-confirm, Column: value
 ```
 
 ## rbl-display Attribute Details
-The `rbl-display` attribute has all the same 'selector' capabilities described in the _`rbl-value` Attribute Details_.  Once a `value` is selected from a specified table (with a table priority of `rbl-display`, `ejs-visibility`, then `ejs-output` by default), a boolean 'falsey' logic is applied against the value.  An element will be hidden if the value is `0`, `false` or an empty string.
-
-**Simple Expressions** - In addition to simply returning a visibility value from the CalcEngine, the `rbl-display` attribute can contain simple operator expressions.  Operators supported are `=`, `!=`, `>=`, `>`, `<=`, and `<`.
+The `rbl-display` attribute has all the same 'selector' capabilities described in the [(`rbl-value` Attribute Details](#rbl-value-Selector-Paths).  Once a `value` is selected from a specified table (with a table priority of `rbl-display`, `ejs-visibility`, then `ejs-output` by default), a boolean 'falsey' logic is applied against the value.  An element will be hidden if the value is `0`, `false` or an empty string.
 
 ```html
 <!-- Show or hide based on 'value' column from 'rbl-display' table where 'id' is 'show-wealth' -->
 <div rbl-display="show-wealth">Wealth Information</div>
 
-<!-- Show if 'value' column from 'rbl-display' table where 'id' is 'show-wealth' = 1, otherwise hide -->
-<div rbl-display="wealth-level=1">Wealth Information</div>
+<!-- Show or hide based on 'value' column from 'benefit-savings' table where 'id' is 'ret-age' -->
+<span rbl-display="benefit-savings.ret-age"></span>
 
-<!-- 
-Using the first/default tab from the 'Shared' CalcEngine (key=Shared)
-Show if 'enabled' column from 'wealth-summary' table where 'id' is 'benefit-start' = 1, otherwise hide 
--->
-<div rbl-ce="Shared" rbl-display="wealth-summary.benefit-start.enabled=1">Wealth Information</div>
-
-<!-- 
-Checking existence of a table given a known key 'benefit-start' by using the built in @id value.
-Show if wealth-summary row with id=benefit-start exists.
--->
-<div rbl-display="wealth-summary.benefit-start.@id=benefit-start">benefit-start row exists</div>
+<!-- Show or hide based on 'year' column from 'benefit-savings' table where 'id' is 'ret-age' -->
+<span rbl-display="benefit-savings.ret-age.year"></span>
 ```
 
-**Template Value Expressions**
-
-The `rbl-display` attribute usually works off of values from a CalcEngine result directly.  However, inside [Templates](#Templates), visibility can be controlled by looking at values on the current data being processed by the template, using the simple expressions above.  To accomplish this, a `v:` (for value) prefix is added.
-
-For example, if the data processed by a template had a `code` and `count` column, the following could be leveraged.
-
-```html
-<div rbl-display="v:{code}=YES">Show if the `code` column is `YES`.</div>
-
-<div rbl-display="v:{count}>=2">Show if the `count` column is greater than or equal to 2.</div>
-
-<div rbl-display="v:{field}=">Show if the `field` column is blank.</div>
-```
+See [View and Template Expressions](#View-and-Template-Expressions) for information on how to use simple and complex expressions to determine visibility.
 
 ## rbl-on Event Handlers
 
@@ -871,13 +855,19 @@ removeClass<sup>1</sup> | A `space` delimitted list of CSS clsas names to remove
 
 Templates are a powerful tool in KatApp Views.  Templates are a small markup snippet that are combined with a data object to render content.
 
-The data object can come from static `data-*` attributes or from an RBLe Service result row.  When using RBLe Service result rows, the `rbl-source` attribute is required and the selector path is defined as follows.
+The data object can come from static `data-*` attributes, a RBLe Service result row, or the merged result of both.  To use RBLe Service result rows, the `rbl-source` attribute is required and the selector path is defined as follows.
 
-Selector&nbsp;Path | Description
+## rbl-source Selector Paths
+
+Selector | Description
 ---|---
 table | The name of the table to use as the data source.  The defined template with be applied to each row and injected into the Kaml View.
-table.id | Will only process the row from `table` where the row id  equals `id`.
+table.idValue | Will only process the row from `table` where the row id equals `idValue`.
 table.column.value | Will only process rows from `table` where the value of `column` equals `value`.
+
+If both `rbl-source` and `data-*` attributes are provided, `data-*` attributes will take precedence. All `data-*` values will be merged into currently processing row to provide additional values not present or **replace** existing values found in the current row.
+
+See [View and Template Expressions](#View-and-Template-Expressions) for information on filter `rbl-source` selectors before processing a row.
 
 ```html
 <!-- 
@@ -959,22 +949,24 @@ To provide defaults on a template, simply specify values via `default-` prefixed
 
 When templates are processed, if the data source (`data-` attributes or data row from `rbl-source` driven templates) doesn't have a column requested in the template (i.e. `{missing-column}`), a replace doesn't happen and the templated content returns the static string `{requested-column}` in the markup. Providing defaults allows the Kaml View developers to avoid this situation..
 
+**Note** When `rbl-source` is the data source, result columns from RBLe CalcEngines with blank values returned will automatically be processed as if a blank value was passed in and `{blank-column}` will be replaced. Therefore, setting `default-*=""` is unnecessary, but if an override value instead of blank is desired, `default-*` attribute values should be provided.
+
 ```html
-<!-- Template, note that columns without =value provided automatically default to blank. -->
-<rbl-template tid="li-foundingfathers" default-age="Old" default-title="Unknown" default-location="" default-show="1">
-    <li rbl-display="v:{show}!=0">{first} {last} ({age}), {title}, {location}</li>
+<!-- Template (default-location="" below is for demonstration only since rbl-source is used by caller) -->
+<rbl-template tid="li-foundingfathers" default-age="Old" default-title="Unknown" default-location="">
+    <li>{first} {last} ({age}), {title}, {location}</li>
 </rbl-template>
 
 <!-- Markup -->
 <ul rbl-tid="li-foundingfathers" rbl-source="foundingfathers"></ul>
 
-<!-- Markup, using data-* instead of defaults -->
-<ul rbl-tid="li-foundingfathers" rbl-source="foundingfathers" data-age="Old" data-title="Unknown" data-location="" data-show="1"></ul>
+<!-- Markup, using data-* applied to caller of template instead of defaults on template definition -->
+<ul rbl-tid="li-foundingfathers" rbl-source="foundingfathers" data-age="Old" data-title="Unknown" data-location=""></ul>
 
 <!-- Markup Results (same data source provided in samples above) -->
 <ul rbl-tid="li-foundingfathers" rbl-source="foundingfathers">
-    <li rbl-display="v:1!=0">James Madison (Old), 4th US President, </li>
-    <li rbl-display="v:1!=0">Alexander Hamilton (Old), Former US Treasury Secretary, </li>
+    <li>James Madison (Old), 4th US President, </li>
+    <li>Alexander Hamilton (Old), Former US Treasury Secretary, </li>
 </ul>
 ```
 
@@ -2175,7 +2167,63 @@ The 'culture' of the table can be set via the CalcEngine.  If the results have a
 
 # Advanced Configuration
 
-KatApps have advanced features that can be configured that manage input handling (via attributes), CalcEngines (via Precalc Pipelines) and hooking into the calculation lifecycle events.
+KatApps have advanced features that can be configured that provide expression capabilities, manage input handling (via attributes), CalcEngines (via Precalc Pipelines) and hooking into the calculation lifecycle events.
+
+## View and Template Expressions
+
+Simple and complex expression logic can be used in conjunction with [`rbl-value`/`rbl-display` selector paths](#rbl-value-Selector-Paths) and [`rbl-source` selector paths](#rbl-source-Selector-Paths).  Simple expression logic simply provides a single operator/value comparison in a selector path.  Complex expressions (denoted by `[]` in the selector path) are much more powerful and provide the full capabilities of Javascript programming to create expressions.
+
+### Simple rbl-display Expression Selector
+
+In addition to simply returning a falsey visibility value from the CalcEngine via a [selector path](#rbl-value-Selector-Paths), the `rbl-display` attribute can contain simple operator expressions. The operators that are supported are `=`, `!=`, `>=`, `>`, `<=`, and `<`.
+
+Expression Selector | Description
+---|---
+table.idValue.column{operator}{value} | Display the item if row in `table` table where id is `idValue` does not exist or the `column` column compared to `value` does not return falsey.
+table.keyColumn.keyValue.column{operator}{value} | Display the item if row in `table` table where `keyColumn` is `keyValue` does not exist or the `column` column compared to `value` does not return falsey.
+
+```html
+<!-- 
+Show if 'enabled' column from 'wealth-summary' table where 'id' is 'benefit-start' = 1, otherwise hide 
+-->
+<div rbl-display="wealth-summary.benefit-start.enabled=1">Wealth Information</div>
+
+<!-- 
+Show if 'address1' column from 'contact-info' table where 'id' is 'work' is not blank, otherwise hide 
+-->
+<div rbl-display="contact-info.work.address1!=">Work Address: <span rbl-value="contact-info.work.address1"></span></div>
+
+<!-- 
+Checking existence of a table given a known key 'benefit-start' by using the built in @id value.
+Show if wealth-summary row with id=benefit-start exists.
+-->
+<div rbl-display="wealth-summary.benefit-start.@id=benefit-start">benefit-start row exists</div>
+```
+
+### Complex rbl-source Expression Selector
+
+Expression&nbsp;Selector | Description
+---|---
+table[predicate] | Similar to a [`rbl-source` selector path](#rbl-source-Selector-Paths) that only specifies a `table` (to process all rows) with the addition of javascript predicate support. In the predicate, the `this` reference will be current row being processed and the row will only be processed if the javascript expression returns `true`.
+
+```html
+<!-- Call the name-item template with each row in foundingfathers table where the last  containing 'Mad'. -->
+<div rbl-tid="name-item" rbl-source="foundingfathers[this.last.indexOf('Mad')>-1]"></div>
+```
+
+### rbl-display Template v: Expression
+
+The `rbl-display` attribute usually works off of falsey values directly from a CalcEngine result.  However, inside [Templates](#Templates), controlling visibility by looking at values on the current row being processed can be accomplished by using a `v:` (for value) prefix and providing a simple operator expression.
+
+For example, if the data processed by a template had a `code` and `count` column, the following could be leveraged.
+
+```html
+<div rbl-display="v:{code}=YES">Show if the `code` column is `YES`.</div>
+
+<div rbl-display="v:{count}>=2">Show if the `count` column is greater than or equal to 2.</div>
+
+<div rbl-display="v:{field}=">Show if the `field` column is blank.</div>
+```
 
 ## RBLe Service Attributes / Classes
 

@@ -3226,7 +3226,10 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
         
                     const rblAttributes = el.attr("rbl-attr")!.split( " " ); // eslint-disable-line @typescript-eslint/no-non-null-assertion
 
-                    // rbl-attr="attrName:selector[:ce:tab]"
+                    // rbl-attr="attrName:selector"
+                    // rbl-attr="attrName:selector:ce"
+                    // rbl-attr="attrName:selector:ce:tab"
+                    // rbl-attr="attrName:selector attrName2:selector ..."
                     rblAttributes.forEach( a => {
                         const attrParts = a.split(":");
                         const attrName = attrParts[ 0 ];

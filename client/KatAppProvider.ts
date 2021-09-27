@@ -110,7 +110,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
             this.init( options );
         }
     
-        dataAttributesToJson( container: JQuery, attributePrefix: string, convertToCalcEngineNames?: boolean ): object {
+        dataAttributesToJson( container: JQuery, attributePrefix: string ): object {
             const attributeNames = 
                 [].slice.call(container.get(0).attributes).filter(function(attr: Attr) {
                     return attr && attr.name && attr.name.indexOf(attributePrefix) === 0
@@ -118,15 +118,18 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
 
             const json = {};
 
+            const convertToCalcEngineNames = attributePrefix == "data-input-";
+            const convertToVariableNames = convertToCalcEngineNames || attributePrefix == "data-param-";
+
             attributeNames.forEach( a => {
                 const value = container.attr(a);
 
                 if ( value !== undefined ) {
                     let inputName = a.substring(attributePrefix.length);
                     
-                    if ( convertToCalcEngineNames ?? false ) {
+                    if ( convertToVariableNames ) {
                         const inputNameParts = inputName.split("-");
-                        inputName = "i";
+                        inputName = convertToCalcEngineNames ? "i" : "";
                         inputNameParts.forEach( n => {
                             inputName += ( n[ 0 ].toUpperCase() + n.slice(1) );
                         });
@@ -3514,17 +3517,15 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                     const el = $(this);
                     const rblDisplay = el.attr('rbl-display');
 
-                    // rbl-display
+                    // rbl-display - current support
                     // id - rbl-display[@id=id]/value || ejs-visibilty[@id=id]/value returns falsy
                     // table.idValue - table[@id=idValue]/value returns falsy
                     // table.idValue.column - table[@id=idValue]/column returns falsy
                     // table.keyColumn.keyValue.column - table[keyColumn=keyValue]/column returns falsy
                     
                     // Expressions:
-                    // table[expression] - If expression for any row returns falsy
-                    //  table[this['@id']='idValue' ? this.column : true]
-                    // table.idValue[expression] - If expression for table[@id=idValue] row returns falsy
-                    //  table[this.column.indexOf('hide') > -1 ? false : true]
+                    // table[expression] - Process until expression returns != undefined, then evaluate.
+                    //  table[this['@id']='idValue' ? this.column : undefined]
 
                     if ( rblDisplay != undefined ) {
                         if ( showInspector && !el.hasClass("kat-inspector-display") ) {
@@ -5067,7 +5068,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
 
                         const id = actionLink.attr("rbl-navigate");
                         const inputSelector = actionLink.attr("rbl-navigate-input-selector");
-                        const dataInputs = application.dataAttributesToJson( actionLink, "data-input-", true );
+                        const dataInputs = application.dataAttributesToJson( actionLink, "data-input-" );
 
                         if ( dataInputs != undefined || inputSelector != undefined ) {
                             application.setDefaultInputsOnNavigate( dataInputs, inputSelector );

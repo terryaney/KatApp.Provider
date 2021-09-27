@@ -2907,10 +2907,10 @@ Kaml View developers can leverage calling API endpoints as well by constructing 
 Attribute | Description
 ---|---
 rbl-action-link | Used as the `commandName` passed into `apiAction`.
-rbl-action-download | (true|false) Determines if the action results in the downloading of a file.
-rbl-action-calculate | (true|false) Determines if an `application.calculate()` should be called upon successful `api-action-link` execution.
-data-param-* | Used as the `customParameters` property of the `customOptions` parameter.  (i.e. to pass plan-id parameter to server, use `data-param-plan-id="value"`)
-data-input-* | Used as the `customInputs` property of the `customOptions` parameter.  (i.e. to pass iDownloadForms=1 parameter to server, use `data-input-download-forms="1"`, the server will convert to 'input name' automatically)
+rbl-action-download | (boolean) Determines if the action results in the downloading of a file.
+rbl-action-calculate | (boolean) Determines if an `application.calculate()` should be called upon successful `api-action-link` execution.
+data-param-* | Used as the `customParameters` property of the `customOptions` parameter and is used by server side API endpints.  (i.e. to pass `PlanId=value` parameter to server, use `data-param-plan-id="value"`, the parameter name will be created automatically to match server API endpoint parameter name pattern)
+data-input-* | Used as the `customInputs` property of the `customOptions` parameter and passed to RBLe CalcEngine on server side calculation.  (i.e. to pass `iDownloadForms=1` parameter to server, use `data-input-download-forms="1"`, the 'input name' will be created automatically to match RBLe CalcEngine input name pattern)
 rbl-action-confirm-selector | If the link should prompt before calling the endpoint, this attribute provides a jQuery selector to element containing the markup to display in a modal confirm dialog.
 
 <br/>

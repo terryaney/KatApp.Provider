@@ -2515,12 +2515,30 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
 
                                     const eventName = handler[0];
                                     const functionName = handler[1];
-
+                                    
                                     if ( noUiSlider != undefined ) {
                                         noUiSlider.on( eventName + ".ka",  application.options.handlers![ functionName ] );
                                     }
                                     else {
-                                        el.on( eventName + ".ka",  application.options.handlers![ functionName ] );
+                                        const confirmSelector = el.attr("rbl-action-confirm-selector");
+                            
+                                        if ( eventName == "click" && confirmSelector != undefined ) {
+                                            const confirm = $(confirmSelector, application.element).html() || "";
+                                            el.on( eventName + ".ka",  function() {
+                                                const eventArgs = arguments;
+                                                const link = this;
+                                                return application.ui.onConfirmLinkClick(
+                                                    $(this), 
+                                                    confirm, 
+                                                    function() {
+                                                        application.options.handlers![ functionName ].apply(link, eventArgs )
+                                                    }
+                                                );
+                                            } );
+                                        }
+                                        else {
+                                            el.on( eventName + ".ka",  application.options.handlers![ functionName ] );
+                                        }
                                     }
                                 });
                             
@@ -2752,10 +2770,12 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                 submitOptions.defaultInputs
             ) as CalculationInputs;
 
+            delete result[ "Tables" ];
+            
             return result;
         };
 
-        getInputTables(): CalculationInputTable[] | undefined {
+        getInputTables( currentOptions: KatAppOptions ): CalculationInputTable[] | undefined {
             const utilities: UIUtilities = this.application.ui;
             const tables: CalculationInputTable[] = [];
 
@@ -2785,27 +2805,34 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                 tables.push(table);
             });
 
+            const mergeCachedTable = function( tableCache: any ) {
+                if ( tableCache != undefined ) {
+
+                    Object.keys(tableCache).forEach( k => {
+                        const tableRows = tableCache[k];
+        
+                        var inputTable: CalculationInputTable = {
+                            Name: k,
+                            Rows: tableRows != undefined ? tableRows.slice() : []
+                        };
+                                                    
+                        tables.push(inputTable);        
+                    });
+                }
+            };
+
             Object.keys(this.application.endpointRBLeInputsCache).forEach( k => {
                 const inputCache = this.application.endpointRBLeInputsCache[k];
-
-                if ( inputCache != undefined ) {
-                    const tableCache = inputCache[ "Tables" ];
-
-                    if ( tableCache != undefined ) {
-
-                        Object.keys(tableCache).forEach( k => {
-                            const tableRows = tableCache[k];
-            
-                            var inputTable: CalculationInputTable = {
-                                Name: k,
-                                Rows: tableRows != undefined ? tableRows.slice() : []
-                            };
-                                                        
-                            tables.push(inputTable);        
-                        });
-                    }
-                }
+                mergeCachedTable(inputCache?.Tables );
             });
+
+            const submitOptions = currentOptions ?? this.application.options;
+            const optionTables = KatApp.extend( {}, 
+                submitOptions.manualInputs,
+                submitOptions.defaultInputs
+            );
+
+            mergeCachedTable( optionTables[ "Tables" ] );
 
             return tables.length > 0 ? tables : undefined;
         }
@@ -2825,7 +2852,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
             }
 
             const inputs = this.getInputs( currentOptions ); 
-            const inputTables = this.getInputTables() ?? [];
+            const inputTables = this.getInputTables( currentOptions ) ?? [];
 
             const calcEngine = currentCalcEngine ||
                 ( 
@@ -5092,6 +5119,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                     if ( $(this).attr("href") == undefined ) {
                         $(this).attr("href", "#");
                     }
+
                     $(this).on("click", function(e) {
                         const actionLink = $(this);
                         e.preventDefault();

@@ -3165,10 +3165,10 @@ Additionally, every event handler described can be passed in on the `KatAppOptio
 
 ```javascript
 var options = {
-    onCalculateStart: function( application: KatAppPlugIn ) {
+    onCalculateStart: function( event: Event, application: KatAppPlugIn ) {
         application.showAjaxBlocker();
     },
-    onCalculateEnd: function( application: KatAppPlugIn ) {
+    onCalculateEnd: function( event: Event, application: KatAppPlugIn ) {
         application.hideAjaxBlocker();
     }
 };
@@ -3311,7 +3311,7 @@ By default, the KatApp framework does the following:
 
 ```javascript
 {
-    onCalculateStart = function (application) {
+    onCalculateStart = function (e, application) {
         // custom code
         
         // can then call default behavior if you want via following line

@@ -1935,7 +1935,12 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
         }
 
         encodeTemplateContent( content: string) : string {
+            const thisClassCss = ".katapp-" + this.application.id;
+
             return content
+                .replace( /{thisClass}/g, thisClassCss )
+                .replace( /\.thisClass/g, thisClassCss )
+                .replace( /thisClass/g, thisClassCss )
                 .replace(/-toggle=/g, "-toggle_=")
                 .replace(/ id=/g, " id_=")
                 .replace(/ src=/g, " src_=")

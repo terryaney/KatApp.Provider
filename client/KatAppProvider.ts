@@ -131,7 +131,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                         const inputNameParts = inputName.split("-");
                         inputName = convertToCalcEngineNames ? "i" : "";
                         inputNameParts.forEach( n => {
-                            inputName += ( n[ 0 ].toUpperCase() + n.slice(1) );
+                            inputName += ( ( convertToCalcEngineNames ? n[ 0 ].toUpperCase() : n[ 0 ] ) + n.slice(1) );
                         });
                     }
 
@@ -855,7 +855,11 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                 }
             };
 
-            const callSharedCallbacks = function( errorMessage: string | undefined ): void {
+            const callSharedCallbacks = function( error: string | undefined | unknown ): void {
+                const errorMessage = 
+                    error instanceof Error ? error.message :
+                    typeof error === "string" ? error : undefined;
+
                 let currentCallback: ( ( em: string | undefined )=> void ) | undefined = undefined;
                 while( ( currentCallback = _sharedData.callbacks.pop() ) !== undefined )
                 {
@@ -1102,9 +1106,11 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                                     // Any errors added, add a temp apiAction class so they aren't removed during Calculate workflow
                                     // (apiAction is used for jwt-data updates)
                                     $('.validator-container.error', that.element).not(".server").addClass("apiAction");
+                                    calculatePipeline( 2 );
                                 }
-
-                                calculatePipeline( 0 );
+                                else {
+                                    calculatePipeline( 0 );
+                                }
                             }
                         );
                     }
@@ -1935,12 +1941,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
         }
 
         encodeTemplateContent( content: string) : string {
-            const thisClassCss = ".katapp-" + this.application.id;
-
             return content
-                .replace( /{thisClass}/g, thisClassCss )
-                .replace( /\.thisClass/g, thisClassCss )
-                .replace( /thisClass/g, thisClassCss )
                 .replace(/-toggle=/g, "-toggle_=")
                 .replace(/ id=/g, " id_=")
                 .replace(/ src=/g, " src_=")
@@ -1967,11 +1968,15 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                 .replace(/<\/td>/g, "</td_>");
         }
         decodeTemplateContent( content: string ): string {
+            const thisClassCss = ".katapp-" + this.application.id;
             // If templates with bootstrap toggle have issues with 'target' because of {templateValues} inside the
             // selector attribute, bootstrap crashes and doesn't process rest of the 'valid' toggles.  To fix,
             // disable bootstrap handling *in the template* by putting _ after toggle, then it is turned when
             // the rendered template content is injected.
             let decodedContent = content
+                .replace( /{thisClass}/g, thisClassCss )
+                .replace( /\.thisClass/g, thisClassCss )
+                .replace( /thisClass/g, thisClassCss )
                 .replace( / src_=/g, " src=") // changed templates to have src_ so I didn't get browser warning about 404
                 .replace( / id_=/g, " id=") // changed templates to have id_ so I didn't get browser warning about duplicate IDs inside *template markup*
                 .replace( /-toggle_=/g, "-toggle=" ) // changed templates to have -toggle_ so that BS didn't 'process' items that were in templates
@@ -2340,12 +2345,12 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
             });        
         }
 
-        triggerEvent(eventName: string, ...args: ( object | string | undefined )[]): boolean {
+        triggerEvent(eventName: string, ...args: ( object | string | undefined | unknown )[]): boolean {
             const application = this.application;
             return this.triggerApplicationEvent( application, eventName, ...args );
         }
 
-        private triggerApplicationEvent(application: KatAppPlugIn, eventName: string, ...args: ( object | string | undefined )[]): boolean {
+        private triggerApplicationEvent(application: KatAppPlugIn, eventName: string, ...args: ( object | string | undefined | unknown )[]): boolean {
             let eventCancelled = false;
             try {
                 application.trace("Calling " + eventName + " delegate: Starting...", TraceVerbosity.Diagnostic);
@@ -4338,8 +4343,8 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                 const tableName = row.table;
                 const controlName = row["@id"];
                 
-                const dropdown = $("." + controlName, application.element).not("div");
-                const listControl = $("div." + controlName + "[data-itemtype]", application.element);
+                const dropdown = $("." + controlName, application.element).not("div").not("rbl-template *");
+                const listControl = $("div." + controlName + "[data-itemtype]", application.element).not("rbl-template *");
                 const listRows = this.getResultTable<ListRow>( tabDef, tableName );
     
                 if ( listControl.length === 1 ) {
@@ -6190,7 +6195,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
         $.fn.KatApp.sharedData = { requesting: false, callbacks: [] };
     
         const currentInputsJson = sessionStorage.getItem("katapp:tempData:defaultInputs");
-        const currentInputs: inputsToPassOnNavigate = currentInputsJson != undefined 
+        const currentInputs: inputsToPassOnNavigate = currentInputsJson != undefined && currentInputsJson != null 
             ? JSON.parse( currentInputsJson ) 
             : { Applications: [] };
         $.fn.KatApp.inputsToPassOnNavigate = currentInputs;

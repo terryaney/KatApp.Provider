@@ -101,6 +101,8 @@ interface KatAppOptions
 interface KatAppActionOptions extends KatAppOptions {
     customParameters?: {};
     customInputs?: {};
+    isDownload?: boolean;
+    calculateOnSuccess?: boolean
 }
 
 interface KatAppActionSubmitData {

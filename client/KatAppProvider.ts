@@ -1410,7 +1410,11 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
             this.apiAction(
                 "calculations/run",
                 this.options, 
-                { customInputs: customInputs },
+                { 
+                    customInputs: customInputs,
+                    isDownload: actionLink?.attr("rbl-action-download") == "true",
+                    calculateOnSuccess: actionLink?.attr("rbl-action-calculate") == "true"
+                },
                 actionLink
              );
         }
@@ -1503,8 +1507,8 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
 
         apiAction( commandName: string, options: KatAppOptions, actionOptions: KatAppActionOptions, actionLink: JQuery<HTMLElement> | undefined, done?: ( successResponse: KatAppActionResult | undefined, failureResponse: JSON | undefined )=> void ): void {
             const application = this;
-            const isDownload = actionLink?.attr("rbl-action-download") == "true";
-            const runCalculate = actionLink?.attr("rbl-action-calculate") == "true";
+            const isDownload = actionOptions.isDownload ?? false;
+            const runCalculate = actionOptions.calculateOnSuccess ?? false;
             const errors: ValidationRow[] = [];
             const warnings: ValidationRow[] = [];
 
@@ -5230,7 +5234,9 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                                 application.options, 
                                 { 
                                     customParameters: parametersJson, 
-                                    customInputs: inputsJson 
+                                    customInputs: inputsJson,
+                                    isDownload: actionLink.attr("rbl-action-download") == "true",
+                                    calculateOnSuccess: actionLink.attr("rbl-action-calculate") == "true"
                                 },
                                 actionLink 
                             );

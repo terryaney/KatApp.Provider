@@ -8,7 +8,9 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
 // Need this function format to allow for me to reload script over and over (during debugging/rebuilding)
 (function($, window, document, undefined?: undefined): void {
     const tableInputsAndBootstrapButtons = ", .RBLe-input-table :input, .dropdown-toggle, button";
+    // Inputs NOT passed to RBLe
     const inputsToIgnoreSelector = "[data-itemtype='checkbox'] :input, .notRBLe, .notRBLe :input, .rbl-exclude, .rbl-exclude :input, rbl-template :input, [type='search']" + tableInputsAndBootstrapButtons;
+    // Inputs that do not trigger calculations
     const skipBindingInputSelector = ".notRBLe, .notRBLe :input, .rbl-exclude, .rbl-exclude :input, .skipRBLe, .skipRBLe :input, .rbl-nocalc, .rbl-nocalc :input, rbl-template :input, [type='search']" + tableInputsAndBootstrapButtons;
 
     // Reassign options here (extending with what client/host might have already set) allows

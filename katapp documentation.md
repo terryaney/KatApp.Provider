@@ -301,6 +301,7 @@ There is a third and final way to configure CalcEngine information.  This is the
     calcengine-key="default"
     input-tab="RBLInput"
     result-tabs="RBLResult"
+    input-caching="true"
     templates="Standard_Templates,LAW:Law_Templates"></rbl-config>
 ```
 
@@ -597,6 +598,8 @@ Click <a rbl-navigate="DB.Home">here</a> to see your Defined Benefit Portal.
 
 **Passing Default Inputs to the Next KatApp**
 If you need to pass inputs to the KatApp that is being navigated to assign defaults, the `rbl-navigate-input-selector` attribute can be used.  Any input that matches the JQuery selector provided will be pass to the next KatApp to be used as default inputs, similar to the `defaultInputs` property of the [KatAppOptions Object](#KatAppOptions-Object).
+
+By default, inputs passed during navigation are a one-time use input.  If you want inputs persisted to `Storage` indefinitely, use the `rbl-navigate-persist-inputs="true"` attribute.
 
 ```html
 Click <a rbl-navigate="Benefits.HPF" rbl-navigate-input-selector=".iProviderTypeIds">here</a> to find a Benefit Provider.
@@ -2320,6 +2323,8 @@ Property | Type | Description
 ---|---|---
 debug | [DebugOptions Object](#DebugOptions-Object) | Assign properties that control debugging capabilities.
 view | string | Assign the Kaml View to use in this KatApp in the form of `Folder:View`.
+inputCaching | boolean | Whether or not inputs should automatically persist and restore from `Storage`.
+inputCachingKey | string | Optional key to use for storing inputs.  Normally a hash of current user ID and KatApp Application ID (`currentPage`) is passed from the server.  If not provided, `currentPage` is used.
 inputSelector | string | A jQuery selector that specifies which inputs inside the view are considers RBLe Calculation Service inputs.  By default, _all_ inputs are selected via a selector of `input, textarea, select`.
 viewTemplates | string | A `comma` delimitted list of Kaml Template Files to use in the form of `Folder:Template,Folder:Template,...`.
 ajaxLoaderSelector | string | A jQuery selector that indicates an item to show at the start of calculations and hide upon completion.  By default, `.ajaxloader` is used.
@@ -2988,7 +2993,7 @@ $(".saveButtonAction", view).on('click', function (e) {
 
 #### setDefaultInputsOnNavigate
 
-**`.setDefaultInputsOnNavigate( inputs: {} | undefined, inputSelector?: string )`**
+**`.setDefaultInputsOnNavigate( navigationId: string | undefined, inputs: {} | undefined, inputSelector?: string )`**
 
 `setDefaultInputsOnNavigate` is primarily used as an internal helper, however, default inputs could be programmatically set if needed.  These inputs would be used after the next navigation in which a KatApp is rendered.
 
@@ -2996,13 +3001,16 @@ $(".saveButtonAction", view).on('click', function (e) {
 // Set the iCurrentAge default (calculated from CE) to be used in next KatApp after navigation
 view.on("onCalculationOptions.RBLe", function (event, calculationOptions, application) {
     const currentAge: application.getResultValue("defaults", "iCurrentAge", "value") * 1
-    application.setDefaultInputsOnNavigate( { "iCurrentAge": currentAge } );
+    // undefined for navigationId makes it global to all applications rendered
+    application.setDefaultInputsOnNavigate( undefined, { "iEnableTrace": 1 } );
+    // Set iCurrentAge for Sharkfin application only (only valid if next navigation goes to Sharkfin).
+    application.setDefaultInputsOnNavigate( "Sharkfin", { "iCurrentAge": currentAge } );
 });
 
 // Create defaults from any input with .default-from-ce class (calculated from CE and assigned via ejs-defaults) 
 // to be used in next KatApp after navigation
 view.on("onCalculationOptions.RBLe", function (event, calculationOptions, application) {
-    application.setDefaultInputsOnNavigate( undefined, ".default-from-ce" );
+    application.setDefaultInputsOnNavigate( undefined, undefined, ".default-from-ce" );
 });
 ```
 
@@ -3346,6 +3354,22 @@ view.on("onCalculationOptions.RBLe", function (event, calculationOptions, applic
 
 <hr/>
 
+#### onInputsCache
+
+**`onInputsCache(event: Event, inputsCache: CalculationInputs, application: KatApp )`**
+
+This event is triggered immediately before inputs are cached to `Storage` (if `options.inputCaching=true`).  It allows Kaml Views to massage the inputs before being cached.  Use this method if you want to add or remove inputs before caching.
+
+```javascript
+// Sample appends custom input and removes a 'state' input that was set programmatically.
+view.on("onInputsCache.RBLe", function (event, inputsCache, application) {
+    inputsCache.iUrl = document.URL;
+    delete inputsCache.iPopulateResults;
+});
+```
+
+<hr/>
+
 #### onResultsProcessing
 
 **`onResultsProcessing(event: Event, calculationResults: TabDef[], calculationOptions: KatAppOptions, application: KatApp )`**
@@ -3557,12 +3581,12 @@ For almost all code written revolving around KatApps, it will be based on a KatA
 
 #### static setDefaultInputsOnNavigate
 
-**`.setDefaultInputsOnNavigate( inputs: {} | undefined )`**
+**`.setDefaultInputsOnNavigate( navigationId: string | undefined, persist: boolean, inputs: {} | undefined )`**
 
 The static version of `setDefaultInputsOnNavigate` is almost identical to the application [setDefaultInputsOnNavigate](#setDefaultInputsOnNavigate) method.  Default inputs can be programmatically set for the next rendering of a KatApp if needed.  The difference is that the static version does not accept an `inputsSelector` parameter since it is not running inside the context of an application.  After this method is called, these inputs would be used when the next KatApp is rendered.  The primary use for this function is to set inputs immediately before navigation to a KatApp.
 
 ```html
 <!-- Set the iCurrentAge default before navigating to HPF KatApp -->
-<a href="#" onclick="KatApp.setDefaultInputsOnNavigate( { iCurrentAge: 64 } );NavigateToKatApp( 'Benefits.HPF' );">Navigate to HPF</a>
+<a href="#" onclick="KatApp.setDefaultInputsOnNavigate( 'Benefits.HPF', false, { iCurrentAge: 64 } );NavigateToKatApp( 'Benefits.HPF' );">Navigate to HPF</a>
 ```
 <hr/>

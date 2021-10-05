@@ -151,21 +151,24 @@ class KatApp
         }
     }
 
-    static setDefaultInputsOnNavigate( inputsToPass: {} | undefined ): void {
-        const currentInputsJson = sessionStorage.getItem("katapp:tempData:defaultInputs");
+    static setDefaultInputsOnNavigate( navigationId: string | undefined, persist: boolean, inputsToPass: {} | undefined ): void {
+        const currentInputsJson = sessionStorage.getItem("katapp:navigationInputs");
         const currentInputs: inputsToPassOnNavigate = currentInputsJson != undefined 
             ? JSON.parse( currentInputsJson ) 
             : { Applications: [] };
-        const applicationInputs = currentInputs.Applications.find( a => a.id == "GLOBAL" );
+
+        // can't persist global
+        const applicationId = navigationId ?? "GLOBAL";
+        const applicationInputs = currentInputs.Applications.find( a => a.id == applicationId && a.persist == persist );
 
         if ( applicationInputs != undefined ) {
-            applicationInputs.inputs = inputsToPass;
+            applicationInputs.inputs = this.extend( applicationInputs.inputs ?? {}, inputsToPass );
         }
         else if ( inputsToPass != undefined ) {
-            currentInputs.Applications.push( { id: "GLOBAL", inputs: inputsToPass } );
+            currentInputs.Applications.push( { id: applicationId, persist: applicationId != "GLOBAL" && persist, inputs: inputsToPass } );
         }
 
-        sessionStorage.setItem("katapp:tempData:defaultInputs", JSON.stringify(currentInputs) );
+        sessionStorage.setItem("katapp:navigationInputs", JSON.stringify(currentInputs) );
     }
 
     // ping and getResources duplicated in KatAppProvider now.  This allows for Views of L@W 

@@ -76,7 +76,7 @@ interface Function {
 }
 
 interface inputsToPassOnNavigate {
-    Applications: { id: string, inputs: {} | undefined }[]
+    Applications: { id: string, persist: boolean, inputs: {} | undefined }[]
 }
 interface HighchartsOptionsArray extends Array<any> { // eslint-disable-line @typescript-eslint/no-explicit-any
     // made this interface to just put the one lint comment and not have to put lint every place I use it

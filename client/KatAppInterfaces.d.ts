@@ -33,12 +33,11 @@ interface KatAppOptions
     currentPage?: string;
     requestIP?: string;
     environment?: string;
-    currentUICulture?: string;
+    currentUICulture?: string;    
     
     calcEngines?: CalcEngine[];
-
-    relativePathTemplates?: ResourceResults;
-
+    inputCaching?: boolean; // Whether or not inputs are cached to/restored from LocalStorage
+    inputCachingKey?: string; // A key used to index local storage for inputCaching.  Normally set server side as hash(user+currentPage)
     inputSelector?: string;
     // If there are some inputs that should always be passed in on a calculation but aren't available in the UI, 
     // they can be assigned here.  The most common use of this is iConfigureUI/iDataBind/iInputTrigger
@@ -53,6 +52,7 @@ interface KatAppOptions
     // UI management properties
     view?: string;
     viewTemplates?: string;
+    relativePathTemplates?: ResourceResults;
     
     ajaxLoaderSelector?: string;
 
@@ -78,6 +78,8 @@ interface KatAppOptions
     onCalculateStart?: (this: HTMLElement, application: KatAppPlugInInterface )=> void;
     onRegistration?: (this: HTMLElement, calcOptions: KatAppOptions, application: KatAppPlugInInterface )=> void;
     onCalculationOptions?: (this: HTMLElement, submitOptions: SubmitCalculationOptions, application: KatAppPlugInInterface )=> void;
+    onInputsCache?: (this: HTMLElement, inputsCache: CalculationInputs, application: KatAppPlugInInterface )=> void;
+    
     // Can use onResultsProcessing if you want to do something before generic result processing happens (i.e. clear/destroy table/chart so only displays if results in current calculation)
     onResultsProcessing?: (this: HTMLElement, calculationResults: JSON, calcOptions: KatAppOptions, application: KatAppPlugInInterface )=> void;
     onConfigureUICalculation?: (this: HTMLElement, calculationResults: JSON, calcOptions: KatAppOptions, application: KatAppPlugInInterface )=> void;

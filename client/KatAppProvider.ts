@@ -165,7 +165,8 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
             const attributeOptions: KatAppOptions = {
                 calcEngines: calcEngine != undefined ? [ calcEngine ] : KatApp.defaultOptions.calcEngines,
                 view: this.element.attr("rbl-view"),
-                viewTemplates: this.element.attr("rbl-view-templates")
+                viewTemplates: this.element.attr("rbl-view-templates"),
+                inputCaching: this.element.attr("rbl-input-caching") != undefined ? this.element.attr("rbl-input-caching") == "true" : undefined
             };
 
             // Backwards compatability when options had a 'calcEngine' property instead of calcEngines
@@ -197,20 +198,6 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                 } as KatAppOptions,
                 options // finally js options override all
             );
-
-            if ( $.fn.KatApp.inputsToPassOnNavigate.Applications.length > 0 ) {
-                if ( this.options.defaultInputs == undefined ) {
-                    this.options.defaultInputs = { };
-                }
-                const defaultInputs = this.options.defaultInputs;
-                $.fn.KatApp.inputsToPassOnNavigate.Applications.forEach( a => {
-                    if ( a.inputs != undefined ) {
-                        Object.keys(a.inputs).forEach( k => {
-                            defaultInputs[ k ] = a.inputs![ k ];
-                        });
-                    }
-                })
-            }
             
             const saveFirstCalculationLocation = this.options.debug?.saveFirstCalculationLocation;
             if ( saveFirstCalculationLocation !== undefined && saveFirstCalculationLocation !== "1" ) {
@@ -352,6 +339,43 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                     });
             };
             
+            const extendDefaultInputs = function(): void {
+                const hasInputCaching = that.options.inputCaching;
+                const hasNavigationInputs = $.fn.KatApp.inputsToPassOnNavigate.Applications.length > 0;
+    
+                if ( hasInputCaching || hasNavigationInputs ) {
+                    that.options.defaultInputs = that.options.defaultInputs ?? { };
+                    const defaultInputs = that.options.defaultInputs;
+    
+                    if ( hasInputCaching ) {
+                        const inputCachingKey =
+                            "katapp:cachedInputs:" + ( that.options.inputCachingKey ?? that.options.currentPage );
+    
+                        const cachedInputsJson = sessionStorage.getItem(inputCachingKey);
+                        const cachedInputs = cachedInputsJson != undefined && cachedInputsJson != null 
+                            ? JSON.parse( cachedInputsJson ) 
+                            : {};
+                        
+                        KatApp.extend(defaultInputs, cachedInputs);
+                    }
+        
+                    if ( hasNavigationInputs ) {
+                        $.fn.KatApp.inputsToPassOnNavigate.Applications
+                            .filter( a => a.id == "GLOBAL" || a.id == that.options.currentPage )
+                            .forEach( a => {
+                                if ( a.inputs != undefined ) {
+                                    KatApp.extend(defaultInputs, a.inputs);
+                                    /*
+                                    Object.keys(a.inputs).forEach( k => {
+                                        defaultInputs[ k ] = a.inputs![ k ];
+                                    });
+                                    */
+                                }
+                            });
+                    }
+                }    
+            }
+
             // Made all pipeline functions variables just so that I could search on name better instead of 
             // simply a delegate added to the pipeline array.
             const loadView = function(): void { 
@@ -399,7 +423,9 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                                 }
                                 else {
                                     const attrCalcEngine = rblConfig.attr("calcengine");
-    
+                                    that.options.inputCaching = that.options.inputCaching ?? ( rblConfig.attr("input-caching") ?? "false" ) == "true";
+                                    extendDefaultInputs();
+
                                     if ( attrCalcEngine != undefined ) {
                                         viewCalcEngines.push(
                                             {
@@ -411,6 +437,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                                             }                                        
                                         );
                                     }
+
                                     $("calc-engine", rblConfig).each(function ( i, c ) {
                                         const ce = $(c);
                                         viewCalcEngines.push(
@@ -442,6 +469,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                                 }
                                 
                                 const toFetch = rblConfig?.attr("templates");
+
                                 if ( toFetch !== undefined ) {
                                     requiredTemplates = 
                                         requiredTemplates
@@ -782,17 +810,17 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
             }
         }
 
-        navigate( navigationId: string, defaultInputs?: {} | undefined ): void {
+        navigate( navigationId: string, persistInputs?: boolean, defaultInputs?: {} | undefined ): void {
             if ( defaultInputs != undefined ) {
-                this.setDefaultInputsOnNavigate( defaultInputs );
+                this.setDefaultInputsOnNavigate( navigationId, persistInputs ?? false, defaultInputs );
             }
 
             this.ui.triggerEvent( "onKatAppNavigate", navigationId, this );
         }
 
-        setDefaultInputsOnNavigate( inputs: {} | undefined, inputSelector?: string ): void {
+        setDefaultInputsOnNavigate( navigationId: string | undefined, persist: boolean, inputs: {} | undefined, inputSelector?: string ): void {
             const inputsToPass = inputs ?? this.rble.getInputsBySelector( inputSelector )
-            KatApp.setDefaultInputsOnNavigate( inputsToPass );
+            KatApp.setDefaultInputsOnNavigate( navigationId, persist, inputsToPass );
         }
 
         calculate( customOptions?: KatAppOptions, pipelineDone?: ()=> void ): void {
@@ -1008,6 +1036,23 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                 }
             };
 
+            const cacheInputs = function(): void {
+                // Current called after submitCalculation succeeds
+                // 1. Do we want to do only if api/save data don't throw error?
+    
+                const hasInputCaching = currentOptions.inputCaching;
+                if ( hasInputCaching ) {
+                    const inputCachingKey =
+                        "katapp:cachedInputs:" + ( currentOptions.inputCachingKey ?? currentOptions.currentPage );
+                    
+                    const inputsCache = KatApp.extend({}, that.calculationInputs);
+                    that.ui.triggerEvent( "onInputsCache", inputsCache, that );
+
+                    // that.calculationInputs has Inputs and Tables in it { input1, input2, Tables: [ ... ] }
+                    sessionStorage.setItem(inputCachingKey, JSON.stringify(inputsCache));
+                }
+            }
+
             // Always go processResults
             // .calculate() cannot be called with expectation of synchronous execution because of this
             // pipeline function that uses Deferred objects to handle asynchronous submission of 1..N CalcEngines
@@ -1073,6 +1118,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                                     tabDefs = tabDefs.concat( resultTabs );
                                 });
                             that.setResults( tabDefs, currentOptions );
+                            cacheInputs();
                             calculatePipeline( 0 );
                         }
                     }
@@ -2759,20 +2805,6 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
 
             const inputs = this.getInputsBySelector( submitOptions.inputSelector ) ?? {};
 
-            Object.keys(this.application.endpointRBLeInputsCache).forEach( k => {
-                const inputCache = this.application.endpointRBLeInputsCache[k];
-
-                if ( inputCache != undefined ) {
-                    const inputsCache = inputCache[ "Inputs" ];
-
-                    if ( inputsCache != undefined ) {
-                        Object.keys(inputsCache).forEach( k => {
-                            inputs[ k ] = inputsCache[ k ];
-                        });
-                    }
-                }
-            });
-            
             // const result = KatApp.extend( {}, inputs, { InputTables: this.ui.getInputTables() }, this.options.defaultInputs, this.options.manualInputs ) as JSON;
             const result = KatApp.extend( {}, 
                 inputs, 
@@ -2781,6 +2813,14 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
             ) as CalculationInputs;
 
             delete result[ "Tables" ];
+
+            Object.keys(this.application.endpointRBLeInputsCache).forEach( k => {
+                const inputCache = this.application.endpointRBLeInputsCache[k];
+
+                if ( inputCache != undefined ) {
+                    KatApp.extend(result,inputCache[ "Inputs" ]);
+                }
+            });
             
             return result;
         };
@@ -2819,10 +2859,17 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                 if ( tableCache != undefined ) {
 
                     Object.keys(tableCache).forEach( k => {
-                        const tableRows = tableCache[k];
-        
+                        let tableRows = tableCache[k];
+                        let tableName = k;
+
+                        if ( tableRows[ "Name" ] != undefined ) {
+                            // Then this is from *Inputs instead of api result, so need to massage info
+                            tableName = tableRows[ "Name" ];
+                            tableRows = tableRows[ "Rows" ];
+                        }
+
                         var inputTable: CalculationInputTable = {
-                            Name: k,
+                            Name: tableName,
                             Rows: tableRows != undefined ? tableRows.slice() : []
                         };
                                                     
@@ -2831,11 +2878,6 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                 }
             };
 
-            Object.keys(this.application.endpointRBLeInputsCache).forEach( k => {
-                const inputCache = this.application.endpointRBLeInputsCache[k];
-                mergeCachedTable(inputCache?.Tables );
-            });
-
             const submitOptions = currentOptions ?? this.application.options;
             const optionTables = KatApp.extend( {}, 
                 submitOptions.manualInputs,
@@ -2843,6 +2885,11 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
             );
 
             mergeCachedTable( optionTables[ "Tables" ] );
+
+            Object.keys(this.application.endpointRBLeInputsCache).forEach( k => {
+                const inputCache = this.application.endpointRBLeInputsCache[k];
+                mergeCachedTable(inputCache?.Tables );
+            });
 
             return tables.length > 0 ? tables : undefined;
         }
@@ -2924,7 +2971,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
 
             const calculationOptions = this.getSubmitCalculationOptions( currentOptions, calcEngine );    
             // Just getting InputTables in the property so visible in console
-            application.calculationInputs = KatApp.extend( {}, calculationOptions.Inputs as object, { InputTables: calculationOptions.InputTables } );
+            application.calculationInputs = KatApp.extend( {}, calculationOptions.Inputs as object, { Tables: calculationOptions.InputTables } );
     
             const submitDone: RBLeServiceCallback = function( payload ): void {
                 if ( payload.payload !== undefined ) {
@@ -5106,9 +5153,10 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                         const id = actionLink.attr("rbl-navigate");
                         const inputSelector = actionLink.attr("rbl-navigate-input-selector");
                         const dataInputs = application.dataAttributesToJson( actionLink, "data-input-" );
+                        const persistInputs = actionLink.attr("rbl-navigate-persist-inputs") == "true";
 
                         if ( dataInputs != undefined || inputSelector != undefined ) {
-                            application.setDefaultInputsOnNavigate( dataInputs, inputSelector );
+                            application.setDefaultInputsOnNavigate( id, persistInputs, dataInputs, inputSelector );
                         }
 
                         application.ui.triggerEvent( "onKatAppNavigate", id, this );
@@ -6194,12 +6242,13 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
         $.fn.KatApp.templateDelegates = [];
         $.fn.KatApp.sharedData = { requesting: false, callbacks: [] };
     
-        const currentInputsJson = sessionStorage.getItem("katapp:tempData:defaultInputs");
+        const currentInputsJson = sessionStorage.getItem("katapp:navigationInputs");
         const currentInputs: inputsToPassOnNavigate = currentInputsJson != undefined && currentInputsJson != null 
             ? JSON.parse( currentInputsJson ) 
             : { Applications: [] };
         $.fn.KatApp.inputsToPassOnNavigate = currentInputs;
-        sessionStorage.removeItem("katapp:tempData:defaultInputs");
+
+        sessionStorage.setItem("katapp:navigationInputs", JSON.stringify({ Applications: currentInputs.Applications.filter( a => !a.persist ) } ) );
 
         $.fn.KatApp.templateOn = function( templateName: string, events: string, fn: TemplateOnDelegate ): void {
             $.fn.KatApp.templateDelegates.push( { Template: templateName.ensureGlobalPrefix(), Delegate: fn, Events: events } );

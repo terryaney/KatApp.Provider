@@ -37,7 +37,7 @@ interface KatAppOptions
     
     calcEngines?: CalcEngine[];
     inputCaching?: boolean; // Whether or not inputs are cached to/restored from LocalStorage
-    inputCachingKey?: string; // A key used to index local storage for inputCaching.  Normally set server side as hash(user+currentPage)
+    userIdHash?: string; // User ID hashed to be used in different caching scenarios
     inputSelector?: string;
     // If there are some inputs that should always be passed in on a calculation but aren't available in the UI, 
     // they can be assigned here.  The most common use of this is iConfigureUI/iDataBind/iInputTrigger

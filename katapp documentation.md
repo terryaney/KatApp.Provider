@@ -120,7 +120,7 @@
         - [KatApp Advanced Methods](#KatApp-Advanced-Methods)
             - [apiAction](#apiAction)
             - [serverCalculation](#serverCalculation)
-            - [setDefaultInputsOnNavigate](#setDefaultInputsOnNavigate)
+            - [setNavigationInputs](#setNavigationInputs)
             - [navigate](#navigate)
             - [pushNotification](#pushNotification)
         - [KatApp Debugging Methods](#KatApp-Debugging-Methods)
@@ -157,7 +157,7 @@
             - [onUploadComplete](#onUploadComplete)
         - [Template Event Handlers](#Template-Event-Handlers)
     - [Global Methods](#Global-Methods)
-        - [static setDefaultInputsOnNavigate](#static-setDefaultInputsOnNavigate)
+        - [static setNavigationInputs](#static-setNavigationInputs)
 
 # Overview
 A KatApp is a dynamic html application delivered to a host platform such as Life@Work.  Conceptually, its like a CMS, but instead of static content, it provides for dynamic content containing potentially complex business logic and controls and data and results.
@@ -2324,7 +2324,7 @@ Property | Type | Description
 debug | [DebugOptions Object](#DebugOptions-Object) | Assign properties that control debugging capabilities.
 view | string | Assign the Kaml View to use in this KatApp in the form of `Folder:View`.
 inputCaching | boolean | Whether or not inputs should automatically persist and restore from `Storage`.
-inputCachingKey | string | Optional key to use for storing inputs.  Normally a hash of current user ID and KatApp Application ID (`currentPage`) is passed from the server.  If not provided, `currentPage` is used.
+userIdHash | string | Optional hashed User ID to use as a key in different storage situations.
 inputSelector | string | A jQuery selector that specifies which inputs inside the view are considers RBLe Calculation Service inputs.  By default, _all_ inputs are selected via a selector of `input, textarea, select`.
 viewTemplates | string | A `comma` delimitted list of Kaml Template Files to use in the form of `Folder:Template,Folder:Template,...`.
 ajaxLoaderSelector | string | A jQuery selector that indicates an item to show at the start of calculations and hide upon completion.  By default, `.ajaxloader` is used.
@@ -2991,26 +2991,28 @@ $(".saveButtonAction", view).on('click', function (e) {
 });
 ```
 
-#### setDefaultInputsOnNavigate
+#### setNavigationInputs
 
-**`.setDefaultInputsOnNavigate( navigationId: string | undefined, inputs: {} | undefined, inputSelector?: string )`**
+**`.setNavigationInputs( inputs: {} | undefined, navigationId?: string, inputSelector?: string, persist?: boolean )`**
 
-`setDefaultInputsOnNavigate` is primarily used as an internal helper, however, default inputs could be programmatically set if needed.  These inputs would be used after the next navigation in which a KatApp is rendered.
+`setNavigationInputs` is primarily used as an internal helper, however, default inputs could be programmatically set if needed.  These inputs would be used after the next navigation in which a KatApp is rendered. If persist is `false`, the inputs will be used a single time.  If navigationId is `undefined`, then the inputs are applied globally and can not be persisted.
 
 ```javascript
 // Set the iCurrentAge default (calculated from CE) to be used in next KatApp after navigation
 view.on("onCalculationOptions.RBLe", function (event, calculationOptions, application) {
     const currentAge: application.getResultValue("defaults", "iCurrentAge", "value") * 1
-    // undefined for navigationId makes it global to all applications rendered
-    application.setDefaultInputsOnNavigate( undefined, { "iEnableTrace": 1 } );
-    // Set iCurrentAge for Sharkfin application only (only valid if next navigation goes to Sharkfin).
-    application.setDefaultInputsOnNavigate( "Sharkfin", { "iCurrentAge": currentAge } );
+    // No navigationId makes it global to all applications rendered
+    application.setNavigationInputs( { "iEnableTrace": 1 } );
+    // Set iCurrentAge for Sharkfin application only.
+    application.setNavigationInputs( { "iCurrentAge": currentAge }, "Sharkfin" );
+    // Set iCurrentAge for Sharkfin application only (only valid for next navigation to Sharkfin).
+    application.setNavigationInputs( { "iCurrentAge": currentAge }, "Sharkfin", false );
 });
 
 // Create defaults from any input with .default-from-ce class (calculated from CE and assigned via ejs-defaults) 
 // to be used in next KatApp after navigation
 view.on("onCalculationOptions.RBLe", function (event, calculationOptions, application) {
-    application.setDefaultInputsOnNavigate( undefined, undefined, ".default-from-ce" );
+    application.setNavigationInputs( undefined, undefined, false, ".default-from-ce" );
 });
 ```
 
@@ -3579,14 +3581,14 @@ $.fn.KatApp.templateOn("{thisTemplate}", "onInitialized.RBLe", function (event, 
 
 For almost all code written revolving around KatApps, it will be based on a KatApp 'application' object as described throughout this document.  However, there are times when there is code _related_ to KatApp applications but occurs outside of a running KatApp.  Below is the list of methods that are available and when they are useful.
 
-#### static setDefaultInputsOnNavigate
+#### static setNavigationInputs
 
-**`.setDefaultInputsOnNavigate( navigationId: string | undefined, persist: boolean, inputs: {} | undefined )`**
+**`.setNavigationInputs( inputs: {}, cachingKey: string | undefined )`**
 
-The static version of `setDefaultInputsOnNavigate` is almost identical to the application [setDefaultInputsOnNavigate](#setDefaultInputsOnNavigate) method.  Default inputs can be programmatically set for the next rendering of a KatApp if needed.  The difference is that the static version does not accept an `inputsSelector` parameter since it is not running inside the context of an application.  After this method is called, these inputs would be used when the next KatApp is rendered.  The primary use for this function is to set inputs immediately before navigation to a KatApp.
+The static version of `setNavigationInputs` is almost identical to the application [setNavigationInputs](#setNavigationInputs) method.  Default inputs can be programmatically set for one time use in the next rendering of a KatApp if needed.  The difference is that the static version does not accept an `inputsSelector` parameter since it is not running inside the context of an application.  After this method is called, these inputs would be used when the next KatApp is rendered.  The primary use for this function is to set inputs immediately before navigation to a KatApp.  If `cachingKey` is undefined or not passed in, the inputs apply globally to any/all KatApps on the next navigation only.
 
 ```html
 <!-- Set the iCurrentAge default before navigating to HPF KatApp -->
-<a href="#" onclick="KatApp.setDefaultInputsOnNavigate( 'Benefits.HPF', false, { iCurrentAge: 64 } );NavigateToKatApp( 'Benefits.HPF' );">Navigate to HPF</a>
+<a href="#" onclick="KatApp.setNavigationInputs( { iCurrentAge: 64 } );NavigateToKatApp( 'Benefits.HPF' );">Navigate to HPF</a>
 ```
 <hr/>

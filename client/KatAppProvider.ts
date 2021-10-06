@@ -343,16 +343,16 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
             
             const extendDefaultInputs = function(): void {
                 const hasInputCaching = that.options.inputCaching;
-                const hasNavigationInputs = $.fn.KatApp.inputsToPassOnNavigate.Applications.length > 0;
+                const applicationNavigationInputs = that.getNavigationInputs();
+                const hasNavigationInputs = 
+                    $.fn.KatApp.navigationInputs != undefined || applicationNavigationInputs != undefined;
     
                 if ( hasInputCaching || hasNavigationInputs ) {
-                    that.options.defaultInputs = that.options.defaultInputs ?? { };
+                    that.options.defaultInputs = that.options.defaultInputs ?? {};
                     const defaultInputs = that.options.defaultInputs;
     
                     if ( hasInputCaching ) {
-                        const inputCachingKey =
-                            "katapp:cachedInputs:" + ( that.options.inputCachingKey ?? that.options.currentPage );
-    
+                        const inputCachingKey = "katapp:cachedInputs:" + that.options.currentPage + ":" + ( that.options.userIdHash ?? "EveryOne" );
                         const cachedInputsJson = sessionStorage.getItem(inputCachingKey);
                         const cachedInputs = cachedInputsJson != undefined && cachedInputsJson != null 
                             ? JSON.parse( cachedInputsJson ) 
@@ -362,18 +362,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                     }
         
                     if ( hasNavigationInputs ) {
-                        $.fn.KatApp.inputsToPassOnNavigate.Applications
-                            .filter( a => a.id == "GLOBAL" || a.id == that.options.currentPage )
-                            .forEach( a => {
-                                if ( a.inputs != undefined ) {
-                                    KatApp.extend(defaultInputs, a.inputs);
-                                    /*
-                                    Object.keys(a.inputs).forEach( k => {
-                                        defaultInputs[ k ] = a.inputs![ k ];
-                                    });
-                                    */
-                                }
-                            });
+                        KatApp.extend(defaultInputs, $.fn.KatApp.navigationInputs, applicationNavigationInputs);
                     }
                 }    
             }
@@ -814,15 +803,36 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
 
         navigate( navigationId: string, persistInputs?: boolean, defaultInputs?: {} | undefined ): void {
             if ( defaultInputs != undefined ) {
-                this.setDefaultInputsOnNavigate( navigationId, persistInputs ?? false, defaultInputs );
+                this.setNavigationInputs( defaultInputs, navigationId, persistInputs ?? true );
             }
 
             this.ui.triggerEvent( "onKatAppNavigate", navigationId, this );
         }
 
-        setDefaultInputsOnNavigate( navigationId: string | undefined, persist: boolean, inputs: {} | undefined, inputSelector?: string ): void {
-            const inputsToPass = inputs ?? this.rble.getInputsBySelector( inputSelector )
-            KatApp.setDefaultInputsOnNavigate( navigationId, persist, inputsToPass );
+        setNavigationInputs( inputs: {} | undefined, navigationId?: string, persist?: boolean, inputSelector?: string ): void {
+            const inputsToPass = inputs ?? this.rble.getInputsBySelector( inputSelector ) ?? {};
+            const cachingKey = 
+                navigationId == undefined // global
+                    ? undefined
+                    : persist
+                        ? "katapp:navigationInputs:" + navigationId + ":" + ( this.options.userIdHash ?? "Everyone" )
+                        : "katapp:navigationInputs:" + navigationId;
+
+            KatApp.setNavigationInputs( inputsToPass, cachingKey );
+        }
+        getNavigationInputs(): {} | undefined {
+            const oneTimeInputsKey = "katapp:navigationInputs:" + this.options.currentPage;
+            const oneTimeInputsJson = sessionStorage.getItem(oneTimeInputsKey);
+            const oneTimeInputs = oneTimeInputsJson != undefined ? JSON.parse( oneTimeInputsJson ) : undefined ;
+            sessionStorage.removeItem(oneTimeInputsKey);
+
+            const persistedInputsKey = "katapp:navigationInputs:" + this.options.currentPage;
+            const persistedInputsJson = sessionStorage.getItem(persistedInputsKey);
+            const persistedInputs = persistedInputsJson != undefined ? JSON.parse( persistedInputsJson ) : undefined ;
+
+            return oneTimeInputs == undefined && persistedInputs == undefined
+                ? undefined
+                : KatApp.extend( {}, oneTimeInputs, persistedInputs );
         }
 
         calculate( customOptions?: KatAppOptions, pipelineDone?: ()=> void ): void {
@@ -1044,9 +1054,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
     
                 const hasInputCaching = currentOptions.inputCaching;
                 if ( hasInputCaching ) {
-                    const inputCachingKey =
-                        "katapp:cachedInputs:" + ( currentOptions.inputCachingKey ?? currentOptions.currentPage );
-                    
+                    const inputCachingKey = "katapp:cachedInputs:" + currentOptions.currentPage + ":" + ( currentOptions.userIdHash ?? "EveryOne" );
                     const inputsCache = KatApp.extend({}, that.calculationInputs);
                     that.ui.triggerEvent( "onInputsCache", inputsCache, that );
 
@@ -5159,10 +5167,10 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                         const id = actionLink.attr("rbl-navigate");
                         const inputSelector = actionLink.attr("rbl-navigate-input-selector");
                         const dataInputs = application.dataAttributesToJson( actionLink, "data-input-" );
-                        const persistInputs = actionLink.attr("rbl-navigate-persist-inputs") == "true";
+                        const persistInputs = actionLink.attr("rbl-navigate-persist-inputs") != "false";
 
                         if ( dataInputs != undefined || inputSelector != undefined ) {
-                            application.setDefaultInputsOnNavigate( id, persistInputs, dataInputs, inputSelector );
+                            application.setNavigationInputs( dataInputs, id, persistInputs, inputSelector );
                         }
 
                         application.ui.triggerEvent( "onKatAppNavigate", id, this );
@@ -6249,14 +6257,13 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
         $.fn.KatApp.templatesUsedByAllApps = {};
         $.fn.KatApp.templateDelegates = [];
         $.fn.KatApp.sharedData = { requesting: false, callbacks: [] };
-    
-        const currentInputsJson = sessionStorage.getItem("katapp:navigationInputs");
-        const currentInputs: inputsToPassOnNavigate = currentInputsJson != undefined && currentInputsJson != null 
-            ? JSON.parse( currentInputsJson ) 
-            : { Applications: [] };
-        $.fn.KatApp.inputsToPassOnNavigate = currentInputs;
 
-        sessionStorage.setItem("katapp:navigationInputs", JSON.stringify({ Applications: currentInputs.Applications.filter( a => !a.persist ) } ) );
+        const navigationCachingKey = "katapp:navigationInputs:global";
+        const currentInputsJson = sessionStorage.getItem(navigationCachingKey);
+        $.fn.KatApp.navigationInputs = currentInputsJson != undefined && currentInputsJson != null 
+            ? JSON.parse( currentInputsJson ) 
+            : undefined;
+        sessionStorage.removeItem(navigationCachingKey);
 
         $.fn.KatApp.templateOn = function( templateName: string, events: string, fn: TemplateOnDelegate ): void {
             $.fn.KatApp.templateDelegates.push( { Template: templateName.ensureGlobalPrefix(), Delegate: fn, Events: events } );

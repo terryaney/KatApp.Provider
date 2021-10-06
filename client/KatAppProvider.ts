@@ -31,7 +31,6 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
             shareDataWithOtherApplications: true,
             functionUrl: KatApp.functionUrl,
             sessionUrl: KatApp.sessionUrl,
-            currentPage: "Unknown1",
             inputSelector: "input, textarea, select",
             runConfigureUICalculation: true,
             ajaxLoaderSelector: ".ajaxloader",
@@ -71,10 +70,10 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
             },
 
             // Default to just an empty (non-data) package
-            getData: function( appilcation: KatAppPlugInInterface, options: KatAppOptions, done: RBLeRESTServiceResultCallback, _fail: JQueryFailCallback ): void { // eslint-disable-line @typescript-eslint/no-unused-vars
+            getData: function( application: KatAppPlugInInterface, options: KatAppOptions, done: RBLeRESTServiceResultCallback, _fail: JQueryFailCallback ): void { // eslint-disable-line @typescript-eslint/no-unused-vars
                 done( {
                     AuthID: "Empty",
-                    Client: "Empty",
+                    Client: options.view ?? "Empty",
                     Profile: {} as JSON,
                     History: {} as JSON
                 });
@@ -2970,7 +2969,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                     CurrentPage: currentOptions.currentPage ?? "KatApp:" + ( currentOptions.view ?? "UnknownView" ),
                     RequestIP: currentOptions.requestIP ?? "1.1.1.1",
                     CurrentUICulture: currentOptions.currentUICulture ?? "en-US",
-                    Environment: currentOptions.environment ?? "PITT.PROD",
+                    Environment: currentOptions.environment ?? "EW.PROD",
                     Framework: "KatApp"
                 }
             };

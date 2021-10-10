@@ -26,12 +26,12 @@
   </div>
 </rbl-template>
 
-<rbl-template tid="carousel" type="katapp-carousel">
+<rbl-template tid="carousel" type="katapp-carousel" default-rbl-ce="default">
   <div id="carousel-{id}-{name}" class="carousel slide {css-carousel}" data-bs-ride="false">
     <div class="carousel-indicators" rbl-source="{source}" rbl-tid="carousel-indicators" rbl-prepend="before-preserve">
       <button type="button" class="d-none rbl-preserve" data-show-all="true">Show More</button>
     </div>
-    <div class="carousel-inner" rbl-source="{source}" rbl-tid="carousel-item"></div>
+    <div class="carousel-inner" rbl-ce={rbl-ce} rbl-source="{source}" rbl-tid="carousel-item"></div>
     <!-- Not showing next/previous, could add {} data element to control visiblity
     <button class="carousel-control-prev" type="button" data-bs-target="#carousel-{id}-{name}" data-bs-slide="prev">
       <span class="carousel-control-prev-icon" aria-hidden="true"></span>

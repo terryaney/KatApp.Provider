@@ -825,7 +825,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
             const oneTimeInputs = oneTimeInputsJson != undefined ? JSON.parse( oneTimeInputsJson ) : undefined ;
             sessionStorage.removeItem(oneTimeInputsKey);
 
-            const persistedInputsKey = "katapp:navigationInputs:" + this.options.currentPage;
+            const persistedInputsKey = "katapp:navigationInputs:" + this.options.currentPage + ":" + ( this.options.userIdHash ?? "Everyone" );
             const persistedInputsJson = sessionStorage.getItem(persistedInputsKey);
             const persistedInputs = persistedInputsJson != undefined ? JSON.parse( persistedInputsJson ) : undefined ;
 
@@ -5236,14 +5236,16 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                             //	This one didn't work (left a comment) because of needing to return text (error) or file (success).
                             
                             const parametersJson = application.dataAttributesToJson( actionLink, "data-param-");
-                            const inputsJson = application.dataAttributesToJson( actionLink, "data-input-" );
+                            
+                            // Don't think this is ever used
+                            // const inputsJson = application.dataAttributesToJson( actionLink, "data-input-" );
 
                             application.apiAction(
                                 actionEndpoint, 
                                 application.options, 
                                 { 
                                     customParameters: parametersJson, 
-                                    customInputs: inputsJson,
+                                    // customInputs: inputsJson,
                                     isDownload: actionLink.attr("rbl-action-download") == "true",
                                     calculateOnSuccess: actionLink.attr("rbl-action-calculate") == "true"
                                 },
@@ -5473,7 +5475,9 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
 
 
                         const parametersJson = application.dataAttributesToJson( el, "data-param-");
-                        const inputsJson = application.dataAttributesToJson( el, "data-input-" );
+                        
+                        // Don't think needed
+                        // const inputsJson = application.dataAttributesToJson( el, "data-input-" );
 
                         const fd = 
                             application.buildFormData( 
@@ -5481,7 +5485,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                                     application.options, 
                                     { 
                                         customParameters: parametersJson, 
-                                        customInputs: inputsJson 
+                                        // customInputs: inputsJson 
                                     }
                                 ) 
                             );
@@ -5672,8 +5676,9 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                     }
                     else if ( inputType === "multiline" ) {
                         // Replace textbox with a textarea
-                        const rows = el.data("rows") ?? "4";
-                        input.replaceWith($('<textarea name="' + id + '" rows="' + rows + '" id="katapp_' + applicationId + '_' + id + '" class="form-control ' + id + '"></textarea>'))
+                        const rows = el.data("rows");
+                        const rowsAttr = rows != undefined ? ' rows="' + rows + '" ' : "";
+                        input.replaceWith($('<textarea name="' + id + '" ' + rowsAttr + 'id="katapp_' + applicationId + '_' + id + '" class="form-control ' + id + '"></textarea>'))
                         input = $("textarea[name='" + id + "']", el);
                     }
 

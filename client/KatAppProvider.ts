@@ -202,7 +202,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
             
             const saveFirstCalculationLocation = this.options.debug?.saveFirstCalculationLocation;
             if ( saveFirstCalculationLocation !== undefined && saveFirstCalculationLocation !== "1" ) {
-                this.element.data("katapp-save-calcengine", saveFirstCalculationLocation);
+                this.saveCalcEngine(saveFirstCalculationLocation);
             }
 
             this.element.attr("rbl-application-id", this.id);
@@ -346,23 +346,23 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                 const hasNavigationInputs = 
                     $.fn.KatApp.navigationInputs != undefined || applicationNavigationInputs != undefined;
     
-                if ( hasInputCaching || hasNavigationInputs ) {
+                if ( hasInputCaching ) {
                     that.options.defaultInputs = that.options.defaultInputs ?? {};
                     const defaultInputs = that.options.defaultInputs;
     
-                    if ( hasInputCaching ) {
-                        const inputCachingKey = "katapp:cachedInputs:" + that.options.currentPage + ":" + ( that.options.userIdHash ?? "EveryOne" );
-                        const cachedInputsJson = sessionStorage.getItem(inputCachingKey);
-                        const cachedInputs = cachedInputsJson != undefined && cachedInputsJson != null 
-                            ? JSON.parse( cachedInputsJson ) 
-                            : {};
-                        
-                        KatApp.extend(defaultInputs, cachedInputs);
-                    }
-        
-                    if ( hasNavigationInputs ) {
-                        KatApp.extend(defaultInputs, $.fn.KatApp.navigationInputs, applicationNavigationInputs);
-                    }
+                    const inputCachingKey = "katapp:cachedInputs:" + that.options.currentPage + ":" + ( that.options.userIdHash ?? "EveryOne" );
+                    const cachedInputsJson = sessionStorage.getItem(inputCachingKey);
+                    const cachedInputs = cachedInputsJson != undefined && cachedInputsJson != null 
+                        ? JSON.parse( cachedInputsJson ) 
+                        : {};
+                    
+                    KatApp.extend(defaultInputs, cachedInputs);
+                }    
+                if ( hasNavigationInputs ) {
+                    that.options.manualInputs = that.options.manualInputs ?? {};
+                    const manualInputs = that.options.manualInputs;
+    
+                    KatApp.extend(manualInputs, $.fn.KatApp.navigationInputs, applicationNavigationInputs);
                 }    
             }
 
@@ -432,7 +432,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                                         const ce = $(c);
                                         viewCalcEngines.push(
                                             {
-                                                key: ce.attr("key") ?? ce.attr("name") ?? "UNAVAILABLE",
+                                                key: ce.attr("key") ?? "default",
                                                 name: ce.attr("name") ?? "UNAVAILABLE",
                                                 inputTab: ce.attr("input-tab"),
                                                 resultTabs: ce.attr("result-tabs")?.split(","),
@@ -746,9 +746,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
         unregister(): void {
             this.element.removeAttr("rbl-application-id");
             this.element.removeClass("katapp-" + this.id);
-            this.element.removeData("katapp-save-calcengine");
-            this.element.removeData("katapp-refresh-calcengine");
-            this.element.removeData("katapp-trace-calcengine");
+            this.options.nextCalculation = undefined;
             $('[data-katapp-initialized]', this.element).removeAttr("data-katapp-initialized");
             $('[data-katapp-template-injected]', this.element).removeAttr("data-katapp-template-injected");            
             this.ui.unbindCalculationInputs();
@@ -775,7 +773,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                     result = JSON.parse(result.payload);
                 }
 
-                console.log(  JSON.stringify( result ) ); 
+                console.log( JSON.stringify( result ) ); 
             };
             const logError = function(xhr: JQuery.jqXHR<any> ): void { 
                 console.log( "Error: " + xhr.status + ", " + xhr.statusText ); 
@@ -1547,7 +1545,14 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
 
             var fd = application.buildFormData( data );
 
+            const clearServerOnlySaveInstructions = function() {
+                if ( application.options.nextCalculation?.saveLocations != undefined ) {
+                    application.options.nextCalculation.saveLocations = 
+                        application.options.nextCalculation.saveLocations.filter( l => !l.serverSideOnly );
+                }
+            };
             const finishApiAction = function() {
+                clearServerOnlySaveInstructions();
                 const errorSummary = $("#" + application.id + "_ModelerValidationTable", application.element);
                 const warningSummary = $("#" + application.id + "_ModelerWarnings", application.element);
                 application.rble.processValidationRows( errorSummary, errors );
@@ -1555,6 +1560,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                 application.rble.finalizeValidationSummaries();
 
                 if ( errors.length > 0 ) {
+                    debugger;
                     console.group("Unable to process " + commandName + ": errorResponse");
                     console.log(errorResponse);
                     console.groupEnd();
@@ -1639,6 +1645,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                                 delete application.endpointRBLeInputsCache[ commandName ];
                             }
                             if ( runCalculate ) {
+                                clearServerOnlySaveInstructions();
                                 application.calculate( undefined, finishApiAction );
                             }
                         }
@@ -1676,9 +1683,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
             this.trace("Processing results from calculation", TraceVerbosity.Detailed);
             const start = new Date();
             try {
-                this.element.removeData("katapp-save-calcengine");
-                this.element.removeData("katapp-trace-calcengine");
-                this.element.removeData("katapp-refresh-calcengine");
+                this.options.nextCalculation = undefined;
                 this.options.defaultInputs = undefined;
     
                 this.ui.triggerEvent( "onResultsProcessing", this.results, calculationOptions, this );
@@ -1711,6 +1716,53 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
         }
         getResultValueByColumn( table: string, keyColumn: string, key: string, column: string, defautlValue?: string, tabDef?: string, calcEngine?: string ): string | undefined { 
             return this.rble.getResultValueByColumn( this.rble.getTabDef( tabDef, calcEngine ), table, keyColumn, key, column, defautlValue ); 
+        }
+
+        createModalDialog(confirm: string, onConfirm: ()=> void, onCancel: ()=> void | undefined): void {
+            if (!$('.katappModalDialog', this.element).length) {
+                const sCancel = "Cancel";
+                const sContinue = "Continue";
+
+                const isBootstrap5 = this.bootstrapVersion == 5;
+                const bsDataAttributePrefix = isBootstrap5 ? "data-bs-" : "data-";
+
+                this.element.append(
+                    '<div class="modal fade katappModalDialog" tabindex="-1" role="dialog" ' + bsDataAttributePrefix + 'keyboard="false" ' + bsDataAttributePrefix + 'backdrop="static">' +
+                        '<div class="modal-dialog">' +
+                            '<div class="modal-content">' +
+                                '<div class="modal-body"></div>' +
+                                '<div class="modal-footer">' +
+                                    '<button class="btn btn-default cancelButton" ' + bsDataAttributePrefix + 'dismiss="modal" aria-hidden="true">' + sCancel + '</button>' +
+                                    '<button type="button" class="btn btn-primary continueButton" ' + bsDataAttributePrefix + 'dismiss="modal">' + sContinue + '</button>' +
+                                '</div>' +
+                            '</div>' +
+                        '</div>' +
+                    '</div>');
+            }
+
+            $('.katappModalDialog .modal-body', this.element).html(confirm);
+
+            $('.katappModalDialog .continueButton', this.element).off("click.ka").on("click.ka", function () {
+                onConfirm();
+            });
+            if ( onCancel == undefined ) {
+                $('.katappModalDialog .cancelButton', this.element).hide();    
+            }
+            else {
+                $('.katappModalDialog .cancelButton', this.element).off("click.ka").show().on("click.ka", function () {
+                    if (onCancel != undefined) {
+                        onCancel();
+                    }
+                });
+            }
+    
+            if (this.bootstrapVersion==5) {
+                var myModal = new bootstrap.Modal($('.katappModalDialog', this.element)[0]);
+                myModal.show();
+            }
+            else {
+                $('.katappModalDialog', this.element).modal({ show: true });
+            }
         }
 
         // Debug helpers        
@@ -1758,14 +1810,44 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
             rebuildOptions = this.rebuild( { runConfigureUICalculation: false, onInitialized: redrawInit } );
         }
 
-        saveCalcEngine( location: string ): void {
-            this.element.data("katapp-save-calcengine", location);
+        saveCalcEngine( location: string | boolean, serverSideOnly?: boolean ): void {
+            if ( this.options.nextCalculation == undefined )
+            {
+                this.options.nextCalculation = {
+                    saveLocations: []
+                };
+            }
+            else if ( this.options.nextCalculation.saveLocations == undefined ) {
+                this.options.nextCalculation.saveLocations = [];
+            }
+            
+            if ( typeof( location ) == "boolean" ) {
+                if ( !location ) {
+                    this.options.nextCalculation.saveLocations = [];
+                }
+            }
+            else {
+                location.split('|').forEach( l => {
+                    this.options.nextCalculation?.saveLocations?.push( {
+                        location: l,
+                        serverSideOnly: serverSideOnly ?? false
+                    });
+                });
+            }
         }
         refreshCalcEngine(): void {
-            this.element.data("katapp-refresh-calcengine", "1");
+            if ( this.options.nextCalculation == undefined )
+            {
+                this.options.nextCalculation = { };
+            }
+            this.options.nextCalculation.expireCache = true;
         }
         traceCalcEngine(): void {
-            this.element.data("katapp-trace-calcengine", "1");
+            if ( this.options.nextCalculation == undefined )
+            {
+                this.options.nextCalculation = { };
+            }
+            this.options.nextCalculation.trace = true;
         }
         trace( message: string, verbosity: TraceVerbosity = TraceVerbosity.Normal ): void {
             KatApp.trace( this, message, verbosity );
@@ -1819,92 +1901,49 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                 });
         }
 
-        onConfirmLinkClick( link: JQuery<HTMLElement>, confirm: string, confirmAction?: ()=> void ): boolean {
+        onConfirmLinkClick( link: JQuery<HTMLElement>, modalText: string, confirmAction?: ()=> void ): boolean {
 
             if (link.data("confirmed") == "true") {
                 return true;
             }
             const that = this;
 
-            this.createConfirmDialog(
-                confirm,
+            const onConfirm = function () {
+                link.data("confirmed", "true");
 
-                // onConfirm
-                function () {
-                    link.data("confirmed", "true");
+                if ( confirmAction != undefined ) {
+                    confirmAction();
+                }
+                else {
+                    const submitKey = link.data("submit-key");
 
-                    if ( confirmAction != undefined ) {
-                        confirmAction();
+                    if (submitKey != undefined) {
+                        $(submitKey)[0].click();
                     }
                     else {
-                        const submitKey = link.data("submit-key");
-
-                        if (submitKey != undefined) {
-                            $(submitKey)[0].click();
-                        }
-                        else {
-                            link[0].click();
-                        }
+                        link[0].click();
                     }
-
-                    link.data("confirmed", "false");
-                },
-                
-                // onCancel
-                function () {
-                    link.data("confirmed", "false");
-                    that.triggerEvent( "onConfirmCancelled", link );
-                });
-
-            return false;
-        }
-
-        createConfirmDialog(confirm: string, onConfirm: ()=> void, onCancel: ()=> void | undefined): void {
-            if (confirm == "") {
-                onConfirm(); // If no confirm on link (called from validation modules), just call onConfirm
-                return;
-            }
-
-            if (!$('.linkConfirmModal', this.application.element).length) {
-                const sCancel = "Cancel";
-                const sContinue = "Continue";
-
-                const isBootstrap5 = this.application.bootstrapVersion == 5;
-                const bsDataAttributePrefix = isBootstrap5 ? "data-bs-" : "data-";
-
-                this.application.element.append(
-                    '<div class="modal fade linkConfirmModal" tabindex="-1" role="dialog" ' + bsDataAttributePrefix + 'keyboard="false" ' + bsDataAttributePrefix + 'backdrop="static">' +
-                        '<div class="modal-dialog">' +
-                            '<div class="modal-content">' +
-                                '<div class="modal-body"></div>' +
-                                '<div class="modal-footer">' +
-                                    '<button class="btn btn-default cancelButton" ' + bsDataAttributePrefix + 'dismiss="modal" aria-hidden="true">' + sCancel + '</button>' +
-                                    '<button type="button" class="btn btn-primary continueButton" ' + bsDataAttributePrefix + 'dismiss="modal">' + sContinue + '</button>' +
-                                '</div>' +
-                            '</div>' +
-                        '</div>' +
-                    '</div>');
-            }
-
-            $('.linkConfirmModal .modal-body', this.application.element).html(confirm);
-
-            $('.linkConfirmModal .continueButton', this.application.element).off("click.ka").on("click.ka", function () {
-                onConfirm();
-            });
-        
-            $('.linkConfirmModal .cancelButton', this.application.element).off("click.ka").on("click.ka", function () {
-                if (onCancel != undefined) {
-                    onCancel();
                 }
-            });            
-    
-            if (this.application.bootstrapVersion==5) {
-                var myModal = new bootstrap.Modal($('.linkConfirmModal', this.application.element)[0]);
-                myModal.show();
+
+                link.data("confirmed", "false");
+            };
+
+            if (modalText == "") {
+                onConfirm(); // If no confirm on link (called from validation modules), just call onConfirm
             }
             else {
-                $('.linkConfirmModal', this.application.element).modal({ show: true });
+                this.application.createModalDialog(
+                    modalText,
+                    onConfirm,                
+                    // onCancel
+                    function () {
+                        link.data("confirmed", "false");
+                        that.triggerEvent( "onConfirmCancelled", link );
+                    }
+                );
             }
+
+            return false;
         }
 
         processDropdownItems(dropdown: JQuery<HTMLElement>, rebuild: boolean, dropdownItems: { Value: string | null; Text: string | null; Class: string | undefined; Subtext: string | undefined; Html: string | undefined; Selected: boolean; Visible: boolean }[]): void {
@@ -2731,7 +2770,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                 currentOptions.registerData ??
                 function( _app, _o, done, fail ): void
                 {
-                    const traceCalcEngine = application.element.data("katapp-trace-calcengine") === "1";
+                    const traceCalcEngine = application.options.nextCalculation?.trace ?? false;
     
                     const json: RegisterDataOptions = {
                         Registration: KatApp.generateId(),
@@ -2942,9 +2981,11 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
             }
 
             const application = this.application;
-            const saveCalcEngineLocation = application.element.data("katapp-save-calcengine");
-            const traceCalcEngine = application.element.data("katapp-trace-calcengine") === "1";
-            const refreshCalcEngine = application.element.data("katapp-refresh-calcengine") === "1";
+            const saveCalcEngineLocation = application.options.nextCalculation?.saveLocations != undefined
+                ? application.options.nextCalculation.saveLocations.map( l => l.location ).join("|")
+                : "";
+            const traceCalcEngine = application.options.nextCalculation?.trace ?? false;
+            const refreshCalcEngine = application.options.nextCalculation?.expireCache ?? false;
 
             const calculationOptions: SubmitCalculationOptions = {
                 Data: !( currentOptions.registerDataWithService ?? true ) ? currentOptions.data : undefined,
@@ -2991,7 +3032,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                     payload = JSON.parse(payload.payload);
                 }
     
-                const traceCalcEngine = application.element.data("katapp-trace-calcengine") === "1";
+                const traceCalcEngine = application.options.nextCalculation?.trace ?? false;
                     
                 if ( traceCalcEngine && payload.Diagnostics != null ) {
                     console.group(calcEngine.name + " " + payload.Diagnostics.CalcEngineVersion + " Diagnostics");
@@ -4411,14 +4452,14 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                     ui.processListItems(
                         listControl,
                         row.rebuild == "1",
-                        listRows.map( r => ({ Value:  r.key, Text: r.text, Help: r.help, Selected: false, Visible: r.visible != "0", Disabled: r.disabled == "1" }))
+                        listRows.map( r => ({ Value: r.key, Text: r.text, Help: r.help, Selected: false, Visible: r.visible != "0", Disabled: r.disabled == "1" }))
                     );
                 }
                 else if ( dropdown.length === 1 ) {
                     ui.processDropdownItems(
                         dropdown, 
                         row.rebuild == "1",
-                        listRows.map( r => ({ Value:  r.key, Text: r.text, Class: r.class, Subtext: r.subtext, Html: r.html, Selected: false, Visible: r.visible != "0" }))
+                        listRows.map( r => ({ Value: r.key, Text: r.text, Class: r.class, Subtext: r.subtext, Html: r.html, Selected: false, Visible: r.visible != "0" }))
                     );
                 }
                 else {
@@ -5560,6 +5601,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                             $(".file-upload-progress", that.application.element).hide();
 
                             if ( errors.length > 0 ) {
+                                debugger;
                                 console.group("Unable to upload file: errors");
                                 console.log( errors );
                                 console.groupEnd();            

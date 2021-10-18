@@ -123,6 +123,7 @@
             - [setNavigationInputs](#setNavigationInputs)
             - [navigate](#navigate)
             - [pushNotification](#pushNotification)
+            - [createModalDialog](#createModalDialog)
         - [KatApp Debugging Methods](#KatApp-Debugging-Methods)
             - [saveCalcEngine](#saveCalcEngine)
             - [refreshCalcEngine](#refreshCalcEngine)
@@ -156,6 +157,7 @@
             - [onUploadFailed](#onUploadFailed)
             - [onUploadComplete](#onUploadComplete)
         - [Template Event Handlers](#Template-Event-Handlers)
+    - [Helper Methods](#Helper-Methods)
     - [Global Methods](#Global-Methods)
         - [static setNavigationInputs](#static-setNavigationInputs)
 
@@ -3062,6 +3064,25 @@ view.on( "onKatAppNotification.RBLe", function( event, name, information, applic
 });
 ```
 
+#### createModalDialog
+
+**`.createModalDialog(confirm: string, onConfirm: ()=> void, onCancel: ()=> void | undefined)`**
+
+createModalDialog is a helper method to show a simple 'Continue' / 'Cancel' Bootstrap dialog on the screen.  If `onCancel` is not provided, the 'Cancel' button will not be displayed.
+
+```javascript
+view.on("onActionResult.RBLe", function (e, commandName, _jsonResponse, application) {
+    if (commandName == "update-payment-inst") {
+        application.createModalDialog(
+            "You bank information have been successfully updated.",
+            function () {
+                application.navigate("Pension.PaymentDetails");
+            }
+        );
+    }
+});
+```
+
 ### KatApp Debugging Methods
 
 The following methods are helpful for Kaml View or CalcEngine developers to aid in their debugging.  These methods are manually invoked via the browser's console window while working on the site.
@@ -3070,22 +3091,33 @@ The following methods are helpful for Kaml View or CalcEngine developers to aid 
 
 #### saveCalcEngine
 
-**`.saveCalcEngine( location: string )`**
+**`.saveCalcEngine( location: string | boolean, serverSideOnly?: boolean )`**
 
-Save the *next successful* calculation's CalcEngine to the secure folder specified KAT Team's CMS.  Trigger the calculation by changing an input or manually calling the [`.calculate()`](#calculate) or [`.configureUI()`](#configureUI) methods.
+Save the *next successful* calculation's CalcEngine to the secure folder specified in the KAT Team's CMS.  Trigger the calculation by changing an input or manually calling the [`.calculate()`](#calculate) or [`.configureUI()`](#configureUI) methods.
+
+Calling `saveCalcEngine` multiple times before a calculation is ran will save the CalcEngine to each location specified.  To clear out all locations specified, call `saveCalcEngine( false )`.
+
+If the UI event that triggers a calculation calls an 'API Endpoint' or if a KatApp event handler calls the [`serverCalculation`](#serverCalculation) method, and upon success calls `application.calculate()` (i.e. data was updated on the server and a calculation is needed to refresh the UI), you may only want to save the next CalcEngine for the server side calculation.  To accomplish this, pass `true` into the optional `serverSideOnly` parameter.
 
 ```javascript
 // Save the next CalcEngine to the 'terry.aney' folder
-$(".katapp").KatApp("saveCalcEngine", "terry.aney");
 $(".katapp").KatApp().saveCalcEngine("terry.aney");
 
 // Then call calculation or configureUI to trigger a calculation...
-$(".katapp").KatApp("calculate");
+$(".katapp").KatApp().calculate();
+// or... 
+$(".katapp").KatApp().configureUI();
+
+// Save the next CalcEngine to the 'terry.aney' and 'tom.aney' folders
+$(".katapp").KatApp().saveCalcEngine("terry.aney");
+$(".katapp").KatApp().saveCalcEngine("tom.aney");
+
+// Then call calculation or configureUI to trigger a calculation...
 $(".katapp").KatApp().calculate();
 
-// or... 
-$(".katapp").KatApp("configureUI");
-$(".katapp").KatApp().configureUI();
+// Save the next Server Side Calculation CalcEngine to the 'terry.aney' folder, then trigger
+// the UI event (via button/link click that triggers apiAction or serverCalculation)
+$(".katapp").KatApp().saveCalcEngine("terry.aney", true);
 ```
 
 <hr/>

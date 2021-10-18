@@ -20,6 +20,12 @@ interface KatAppOptions
         showInspector?: boolean; // showInspector=1 querystring
     };
 
+    nextCalculation?: {
+        saveLocations?: { location: string, serverSideOnly: boolean }[];
+        expireCache?: boolean;
+        trace?: boolean;
+    };
+
     sessionUrl?: string;
     functionUrl?: string;
     bootstrapVersion?: number; // Can override the bootstrap version configured in rbl-config
@@ -198,7 +204,7 @@ interface KatAppPlugInInterface extends KatAppPlugInShimInterface {
     pushNotification: (name: string, information: {} | undefined)=> void;
 
     // $("selector").KatApp("saveCalcEngine", "terry.aney"); - save *next successful* calc for all selector items to terry.aney
-    saveCalcEngine: ( location: string )=> void;
+    saveCalcEngine: ( location: string | boolean, serverSideOnly?: boolean )=> void;
     // $("selector").KatApp("refreshCalcEngine"); - for the next calculation, instruct the RBLe Service to immediately check for an updated CalcEngine
     refreshCalcEngine: ()=> void;
     // $("selector").KatApp("traceCalcEngine"); - return calc engine tracing from *next successful* calc for all selector items

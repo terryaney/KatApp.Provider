@@ -684,7 +684,7 @@
 				{
                     view: "LAW:IRP",
                     debug: {
-                        saveFirstCalculationLocation: null
+                        saveConfigureUiCalculationLocation: null
                     },
 					defaultInputs: {
 						iInputsFromModeler: 1,

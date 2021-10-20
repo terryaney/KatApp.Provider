@@ -11,7 +11,7 @@ interface KatAppOptions
     debug?: {
         traceVerbosity?: TraceVerbosity;
         debugResourcesDomain?: string;
-        saveFirstCalculationLocation?: string;        
+        saveConfigureUiCalculationLocation?: string;        
         refreshCalcEngine?: boolean; // expireCE=1 querystring
         useTestCalcEngine?: boolean; // test=1 querystring
         useTestView?: boolean; // testView=1 querystring
@@ -199,7 +199,9 @@ interface KatAppPlugInInterface extends KatAppPlugInShimInterface {
     setInput: ( id: string, value: string | undefined, calculate: boolean )=> void;
     serverCalculation: ( customInputs: {} | undefined, actionLink?: JQuery<HTMLElement> )=> void;
     
-    apiAction: ( commandName: string, options: KatAppOptions, actionOptions: KatAppActionOptions, actionLink: JQuery<HTMLElement> | undefined, done?: ( successResponse: KatAppActionResult | undefined, failureResponse: JSON | undefined )=> void )=> void
+    apiAction: ( commandName: string, options: KatAppOptions, actionOptions: KatAppActionOptions, actionLink: JQuery<HTMLElement> | undefined, done?: ( successResponse: KatAppActionResult | undefined, failureResponse: {} | undefined )=> void )=> void
+    invalidate: ()=> void; // called upon failure from apiAction (jwtUpdates right now)
+
     // If multiple KatApps are on one page, a KatApp can broadcast notifications to other KatApps
     pushNotification: (name: string, information: {} | undefined)=> void;
 

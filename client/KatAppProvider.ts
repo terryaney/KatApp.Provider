@@ -19,7 +19,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
         {
             debug: {
                 traceVerbosity: TraceVerbosity.None,
-                saveFirstCalculationLocation: KatApp.pageParameters[ "save" ],
+                saveConfigureUiCalculationLocation: KatApp.pageParameters[ "saveConfigureUI" ],
                 useTestCalcEngine: KatApp.pageParameters[ "test" ] === "1",
                 refreshCalcEngine: KatApp.pageParameters[ "expirece" ] === "1",
                 allowLocalServer: KatApp.pageParameters[ "allowlocal" ] === "1",
@@ -90,7 +90,8 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
         element: JQuery;
         options: KatAppOptions = {};
         id: string;
-        endpointRBLeInputsCache: {} = {};
+        applicationIsInvalid = false;
+        endpointRBLeInputsCache = {};
 
         displayId: string;
         exception?: RBLeServiceResults | undefined;
@@ -200,11 +201,6 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                 options // finally js options override all
             );
             
-            const saveFirstCalculationLocation = this.options.debug?.saveFirstCalculationLocation;
-            if ( saveFirstCalculationLocation !== undefined && saveFirstCalculationLocation !== "1" ) {
-                this.saveCalcEngine(saveFirstCalculationLocation);
-            }
-
             this.element.attr("rbl-application-id", this.id);
             this.element.addClass("katapp-" + this.id);
 
@@ -833,6 +829,10 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
         }
 
         calculate( customOptions?: KatAppOptions, pipelineDone?: ()=> void ): void {
+            if ( !this.ensureApplicationValid() ) {
+               return;
+            }
+
             const _sharedData = $.fn.KatApp.sharedData;
 
             // Shouldn't change 'share' option with a customOptions object, so just use original options to check
@@ -1357,6 +1357,10 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
 
         configureUI( customOptions?: KatAppOptions ): void {
             const manualInputs: KatAppOptions = { manualInputs: { iConfigureUI: 1, iDataBind: 1 } };
+            const saveConfigureUiCalculationLocation = this.options.debug?.saveConfigureUiCalculationLocation;
+            if ( saveConfigureUiCalculationLocation !== undefined ) {
+                this.saveCalcEngine(saveConfigureUiCalculationLocation);
+            }
             this.calculate( KatApp.extend( {}, customOptions, manualInputs ) );
         }
 
@@ -1512,7 +1516,43 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
             window.URL.revokeObjectURL(url);
         }
 
-        apiAction( commandName: string, options: KatAppOptions, actionOptions: KatAppActionOptions, actionLink: JQuery<HTMLElement> | undefined, done?: ( successResponse: KatAppActionResult | undefined, failureResponse: JSON | undefined )=> void ): void {
+        invalidate(): void {
+            this.applicationIsInvalid = true;
+        }
+
+        ensureApplicationValid(): boolean {
+            if ( this.applicationIsInvalid ) {
+                this.rble.initializeValidationSummaries();
+
+                const errors: ValidationRow[] = [];
+                console.log( "Application has been invalidated due to data concurrency issues." );
+                errors.push( { "@id": "System", text: "An unexpected error has occurred.  Please try again and if the problem persists, contact technical support." });
+
+                const errorSummary = $("#" + this.id + "_ModelerValidationTable", this.element);
+
+                this.rble.processValidationRows( errorSummary, errors );
+                this.rble.finalizeValidationSummaries();
+
+                return false;
+            }
+
+            return true;
+        }
+
+        apiAction( commandName: string, options: KatAppOptions, actionOptions: KatAppActionOptions, actionLink: JQuery<HTMLElement> | undefined, done?: ( successResponse: KatAppActionResult | undefined, failureResponse: {} | undefined )=> void ): void {
+            if ( !this.ensureApplicationValid() ) {
+                if ( done != undefined ) {
+                    done(
+                        undefined, 
+                        { 
+                            InvalidateKatApp: true,
+                            ExceptionMessage: "Application as been invalidated"    
+                        }
+                    );
+                }
+                return;
+            }
+
             const application = this;
             const isDownload = actionOptions.isDownload ?? false;
             const runCalculate = actionOptions.calculateOnSuccess ?? false;
@@ -1520,8 +1560,6 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
             const warnings: ValidationRow[] = [];
 
             application.rble.initializeValidationSummaries();
-            application.rble.finalizeValidationSummaries( false );
-        
             this.showAjaxBlocker();
         
             let url = "api/" + commandName;
@@ -1667,6 +1705,10 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                         }
                     }
             
+                    if ( errorResponse[ "InvalidateKatApp" ] ?? false ) {
+                        application.invalidate();
+                    }
+
                     if ( errors.length == 0 ) {
                         errors.push( { "@id": "System", text: "An unexpected error has occurred.  Please try again and if the problem persists, contact technical support." });
                     }
@@ -4239,7 +4281,11 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                 // Remove all RBLe client side created errors since they would be added back
                 $("ul li.rble", summary).remove();
             });
+
+            // Re-render with nothing in summary that shouldn't be there
+            this.finalizeValidationSummaries( false );
         }
+        
         finalizeValidationSummaries( scrollToSummary = true ): void {
             const view = this.application.element;            
             const errorSummary = $("#" + this.application.id + "_ModelerValidationTable", view);
@@ -4476,7 +4522,6 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                 const showInspector = application.calculationInputs?.iConfigureUI === 1 && ( calculationOptions.debug?.showInspector ?? false );
                 
                 this.initializeValidationSummaries();
-                this.finalizeValidationSummaries( false );
 
                 results.forEach(tabDef => {
                     application.trace( "Processing results for " + tabDef._fullName + "(" + tabDef["@version"] + ")", TraceVerbosity.Normal );
@@ -5500,6 +5545,10 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                         file.val("").trigger("change");
                     });
                     $(".btn-file-upload", el).on("click", function () {
+                        if ( !application.ensureApplicationValid() ) {
+                            return;
+                        }
+            
                         let uploadUrl = "api/" + actionEndpoint;
                         const serviceUrlParts = application.options.sessionUrl?.split( "?" );
             
@@ -5513,7 +5562,6 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                         $(".file-upload-progress", application.element).show();
 
                         const fileUpload = $(".file-data", $(this).parent());
-
 
                         const parametersJson = application.dataAttributesToJson( el, "data-param-");
                         
@@ -5540,7 +5588,6 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                         const errors: ValidationRow[] = [];
 
                         application.rble.initializeValidationSummaries();
-                        application.rble.finalizeValidationSummaries( false );
                 
                         application.ui.triggerEvent( "onUploadStart", fileUpload, fd, application );
 

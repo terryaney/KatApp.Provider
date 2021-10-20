@@ -242,7 +242,7 @@
                 }
 
                 var debugOptions = { 
-                    saveFirstCalculationLocation: initialSaveLocation !== "" ? initialSaveLocation : undefined,
+                    saveConfigureUiCalculationLocation: initialSaveLocation !== "" ? initialSaveLocation : undefined,
                     refreshCalcEngine: true,
                     traceVerbosity: Number($("#traceLevel", view).val()),
                     useTestView: $("#UseTestView", view).prop("checked"),

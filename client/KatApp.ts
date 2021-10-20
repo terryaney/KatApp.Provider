@@ -58,7 +58,7 @@ class KatApp
             traceVerbosity: TraceVerbosity.None,
             useTestPlugin: KatApp.pageParameters[ "testplugin"] === "1",
             useTestView: KatApp.pageParameters[ "testview" ] === "1",
-            saveFirstCalculationLocation: KatApp.pageParameters[ "save" ]
+            saveConfigureUiCalculationLocation: KatApp.pageParameters[ "saveConfigureUI" ]
         },
         functionUrl: KatApp.functionUrl
     };

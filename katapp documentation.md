@@ -12,7 +12,8 @@
     - [Configuration Precedence](#Configuration-Precedence)
 - [Kaml View Specifications](#Kaml-View-Specifications)
     - [RBLe Attributes used in Kaml View](#RBLe-Attributes-used-in-Kaml-View)
-    - [rbl-value Selector Paths](#rbl-value-Selector-Paths)
+    - [KatApp Selectors](#KatApp-Selectors)
+    - [rbl-value Attribute Details](#rbl-value-Attribute-Details)
     - [rbl-attr Attribute Details](#rbl-attr-Attribute-Details)
     - [rbl-display Attribute Details](#rbl-display-Attribute-Details)
     - [rbl-on Event Handlers](#rbl-on-Event-Handlers)
@@ -34,7 +35,7 @@
         - [errors And warnings Tables](#**errors/warnings**)
         - [ejs-markup Table](#**ejs-markup**)
 - [Templates](#Templates)
-    - [rbl-source Selector Paths](#rbl-source-Selector-Paths)
+    - [rbl-source Selectors](#rbl-source-Selectors)
     - [Template Default Attributes](#Template-Default-Attributes)
     - [Template Precedence](#Template-Precedence)
     - [Template Attributes](#Template-Attributes)
@@ -59,8 +60,9 @@
         - [Using Template Type Attribute](#Using-Template-Type-Attribute)
 - [View and Template Expressions](#View-and-Template-Expressions)
     - [Simple rbl-display Expression Selector](#Simple-rbl-display-Expression-Selector)
-    - [Complex rbl-source Expression Selector](#Complex-rbl-source-Expression-Selector)
-    - [rbl-display Template v: Expression](#rbl-display-Template-v:-Expression)
+    - [rbl-display v: Template Expression](#rbl-display-v:Template--Expression)
+    - [Complex rbl-source Expressions](#Complex-rbl-source-Expressions)
+    - [Complex KatApp Selector Expressions](#Complex-KatApp-Selector-Expressions)
 - [RBLe Service](#RBLe-Service)
     - [ResultBuilder Framework](#ResultBuilder-Framework)
         - [Table Template Processing](#Table-Template-Processing)
@@ -157,7 +159,6 @@
             - [onUploadFailed](#onUploadFailed)
             - [onUploadComplete](#onUploadComplete)
         - [Template Event Handlers](#Template-Event-Handlers)
-    - [Helper Methods](#Helper-Methods)
     - [Global Methods](#Global-Methods)
         - [static setNavigationInputs](#static-setNavigationInputs)
 
@@ -311,7 +312,7 @@ There is a third and final way to configure CalcEngine information.  This is the
 
 KatApp's are capable of leveraging multiple CalcEngine inside a single Kaml View file.  You can pass these in using two of the described mechanisms above.  Multiple CalcEngines can be configured only by a Javascript configuration object or via the `<rbl-config>` element.
 
-When multiple CalcEngines or result tabs are used, additional information is required to pick the appropriate results.  See [rbl-value Selector Paths](#rbl-value-Selector-Paths) for more information describing `rbl-ce` and `rbl-tab`.  
+When multiple CalcEngines or result tabs are used, additional information is required to pick the appropriate results.  See [KatApp Selectors](#KatApp-Selectors) for more information describing `rbl-ce` and `rbl-tab`.  
 
 **Important** - Whenever multiple CalcEngines are used, you must provide a 'key' value minimally on CalcEngines 2...N, but ideally on all of them.  Note that the first CalcEngine has a key value of `default` if not provided.
 
@@ -360,30 +361,31 @@ When building Kaml Views, dynamic content and visiblity is managed via the follo
 
 Attribute | Description
 ---|---
-rbl-value | Inserts a value from RBLe Service
+rbl-value | Inserts a value from RBLe Service.  See [rbl-value Attribute Details](#rbl-value-Attribute-Details).
 rbl-ce | If multiple CalcEngines are used, can provide a `key` to a CE to indicate which CalcEngine to pull value from.
 rbl-tab | If multiple tabs are returned from a CalcEngine, can provide a name which tab to pull value from.
-rbl-display | Reference to boolean RBLe result data that toggles display style (uses `jQuery.show()` and `jQuery.hide()` ).
-rbl-attr | Update HTML attribute values with combining the syntax of `rbl-value`, `rbl-ce`, and `rbl-tab`.
+rbl-display | Reference to boolean RBLe result data that toggles display style (uses `jQuery.show()` and `jQuery.hide()` ).  See [rbl-display Attribute Details](#rbl-display-Attribute-Details).
+rbl-attr | Update HTML attribute values with combining the syntax of `rbl-value`, `rbl-ce`, and `rbl-tab`.  See [rbl-attr Attribute Details](#rbl-attr-Attribute-Details).
 rbl-tid | Indicates what RBL template to apply to the given source rows.  Results from template and data replace element content.
-rbl-source<br/>rbl&#x2011;source&#x2011;table | Indicates row(s) from an RBLe result table used to process a template.  Pairs with `rbl-tid`<br/>&nbsp;
-rbl-on | Attached Javascript event handlers to DOM elements
+rbl-source<br/>rbl&#x2011;source&#x2011;table | Indicates row(s) from an RBLe result table used to process a template.  Pairs with `rbl-tid`<br/>&nbsp;.  See [rbl-source Selectors](#rbl-source-Selectors).
+rbl-on | Attached Javascript event handlers to DOM elements.  See [rbl-on Event Handlers](#rbl-on-Event-Handlers).
 
 <br/>
 
 Note: `<rbl-config calcengine-key=""/>` is optional (and `default` is the default key) and would be used when a CalcEngine is a used as both a primary and a secondary (Multiple) CalcEngine are the results are shared across markup templates.  For example, if a Sample_Shared CalcEngine was used as a secondary CalcEngine with a key of `Shared`, the template would have to specify `rbl-ce="Shared"` as a source to a Selector Path.  When Sample_Shared is the single/primary CalcEngine used in a Kaml view, its key would be `default`.  When the same markup template is used, the `rbl-ce="Shared"` source would result in no matches.  To correct this, use `<rbl-config calcengine="Sample_Shared" calcengine-key="Shared"/>`.
 
-## rbl-value Selector Paths
-There are two ways to use `rbl-value` attribute.  You can provide simply an 'id' that will look inside the `ejs-output` table.  Or you can provide a 'selector path'.  Both mechanisms can be used in conjunction with `rbl-ce` and `rbl-tab`.
+## KatApp Selectors
+KatApp selectors are the syntax used to specify how to pull data from CalcEngines.  They are used in `rbl-value`, `rbl-display`, and `rbl-attr` attribute processing.  Using selectors can be used in conjunction with `rbl-ce` and `rbl-tab`.
 
 Selector&nbsp;Path | Description
 ---|---
-id | Look in `rbl-value` (legacy `ejs-output`) table for row where row id is `id` and return the value column.
+idValue | Look in `rbl-value` (legacy `ejs-output`) table for row where row id is `idValue` and return the value column.
 table.idValue | Look in `table` table for row where row id is `idValue` and return the value column.
 table.idValue.column | Look in `table` table for row where row id is `idValue` and return the `column` column.
 table.keyColumn.keyValue.column | Look in `table` table for row where `keyColumn` is `keyValue` and return the `column` column.
 
-See [View and Template Expressions](#View-and-Template-Expressions) for information on how to use simple and complex expressions when selecting and processing `rbl-value` attributes.
+## rbl-value Attribute Details
+There are two ways to use `rbl-value` attribute.  You can provide simply an 'id' that will look inside the `rbl-value` table or you can provide a KatApp Selector.  Both mechanisms can be used in conjunction with `rbl-ce` and `rbl-tab`.
 
 ```html
 <!-- Table: rbl-value/ejs-output, ID: ret-age, Column: value -->
@@ -413,6 +415,8 @@ Table: rbl-value/ejs-output, ID: ret-age, Column: value
 -->
 <span rbl-ce="Shared" rbl-tab="RBLRetire" rbl-value="ret-age"></span>
 ```
+
+See [View and Template Expressions](#View-and-Template-Expressions) for information on how to use simple and complex expressions when selecting and processing `rbl-value` attributes.
 
 ## rbl-attr Attribute Details
 Similar to `rbl-value`, attributes can be assigned using selector paths.  However, since only *one* `rbl-attr` attribute is ever present on any HTML DOM element, the syntax is slightly different.  Multiple attributes can be set via a `SPACE` delimitted list.  Optionally, the CalcEngine and TabDef names can be provided if needed.
@@ -452,7 +456,7 @@ Selector: Table: rbl-value, ID: election-confirm, Column: value
 ```
 
 ## rbl-display Attribute Details
-The `rbl-display` attribute has all the same 'selector' capabilities described in the [(`rbl-value` Attribute Details](#rbl-value-Selector-Paths).  Once a `value` is selected from a specified table (with a table priority of `rbl-display`, `ejs-visibility`, then `ejs-output` by default), a boolean 'falsey' logic is applied against the value.  An element will be hidden if the value is `0`, `false` or an empty string.
+The `rbl-display` attribute has all the same 'selector' capabilities described in [KatApp Selectors](#KatApp-Selectors).  Once a `value` is selected from a specified table (with a table priority of `rbl-display`, `ejs-visibility`, then `ejs-output` by default), a boolean 'falsey' logic is applied against the value.  An element will be hidden if the value is `0`, `false` or an empty string.
 
 ```html
 <!-- Show or hide based on 'value' column from 'rbl-display' table where 'id' is 'show-wealth' -->
@@ -862,13 +866,15 @@ Templates are a powerful tool in KatApp Views.  Templates are a small markup sni
 
 The data object can come from static `data-*` attributes, a RBLe Service result row, or the merged result of both.  To use RBLe Service result rows, the `rbl-source` attribute is required and the selector path is defined as follows.
 
-## rbl-source Selector Paths
+## rbl-source Selectors
+
+`rbl-source` selectors are very similar to [KatApp Selectors](#KatApp-Selectors).  However, with `rbl-source` elements, you must *always* specify a table, and the most common pattern is to process all rows in a table.  However, the selector is specified, the specified template will be applied to the resulting row(s) and injected into the Kaml View.
 
 Selector | Description
 ---|---
-table | The name of the table to use as the data source.  The defined template with be applied to each row and injected into the Kaml View.
+table | Will process all rows from `table`.
 table.idValue | Will only process the row from `table` where the row id equals `idValue`.
-table.column.value | Will only process rows from `table` where the value of `column` equals `value`.
+table.keyColumn.keyValue | Will only process rows from `table` where the value of `keyColumn` equals `keyValue`.
 
 If both `rbl-source` and `data-*` attributes are provided, `data-*` attributes will take precedence. All `data-*` values will be merged into currently processing row to provide additional values not present or **replace** existing values found in the current row.
 
@@ -2176,58 +2182,125 @@ KatApps have advanced features that can be configured that provide expression ca
 
 ## View and Template Expressions
 
-Simple and complex expression logic can be used in conjunction with [`rbl-value`/`rbl-display` selector paths](#rbl-value-Selector-Paths) and [`rbl-source` selector paths](#rbl-source-Selector-Paths).  Simple expression logic simply provides a single operator/value comparison in a selector path.  Complex expressions (denoted by `[]` in the selector path) are much more powerful and provide the full capabilities of Javascript programming to create expressions.
+Simple and complex expression logic can be used in with both [KatApp Selectors](#KatApp-Selectors) and [`rbl-source` selectors](#rbl-source-Selectors).  For `rbl-display`, simple expression logic provides a single operator/value comparison at the end of a selector path.  Complex expressions (denoted by `[]` in the selector path) are much more powerful and provide the full capabilities of Javascript programming to create predicate expressions.
 
 ### Simple rbl-display Expression Selector
 
-In addition to simply returning a falsey visibility value from the CalcEngine via a [selector path](#rbl-value-Selector-Paths), the `rbl-display` attribute can contain simple operator expressions. The operators that are supported are `=`, `!=`, `>=`, `>`, `<=`, and `<`.
+In addition to simply returning a falsey visibility value from the CalcEngine via a [KatApp Selector](#KatApp-Selectors), the `rbl-display` attribute can contain simple operator expressions. The operators that are supported are `=`, `!=`, `>=`, `>`, `<=`, and `<`.
 
 Expression Selector | Description
 ---|---
+idValue{operator}{value} | Display the item if row in `rbl-display` table where id is `idValue` does not exist or the `value` column compared to `value` does not return falsey.
+table.idValue{operator}{value} | Display the item if row in `table` table where id is `idValue` does not exist or the `value` column compared to `value` does not return falsey.
 table.idValue.column{operator}{value} | Display the item if row in `table` table where id is `idValue` does not exist or the `column` column compared to `value` does not return falsey.
-table.keyColumn.keyValue.column{operator}{value} | Display the item if row in `table` table where `keyColumn` is `keyValue` does not exist or the `column` column compared to `value` does not return falsey.
+table.keyColumn.keyValue.returnColumn{operator}{value} | Display the item if row in `table` table where `keyColumn` is `keyValue` does not exist or the `returnColumn` column compared to `value` does not return falsey.
 
 ```html
 <!-- 
-Show if 'enabled' column from 'wealth-summary' table where 'id' is 'benefit-start' = 1, otherwise hide 
+Row: 'rbl-display' table where 'id' is 'vWealth'
+Show if 'value' column from Row = 2, otherwise hide 
+-->
+<div rbl-display="vWealth=2">Wealth Information</div>
+
+<!-- 
+Row: 'wealth-summary' table where 'id' is 'benefit-start'
+Show if 'value' column from Row = 1, otherwise hide 
+-->
+<div rbl-display="wealth-summary.benefit-start=1">Wealth Information</div>
+
+<!-- 
+Row: 'wealth-summary' table where 'id' is 'benefit-start'
+Show if 'enabled' column from Row = 1, otherwise hide 
 -->
 <div rbl-display="wealth-summary.benefit-start.enabled=1">Wealth Information</div>
 
 <!-- 
-Show if 'address1' column from 'contact-info' table where 'id' is 'work' is not blank, otherwise hide 
+Row: 'wealth-summary' table where 'group' column is 'HW'
+Show if 'enabled' column from Row = 1, otherwise hide 
+-->
+<div rbl-display="wealth-summary.group.HW.enabled=1">Wealth Information</div>
+
+<!-- 
+Row: 'contact-info' table where 'id' is 'work'
+Show if 'address1' column from Row is not blank, otherwise hide 
 -->
 <div rbl-display="contact-info.work.address1!=">Work Address: <span rbl-value="contact-info.work.address1"></span></div>
 
 <!-- 
-Checking existence of a table given a known key 'benefit-start' by using the built in @id value.
-Show if wealth-summary row with id=benefit-start exists.
+Checking existence of a row
+
+Row: 'wealth-summary' table where 'id' is 'benefit-start'
+Show if Row exists (if '@id' column from Row = 'benefit-start'), otherwise hide
 -->
 <div rbl-display="wealth-summary.benefit-start.@id=benefit-start">benefit-start row exists</div>
 ```
 
-### Complex rbl-source Expression Selector
+### rbl-display v: Template Expression
 
-Expression&nbsp;Selector | Description
----|---
-table[predicate] | Similar to a [`rbl-source` selector path](#rbl-source-Selector-Paths) that only specifies a `table` (to process all rows) with the addition of javascript predicate support. In the predicate, the `this` reference will be current row being processed and the row will only be processed if the javascript expression returns `true`.
+The `rbl-display` attribute usually works off of falsey values returned via [KatApp Selectors](#KatApp-Selectors) from a CalcEngine result.  However, inside [templates](#Templates), controlling visibility by looking at values on the current row being processed can be accomplished by using a `v:` prefix (v for value) and providing a simple operator expression.
 
-```html
-<!-- Call the name-item template with each row in foundingfathers table where the last  containing 'Mad'. -->
-<div rbl-tid="name-item" rbl-source="foundingfathers[this.last.indexOf('Mad')>-1]"></div>
-```
-
-### rbl-display Template v: Expression
-
-The `rbl-display` attribute usually works off of falsey values directly from a CalcEngine result.  However, inside [Templates](#Templates), controlling visibility by looking at values on the current row being processed can be accomplished by using a `v:` (for value) prefix and providing a simple operator expression.
+All comparison operators (`=`, `!=`, `<`, `<=`, `>`, and `>=`) are supported.
 
 For example, if the data processed by a template had a `code` and `count` column, the following could be leveraged.
 
 ```html
-<div rbl-display="v:{code}=YES">Show if the `code` column is `YES`.</div>
+<div rbl-display="v:{code}=YES">Show if the `code` column is `'YES'`.</div>
 
 <div rbl-display="v:{count}>=2">Show if the `count` column is greater than or equal to 2.</div>
 
 <div rbl-display="v:{field}=">Show if the `field` column is blank.</div>
+```
+
+Note: As shown in the example above, to use an empty string in the expression, simply skip providing anything (do not provide `''` for empty string).
+
+### Complex rbl-source Expressions
+
+Similar to a [`rbl-source` selector](#rbl-source-Selectors) that only specifies a `table` (to process all rows), expressions can be supplied and evaluated via the addition of javascript predicate support. 
+
+Expression&nbsp;Selector | Description
+---|---
+table[predicate] | `predicate` is a javascript expression that should return `true` or `false`.  In the expression, the `this` reference will be current row being processed.  Each row evaluated will only be applied to the template specified if the predicate returns `true`.
+
+The javascript predicate has a signature of: `predicate( row: JSON, index: integer, application: KatAppPlugInInterface)`.  Therefore, within the predicate expression, you can use these parameters if needed.
+
+```html
+<!-- Call the name-item template with each row in foundingfathers table where the last column contains 'Mad'. -->
+<div rbl-tid="name-item" rbl-source="foundingfathers[this.last.indexOf('Mad')>-1]"></div>
+```
+
+### Complex KatApp Selector Expressions
+
+When using a [KatApp Selector](#KatApp-Selectors) to specify how to pull a value from CalcEngine results, expressions increase the power of selectors by enabling expression coding to extend the base selector capability (via `[]` expression coding).
+
+KatApp Selectors are used for [rbl-value](#rbl-value-Attribute-Details), [rbl-display](#rbl-display-Attribute-Details), and [rbl-attr](#rbl-attr-Attribute-Details) attribute processing.  Expressions extend default behavior by allowing a javascript code to be supplied on top of the default selector to return any value the Kaml View developer sees fit.
+
+There are a couple differences in the KatApp Selector syntax when they are used in conjuction with expressions.
+
+KatApp&nbsp;Selector | With&nbsp;Expressions
+---|---
+Only one segment provided indicates a `idValue`.  `rbl-value="liDateTerm"` means look in the default table of `rbl-value` for row with `id=liDateTerm` and return the `value` column. | Only one segment provided indicates a table name.  All rows should be processed by the expression until *one* of the rows returns a value *other than* `undefined`  `rbl-value="election-data[index==1 ? row.form : undefined]"` means loop all rows in `election-data` until index (zero based) is 1, then return the `form` column.
+Must have at least one segment. | Can supply *only* an expression *without* any selector segments and it defaults to using the 'default' table based on attribute being processed (`rbl-value` and `rbl-attr` default to `rbl-value` table and `rbl-display` defaults to `rbl-display` table). `rbl-value="[index==1 ? row.form : undefined]"` processes the same as the example above.
+
+Expression&nbsp;Selector | Description
+---|---
+[expression] | Run the `expression` on each row from the 'default' table until the expression returns value not equal to `undefined`.
+table[expression] | Run the `expression` on each row from the `table` table until the expression returns value not equal to `undefined`.
+table.idValue[expression] | Run the `expression` on the row from `table` where `@id=idValue`.
+table.keyColumn.keyValue[expression] | Run the `expression` on the row from `table` where `keyColumn=keyValue`.
+
+Once the value is returned, which could be `undefined` when processing all table rows based on expression, normal work flow for the currently processing attribute (`rbl-value`, `rbl-display`, or `rbl-attr`) with proceed in the same manner as if a value has been returned from a standard KatApp Selector.
+
+The javascript expression has a signature of: `expression( row: JSON, index: integer, application: KatAppPlugInInterface)`.  Therefore, within the expression, you can use these parameters if needed (`index` will always be `0` if more than one segment is provided in the KatApp Selector to indicate row filtering *before* the expression is executed).
+
+```html
+<!--
+    If the CalcEngine results has rbl-value row with id='pageHeader' and value='TOTAL REWARDS`, then
+    all samples below should output: Hi TOTAL BENEFITS.
+-->
+<div rbl-value="[row['@id'] == 'pageHeader' ? 'Hi ' + row.value.replace('REWARDS', 'BENEFITS') : undefined]"></div>
+<div rbl-value="rbl-value[row['@id'] == 'pageHeader' ? 'Hi ' + row.value.replace('REWARDS', 'BENEFITS') : undefined]"></div>
+<div rbl-value="rbl-value.pageHeader[row.value.indexOf('TOTAL')>-1 ? 'Hi ' + row.value.replace('REWARDS', 'BENEFITS') : undefined]"></div>
+<div rbl-value="rbl-value.@id.pageHeader[row.value.indexOf('TOTAL')>-1 ? 'Hi ' + row.value.replace('REWARDS', 'BENEFITS') : undefined]"></div>
 ```
 
 ## RBLe Service Attributes / Classes

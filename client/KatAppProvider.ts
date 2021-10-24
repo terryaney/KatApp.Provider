@@ -3453,6 +3453,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                 }                    
             }
 
+            // https://blog.stevenlevithan.com/archives/javascript-match-nested
             const p = formatParts.exec(format);
             if (!p) throw new Error("format must include start and end tokens separated by '...'");
             if (p[1] == p[2]) throw new Error("start and end format tokens cannot be identical");

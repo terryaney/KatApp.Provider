@@ -830,7 +830,10 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
 
         calculate( customOptions?: KatAppOptions, pipelineDone?: ()=> void ): void {
             if ( !this.ensureApplicationValid() ) {
-               return;
+                if ( pipelineDone != undefined ) {
+                    pipelineDone();
+                }
+                return;
             }
 
             const _sharedData = $.fn.KatApp.sharedData;
@@ -2152,7 +2155,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
 
             const itemsToProcess = 
                 $("[rbl-tid]", container)
-                    .not("[rbl-source], [data-katapp-template-injected='true']") // not an template with data source, not processed
+                    .not("[rbl-source], [rbl-tid='empty'], [data-katapp-template-injected='true']") // not an template with data source, not processed
                     .add(container.is("[rbl-tid]:not([rbl-source], [data-katapp-template-injected='true'])") ? container : [] );
 
             itemsToProcess.each(function () {
@@ -3676,10 +3679,14 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                             application.trace("<b style='color: Red;'>RBL WARNING</b>: Invalid length for rblSourceParts=" + rblSourceParts.join("."), TraceVerbosity.Detailed);
                         }
                         else {
+                            let showEmptyTemplate = true;
+
                             // table in array format.  Clear element, apply template to all table rows and .append                            
                             const tableRows = that.getResultTable<JSON>( tabDef, tableName );
                             
-                            if ( tableRows.length > 0 ) {                                
+                            if ( tableRows.length > 0 ) {
+                                showEmptyTemplate = false;
+
                                 const templateDefaults = application.dataAttributesToJson(el, "default-");
 
                                 // tableName.idValue - row where @id = idValue
@@ -3722,6 +3729,8 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
 
                                 if ( rblSourceId != undefined ) {
                                     const rowSource = that.getResultRow<JSON>( tabDef, tableName, rblSourceId );
+                                    
+                                    showEmptyTemplate = rowSource == undefined;
 
                                     if ( rowSource !== undefined ) {
                                         const templateResult = generateTemplateData(
@@ -3729,13 +3738,15 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                                             templateContent
                                         );
 
-                                        el.children().remove();
+                                        el.children()
+                                            .not(".rbl-preserve, [rbl-tid='empty']")
+                                            .remove();
                                         el.append(templateResult);
                                     }
                                 }
                                 else {
                                     el.children()
-                                        .not(".rbl-preserve")
+                                        .not(".rbl-preserve, [rbl-tid='empty']")
                                         .remove();
 
                                     const prepend = el.attr('rbl-prepend') === "true";
@@ -3773,6 +3784,20 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                                         }
 
                                     });
+                                }
+                            }
+
+                            if ( showEmptyTemplate && $(".rbl-preserve", el).length == 0 ) {
+                                // If no data source (and no previous preserves there), show/append the 'empty' template
+                                const emptyTemplate = $("[rbl-tid='empty']",el);
+                                if ( emptyTemplate.length == 1 ) {
+                                    const et = $(emptyTemplate[0].outerHTML);
+                                    et.removeAttr("rbl-tid");
+
+                                    el.children()
+                                        .not("[rbl-tid='empty']")
+                                        .remove();
+                                    el.append(et);
                                 }
                             }
                         }
@@ -6534,7 +6559,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
     if ( $.fn.KatApp.templatesUsedByAllApps == undefined ) {
         $('<rbl-katapps>\
             <style>\
-                rbl-katapps, rbl-templates, rbl-template, [rbl-tid="inline"] { display: none; }\
+                rbl-katapps, rbl-templates, rbl-template, [rbl-tid="inline"], [rbl-tid="empty"] { display: none; }\
             </style>\
         </rbl-katapps>').appendTo("body");
         

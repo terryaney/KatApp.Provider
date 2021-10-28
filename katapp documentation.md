@@ -40,6 +40,7 @@
     - [Template Precedence](#Template-Precedence)
     - [Template Attributes](#Template-Attributes)
     - [Inline Templates](#Inline-Templates)
+    - [Empty Templates](#Empty-Templates)
     - [Automatically Processed Templates](#Automatically-Processed-Templates)
         - [ResultBuilder Framework Tables](#ResultBuilder-Framework-Tables)
         - [ResultBuilder Framework Charts](#ResultBuilder-Framework-Charts)
@@ -1074,7 +1075,7 @@ Normally, templates are created via a `<rbl-template tid="template-name">...</di
     <li>Alexander Hamilton, Former US Treasury Secretary</li>
 </ul>
 ```
-**Note**: All elements with a `rbl-tid` attribute are automatically hidden from the UI and when rendered, inline templates are simply converted into standard `<rbl-template/>` templates.
+**Note**: All elements with a `rbl-tid` attribute are automatically hidden from the UI and when rendered.  Also, inline templates are simply converted into standard `<rbl-template/>` templates with unique names, but in the example above, they are left in markup for demonstration.
 
 When using inline templates, if the template is simply a call to another template, you may have to use the `rbl-inline-tid` attribute.  When inline templates are converted to a standard `<rbl-template/>`, if `rbl-inline-tid` is present, it is moved to the `rbl-tid` attribute so that it will be processed as the specified template ID when the template is called.
 
@@ -1087,6 +1088,23 @@ When using inline templates, if the template is simply a call to another templat
 	<div class="col-12 col-md-{col-md}" rbl-tid="inline" rbl-inline-tid="{name}"></div>
 </div>
 ```
+
+## Empty Templates
+Normally, when a template has an `rbl-source="source"` attribute and the `source` table isn't present in the CalcEngine results, the template simply doesn't process and nothing in the UI changes.  However, if you want the template to process every time, with or without matching results, and to display "no data" content if the `rbl-source` specified does not return any data, use the 'empty' template feature.
+
+```html
+<ul rbl-source="foundingfathers">
+    <li rbl-tid="inline">{first} {last}, {title}</li>
+    <li rbl-tid="empty">There are no Founding Fathers</li>
+</ul>
+<!-- markup results -->
+<ul rbl-source="foundingfathers">
+    <li rbl-tid="inline">{first} {last}, {title}</li>
+    <li rbl-tid="empty">There are no Founding Fathers</li>
+    <li>There are no Founding Fathers</li>
+</ul>
+```
+**Note**: All elements with a `rbl-tid` attribute are automatically hidden from the UI and when rendered.  Also, inline templates are simply converted into standard `<rbl-template/>` templates with unique names, but in the example above, they are left in markup for demonstration.
 
 ## Automatically Processed Templates
 

@@ -74,6 +74,7 @@ interface KatAppOptions
     handlers?: {};
 
     // If you use on() syntax for initialized, need to set it up before calling KatApp();
+    onInitializing?: (this: HTMLElement, application: KatAppPlugInInterface, options: KatAppOptions )=> void;
     onInitialized?: (this: HTMLElement, application: KatAppPlugInInterface )=> void;
     onDestroyed?: (this: HTMLElement, application: KatAppPlugInInterface )=> void;
     onOptionsUpdated?: (this: HTMLElement, application: KatAppPlugInInterface )=> void;

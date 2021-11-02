@@ -409,7 +409,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                                 }
                                 else {
                                     const attrCalcEngine = rblConfig.attr("calcengine");
-                                    that.options.inputCaching = that.options.inputCaching ?? ( rblConfig.attr("input-caching") ?? "false" ) == "true";
+                                    
                                     extendDefaultInputs();
 
                                     if ( attrCalcEngine != undefined ) {
@@ -630,6 +630,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
 
                     if ( viewElement != undefined ) {
                         that.element.empty().append( viewElement );
+                        that.ui.triggerEvent( "onInitializing", that, that.options );
                     }
 
                     // Now, for every unique template reqeusted by client, see if any template delegates were
@@ -1358,13 +1359,13 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
             */
         }
 
-        configureUI( customOptions?: KatAppOptions ): void {
+        configureUI( customOptions?: KatAppOptions, done?: ()=> void ): void {
             const manualInputs: KatAppOptions = { manualInputs: { iConfigureUI: 1, iDataBind: 1 } };
             const saveConfigureUiCalculationLocation = this.options.debug?.saveConfigureUiCalculationLocation;
             if ( saveConfigureUiCalculationLocation !== undefined ) {
                 this.saveCalcEngine(saveConfigureUiCalculationLocation);
             }
-            this.calculate( KatApp.extend( {}, customOptions, manualInputs ) );
+            this.calculate( KatApp.extend( {}, customOptions, manualInputs ), done );
         }
 
         updateOptions( options: KatAppOptions ): void { 
@@ -2710,11 +2711,13 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                 
                 const that: UIUtilities = this;
 
-                $(application.options.inputSelector, application.element).not(skipBindingInputSelector).each(function () {
+                $(application.options.inputSelector, application.element)
+                    .not(skipBindingInputSelector)
+                    .each(function () {
                     $(this).off("change.RBLe").on("change.RBLe", function () {
                         that.changeRBLe($(this));
                     });
-                });
+                    });
             }
         }
 
@@ -3685,8 +3688,6 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                             const tableRows = that.getResultTable<JSON>( tabDef, tableName );
                             
                             if ( tableRows.length > 0 ) {
-                                showEmptyTemplate = false;
-
                                 const templateDefaults = application.dataAttributesToJson(el, "default-");
 
                                 // tableName.idValue - row where @id = idValue
@@ -3730,9 +3731,9 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                                 if ( rblSourceId != undefined ) {
                                     const rowSource = that.getResultRow<JSON>( tabDef, tableName, rblSourceId );
                                     
-                                    showEmptyTemplate = rowSource == undefined;
-
                                     if ( rowSource !== undefined ) {
+                                        showEmptyTemplate = false;
+
                                         const templateResult = generateTemplateData(
                                             KatApp.extend( {}, rowSource ),
                                             templateContent
@@ -3764,6 +3765,8 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                                             : !rblSourceHasColumnCondition || row[ rblSourceColToCompare ] == rblSourceColValue;
 
                                         if ( processTableRow ) {
+                                            showEmptyTemplate = false;
+
                                             // Automatically add the _index0 and _index1 for carousel template
                                             // const templateData = KatApp.extend( {}, row, { _index0: index, _index1: index + 1 } )
                                             const templateResult = generateTemplateData(
@@ -3806,9 +3809,6 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
         }
     
         getSimpleExpression(simpleExpression: string): { selector: string, operator: string, left: string | undefined, right: string, isNumber: boolean, evaluate: ( value: string | undefined )=> string | undefined } | undefined {
-            // If complex expression, return immediately
-            if ( !simpleExpression.startsWith("v:") || simpleExpression.indexOf("[") > -1 ) return undefined;
-
             const simpleExpressionParts = simpleExpression.split(".");
             const expression = simpleExpressionParts[ simpleExpressionParts.length - 1]            
 
@@ -3831,7 +3831,10 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                 isGT ? '>' : '=';
 
             const expressionParts = expression.split(splitOperator);
-                
+
+            // If complex expression, return undefined
+            if ( !simpleExpression.startsWith( "v:" ) && simpleExpression.indexOf("[") > -1 && expressionParts[ expressionParts.length - 1 ].indexOf("[") == -1 ) return undefined;
+            
             if ( expressionParts.length == 2 ) {
                 // Remove the 'expression' from the parts and change it
                 // to just have the 'field' (removing 'operator value')
@@ -5540,14 +5543,14 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                             const parametersJson = application.dataAttributesToJson( actionLink, "data-param-");
                             
                             // Don't think this is ever used
-                            // const inputsJson = application.dataAttributesToJson( actionLink, "data-input-" );
+                            const inputsJson = application.dataAttributesToJson( actionLink, "data-input-" );
 
                             application.apiAction(
                                 actionEndpoint, 
                                 application.options, 
                                 { 
                                     customParameters: parametersJson, 
-                                    // customInputs: inputsJson,
+                                    customInputs: inputsJson,
                                     isDownload: actionLink.attr("rbl-action-download") == "true",
                                     calculateOnSuccess: actionLink.attr("rbl-action-calculate") == "true"
                                 },

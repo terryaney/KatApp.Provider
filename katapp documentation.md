@@ -134,6 +134,7 @@
             - [redraw](#redraw)
     - [KatApp Events](#KatApp-Events)
         - [KatApp Lifecycle Events](#KatApp-Lifecycle-Events)
+            - [onInitializing](#onInitializing)
             - [onInitialized](#onInitialized)
             - [onDestroyed](#onDestroyed)
             - [onOptionsUpdated](#onOptionsUpdated)
@@ -3312,6 +3313,56 @@ $(".katapp").KatApp(options);
 ### KatApp Lifecycle Events
 
 KatApp Lifecycle Events are events that pertain to the creation, updating, notifying, and destroying of a KatApp.  Some Calculation Lifecycle Events are intermixed and will be mentioned but see [documentation](#KatApp-Calculation-Lifecycle-Events) for more detailed information.
+
+<hr/>
+
+#### onInitializing
+
+**`onInitialized?: (event: Event, application: KatApp, options: KatAppOptions )`**
+
+Triggered after a Kaml View has been injected into the page and before all UI/template processing code is ran.  `onInitializing` is where event handlers that need to modify the application options (via event handler in Kaml View - instead of via the `.KatApp(options)` initialization method call) should be placed.
+
+```javascript
+(function() {
+    // Use this line to grab a reference to the current view the Kaml View is being rendered to
+    var view = $("thisClass");
+
+    // Hook up one or more event handlers *using* the .RBLe namespace
+    view.on( "onInitializing.RBLe", function( event, application, options ) {
+        options.runConfigureUICalculation = false; // Don't run ConfigureUI
+    });
+
+    $(document).ready(function () {
+        var application = view.KatApp();
+
+        // Call an api endpoint
+        application.apiAction(
+            "wsi/documents",
+            application.options,
+            {},
+            undefined,
+            function (successResponse, failureReponse) {
+                if (failureReponse == undefined) {
+
+                    // Do something with successResponse...
+
+                    // Now call the configureUI calculation and hide any progress indicators
+                    // when the calculation completes.
+                    application.configureUI(
+                        undefined,
+                        function () {
+                            $(".katloader-container").hide();
+                        }
+                    );
+                }
+                else {
+                    $(".katloader-container").hide();
+                }
+            }
+        );
+    });
+})();
+```
 
 <hr/>
 

@@ -289,41 +289,61 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
             }
             
             const processInlineTemplates = function(templateContainer: JQuery<HTMLElement>, containerName: string ): void {
+
+                const processInlineTemplate = function(inlineTemplate: JQuery<HTMLElement>) {
+                    const inlineParent = inlineTemplate.parent();
+                    const templateType = inlineTemplate.attr("rbl-tid")!;
+                    const templateIdAttribute = templateType == "inline"
+                        ? "rbl-tid"
+                        : "rbl-empty-tid";
+
+                    if ( inlineParent.attr("rbl-source") == undefined ) {
+                        inlineTemplate.attr(templateIdAttribute, "inline-no-rbl-source");
+                        that.trace( templateType + " template's parent does not have rbl-source. " + inlineTemplate[0].outerHTML.substr(0, 75).replace( /</g, "&lt;").replace( />/g, "&gt;"), TraceVerbosity.None);
+                    }
+                    else if ( inlineParent.attr("rbl-tid") != undefined ) {
+                        inlineTemplate.attr(templateIdAttribute, "inline-parent-has-template-already");
+                        that.trace( templateType + " template is present, but parent has rbl-tid of " + inlineParent.attr("rbl-tid"), TraceVerbosity.None);
+                    }
+                    else {
+                        const tId = "_t_" + KatApp.generateId();
+
+                        // remove 'inline' or 'empty'
+                        inlineTemplate.removeAttr("rbl-tid");
+
+                        // if inline template is calling another template, add rbl-tid
+                        // attribute to be called when template is generated/processed
+                        const inlineTemplateId = inlineTemplate.attr("rbl-inline-tid");
+                        if ( inlineTemplateId != undefined ) {
+                            inlineTemplate.attr("rbl-tid", inlineTemplateId);
+                            inlineTemplate.removeAttr("rbl-inline-tid");
+                        }
+
+                        const rblTemplateContent = that.ui.encodeTemplateContent(inlineTemplate[0].outerHTML);
+
+                        const rblTemplate = 
+                            $("<rbl-template/>")
+                                .attr("tid", tId)
+                                .attr("container", containerName)
+                                .html(rblTemplateContent);
+
+                        inlineContainer.append(rblTemplate);
+                        inlineParent.attr( templateIdAttribute, tId );
+                        inlineTemplate.remove();
+                    }
+                };
+
+                $("[rbl-tid='empty']", templateContainer).each(function() {
+                    processInlineTemplate($(this));
+                });
+                
                 let inlineTemplates: JQuery<HTMLElement>;
+
                 // Get all lowest level inlines and walk 'up'
                 while( ( inlineTemplates = $("[rbl-tid='inline']", templateContainer).filter( function() { return $("[rbl-tid='inline']", $(this)).length == 0; } ) ).length > 0 )
                 {
                     inlineTemplates.each(function() {
-                        const inlineTemplate = $(this);
-                        const inlineParent = inlineTemplate.parent();
-                        if ( inlineParent.attr("rbl-source") == undefined ) {
-                            inlineTemplate.attr("rbl-tid", "inline-no-rbl-source");
-                            that.trace( "Inline template's parent does not have rbl-source. " + this.outerHTML.substr(0, 75).replace( /</g, "&lt;").replace( />/g, "&gt;"), TraceVerbosity.None);
-                        }
-                        else if ( inlineParent.attr("rbl-tid") != undefined ) {
-                            inlineTemplate.attr("rbl-tid", "inline-parent-has-template-already");
-                            that.trace( "Inline template is present, but parent has rbl-tid of " + inlineParent.attr("rbl-tid"), TraceVerbosity.None);
-                        }
-                        else {
-                            const tId = "_inline_" + KatApp.generateId();
-
-                            inlineTemplate.removeAttr("rbl-tid");
-                            const inlineTemplateId = inlineTemplate.attr("rbl-inline-tid");
-                            if ( inlineTemplateId != undefined ) {
-                                inlineTemplate.attr("rbl-tid", inlineTemplateId);
-                                inlineTemplate.removeAttr("rbl-inline-tid");
-                            }
-
-                            const rblTemplateContent = that.ui.encodeTemplateContent(inlineTemplate[0].outerHTML);
-                            const rblTemplate = 
-                                $("<rbl-template/>")
-                                    .attr("tid", tId)
-                                    .attr("container", containerName)
-                                    .html(rblTemplateContent);
-                            inlineContainer.append(rblTemplate);
-                            inlineParent.attr( "rbl-tid", tId );
-                            inlineTemplate.remove();
-                        }
+                        processInlineTemplate($(this));
                     });
                 }
 
@@ -2156,7 +2176,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
 
             const itemsToProcess = 
                 $("[rbl-tid]", container)
-                    .not("[rbl-source], [rbl-tid='empty'], [data-katapp-template-injected='true']") // not an template with data source, not processed
+                    .not("[rbl-source], [data-katapp-template-injected='true']") // not an template with data source, not processed
                     .add(container.is("[rbl-tid]:not([rbl-source], [data-katapp-template-injected='true'])") ? container : [] );
 
             itemsToProcess.each(function () {
@@ -2213,7 +2233,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
             const application = this.application;
             
             // Look first for template overriden directly in markup of view
-            let template = templateId.startsWith("_inline_")
+            let template = templateId.startsWith("_t_")
                 ? $("rbl-templates rbl-template[tid='" + templateId + "']").first()
                 : $("rbl-template[tid=" + templateId + "]", application.element).first();
 
@@ -3653,7 +3673,9 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                                 : rblSource.split('.');
     
                         const tableName = rblSourceParts[0].split("[")[ 0 ];
-                        let templateContent = tid != undefined ? application.ui.getTemplate( tid, elementData, false )?.Content : undefined;
+                        let templateContent = tid != undefined 
+                            ? application.ui.getTemplate( tid, elementData, false )?.Content 
+                            : undefined;
     
                         if ( showInspector && !el.hasClass("kat-inspector-source") ) {
                             el.addClass("kat-inspector-source");
@@ -3740,14 +3762,14 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                                         );
 
                                         el.children()
-                                            .not(".rbl-preserve, [rbl-tid='empty']")
+                                            .not(".rbl-preserve")
                                             .remove();
                                         el.append(templateResult);
                                     }
                                 }
                                 else {
                                     el.children()
-                                        .not(".rbl-preserve, [rbl-tid='empty']")
+                                        .not(".rbl-preserve")
                                         .remove();
 
                                     const prepend = el.attr('rbl-prepend') === "true";
@@ -3785,20 +3807,20 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                                                 el.append( templateResult );
                                             }
                                         }
-
                                     });
                                 }
                             }
 
                             if ( showEmptyTemplate && $(".rbl-preserve", el).length == 0 ) {
                                 // If no data source (and no previous preserves there), show/append the 'empty' template
-                                const emptyTemplate = $("[rbl-tid='empty']",el);
-                                if ( emptyTemplate.length == 1 ) {
-                                    const et = $(emptyTemplate[0].outerHTML);
-                                    et.removeAttr("rbl-tid");
+                                const emptyTemplateId = el.attr("rbl-empty-tid");
+                                const emptyTemplate = emptyTemplateId != undefined
+                                    ? application.ui.getTemplate( emptyTemplateId, {}, false )?.Content
+                                    : undefined;
 
+                                if ( emptyTemplate != undefined ) {
+                                    const et = $(emptyTemplate);
                                     el.children()
-                                        .not("[rbl-tid='empty']")
                                         .remove();
                                     el.append(et);
                                 }

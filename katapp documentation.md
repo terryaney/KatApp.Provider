@@ -1088,6 +1088,22 @@ When using inline templates, if the template is simply a call to another templat
 <div class="row" rbl-source="dashboards">
 	<div class="col-12 col-md-{col-md}" rbl-tid="inline" rbl-inline-tid="{name}"></div>
 </div>
+
+<!-- Markup after inline template pre-processed -->
+<div class="row" rbl-source="dashboards" rbl-tid="GUID-ID"></div>
+
+<!-- Dynamic Template Markup -->
+<rbl-template tid="GUID-ID">
+	<div class="col-12 col-md-{col-md}" rbl-tid="{name}"></div>
+</div>
+
+<!-- Generated HTML -->
+<div class="row" rbl-source="dashboards" rbl-tid="GUID-ID">
+	<div class="col-12 col-md-3" rbl-tid="widget.1"></div>
+	<div class="col-12 col-md-3" rbl-tid="widget.2"></div>
+	<div class="col-12 col-md-3" rbl-tid="widget.3"></div>
+	<div class="col-12 col-md-3" rbl-tid="widget.4"></div>
+</div>
 ```
 
 ## Empty Templates

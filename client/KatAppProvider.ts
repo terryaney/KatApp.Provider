@@ -4470,7 +4470,8 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                 var bootstrapVersion = this.application.bootstrapVersion;
                 errors.forEach( r => {
                     const selector = this.application.ui.getJQuerySelector( r["@id"] );
-                    const input = selector !== undefined ? $(selector, this.application.element) : undefined;
+                    // div is bootstrap select
+                    const input = selector !== undefined ? $(selector, this.application.element).not("div") : undefined;
                     this.addValidationItem(summary, input, r.text, bootstrapVersion);
                 });
             }

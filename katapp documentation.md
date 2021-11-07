@@ -2976,7 +2976,7 @@ var currentBonus = application.getResultValueByColumn("pay", "2021", "year", "bo
 
 #### apiAction
 
-**`.apiAction( commandName: string, customOptions?: KatAppActionOptions, actionLink?: JQuery<HTMLElement>, , done?: ( successResponse: KatAppActionResult | undefined, failureResponse: JSON | undefined )=> void )`**
+**`.apiAction( endpoint: string, customOptions?: KatAppActionOptions, actionLink?: JQuery<HTMLElement>, , done?: ( successResponse: KatAppActionResult | undefined, failureResponse: JSON | undefined )=> void )`**
 
 KatApps have the ability to call web api endpoints to perform actions that need server side processing (saving data, generating document packages, saving calculations, etc.).  All api endpoints should return an object indicating success or failure.
 
@@ -3021,7 +3021,7 @@ Kaml View developers can leverage calling API endpoints as well by constructing 
 
 Attribute | Description
 ---|---
-rbl-action-link | Used as the `commandName` passed into `apiAction`.
+rbl-action-link | Used as the `endpoint` passed into `apiAction`.
 rbl-action-download | (boolean) Determines if the action results in the downloading of a file.
 rbl-action-calculate | (boolean) Determines if an `application.calculate()` should be called upon successful `api-action-link` execution.
 data-param-* | Used as the `customParameters` property of the `customOptions` parameter and is used by server side API endpints.  (i.e. to pass `PlanId=value` parameter to server, use `data-param-plan-id="value"`, the parameter name will be created automatically to match server API endpoint parameter name pattern)
@@ -3030,7 +3030,7 @@ rbl-action-confirm-selector | If the link should prompt before calling the endpo
 
 <br/>
 
-Each `commandName`/`rbl-action-link` can, and most likely will, have its own set of custom parameters or inputs.  To determine which values to pass, see the API endpoint documentation.
+Each `endpoint`/`rbl-action-link` can, and most likely will, have its own set of custom parameters or inputs.  To determine which values to pass, see the API endpoint documentation.
 
 ```html
 <!-- Same as sample above in Javascript, create a link generates a server side DocGen package for download -->
@@ -3179,8 +3179,8 @@ view.on( "onKatAppNotification.RBLe", function( event, name, information, applic
 createModalDialog is a helper method to show a simple 'Continue' / 'Cancel' Bootstrap dialog on the screen.  If `onCancel` is not provided, the 'Cancel' button will not be displayed.
 
 ```javascript
-view.on("onActionResult.RBLe", function (e, commandName, _jsonResponse, application) {
-    if (commandName == "update-payment-inst") {
+view.on("onActionResult.RBLe", function (e, endpoint, _jsonResponse, application) {
+    if (endpoint == "update-payment-inst") {
         application.createModalDialog(
             "You bank information have been successfully updated.",
             function () {
@@ -3629,13 +3629,13 @@ The `key` parameter can be `GetData`, `RegisterData`, `SubmitCalculation`, or `P
 
 #### jwt-data Updates
 
-During `calculate`, if the results returned contain `jwt-data` table, updates are sent to the server via `apiAction`. When this occurs, the standard [KatApp Action Lifecycle Events](#KatApp-Action-Lifecycle-Events) will be triggered with the `commandName` being set to `calculations/jwtupdate`.
+During `calculate`, if the results returned contain `jwt-data` table, updates are sent to the server via `apiAction`. When this occurs, the standard [KatApp Action Lifecycle Events](#KatApp-Action-Lifecycle-Events) will be triggered with the `endpoint` being set to `calculations/jwtupdate`.
 
 A common use for these handlers during calculation could be to display a status notification that data was updated.
 
 ```javascript
-view.on("onActionResult.RBLe", function (event, commandName) {
-	if (commandName == "calculations/jwtupdate") {
+view.on("onActionResult.RBLe", function (event, endpoint) {
+	if (endpoint == "calculations/jwtupdate") {
 		$(".saveSuccess", view).show(500).delay(7000).hide(500);
 	}
 });
@@ -3646,8 +3646,8 @@ When `jwt-data` data updates fail, the `onActionFailed` event would be triggered
 Note: Even if data updating fails, 'normal calculation processing' will still be deemed successful.
 
 ```javascript
-view.on("onActionFailed.RBLe", function (event, commandName) {
-	if (commandName == "calculations/jwtupdate") {
+view.on("onActionFailed.RBLe", function (event, endpoint) {
+	if (endpoint == "calculations/jwtupdate") {
 		$(".saveError", view).show(500).delay(3000).hide(500);
 	}
 });
@@ -3676,7 +3676,7 @@ KatApp Action Lifecycle Events are events that occur during the processing of a 
 
 #### onActionStart
 
-**`onActionStart(event: Event, commandName: string, submitData: JSON, application: KatAppPlugInInterface, currentOptions: KatAppOptions, actionLink: JQuery<HTMLElement>)`**
+**`onActionStart(event: Event, endpoint: string, submitData: JSON, application: KatAppPlugInInterface, currentOptions: KatAppOptions, actionLink: JQuery<HTMLElement>)`**
 
 This event is triggered immediately before submitting the `submitData` to the API endpoint.  This handler could be used to modify the `submitData` before submission if required.
 
@@ -3684,15 +3684,15 @@ This event is triggered immediately before submitting the `submitData` to the AP
 
 #### onActionResult
 
-**`onActionResult(event: Event, commandName: string, resultData: JSON | undefined, application: KatAppPlugInInterface, currentOptions: KatAppOptions, actionLink: JQuery<HTMLElement>)`**
+**`onActionResult(event: Event, endpoint: string, resultData: JSON | undefined, application: KatAppPlugInInterface, currentOptions: KatAppOptions, actionLink: JQuery<HTMLElement>)`**
 
-This event is triggered upon successful submission and response from the API endpoint.  If the action is a 'file download', `resultData` will be `undefined`, otherwise it will be a JSON payload with properties specific to the `commandName`.
+This event is triggered upon successful submission and response from the API endpoint.  If the action is a 'file download', `resultData` will be `undefined`, otherwise it will be a JSON payload with properties specific to the `endpoint`.
 
 <hr/>
 
 #### onActionFailed
 
-**`onActionFailed(event: Event, commandName: string, exception: JSON, application: KatAppPlugInInterface, currentOptions: KatAppOptions, actionLink: JQuery<HTMLElement>)`**
+**`onActionFailed(event: Event, endpoint: string, exception: JSON, application: KatAppPlugInInterface, currentOptions: KatAppOptions, actionLink: JQuery<HTMLElement>)`**
 
 This event is triggered when submission to an API endpoint fails.  The `exception` object will have a `Validations` property that can be examined for more details about the cause of the exception.
 
@@ -3700,7 +3700,7 @@ This event is triggered when submission to an API endpoint fails.  The `exceptio
 
 #### onActionComplete
 
-**`onActionComplete(event: Event, commandName: string, application: KatAppPlugInInterface, currentOptions: KatAppOptions, actionLink: JQuery<HTMLElement>)`**
+**`onActionComplete(event: Event, endpoint: string, application: KatAppPlugInInterface, currentOptions: KatAppOptions, actionLink: JQuery<HTMLElement>)`**
 
 This event is triggered after the `apiAction` has processed and will trigger on both success and failure.  Use this handler to process any UI actions that are required.
 
@@ -3715,7 +3715,7 @@ KatApp Action Lifecycle Events are events that occur during the processing of a 
 
 #### onUploadStart
 
-**`onUploadStart(event: Event, fileUpload: JQuery<HTMLElement>, formData: FormData, application: KatApp)`**
+**`onUploadStart(event: Event, endpoint: string, fileUpload: JQuery<HTMLElement>, formData: FormData, application: KatApp)`**
 
 This event is triggered immediately before submitting the `formData` to the API endpoint.  This handler could be used to modify the `formData` before submission if required.
 
@@ -3723,7 +3723,7 @@ This event is triggered immediately before submitting the `formData` to the API 
 
 #### onUploaded
 
-**`onUploaded(event: Event, fileUpload: JQuery<HTMLElement>, application: KatApp)`**
+**`onUploaded(event: Event, endpoint: string, fileUpload: JQuery<HTMLElement>, application: KatApp)`**
 
 This event is triggered upon successful submission and response from the API endpoint.
 
@@ -3731,7 +3731,7 @@ This event is triggered upon successful submission and response from the API end
 
 #### onUploadFailed
 
-**`onUploadFailed(event: Event, fileUpload: JQuery<HTMLElement>, exception: JSON, application: KatApp)`**
+**`onUploadFailed(event: Event, endpoint: string, fileUpload: JQuery<HTMLElement>, exception: JSON, application: KatApp)`**
 
 This event is triggered when upload submission to an API endpoint fails.  The `exception` object will have a `Validations` property that can be examined for more details about the cause of the exception.
 
@@ -3739,7 +3739,7 @@ This event is triggered when upload submission to an API endpoint fails.  The `e
 
 #### onUploadComplete
 
-**`onUploadComplete(event: Event, fileUpload: JQuery<HTMLElement>, application: KatApp)`**
+**`onUploadComplete(event: Event, endpoint: string, fileUpload: JQuery<HTMLElement>, application: KatApp)`**
 
 This event is triggered after the file upload has finished processing and will trigger on both success and failure.  Use this handler to process any UI actions that are required.
 
@@ -3749,11 +3749,11 @@ This event is triggered after the file upload has finished processing and will t
 
 ### Template Event Handlers
 
-[Templates](#Templates) are a powerful tool in Kat Apps.  However, when you create a new template Kaml file, if you need event handlers to run, registering those handlers is different than normal.  Because the template is loaded one time regardless of how many KatApps are configured to use it.  To function properly, an event handler for each _KatApp_ that uses a template would need to be registered.  To accomplish this, you use the global `$.fn.KatApp.templateOn` method call.
+[Templates](#Templates) are a powerful tool in Kat Apps.  However, when you create a new template Kaml file, if you need event handlers to run, registering those handlers is different than normal.  Because the template is loaded one time regardless of how many KatApps are configured to use it.  To function properly, an event handler for each _KatApp_ that uses a template would need to be registered.  To accomplish this, you use the global `$.fn.KatApp.templateOn` method call because within the template script, there would be no concept of a _Kaml View_ since the template could be used by any application/view.
 
-**`$.fn.KatApp.templateOn = function( templateName: string, events: string, fn: FunctionDelegate )`**
+**`$.fn.KatApp.templateOn = function( events: string, fn: FunctionDelegate )`**
 
-The syntax is exactly the same as normal event handling except for the `templateName` parameter.  This could be hard coded, but the preferred way to pass the template name is to use the `{thisTemplate}` token.
+The syntax is exactly the same as normal event handling except for the `global variable` reference.
 
 ```javascript
 // Sample event handler registration in **Kaml View**...
@@ -3762,8 +3762,8 @@ view.on( "onInitialized.RBLe", function( event, application ) {
 });
 
 // Sample event handler registration in **Kaml Template File**...
-$.fn.KatApp.templateOn("{thisTemplate}", "onInitialized.RBLe", function (event, application) {
-    // custom code here to run inside each application that uses this template
+$.fn.KatApp.templateOn("onInitialized.RBLe", function (event, application) {
+    // custom code here to run for this template when it is injected inside an application that uses this template
 });
 ```
 

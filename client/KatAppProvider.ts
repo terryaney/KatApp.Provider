@@ -279,7 +279,6 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
             //#endregion
 
             const _templatesUsedByAllApps = $.fn.KatApp.templatesUsedByAllApps;
-            const _templateDelegates = $.fn.KatApp.templateDelegates;
             let viewElement: JQuery<HTMLElement> | undefined = undefined;
 
             let inlineContainer = $("rbl-katapps > rbl-templates[rbl-t='_INLINE']");
@@ -288,9 +287,8 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                 $("rbl-katapps").append(inlineContainer);
             }
             
-            const processInlineTemplates = function(templateContainer: JQuery<HTMLElement>, containerName: string ): void {
-
-                const processInlineTemplate = function(inlineTemplate: JQuery<HTMLElement>) {
+            const convertInlineTemplatesToStandardTemplates = function(templateContainer: JQuery<HTMLElement>, containerName: string ): void {
+                const convertInlineTemplateToStandardTemplate = function(inlineTemplate: JQuery<HTMLElement>) {
                     const inlineParent = inlineTemplate.parent();
                     const templateType = inlineTemplate.attr("rbl-tid")!;
                     const templateIdAttribute = templateType == "inline"
@@ -334,7 +332,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                 };
 
                 $("[rbl-tid='empty']", templateContainer).each(function() {
-                    processInlineTemplate($(this));
+                    convertInlineTemplateToStandardTemplate($(this));
                 });
                 
                 let inlineTemplates: JQuery<HTMLElement>;
@@ -343,7 +341,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                 while( ( inlineTemplates = $("[rbl-tid='inline']", templateContainer).filter( function() { return $("[rbl-tid='inline']", $(this)).length == 0; } ) ).length > 0 )
                 {
                     inlineTemplates.each(function() {
-                        processInlineTemplate($(this));
+                        convertInlineTemplateToStandardTemplate($(this));
                     });
                 }
 
@@ -413,7 +411,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                                 viewElement = $("<div class='katapp-css'>" + content + "</div>");
                                 const rblConfig = $("rbl-config", viewElement).first();
 
-                                processInlineTemplates(viewElement, viewId);
+                                convertInlineTemplatesToStandardTemplates(viewElement, viewId);
 
                                 // Not sure if I need to manually add script or if ie will load them
                                 // https://www.danielcrabtree.com/blog/25/gotchas-with-dynamically-adding-script-tags-to-html
@@ -622,7 +620,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                         const rblKatApps = $("rbl-katapps");
                         const templateContent = $("<rbl-templates rbl-t='" + r.toLowerCase() + "'>" + data.replace( /{thisTemplate}/g, r ) + "</rbl-templates>");
 
-                        processInlineTemplates(templateContent, r);
+                        convertInlineTemplatesToStandardTemplates(templateContent, r);
 
                         templateContent.appendTo(rblKatApps);
 
@@ -632,7 +630,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                         _templatesUsedByAllApps[ r ].data = data;
                         _templatesUsedByAllApps[ r ].requested = false;
                         
-                        // call all registered callbacks from other apps
+                        // Call all registered callbacks from other apps
                         let currentCallback: ( ( errorMessage: string | undefined )=> void ) | undefined = undefined;
                         while( ( currentCallback = _templatesUsedByAllApps[ r ].callbacks.pop() ) !== undefined )
                         {
@@ -653,46 +651,12 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                         that.ui.triggerEvent( "onInitializing", that, that.options );
                     }
 
-                    // Now, for every unique template reqeusted by client, see if any template delegates were
-                    // registered for the template using templateOn().  If so, hook up the 'real' event requested
-                    // to the currently running application.  Need to use templateOn() because the template is
-                    // only injected once into the markup but we need to hook up events for each event that
-                    // wants to use this template.
-                    requiredTemplates
-                        .forEach( t => {
-                            // Loop every template event handler that was called when template loaded
-                            // and register a handler to call the delegate
-                            _templateDelegates
-                                .filter( d => d.Template.toLowerCase() == t.toLowerCase() )
-                                .forEach( d => {
-                                    that.trace( "[" + d.Events + "] events from template [" + d.Template + "] hooked up", TraceVerbosity.Normal );
-                                    that.element.on( d.Events, function( ...args ): void {
-                                        d.Delegate.apply( this, args );
-                                    } );
-                                });
-                        });
-
                     // Update options.viewTemplates just in case someone is looking at them
                     that.options.viewTemplates = requiredTemplates.join( "," );
 
                     const showInspector = that.options.debug?.showInspector ?? false;
-                    that.ui.injectTemplatesWithoutSource(that.element, showInspector);
 
-                    // This used to be inside Standard_Template.templateOn, but since it is standard and so common, just moved it here.
-                    // Original code:
-                    /*
-                        $.fn.KatApp.templateOn("{thisTemplate}", "onInitialized.RBLe", function (event, application) {
-                            application.trace("Processing onInitialized.RBLe for Template [{thisTemplate}]...", TraceVerbosity.Normal);
-
-                            if (KatApp.pageParameters["debugkatapp"] === "t.{thisTemplate}.onInitialized") {
-                                debugger;
-                            }
-
-                            const templateBuilder = $.fn.KatApp.standardTemplateBuilderFactory( application );
-                            templateBuilder.processInputs();
-                            templateBuilder.processCarousels();
-                        });
-                    */
+                    that.ui.injectTemplatesWithoutSource(that.element, showInspector);                        
 
                     // Process data-* attributes and bind events
                     that.templateBuilder.processUI();
@@ -1418,6 +1382,14 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
             this.ui.triggerEvent( "onOptionsUpdated", this );
         }
 
+        clearValidationSummaries(): void {
+            this.rble.initializeValidationSummaries();
+        }
+
+        clearInputs( container?: JQuery<HTMLElement>): void {
+            this.rble.clearInputsBySelector( this.options.inputSelector, container );
+        }
+
         getInputs(): CalculationInputs {
             return this.rble.getInputs( this.options )
         }
@@ -1727,10 +1699,9 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                             // Just want generic system message I think...
                             // errors.push( { "@id": "System", text: errorResponse[ "Message" ] });
                         }
-                    }
-            
-                    if ( errorResponse[ "InvalidateKatApp" ] ?? false ) {
-                        application.invalidate();
+                        if ( errorResponse[ "InvalidateKatApp" ] ?? false ) {
+                            application.invalidate();
+                        }
                     }
 
                     if ( errors.length == 0 ) {
@@ -1836,7 +1807,6 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
             // Need to reset these so updated views are downloaded
             $("rbl-katapps > rbl-templates").remove(); // remove templates
             $.fn.KatApp.templatesUsedByAllApps = {};
-            $.fn.KatApp.templateDelegates = [];
 
             // If || true is removed...update documentation to add the parameter
             if ( readViewOptions || true ) {
@@ -2204,28 +2174,34 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
         }
 
         injectTemplate( target: JQuery<HTMLElement>, templateId: string ): void {
+            try {
+                $.fn.KatApp.currentView = this.application.element;
 
-            const template = 
+                const template = 
                 this.getTemplate( 
                     templateId, 
                     this.application.dataAttributesToJson(target, "data-"),
                     true
                 );
 
-            // rbl-template-type is to enable the creation of templates with different ids/names but still
-            // fall in a category of type.  For example, you may want to make a certain style/template of
-            // sliders (while still keeping main slider template usable) that is then capable of applying
-            // all the KatApp programming (data-* attributes applying ranges, and configurations).            
-            target.removeAttr("rbl-template-type");
+                // rbl-template-type is to enable the creation of templates with different ids/names but still
+                // fall in a category of type.  For example, you may want to make a certain style/template of
+                // sliders (while still keeping main slider template usable) that is then capable of applying
+                // all the KatApp programming (data-* attributes applying ranges, and configurations).            
+                target.removeAttr("rbl-template-type");
 
-            if ( template === undefined ) {
-                target.html("");
-            }
-            else {
-                target.html( template.Content );
-                if ( template.Type !== undefined ) {
-                    target.attr("rbl-template-type", template.Type);
+                if ( template === undefined ) {
+                    target.html("");
                 }
+                else {
+                    target.html( template.Content );
+                    if ( template.Type !== undefined ) {
+                        target.attr("rbl-template-type", template.Type);
+                    }
+                }
+
+            } finally {
+                $.fn.KatApp.currentView = undefined;
             }
         }
     
@@ -2886,12 +2862,13 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
             register( application, currentOptions, registerDone, registerFailed );
         }
     
-        getInputsBySelector( inputSelector: string | undefined ): {} | undefined {
+        getInputsBySelector( inputSelector: string | undefined, container?: JQuery<HTMLElement> ): {} | undefined {
             if ( inputSelector == undefined ) return undefined;
 
             const inputs = {};
             const ui: UIUtilities = this.application.ui;
-            const validInputs =  $(inputSelector, this.application.element).not(inputsToIgnoreSelector);
+            const inputContainer = container ?? this.application.element;
+            const validInputs =  $(inputSelector, inputContainer).not(inputsToIgnoreSelector);
 
             jQuery.each(validInputs, function () {
                 const input = $(this);
@@ -2904,7 +2881,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
             });
 
             // Checkbox list...
-            $("[data-itemtype='checkbox']", this.application.element).each(function() {
+            $("[data-itemtype='checkbox']", inputContainer).each(function() {
                 const cbl = $(this);
                 const name = cbl.data("inputname");
                 const value = 
@@ -2918,6 +2895,32 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
             });
 
             return inputs;
+        }
+
+        clearInputsBySelector( inputSelector: string | undefined, container?: JQuery<HTMLElement> ): {} | undefined {
+            if ( inputSelector == undefined ) return undefined;
+
+            const inputs = {};
+            const ui: UIUtilities = this.application.ui;
+            const rble = this;
+            const inputContainer = container ?? this.application.element;
+            const validInputs =  $(inputSelector, inputContainer).not(inputsToIgnoreSelector);
+
+            validInputs.each(function () {
+                const input = $(this);
+                const name = ui.getInputName(input);
+                rble.setInput( name, "");
+            });
+
+            $("input[type='file']", inputContainer).each(function() {
+                const input = $(this);
+                ( input.wrap('<form>').closest('form').get(0) as HTMLFormElement ).reset();
+                input.unwrap();
+                rble.setInput( ui.getInputName(input) + "Display", "");
+            });
+
+            // Checkbox list...
+            $("[data-itemtype='checkbox'] input", inputContainer).prop("checked", false);
         }
 
         getInputs( currentOptions: KatAppOptions ): CalculationInputs {
@@ -3750,6 +3753,27 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                                     return hasRoot ? el : el.children();
                                 };
 
+                                const appendTemplateResult = function( dest: JQuery<HTMLElement>, templateResult: JQuery<HTMLElement>, prepend: boolean, prependBeforePreserve: boolean ): void {
+                                    // Not sure there would ever be templateOn calls in a template
+                                    // used via rbl-source (b/c could result in many rows of content)
+                                    // so may need to put some conditions on this if that is the case
+                                    // to only 
+                                    try {
+                                        $.fn.KatApp.currentView = application.element;
+                                        if ( prepend ) {
+                                            dest.prepend( templateResult );
+                                        }
+                                        else if ( prependBeforePreserve ) {
+                                            templateResult.insertBefore( $(".rbl-preserve", dest).first() );
+                                        }
+                                        else {
+                                            dest.append( templateResult );
+                                        }
+                                    } finally {
+                                        $.fn.KatApp.currentView = undefined;
+                                    }
+                                };
+
                                 if ( rblSourceId != undefined ) {
                                     const rowSource = that.getResultRow<JSON>( tabDef, tableName, rblSourceId );
                                     
@@ -3764,7 +3788,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                                         el.children()
                                             .not(".rbl-preserve")
                                             .remove();
-                                        el.append(templateResult);
+                                        appendTemplateResult(el, templateResult, false, false);
                                     }
                                 }
                                 else {
@@ -3797,15 +3821,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                                                 templateContent!
                                             );
         
-                                            if ( prepend ) {
-                                                el.prepend( templateResult );
-                                            }
-                                            else if ( prependBeforePreserve ) {
-                                                templateResult.insertBefore( $(".rbl-preserve", el).first() );
-                                            }
-                                            else {
-                                                el.append( templateResult );
-                                            }
+                                            appendTemplateResult(el, templateResult, prepend, prependBeforePreserve);
                                         }
                                     });
                                 }
@@ -3820,8 +3836,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
 
                                 if ( emptyTemplate != undefined ) {
                                     const et = $(emptyTemplate);
-                                    el.children()
-                                        .remove();
+                                    el.children().remove();
                                     el.append(et);
                                 }
                             }
@@ -5747,6 +5762,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                     const inputCss = el.data("inputcss");
                     const labelCss = el.data("labelcss");
                     const hideLabel = el.data("hidelabel") ?? false;
+                    const showUpload = el.data("showupload") ?? true;
                     // Command is legacy until nexgen 4.0 is removed
                     const actionEndpoint = el.data("rbl-action") ?? el.data("command") ?? "UploadFile";
 
@@ -5786,7 +5802,8 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                         const file = $(this).parents('.input-group').find(':file');
                         file.val("").trigger("change");
                     });
-                    $(".btn-file-upload", el).on("click", function () {
+
+                    const uploadFileHandler = function () {
                         if ( !application.ensureApplicationValid() ) {
                             return;
                         }
@@ -5803,7 +5820,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                         that.incrementProgressBars();
                         $(".file-upload-progress", application.element).show();
 
-                        const fileUpload = $(".file-data", $(this).parent());
+                        const fileUpload = $(".file-upload .file-data", el);
 
                         const parametersJson = application.dataAttributesToJson( el, "data-param-");
                         
@@ -5831,7 +5848,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
 
                         application.rble.initializeValidationSummaries();
                 
-                        application.ui.triggerEvent( "onUploadStart", fileUpload, fd, application );
+                        application.ui.triggerEvent( "onUploadStart", actionEndpoint, fileUpload, fd, application );
 
                         let errorResponse: JSON;
             
@@ -5861,7 +5878,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                         })
                         .then( 
                             function( /* payLoad */ ) {
-                                application.ui.triggerEvent( "onUploaded", fileUpload, application );
+                                application.ui.triggerEvent( "onUploaded", actionEndpoint, fileUpload, application );
                             },
                             function( _jqXHR  ) {
                                 errorResponse = _jqXHR[ "responseBinary" ];
@@ -5899,15 +5916,18 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                                 application.rble.processValidationRows( errorSummary, errors );
                                 application.rble.finalizeValidationSummaries();
 
-                                application.ui.triggerEvent( "onUploadFailed", fileUpload, errorResponse, application );
+                                application.ui.triggerEvent( "onUploadFailed", actionEndpoint, fileUpload, errorResponse, application );
                             }
                             else {
-                                application.ui.triggerEvent( "onUploadComplete", fileUpload, application );
+                                application.ui.triggerEvent( "onUploadComplete", actionEndpoint, fileUpload, application );
                             }
 
                             that.application.hideAjaxBlocker();
                         });
-                    });
+                    };
+
+                    $(".btn-file-upload", el).on("click", uploadFileHandler);
+                    $(el).on("UploadFile", uploadFileHandler);
 
                     $(".btn-file :file", el).on("change", function () {
                         const fileUpload = $(this),
@@ -5918,13 +5938,17 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                             upload = $(this).parents('.input-group').find('.btn-file-upload'),
                             remove = $(this).parents('.input-group').find('.btn-file-remove');
                 
-                
                         display.val(label);
-                        if (numFiles > 0) {
-                            upload.add(remove).removeClass("hidden d-none");
+
+                        const itemsToToggle = showUpload
+                            ? remove.add( upload )
+                            : remove;
+
+                        if (numFiles > 0) {                            
+                            itemsToToggle.removeClass("hidden d-none");
                         }
                         else {
-                            upload.add(remove).addClass("hidden d-none");
+                            itemsToToggle.addClass("hidden d-none");
                         }
                     });
                 
@@ -6376,7 +6400,6 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
         // remove templates
         $("rbl-katapps > rbl-templates").remove();
         $.fn.KatApp.templatesUsedByAllApps = {};
-        $.fn.KatApp.templateDelegates = [];
     }
 
     // Replace the applicationFactory to create real KatAppPlugIn implementations
@@ -6589,8 +6612,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
             </style>\
         </rbl-katapps>').appendTo("body");
         
-        $.fn.KatApp.templatesUsedByAllApps = {};
-        $.fn.KatApp.templateDelegates = [];
+        $.fn.KatApp.templatesUsedByAllApps = {};        
         $.fn.KatApp.sharedData = { requesting: false, callbacks: [] };
 
         const navigationCachingKey = "katapp:navigationInputs:global";
@@ -6600,9 +6622,10 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
             : undefined;
         sessionStorage.removeItem(navigationCachingKey);
 
-        $.fn.KatApp.templateOn = function( templateName: string, events: string, fn: TemplateOnDelegate ): void {
-            $.fn.KatApp.templateDelegates.push( { Template: templateName.ensureGlobalPrefix(), Delegate: fn, Events: events } );
-            KatApp.trace( undefined, "Template event(s) [" + events + "] registered for [" + templateName + "]", TraceVerbosity.Normal );
+        $.fn.KatApp.templateOn = function( events: string, fn: TemplateOnDelegate ): void {
+            if ( $.fn.KatApp.currentView != undefined ){
+                $.fn.KatApp.currentView!.on( events, fn );
+            }
         };
     }
 

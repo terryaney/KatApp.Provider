@@ -31,7 +31,7 @@
     <div class="carousel-indicators" rbl-source="{source}" rbl-tid="carousel-indicators" rbl-prepend="before-preserve">
       <button type="button" class="d-none rbl-preserve" data-show-all="true">Show More</button>
     </div>
-    <div class="carousel-inner" rbl-ce={rbl-ce} rbl-source="{source}" rbl-tid="carousel-item"></div>
+    <div class="carousel-inner" rbl-ce="{rbl-ce}" rbl-source="{source}" rbl-tid="carousel-item"></div>
     <!-- Not showing next/previous, could add {} data element to control visiblity
     <button class="carousel-control-prev" type="button" data-bs-target="#carousel-{id}-{name}" data-bs-slide="prev">
       <span class="carousel-control-prev-icon" aria-hidden="true"></span>
@@ -86,7 +86,7 @@
     </label>
     <div class="validator-container">
       <div class="input-group file-upload rbl-exclude">
-        <input name="{inputname}Display" id="katapp_{id}_{inputname}Display" type="text" class="form-control file-display" readonly="readonly" />
+        <input name="{inputname}Display" id="katapp_{id}_{inputname}Display" type="text" class="form-control file-display {inputname}Display" readonly="readonly" />
         <span class="input-group-append">
           <a class="btn btn-default btn-file-remove hidden d-none" title="Clear selected file"><i class="fa fa-trash-alt"></i><span class="hidden d-none d-md-inline">Remove</span></a>
           <a class="btn btn-default btn-file-upload hidden d-none" title="Upload selected file"><i class="fa fa-upload"></i><span class="hidden d-none d-md-inline">Upload</span></a>
@@ -280,18 +280,6 @@
     <div rbl-value="h{inputname}" id="{id}_h{inputname}" style="display: none;"></div>
   </div>
 </rbl-template>
-<script>
-  if (KatApp.pageParameters["debugkatapp"] === "t.{thisTemplate}") {
-    debugger;
-  }
-
-  $.fn.KatApp.templateOn("{thisTemplate}", "onInitialized.RBLe", function (event, application) {
-    application.trace("Processing onInitialized.RBLe for Template [{thisTemplate}]...", TraceVerbosity.Normal);
-    const templateBuilder = application.templateBuilder;
-    // Could use templateBuilder here...
-  });
-  //# sourceURL=Standard_Templates.kaml
-</script>
 
 <!-- Core styling -->
 <style>

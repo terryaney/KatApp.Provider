@@ -39,11 +39,14 @@ interface Function {
     applicationFactory( id: string, element: JQuery, options: KatAppOptions): KatAppPlugInShimInterface;
     // Debugging...let's me restore the original shim factory if I'm going to rebuild UI or script locations
     debugApplicationFactory( id: string, element: JQuery, options: KatAppOptions): KatAppPlugInShimInterface;    
-    templateOn( templateName: string, events: string, fn: TemplateOnDelegate ): void;
+    templateOn( events: string, fn: TemplateOnDelegate ): void;
     getResources( application: KatAppPlugInShimInterface, resources: string, useTestVersion: boolean, isScript: boolean, debugResourcesDomain: string | undefined, getResourcesHandler: GetResourcesCallback ): void;
     getResource( url: string, tryLocalServer: boolean, isInManagementSite: boolean, folder: string, name: string, version: string ): GetResourceXHR;
     ping( url: string, callback: ( responded: boolean, error?: string | Event )=> void ): void;
 
+    // If multiple applications are rendered on one page, this object stores unique list of templates requested
+    // so that if two applications request the same template but one is still waiting for a download, the second
+    // application registers a callback and will be notified when the content is ready.
     templatesUsedByAllApps: { 
         [ key: string ]: { 
             requested: boolean; 
@@ -51,11 +54,10 @@ interface Function {
             callbacks: Array<( errorMessage: string | undefined )=> void>; 
         };
     };
-    templateDelegates: {
-        Delegate: TemplateOnDelegate;
-        Template: string;
-        Events: string;
-    }[];
+    // When template content is being injected inside a view, if calls are made to templateOn, this variable
+    // must/will be set so that the event handler being registered is correctly hooked to the view containing
+    // the templated content.
+    currentView: JQuery<HTMLElement> | undefined,
     navigationInputs: {} | undefined,
     sharedData: { 
         requesting: boolean;

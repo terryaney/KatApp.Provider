@@ -1,0 +1,1224 @@
+<style>
+    tr.header
+    {
+        background-color: #12c2e9;
+    }
+</style>
+<h3>Baxter Medical Plan Compare</h3>
+<div class="row ajaxContent RBLe nav-tab-brand">
+    <div class="hidden">
+        <input name="ControlHost:lnkOOPBasic:iHSAType" type="text" value="1" id="ControlHost_lnkOOPBasic_iHSAType"
+            class="iHSAType" />
+
+        <input name="ControlHost:lnkOOPBasic:iAdvAssumptions" type="text" id="ControlHost_lnkOOPBasic_iAdvAssumptions"
+            class="iAdvAssumptions" />
+        <input name="ControlHost:lnkOOPBasic:iPreventive_In" type="text" value="1" id="ControlHost_lnkOOPBasic_iPreventive_In"
+            class="modal-target iPreventive_In" data-modal="iPreventive_InD" />
+        <input name="ControlHost:lnkOOPBasic:iPreventive_Out" type="text" value="0" id="ControlHost_lnkOOPBasic_iPreventive_Out"
+            class="modal-target iPreventive_Out" data-modal="iPreventive_OutD" />
+        <input name="ControlHost:lnkOOPBasic:iPrimary_In" type="text" value="1" id="ControlHost_lnkOOPBasic_iPrimary_In"
+            class="modal-target iPrimary_In" data-modal="iPrimary_InD" />
+        <input name="ControlHost:lnkOOPBasic:iPrimary_Out" type="text" value="0" id="ControlHost_lnkOOPBasic_iPrimary_Out"
+            class="modal-target iPrimary_Out" data-modal="iPrimary_OutD" />
+        <input name="ControlHost:lnkOOPBasic:iSpecialist_In" type="text" value="0" id="ControlHost_lnkOOPBasic_iSpecialist_In"
+            class="modal-target iSpecialist_In" data-modal="iSpecialist_InD" />
+        <input name="ControlHost:lnkOOPBasic:iSpecialist_Out" type="text" value="0" id="ControlHost_lnkOOPBasic_iSpecialist_Out"
+            class="modal-target iSpecialist_Out" data-modal="iSpecialist_OutD" />
+        <input name="ControlHost:lnkOOPBasic:iMaternity_In" type="text" value="0" id="ControlHost_lnkOOPBasic_iMaternity_In"
+            class="modal-target iMaternity_In" data-modal="iMaternity_InD" />
+        <input name="ControlHost:lnkOOPBasic:iMaternity_Out" type="text" value="0" id="ControlHost_lnkOOPBasic_iMaternity_Out"
+            class="modal-target iMaternity_Out" data-modal="iMaternity_OutD" />
+        <input name="ControlHost:lnkOOPBasic:iEmergency_In" type="text" value="0" id="ControlHost_lnkOOPBasic_iEmergency_In"
+            class="modal-target iEmergency_In" data-modal="iEmergency_InD" />
+        <input name="ControlHost:lnkOOPBasic:iEmergency_Out" type="text" value="0" id="ControlHost_lnkOOPBasic_iEmergency_Out"
+            class="modal-target iEmergency_Out" data-modal="iEmergency_OutD" />
+        <input name="ControlHost:lnkOOPBasic:iInpatient_In" type="text" value="0" id="ControlHost_lnkOOPBasic_iInpatient_In"
+            class="modal-target iInpatient_In" data-modal="iInpatient_InD" />
+        <input name="ControlHost:lnkOOPBasic:iInpatient_Out" type="text" value="0" id="ControlHost_lnkOOPBasic_iInpatient_Out"
+            class="modal-target iInpatient_Out" data-modal="iInpatient_OutD" />
+        <input name="ControlHost:lnkOOPBasic:iOutpatient_In" type="text" value="0" id="ControlHost_lnkOOPBasic_iOutpatient_In"
+            class="modal-target iOutpatient_In" data-modal="iOutpatient_InD" />
+        <input name="ControlHost:lnkOOPBasic:iOutpatient_Out" type="text" value="0" id="ControlHost_lnkOOPBasic_iOutpatient_Out"
+            class="modal-target iOutpatient_Out" data-modal="iOutpatient_OutD" />
+        <input name="ControlHost:lnkOOPBasic:iLab_In" type="text" value="1" id="ControlHost_lnkOOPBasic_iLab_In" class="modal-target iLab_In"
+            data-modal="iLab_InD" />
+        <input name="ControlHost:lnkOOPBasic:iLab_Out" type="text" value="0" id="ControlHost_lnkOOPBasic_iLab_Out"
+            class="modal-target iLab_Out" data-modal="iLab_OutD" />
+        <input name="ControlHost:lnkOOPBasic:iMHInpatient_In" type="text" value="0" id="ControlHost_lnkOOPBasic_iMHInpatient_In"
+            class="modal-target iMHInpatient_In" data-modal="iMHInpatient_InD" />
+        <input name="ControlHost:lnkOOPBasic:iMHInpatient_Out" type="text" value="0" id="ControlHost_lnkOOPBasic_iMHInpatient_Out"
+            class="modal-target iMHInpatient_Out" data-modal="iMHInpatient_OutD" />
+        <input name="ControlHost:lnkOOPBasic:iMHOutpatient_In" type="text" value="0" id="ControlHost_lnkOOPBasic_iMHOutpatient_In"
+            class="modal-target iMHOutpatient_In" data-modal="iMHOutpatient_InD" />
+        <input name="ControlHost:lnkOOPBasic:iMHOutpatient_Out" type="text" value="0" id="ControlHost_lnkOOPBasic_iMHOutpatient_Out"
+            class="modal-target iMHOutpatient_Out" data-modal="iMHOutpatient_OutD" />
+        <input name="ControlHost:lnkOOPBasic:iRxGeneric_Retail" type="text" value="2" id="ControlHost_lnkOOPBasic_iRxGeneric_Retail"
+            class="modal-target iRxGeneric_Retail" data-modal="iRxGeneric_RetailD" />
+        <input name="ControlHost:lnkOOPBasic:iRxGeneric_Mail" type="text" value="0" id="ControlHost_lnkOOPBasic_iRxGeneric_Mail"
+            class="modal-target iRxGeneric_Mail" data-modal="iRxGeneric_MailD" />
+        <input name="ControlHost:lnkOOPBasic:iRxPreferred_Retail" type="text" value="0" id="ControlHost_lnkOOPBasic_iRxPreferred_Retail"
+            class="modal-target iRxPreferred_Retail" data-modal="iRxPreferred_RetailD" />
+        <input name="ControlHost:lnkOOPBasic:iRxPreferred_Mail" type="text" value="0" id="ControlHost_lnkOOPBasic_iRxPreferred_Mail"
+            class="modal-target iRxPreferred_Mail" data-modal="iRxPreferred_MailD" />
+        <input name="ControlHost:lnkOOPBasic:iRxNonPreferred_Retail" type="text" value="0" id="ControlHost_lnkOOPBasic_iRxNonPreferred_Retail"
+            class="modal-target iRxNonPreferred_Retail" data-modal="iRxNonPreferred_RetailD" />
+        <input name="ControlHost:lnkOOPBasic:iRxNonPreferred_Mail" type="text" value="0" id="ControlHost_lnkOOPBasic_iRxNonPreferred_Mail"
+            class="modal-target iRxNonPreferred_Mail" data-modal="iRxNonPreferred_MailD" />
+    </div>
+    <div class="col-md-6">
+        <p onclick="console.log(katApp.root(this).inputsToJson())">click test</p>
+        <ul class="nav nav-tabs" role="tablist">
+            <li role="presentation" class="col-xs-12 active"><a onclick="javascript:$('#tabAssumptions').toggle()" role_="tab" data-toggle_="tab"
+                    class="text-center">Assumptions</a></li>
+        </ul>
+        <div class="tab-content match-height">
+            <div role="tabpanel" class="tab-pane fade in active" id="tabAssumptions">
+                <div class="row">
+                    <div class="col-sm-12 viCoverageType">
+                        <div class="form-group">
+                            <label for="iCoverageType" class="control-label liCoverageType"></label>
+                            <a style="display: none;" class="vhiCoverageType" role="button" tabindex="0" data-toggle="popover"
+                                data-trigger="click" data-content-selector=".hiCoverageType" data-placement="top auto">
+                                <span class="glyphicon glyphicon-info-sign help-icon"></span>
+                            </a>
+                            <a style="display: none;" class="vsiCoverageType" role="button" tabindex="0" data-placement="top auto">
+                                <span class="glyphicon glyphicon glyphicon-volume-up"></span>
+                            </a>
+                            <div class="validator-container">
+                                <select name="ControlHost:lnkOOPBasic:iCoverageType" id="ControlHost_lnkOOPBasic_iCoverageType"
+                                    class="form-control selectpicker show-tick iCoverageType" data-size="15">
+                                    <option selected="selected" value="1" class="viCoverageType_1">Employee Only</option>
+                                    <option value="2" class="viCoverageType_2">Employee + 1 Dependent</option>
+                                    <option value="3" class="viCoverageType_3">Employee + 2 or More Dependents</option>
+
+                                </select>
+                                <span class="error-msg" data-toggle="tooltip" data-placement="top auto"></span>
+                            </div>
+                            <div class="hiCoverageTypeTitle" style="display: none;"></div>
+                            <div class="hiCoverageType" style="display: none;"></div>
+                        </div>
+                    </div>
+                    <div class="col-sm-12 viHealthCareUsageOwn">
+                        <div class="form-group">
+                            <label for="iHealthCareUsageOwn" class="control-label liHealthCareUsageOwn"></label>
+                            <a style="display: none;" class="vhiHealthCareUsageOwn" role="button" tabindex="0"
+                                data-toggle="popover" data-trigger="click" data-content-selector=".hiHealthCareUsageOwn"
+                                data-placement="top auto" data-width="700">
+                                <span class="glyphicon glyphicon-info-sign help-icon"></span>
+                            </a>
+                            <a style="display: none;" class="vsiHealthCareUsageOwn" role="button" tabindex="0"
+                                data-placement="top auto">
+                                <span class="glyphicon glyphicon glyphicon-volume-up"></span>
+                            </a>
+                            <div class="validator-container">
+                                <select name="ControlHost:lnkOOPBasic:iHealthCareUsageOwn" id="ControlHost_lnkOOPBasic_iHealthCareUsageOwn"
+                                    class="form-control selectpicker show-tick iHealthCareUsageOwn" data-size="15">
+                                    <option selected="selected" value="1" class="viHealthCareUsageOwn_1">Low</option>
+                                    <option value="2" class="viHealthCareUsageOwn_2">Medium</option>
+                                    <option value="3" class="viHealthCareUsageOwn_3">High</option>
+
+                                </select>
+                                <span class="error-msg" data-toggle="tooltip" data-placement="top auto"></span>
+                            </div>
+                            <div class="hiHealthCareUsageOwnTitle" style="display: none;"></div>
+                            <div class="hiHealthCareUsageOwn" style="display: none;"></div>
+                        </div>
+                    </div>
+                    <div class="col-sm-12 viHealthCareUsageSpouse">
+                        <div class="form-group">
+                            <label for="iHealthCareUsageSpouse" class="control-label liHealthCareUsageSpouse"></label>
+                            <a style="display: none;" class="vhiHealthCareUsageSpouse" role="button" tabindex="0"
+                                data-toggle="popover" data-trigger="click" data-content-selector=".hiHealthCareUsageSpouse"
+                                data-placement="top auto" data-width="700">
+                                <span class="glyphicon glyphicon-info-sign help-icon"></span>
+                            </a>
+                            <a style="display: none;" class="vsiHealthCareUsageSpouse" role="button" tabindex="0"
+                                data-placement="top auto">
+                                <span class="glyphicon glyphicon glyphicon-volume-up"></span>
+                            </a>
+                            <div class="validator-container">
+                                <select name="ControlHost:lnkOOPBasic:iHealthCareUsageSpouse" id="ControlHost_lnkOOPBasic_iHealthCareUsageSpouse"
+                                    class="form-control selectpicker show-tick iHealthCareUsageSpouse" data-size="15">
+                                    <option selected="selected" value="1" class="viHealthCareUsageSpouse_1">Low</option>
+                                    <option value="2" class="viHealthCareUsageSpouse_2">Medium</option>
+                                    <option value="3" class="viHealthCareUsageSpouse_3">High</option>
+
+                                </select>
+                                <span class="error-msg" data-toggle="tooltip" data-placement="top auto"></span>
+                            </div>
+                            <div class="hiHealthCareUsageSpouseTitle" style="display: none;"></div>
+                            <div class="hiHealthCareUsageSpouse" style="display: none;"></div>
+                        </div>
+                    </div>
+                    <div class="col-sm-12 viHealthCareUsageFamily">
+                        <div class="form-group">
+                            <label for="iHealthCareUsageFamily" class="control-label liHealthCareUsageFamily"></label>
+                            <a style="display: none;" class="vhiHealthCareUsageFamily" role="button" tabindex="0"
+                                data-toggle="popover" data-trigger="click" data-content-selector=".hiHealthCareUsageFamily"
+                                data-placement="top auto" data-width="700">
+                                <span class="glyphicon glyphicon-info-sign help-icon"></span>
+                            </a>
+                            <a style="display: none;" class="vsiHealthCareUsageFamily" role="button" tabindex="0"
+                                data-placement="top auto">
+                                <span class="glyphicon glyphicon glyphicon-volume-up"></span>
+                            </a>
+                            <div class="validator-container">
+                                <select name="ControlHost:lnkOOPBasic:iHealthCareUsageFamily" id="ControlHost_lnkOOPBasic_iHealthCareUsageFamily"
+                                    class="form-control selectpicker show-tick iHealthCareUsageFamily" data-size="15">
+                                    <option selected="selected" value="1" class="viHealthCareUsageFamily_1">Low</option>
+                                    <option value="2" class="viHealthCareUsageFamily_2">Medium</option>
+                                    <option value="3" class="viHealthCareUsageFamily_3">High</option>
+
+                                </select>
+                                <span class="error-msg" data-toggle="tooltip" data-placement="top auto"></span>
+                            </div>
+                            <div class="hiHealthCareUsageFamilyTitle" style="display: none;"></div>
+                            <div class="hiHealthCareUsageFamily" style="display: none;"></div>
+                        </div>
+                    </div>
+                    <div class="col-sm-12 viHSAContribution">
+                        <div class="form-group">
+                            <div class="validator-container">
+                                <label for="iHSAContribution" class="control-label">
+                                    <span class="liHSAContribution"></span>
+                                    <span class="sviHSAContribution"></span>
+                                </label>
+                                <a style="display: none;" class="vhiHSAContribution" role="button" tabindex="0"
+                                    data-toggle="popover" data-trigger="click" data-content-selector=".hiHSAContribution"
+                                    data-placement="top auto">
+                                    <span class="glyphicon glyphicon-info-sign help-icon"></span>
+                                </a>
+                                <a style="display: none;" class="vsiHSAContribution" role="button" tabindex="0"
+                                    data-placement="top auto">
+                                    <span class="glyphicon glyphicon glyphicon-volume-up"></span>
+                                </a>
+                                <div class="slider-control slider-iHSAContribution" data-slider-type="nouislider"></div>
+                                <input name="ControlHost:lnkOOPBasic:iHSAContribution" type="text" id="ControlHost_lnkOOPBasic_iHSAContribution"
+                                    class="form-control iHSAContribution" style="display: none" />
+                                <span class="error-msg" data-toggle="tooltip" data-placement="top auto"></span>
+                            </div>
+                            <div class="hiHSAContributionTitle" style="display: none;"></div>
+                            <div class="hiHSAContribution" style="display: none;"></div>
+                        </div>
+                    </div>
+                    <div class="col-sm-12 form-group validator-container viWellness">
+                        <span class="checkbox iWellness liWellness"><input id="ControlHost_lnkOOPBasic_iWellness" type="checkbox"
+                                name="ControlHost:lnkOOPBasic:iWellness" /><label for="ControlHost_lnkOOPBasic_iWellness">
+                            </label></span>
+                        <a style="display: none;" class="vhiWellness" role="button" tabindex="0" data-toggle="popover"
+                            data-trigger="click" data-content-selector=".hiWellness" data-placement="top auto">
+                            <span class="glyphicon glyphicon-info-sign help-icon"></span>
+                        </a>
+                        <div class="hiWellnessTitle hidden"></div>
+                        <div class="hiWellness hidden"></div>
+                        <span class="error-msg" data-toggle="tooltip" data-placement="top auto"></span>
+                    </div>
+                    <div class="col-sm-12 form-group validator-container viSpouseSurcharge">
+                        <span class="checkbox iSpouseSurcharge liSpouseSurcharge"><input id="ControlHost_lnkOOPBasic_iSpouseSurcharge"
+                                type="checkbox" name="ControlHost:lnkOOPBasic:iSpouseSurcharge" /><label for="ControlHost_lnkOOPBasic_iSpouseSurcharge">
+                            </label></span>
+                        <a style="display: none;" class="vhiSpouseSurcharge" role="button" tabindex="0" data-toggle="popover"
+                            data-trigger="click" data-content-selector=".hiSpouseSurcharge" data-placement="top auto">
+                            <span class="glyphicon glyphicon-info-sign help-icon"></span>
+                        </a>
+                        <div class="hiSpouseSurchargeTitle hidden"></div>
+                        <div class="hiSpouseSurcharge hidden"></div>
+                        <span class="error-msg" data-toggle="tooltip" data-placement="top auto"></span>
+                    </div>
+                    <div class="col-sm-12 viCurrentBalance">
+                        <div class="form-group">
+                            <label for="iCurrentBalance" class="control-label liCurrentBalance"></label>
+                            <a style="display: none;" class="vhiCurrentBalance" role="button" tabindex="0" data-toggle="popover"
+                                data-trigger="click" data-content-selector=".hiCurrentBalance" data-placement="top auto">
+                                <span class="glyphicon glyphicon-info-sign help-icon"></span>
+                            </a>
+                            <a style="display: none;" class="vsiCurrentBalance" role="button" tabindex="0"
+                                data-placement="top auto">
+                                <span class="glyphicon glyphicon glyphicon-volume-up"></span>
+                            </a>
+                            <div class="validator-container input-group">
+                                <span class="input-group-addon">$</span>
+                                <input name="ControlHost:lnkOOPBasic:iCurrentBalance" type="text" value="25000" id="ControlHost_lnkOOPBasic_iCurrentBalance"
+                                    class="form-control iCurrentBalance" />
+                                <span class="error-msg" data-toggle="tooltip" data-placement="top auto"></span>
+                            </div>
+                            <div class="hiCurrentBalanceTitle" style="display: none;"></div>
+                            <div class="hiCurrentBalance" style="display: none;"></div>
+                        </div>
+                    </div>
+                    <div class="col-sm-12 viAverageContribution">
+                        <div class="form-group">
+                            <div class="validator-container">
+                                <label for="iAverageContribution" class="control-label">
+                                    <span class="liAverageContribution"></span>
+                                    <span class="sviAverageContribution"></span>
+                                </label>
+                                <a style="display: none;" class="vhiAverageContribution" role="button" tabindex="0"
+                                    data-toggle="popover" data-trigger="click" data-content-selector=".hiAverageContribution"
+                                    data-placement="top auto">
+                                    <span class="glyphicon glyphicon-info-sign help-icon"></span>
+                                </a>
+                                <a style="display: none;" class="vsiAverageContribution" role="button" tabindex="0"
+                                    data-placement="top auto">
+                                    <span class="glyphicon glyphicon glyphicon-volume-up"></span>
+                                </a>
+                                <div class="slider-control slider-iAverageContribution" data-slider-type="nouislider"></div>
+                                <input name="ControlHost:lnkOOPBasic:iAverageContribution" type="text" value="2400" id="ControlHost_lnkOOPBasic_iAverageContribution"
+                                    class="form-control iAverageContribution" style="display: none" />
+                                <span class="error-msg" data-toggle="tooltip" data-placement="top auto"></span>
+                            </div>
+                            <div class="hiAverageContributionTitle" style="display: none;"></div>
+                            <div class="hiAverageContribution" style="display: none;"></div>
+                        </div>
+                    </div>
+                    <div class="col-sm-12 viAverageExpenses">
+                        <div class="form-group">
+                            <div class="validator-container">
+                                <label for="iAverageExpenses" class="control-label">
+                                    <span class="liAverageExpenses"></span>
+                                    <span class="sviAverageExpenses"></span>
+                                </label>
+                                <a style="display: none;" class="vhiAverageExpenses" role="button" tabindex="0"
+                                    data-toggle="popover" data-trigger="click" data-content-selector=".hiAverageExpenses"
+                                    data-placement="top auto">
+                                    <span class="glyphicon glyphicon-info-sign help-icon"></span>
+                                </a>
+                                <a style="display: none;" class="vsiAverageExpenses" role="button" tabindex="0"
+                                    data-placement="top auto">
+                                    <span class="glyphicon glyphicon glyphicon-volume-up"></span>
+                                </a>
+                                <div class="slider-control slider-iAverageExpenses" data-slider-type="nouislider"></div>
+                                <input name="ControlHost:lnkOOPBasic:iAverageExpenses" type="text" value="500" id="ControlHost_lnkOOPBasic_iAverageExpenses"
+                                    class="form-control iAverageExpenses" style="display: none" />
+                                <span class="error-msg" data-toggle="tooltip" data-placement="top auto"></span>
+                            </div>
+                            <div class="hiAverageExpensesTitle" style="display: none;"></div>
+                            <div class="hiAverageExpenses" style="display: none;"></div>
+                        </div>
+                    </div>
+                    <div class="col-sm-12 viTaxes">
+                        <div class="form-group">
+                            <div class="validator-container">
+                                <label for="iTaxes" class="control-label">
+                                    <span class="liTaxes"></span>
+                                    <span class="sviTaxes"></span>
+                                </label>
+                                <a style="display: none;" class="vhiTaxes" role="button" tabindex="0" data-toggle="popover"
+                                    data-trigger="click" data-content-selector=".hiTaxes" data-placement="top auto">
+                                    <span class="glyphicon glyphicon-info-sign help-icon"></span>
+                                </a>
+                                <a style="display: none;" class="vsiTaxes" role="button" tabindex="0" data-placement="top auto">
+                                    <span class="glyphicon glyphicon glyphicon-volume-up"></span>
+                                </a>
+                                <div class="slider-control slider-iTaxes" data-slider-type="nouislider"></div>
+                                <input name="ControlHost:lnkOOPBasic:iTaxes" type="text" value="20" id="ControlHost_lnkOOPBasic_iTaxes"
+                                    class="form-control iTaxes" style="display: none" />
+                                <span class="error-msg" data-toggle="tooltip" data-placement="top auto"></span>
+                            </div>
+                            <div class="hiTaxesTitle" style="display: none;"></div>
+                            <div class="hiTaxes" style="display: none;"></div>
+                        </div>
+                    </div>
+                    <div class="col-sm-12 viHCFSAContribution">
+                        <div class="form-group">
+                            <div class="validator-container">
+                                <label for="iHCFSAContribution" class="control-label">
+                                    <span class="liHCFSAContribution"></span>
+                                    <span class="sviHCFSAContribution"></span>
+                                </label>
+                                <a style="display: none;" class="vhiHCFSAContribution" role="button" tabindex="0"
+                                    data-toggle="popover" data-trigger="click" data-content-selector=".hiHCFSAContribution"
+                                    data-placement="top auto">
+                                    <span class="glyphicon glyphicon-info-sign help-icon"></span>
+                                </a>
+                                <a style="display: none;" class="vsiHCFSAContribution" role="button" tabindex="0"
+                                    data-placement="top auto">
+                                    <span class="glyphicon glyphicon glyphicon-volume-up"></span>
+                                </a>
+                                <div class="slider-control slider-iHCFSAContribution" data-slider-type="nouislider"></div>
+                                <input name="ControlHost:lnkOOPBasic:iHCFSAContribution" type="text" value="0" id="ControlHost_lnkOOPBasic_iHCFSAContribution"
+                                    class="form-control iHCFSAContribution" style="display: none" />
+                                <span class="error-msg" data-toggle="tooltip" data-placement="top auto"></span>
+                            </div>
+                            <div class="hiHCFSAContributionTitle" style="display: none;"></div>
+                            <div class="hiHCFSAContribution" style="display: none;"></div>
+                        </div>
+                    </div>
+
+                    <div class="col-sm-12">
+                        <a role="button" class="btn btn-primary" href_="#" data-toggle="modal" data-target="#modal-worksheet">Tell
+                            us your own health care usage</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <ul class="nav nav-tabs" role="tablist">
+            <li role="presentation" class="col-xs-12 active"><a href_="#tabResults" role="tab" data-toggle="tab" class="text-center resultTabs">Out
+                    of Pocket Costs</a></li>
+            <!--
+			<li role="presentation" class="col-xs-4"><a href="#tabProjectedHSA" role="tab" data-toggle="tab" class="text-center resultTabs">Projected HSA Savings</a></li>
+            -->
+        </ul>
+        <div class="tab-content match-height">
+            <div role="tabpanel" class="tab-pane fade in active" id="tabResults">
+                <div class="row">
+                    <div class="col-sm-12">
+                        <div class="OOPChart"></div>
+                    </div>
+                    <div class="col-sm-12">
+                        <div class="alert alert-info chart-footnote" role="alert"></div>
+                    </div>
+                </div>
+            </div>
+            <div role="tabpanel" class="tab-pane fade" id="tabProjectedHSA">
+                <div class="row">
+                    <div class="col-sm-12">
+                        <div class="HSAChart"></div>
+                    </div>
+                    <div class="col-sm-6">
+                        <div class="alert alert-info tax-savings" role="alert"></div>
+                    </div>
+                    <div class="col-sm-6">
+                        <div class="alert alert-info future-value" role="alert"></div>
+                    </div>
+
+                    <div class="col-sm-6 viYears">
+                        <div class="form-group">
+                            <div class="validator-container">
+                                <label for="iYears" class="control-label">
+                                    <span class="liYears"></span>
+                                    <span class="sviYears"></span>
+                                </label>
+                                <a style="display: none;" class="vhiYears" role="button" tabindex="0" data-toggle="popover"
+                                    data-trigger="click" data-content-selector=".hiYears" data-placement="top auto">
+                                    <span class="glyphicon glyphicon-info-sign help-icon"></span>
+                                </a>
+                                <a style="display: none;" class="vsiYears" role="button" tabindex="0" data-placement="top auto">
+                                    <span class="glyphicon glyphicon glyphicon-volume-up"></span>
+                                </a>
+                                <div class="slider-control slider-iYears" data-slider-type="nouislider"></div>
+                                <input name="ControlHost:lnkOOPBasic:iYears" type="text" value="10" id="ControlHost_lnkOOPBasic_iYears"
+                                    class="form-control iYears" style="display: none" />
+                                <span class="error-msg" data-toggle="tooltip" data-placement="top auto"></span>
+                            </div>
+                            <div class="hiYearsTitle" style="display: none;"></div>
+                            <div class="hiYears" style="display: none;"></div>
+                        </div>
+                    </div>
+                    <div class="col-sm-6 viReturn">
+                        <div class="form-group">
+                            <div class="validator-container">
+                                <label for="iReturn" class="control-label">
+                                    <span class="liReturn"></span>
+                                    <span class="sviReturn"></span>
+                                </label>
+                                <a style="display: none;" class="vhiReturn" role="button" tabindex="0" data-toggle="popover"
+                                    data-trigger="click" data-content-selector=".hiReturn" data-placement="top auto">
+                                    <span class="glyphicon glyphicon-info-sign help-icon"></span>
+                                </a>
+                                <a style="display: none;" class="vsiReturn" role="button" tabindex="0" data-placement="top auto">
+                                    <span class="glyphicon glyphicon glyphicon-volume-up"></span>
+                                </a>
+                                <div class="slider-control slider-iReturn" data-slider-type="nouislider"></div>
+                                <input name="ControlHost:lnkOOPBasic:iReturn" type="text" value="5" id="ControlHost_lnkOOPBasic_iReturn"
+                                    class="form-control iReturn" style="display: none" />
+                                <span class="error-msg" data-toggle="tooltip" data-placement="top auto"></span>
+                            </div>
+                            <div class="hiReturnTitle" style="display: none;"></div>
+                            <div class="hiReturn" style="display: none;"></div>
+                        </div>
+                    </div>
+                    <div class="col-sm-6 viAge">
+                        <div class="form-group">
+                            <div class="validator-container">
+                                <label for="iAge" class="control-label">
+                                    <span class="liAge"></span>
+                                    <span class="sviAge"></span>
+                                </label>
+                                <a style="display: none;" class="vhiAge" role="button" tabindex="0" data-toggle="popover"
+                                    data-trigger="click" data-content-selector=".hiAge" data-placement="top auto">
+                                    <span class="glyphicon glyphicon-info-sign help-icon"></span>
+                                </a>
+                                <a style="display: none;" class="vsiAge" role="button" tabindex="0" data-placement="top auto">
+                                    <span class="glyphicon glyphicon glyphicon-volume-up"></span>
+                                </a>
+                                <div class="slider-control slider-iAge" data-slider-type="nouislider"></div>
+                                <input name="ControlHost:lnkOOPBasic:iAge" type="text" value="65" id="ControlHost_lnkOOPBasic_iAge"
+                                    class="form-control iAge" style="display: none" />
+                                <span class="error-msg" data-toggle="tooltip" data-placement="top auto"></span>
+                            </div>
+                            <div class="hiAgeTitle" style="display: none;"></div>
+                            <div class="hiAge" style="display: none;"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-12">
+        <div class="row">
+            <div class="panel-group margin-bottom-lg" id="faqAccordion" style="padding-bottom: 10px;">
+                <div class="col-sm-12">
+                    <div class="panel panel-default">
+                        <div class="panel-heading faq-question">
+                            <h6 class="row panel-title">
+                                <a aria-expanded="true" class="col-xs-10" data-parent="#faqAccordion" data-toggle="collapse"
+                                    href_="#faq1">Plan Feature Comparison</a>
+                                <a aria-expanded="true" class="col-xs-2" data-parent="#faqAccordion" data-toggle="collapse"
+                                    href_="#faq1">
+                                    <span class="pull-right glyphicon glyphicon-plus" />
+                                </a>
+                            </h6>
+                        </div>
+                        <div aria-expanded="true" class="panel-collapse collapse_" id="faq1" style="">
+                            <div class="panel-body">
+                                <div class="col-sm-12 viComparePlan">
+                                    <div class="form-group">
+                                        <label for="iComparePlan" class="control-label liComparePlan"></label>
+                                        <a style="display: none;" class="vhiComparePlan" role="button" tabindex="0"
+                                            data-toggle="popover" data-trigger="click" data-content-selector=".hiComparePlan"
+                                            data-placement="top auto">
+                                            <span class="glyphicon glyphicon-info-sign help-icon"></span>
+                                        </a>
+                                        <a style="display: none;" class="vsiComparePlan" role="button" tabindex="0"
+                                            data-placement="top auto">
+                                            <span class="glyphicon glyphicon glyphicon-volume-up"></span>
+                                        </a>
+                                        <div class="validator-container">
+                                            <table id="ControlHost_lnkOOPBasic_iComparePlan" class="iComparePlan checkbox-list-horizontal"
+                                                border="0">
+                                                <tr>
+                                                    <td><span class="viComparePlan_1" data-input-name="iComparePlan1"><input
+                                                                id="ControlHost_lnkOOPBasic_iComparePlan_0" type="checkbox"
+                                                                name="ControlHost:lnkOOPBasic:iComparePlan:0" checked="checked" /><label
+                                                                for="ControlHost_lnkOOPBasic_iComparePlan_0">Participating
+                                                                Provider Network</label></span></td>
+                                                </tr>
+                                                <tr>
+                                                    <td><span class="viComparePlan_4" data-input-name="iComparePlan4"><input
+                                                                id="ControlHost_lnkOOPBasic_iComparePlan_1" type="checkbox"
+                                                                name="ControlHost:lnkOOPBasic:iComparePlan:1" checked="checked" /><label
+                                                                for="ControlHost_lnkOOPBasic_iComparePlan_1">BlueAdvantage
+                                                                HMO</label></span></td>
+                                                </tr>
+                                                <tr>
+                                                    <td><span class="viComparePlan_5" data-input-name="iComparePlan5"><input
+                                                                id="ControlHost_lnkOOPBasic_iComparePlan_2" type="checkbox"
+                                                                name="ControlHost:lnkOOPBasic:iComparePlan:2" checked="checked" /><label
+                                                                for="ControlHost_lnkOOPBasic_iComparePlan_2">Baxter
+                                                                Catastrophic Option</label></span></td>
+                                                </tr>
+                                            </table>
+                                            <span class="error-msg" data-toggle="tooltip" data-placement="top auto"></span>
+                                        </div>
+                                        <div class="hiComparePlanTitle" style="display: none;"></div>
+                                        <div class="hiComparePlan" style="display: none;"></div>
+                                    </div>
+                                </div>
+                                <div class="col-sm-12" style="margin-bottom: 10px;">
+                                    <ul class="nav nav-pills" role="tablist">
+                                        <li role="presentation" class="active featureTabs"><a data-display="#tabSummaryDetails" data-toggle="pill"
+                                                class="text-center resultTabs">In- and Out-of-Network Benefits</a></li>
+                                        <li role="presentation" class="featureTabs"><a data-display="#tabInNetwork" data-toggle="pill" class="text-center resultTabs">In-Network
+                                                Benefits</a></li>
+                                        <li role="presentation" class="featureTabs"><a data-display="#tabOutNetwork" data-toggle="pill" class="text-center resultTabs">Out-of-Network
+                                                Benefits</a></li>
+                                    </ul>
+                                </div>
+                                <script type="text/javascript">
+                                    $("li.featureTabs > a").click(function () {
+                                        var display = $(this).attr("data-display");
+                                        $("div.featureTabs" + display ).show();
+                                        $("div.featureTabs:not(" + display + ")").hide();
+                                        $("li.featureTabs").removeClass("active");
+                                        $(this).parent().addClass("active");
+                                    });
+                                </script>
+                                <div class="tab-content">
+                                    <div role="tabpanel" class="featureTabs tab-pane fade in active" id="tabSummaryDetails">
+                                        <div class="summary-details col-sm-12 compare-table"></div>
+                                    </div>
+                                    <div role="tabpanel" class="featureTabs tab-pane fade in" id="tabInNetwork">
+                                        <div class="in-network col-sm-12 compare-table"></div>
+                                    </div>
+                                    <div role="tabpanel" class="featureTabs tab-pane fade in" id="tabOutNetwork">
+                                        <div class="out-network col-sm-12 compare-table"></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="ajaxloader"></div>
+</div>
+
+<div class="modal fade skipRBLe RBLe" tabindex="-1" role="dialog" id="modal-worksheet" data-backdrop="static"
+    data-keyboard="false">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div class="pull-right">
+                    <button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-primary btn-save">Save Changes</button>
+                </div>
+                <h4 class="modal-title">Advanced Assumptions</h4>
+            </div>
+            <div class="modal-body ajaxContent">
+                <div class="row">
+                    <div class="col-sm-6"><label for="" class="control-label"></label></div>
+                    <div class="col-sm-3 hidden-xs"><label for="" class="control-label">In-Network</label></div>
+                    <div class="col-sm-3 hidden-xs"><label for="" class="control-label">Out-of-Network</label></div>
+                </div>
+                <div class="row">
+                    <div class="col-sm-6 viPreventive hidden-xs">
+                        <label for="iPreventive_In" class="control-label liPreventive">Preventative Care Visits</label>
+                    </div>
+                    <div class="col-sm-3 viPreventive viPreventive_In">
+                        <div class="form-group">
+                            <label for="iPreventive_In" class="control-label liPreventive_In visible-xs">Preventative
+                                Care Visits / In-Network</label>
+                            <a style="display: none;" class="vhiPreventive_In" role="button" tabindex="0" data-toggle="popover"
+                                data-trigger="click" data-content-selector=".hiPreventive_In" data-placement="top auto">
+                                <span class="glyphicon glyphicon-info-sign help-icon"></span>
+                            </a>
+                            <a style="display: none;" class="vsiPreventive_In" role="button" tabindex="0"
+                                data-placement="top auto">
+                                <span class="glyphicon glyphicon glyphicon-volume-up"></span>
+                            </a>
+                            <div class="validator-container">
+                                <input name="ControlHost:lnkOOPBasic:iPreventive_InD" type="text" id="ControlHost_lnkOOPBasic_iPreventive_InD"
+                                    class="form-control iPreventive_InD" />
+                                <span class="error-msg" data-toggle="tooltip" data-placement="top auto"></span>
+                            </div>
+                            <div class="hiPreventive_InTitle" style="display: none;"></div>
+                            <div class="hiPreventive_In" style="display: none;"></div>
+                        </div>
+                    </div>
+                    <div class="col-sm-3 viPreventive viPreventive_Out">
+                        <div class="form-group">
+                            <label for="iPreventive_Out" class="control-label liPreventive_Out visible-xs">Preventative
+                                Care Visits / Out-of-Network</label>
+                            <a style="display: none;" class="vhiPreventive_Out" role="button" tabindex="0" data-toggle="popover"
+                                data-trigger="click" data-content-selector=".hiPreventive_Out" data-placement="top auto">
+                                <span class="glyphicon glyphicon-info-sign help-icon"></span>
+                            </a>
+                            <a style="display: none;" class="vsiPreventive_Out" role="button" tabindex="0"
+                                data-placement="top auto">
+                                <span class="glyphicon glyphicon glyphicon-volume-up"></span>
+                            </a>
+                            <div class="validator-container">
+                                <input name="ControlHost:lnkOOPBasic:iPreventive_OutD" type="text" id="ControlHost_lnkOOPBasic_iPreventive_OutD"
+                                    class="form-control iPreventive_OutD" />
+                                <span class="error-msg" data-toggle="tooltip" data-placement="top auto"></span>
+                            </div>
+                            <div class="hiPreventive_OutTitle" style="display: none;"></div>
+                            <div class="hiPreventive_Out" style="display: none;"></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-sm-6 viPrimary hidden-xs">
+                        <label for="iPrimary_In" class="control-label liPrimary">Primary Care Physician Visits</label>
+                    </div>
+                    <div class="col-sm-3 viPrimary viPrimary_In">
+                        <div class="form-group">
+                            <label for="iPrimary_In" class="control-label liPrimary_In visible-xs">Primary Care
+                                Physician Visits / In-Network</label>
+                            <a style="display: none;" class="vhiPrimary_In" role="button" tabindex="0" data-toggle="popover"
+                                data-trigger="click" data-content-selector=".hiPrimary_In" data-placement="top auto">
+                                <span class="glyphicon glyphicon-info-sign help-icon"></span>
+                            </a>
+                            <a style="display: none;" class="vsiPrimary_In" role="button" tabindex="0" data-placement="top auto">
+                                <span class="glyphicon glyphicon glyphicon-volume-up"></span>
+                            </a>
+                            <div class="validator-container">
+                                <input name="ControlHost:lnkOOPBasic:iPrimary_InD" type="text" id="ControlHost_lnkOOPBasic_iPrimary_InD"
+                                    class="form-control iPrimary_InD" />
+                                <span class="error-msg" data-toggle="tooltip" data-placement="top auto"></span>
+                            </div>
+                            <div class="hiPrimary_InTitle" style="display: none;"></div>
+                            <div class="hiPrimary_In" style="display: none;"></div>
+                        </div>
+                    </div>
+                    <div class="col-sm-3 viPrimary viPrimary_Out">
+                        <div class="form-group">
+                            <label for="iPrimary_Out" class="control-label liPrimary_Out visible-xs">Primary Care
+                                Physician Visits / Out-of-Network</label>
+                            <a style="display: none;" class="vhiPrimary_Out" role="button" tabindex="0" data-toggle="popover"
+                                data-trigger="click" data-content-selector=".hiPrimary_Out" data-placement="top auto">
+                                <span class="glyphicon glyphicon-info-sign help-icon"></span>
+                            </a>
+                            <a style="display: none;" class="vsiPrimary_Out" role="button" tabindex="0" data-placement="top auto">
+                                <span class="glyphicon glyphicon glyphicon-volume-up"></span>
+                            </a>
+                            <div class="validator-container">
+                                <input name="ControlHost:lnkOOPBasic:iPrimary_OutD" type="text" id="ControlHost_lnkOOPBasic_iPrimary_OutD"
+                                    class="form-control iPrimary_OutD" />
+                                <span class="error-msg" data-toggle="tooltip" data-placement="top auto"></span>
+                            </div>
+                            <div class="hiPrimary_OutTitle" style="display: none;"></div>
+                            <div class="hiPrimary_Out" style="display: none;"></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-sm-6 viSpecialist hidden-xs">
+                        <label for="iSpecialist_In" class="control-label liSpecialist">Specialist Visits</label>
+                    </div>
+                    <div class="col-sm-3 viSpecialist viSpecialist_In">
+                        <div class="form-group">
+                            <label for="iSpecialist_In" class="control-label liSpecialist_In visible-xs">Specialist
+                                Visits / In-Network</label>
+                            <a style="display: none;" class="vhiSpecialist_In" role="button" tabindex="0" data-toggle="popover"
+                                data-trigger="click" data-content-selector=".hiSpecialist_In" data-placement="top auto">
+                                <span class="glyphicon glyphicon-info-sign help-icon"></span>
+                            </a>
+                            <a style="display: none;" class="vsiSpecialist_In" role="button" tabindex="0"
+                                data-placement="top auto">
+                                <span class="glyphicon glyphicon glyphicon-volume-up"></span>
+                            </a>
+                            <div class="validator-container">
+                                <input name="ControlHost:lnkOOPBasic:iSpecialist_InD" type="text" id="ControlHost_lnkOOPBasic_iSpecialist_InD"
+                                    class="form-control iSpecialist_InD" />
+                                <span class="error-msg" data-toggle="tooltip" data-placement="top auto"></span>
+                            </div>
+                            <div class="hiSpecialist_InTitle" style="display: none;"></div>
+                            <div class="hiSpecialist_In" style="display: none;"></div>
+                        </div>
+                    </div>
+                    <div class="col-sm-3 viSpecialist viSpecialist_Out">
+                        <div class="form-group">
+                            <label for="iSpecialist_Out" class="control-label liSpecialist_Out visible-xs">Specialist
+                                Visits / Out-of-Network</label>
+                            <a style="display: none;" class="vhiSpecialist_Out" role="button" tabindex="0" data-toggle="popover"
+                                data-trigger="click" data-content-selector=".hiSpecialist_Out" data-placement="top auto">
+                                <span class="glyphicon glyphicon-info-sign help-icon"></span>
+                            </a>
+                            <a style="display: none;" class="vsiSpecialist_Out" role="button" tabindex="0"
+                                data-placement="top auto">
+                                <span class="glyphicon glyphicon glyphicon-volume-up"></span>
+                            </a>
+                            <div class="validator-container">
+                                <input name="ControlHost:lnkOOPBasic:iSpecialist_OutD" type="text" id="ControlHost_lnkOOPBasic_iSpecialist_OutD"
+                                    class="form-control iSpecialist_OutD" />
+                                <span class="error-msg" data-toggle="tooltip" data-placement="top auto"></span>
+                            </div>
+                            <div class="hiSpecialist_OutTitle" style="display: none;"></div>
+                            <div class="hiSpecialist_Out" style="display: none;"></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-sm-6 viMaternity hidden-xs">
+                        <label for="iMaternity_In" class="control-label liMaternity">Maternity Visits</label>
+                    </div>
+                    <div class="col-sm-3 viMaternity viMaternity_In">
+                        <div class="form-group">
+                            <label for="iMaternity_In" class="control-label liMaternity_In visible-xs">Maternity Visits
+                                / In-Network</label>
+                            <a style="display: none;" class="vhiMaternity_In" role="button" tabindex="0" data-toggle="popover"
+                                data-trigger="click" data-content-selector=".hiMaternity_In" data-placement="top auto">
+                                <span class="glyphicon glyphicon-info-sign help-icon"></span>
+                            </a>
+                            <a style="display: none;" class="vsiMaternity_In" role="button" tabindex="0" data-placement="top auto">
+                                <span class="glyphicon glyphicon glyphicon-volume-up"></span>
+                            </a>
+                            <div class="validator-container">
+                                <input name="ControlHost:lnkOOPBasic:iMaternity_InD" type="text" id="ControlHost_lnkOOPBasic_iMaternity_InD"
+                                    class="form-control iMaternity_InD" />
+                                <span class="error-msg" data-toggle="tooltip" data-placement="top auto"></span>
+                            </div>
+                            <div class="hiMaternity_InTitle" style="display: none;"></div>
+                            <div class="hiMaternity_In" style="display: none;"></div>
+                        </div>
+                    </div>
+                    <div class="col-sm-3 viMaternity viMaternity_Out">
+                        <div class="form-group">
+                            <label for="iMaternity_Out" class="control-label liMaternity_Out visible-xs">Maternity
+                                Visits / Out-of-Network</label>
+                            <a style="display: none;" class="vhiMaternity_Out" role="button" tabindex="0" data-toggle="popover"
+                                data-trigger="click" data-content-selector=".hiMaternity_Out" data-placement="top auto">
+                                <span class="glyphicon glyphicon-info-sign help-icon"></span>
+                            </a>
+                            <a style="display: none;" class="vsiMaternity_Out" role="button" tabindex="0"
+                                data-placement="top auto">
+                                <span class="glyphicon glyphicon glyphicon-volume-up"></span>
+                            </a>
+                            <div class="validator-container">
+                                <input name="ControlHost:lnkOOPBasic:iMaternity_OutD" type="text" id="ControlHost_lnkOOPBasic_iMaternity_OutD"
+                                    class="form-control iMaternity_OutD" />
+                                <span class="error-msg" data-toggle="tooltip" data-placement="top auto"></span>
+                            </div>
+                            <div class="hiMaternity_OutTitle" style="display: none;"></div>
+                            <div class="hiMaternity_Out" style="display: none;"></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-sm-6 viEmergency hidden-xs">
+                        <label for="iEmergency_In" class="control-label liEmergency">Emergency Room Visits</label>
+                    </div>
+                    <div class="col-sm-3 viEmergency viEmergency_In">
+                        <div class="form-group">
+                            <label for="iEmergency_In" class="control-label liEmergency_In visible-xs">Emergency Room
+                                Visits / In-Network</label>
+                            <a style="display: none;" class="vhiEmergency_In" role="button" tabindex="0" data-toggle="popover"
+                                data-trigger="click" data-content-selector=".hiEmergency_In" data-placement="top auto">
+                                <span class="glyphicon glyphicon-info-sign help-icon"></span>
+                            </a>
+                            <a style="display: none;" class="vsiEmergency_In" role="button" tabindex="0" data-placement="top auto">
+                                <span class="glyphicon glyphicon glyphicon-volume-up"></span>
+                            </a>
+                            <div class="validator-container">
+                                <input name="ControlHost:lnkOOPBasic:iEmergency_InD" type="text" id="ControlHost_lnkOOPBasic_iEmergency_InD"
+                                    class="form-control iEmergency_InD" />
+                                <span class="error-msg" data-toggle="tooltip" data-placement="top auto"></span>
+                            </div>
+                            <div class="hiEmergency_InTitle" style="display: none;"></div>
+                            <div class="hiEmergency_In" style="display: none;"></div>
+                        </div>
+                    </div>
+                    <div class="col-sm-3 viEmergency viEmergency_Out">
+                        <div class="form-group">
+                            <label for="iEmergency_Out" class="control-label liEmergency_Out visible-xs">Emergency Room
+                                Visits / Out-of-Network</label>
+                            <a style="display: none;" class="vhiEmergency_Out" role="button" tabindex="0" data-toggle="popover"
+                                data-trigger="click" data-content-selector=".hiEmergency_Out" data-placement="top auto">
+                                <span class="glyphicon glyphicon-info-sign help-icon"></span>
+                            </a>
+                            <a style="display: none;" class="vsiEmergency_Out" role="button" tabindex="0"
+                                data-placement="top auto">
+                                <span class="glyphicon glyphicon glyphicon-volume-up"></span>
+                            </a>
+                            <div class="validator-container">
+                                <input name="ControlHost:lnkOOPBasic:iEmergency_OutD" type="text" id="ControlHost_lnkOOPBasic_iEmergency_OutD"
+                                    class="form-control iEmergency_OutD" />
+                                <span class="error-msg" data-toggle="tooltip" data-placement="top auto"></span>
+                            </div>
+                            <div class="hiEmergency_OutTitle" style="display: none;"></div>
+                            <div class="hiEmergency_Out" style="display: none;"></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-sm-6 viInpatient hidden-xs">
+                        <label for="iInpatient_In" class="control-label liInpatient">Inpatient Hospital Stay</label>
+                    </div>
+                    <div class="col-sm-3 viInpatient viInpatient_In">
+                        <div class="form-group">
+                            <label for="iInpatient_In" class="control-label liInpatient_In visible-xs">Inpatient
+                                Hospital Stay / In-Network</label>
+                            <a style="display: none;" class="vhiInpatient_In" role="button" tabindex="0" data-toggle="popover"
+                                data-trigger="click" data-content-selector=".hiInpatient_In" data-placement="top auto">
+                                <span class="glyphicon glyphicon-info-sign help-icon"></span>
+                            </a>
+                            <a style="display: none;" class="vsiInpatient_In" role="button" tabindex="0" data-placement="top auto">
+                                <span class="glyphicon glyphicon glyphicon-volume-up"></span>
+                            </a>
+                            <div class="validator-container">
+                                <input name="ControlHost:lnkOOPBasic:iInpatient_InD" type="text" id="ControlHost_lnkOOPBasic_iInpatient_InD"
+                                    class="form-control iInpatient_InD" />
+                                <span class="error-msg" data-toggle="tooltip" data-placement="top auto"></span>
+                            </div>
+                            <div class="hiInpatient_InTitle" style="display: none;"></div>
+                            <div class="hiInpatient_In" style="display: none;"></div>
+                        </div>
+                    </div>
+                    <div class="col-sm-3 viInpatient viInpatient_Out">
+                        <div class="form-group">
+                            <label for="iInpatient_Out" class="control-label liInpatient_Out visible-xs">Inpatient
+                                Hospital Stay / Out-of-Network</label>
+                            <a style="display: none;" class="vhiInpatient_Out" role="button" tabindex="0" data-toggle="popover"
+                                data-trigger="click" data-content-selector=".hiInpatient_Out" data-placement="top auto">
+                                <span class="glyphicon glyphicon-info-sign help-icon"></span>
+                            </a>
+                            <a style="display: none;" class="vsiInpatient_Out" role="button" tabindex="0"
+                                data-placement="top auto">
+                                <span class="glyphicon glyphicon glyphicon-volume-up"></span>
+                            </a>
+                            <div class="validator-container">
+                                <input name="ControlHost:lnkOOPBasic:iInpatient_OutD" type="text" id="ControlHost_lnkOOPBasic_iInpatient_OutD"
+                                    class="form-control iInpatient_OutD" />
+                                <span class="error-msg" data-toggle="tooltip" data-placement="top auto"></span>
+                            </div>
+                            <div class="hiInpatient_OutTitle" style="display: none;"></div>
+                            <div class="hiInpatient_Out" style="display: none;"></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-sm-6 viOutpatient hidden-xs">
+                        <label for="iOutpatient_In" class="control-label liOutpatient">Procedures on Outpatient Basis</label>
+                    </div>
+                    <div class="col-sm-3 viOutpatient viOutpatient_In">
+                        <div class="form-group">
+                            <label for="iOutpatient_In" class="control-label liOutpatient_In visible-xs">Procedures on
+                                Outpatient Basis / In-Network</label>
+                            <a style="display: none;" class="vhiOutpatient_In" role="button" tabindex="0" data-toggle="popover"
+                                data-trigger="click" data-content-selector=".hiOutpatient_In" data-placement="top auto">
+                                <span class="glyphicon glyphicon-info-sign help-icon"></span>
+                            </a>
+                            <a style="display: none;" class="vsiOutpatient_In" role="button" tabindex="0"
+                                data-placement="top auto">
+                                <span class="glyphicon glyphicon glyphicon-volume-up"></span>
+                            </a>
+                            <div class="validator-container">
+                                <input name="ControlHost:lnkOOPBasic:iOutpatient_InD" type="text" id="ControlHost_lnkOOPBasic_iOutpatient_InD"
+                                    class="form-control iOutpatient_InD" />
+                                <span class="error-msg" data-toggle="tooltip" data-placement="top auto"></span>
+                            </div>
+                            <div class="hiOutpatient_InTitle" style="display: none;"></div>
+                            <div class="hiOutpatient_In" style="display: none;"></div>
+                        </div>
+                    </div>
+                    <div class="col-sm-3 viOutpatient viOutpatient_Out">
+                        <div class="form-group">
+                            <label for="iOutpatient_Out" class="control-label liOutpatient_Out visible-xs">Procedures
+                                on Outpatient Basis / Out-of-Network</label>
+                            <a style="display: none;" class="vhiOutpatient_Out" role="button" tabindex="0" data-toggle="popover"
+                                data-trigger="click" data-content-selector=".hiOutpatient_Out" data-placement="top auto">
+                                <span class="glyphicon glyphicon-info-sign help-icon"></span>
+                            </a>
+                            <a style="display: none;" class="vsiOutpatient_Out" role="button" tabindex="0"
+                                data-placement="top auto">
+                                <span class="glyphicon glyphicon glyphicon-volume-up"></span>
+                            </a>
+                            <div class="validator-container">
+                                <input name="ControlHost:lnkOOPBasic:iOutpatient_OutD" type="text" id="ControlHost_lnkOOPBasic_iOutpatient_OutD"
+                                    class="form-control iOutpatient_OutD" />
+                                <span class="error-msg" data-toggle="tooltip" data-placement="top auto"></span>
+                            </div>
+                            <div class="hiOutpatient_OutTitle" style="display: none;"></div>
+                            <div class="hiOutpatient_Out" style="display: none;"></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-sm-6 viLab hidden-xs">
+                        <label for="iLab_In" class="control-label liLab">Lab Work and X-rays</label>
+                    </div>
+                    <div class="col-sm-3 viLab viLab_In">
+                        <div class="form-group">
+                            <label for="iLab_In" class="control-label liLab_In visible-xs">Procedures on Lab Basis /
+                                In-Network</label>
+                            <a style="display: none;" class="vhiLab_In" role="button" tabindex="0" data-toggle="popover"
+                                data-trigger="click" data-content-selector=".hiLab_In" data-placement="top auto">
+                                <span class="glyphicon glyphicon-info-sign help-icon"></span>
+                            </a>
+                            <a style="display: none;" class="vsiLab_In" role="button" tabindex="0" data-placement="top auto">
+                                <span class="glyphicon glyphicon glyphicon-volume-up"></span>
+                            </a>
+                            <div class="validator-container">
+                                <input name="ControlHost:lnkOOPBasic:iLab_InD" type="text" id="ControlHost_lnkOOPBasic_iLab_InD"
+                                    class="form-control iLab_InD" />
+                                <span class="error-msg" data-toggle="tooltip" data-placement="top auto"></span>
+                            </div>
+                            <div class="hiLab_InTitle" style="display: none;"></div>
+                            <div class="hiLab_In" style="display: none;"></div>
+                        </div>
+                    </div>
+                    <div class="col-sm-3 viLab viLab_Out">
+                        <div class="form-group">
+                            <label for="iLab_Out" class="control-label liLab_Out visible-xs">Procedures on Lab Basis /
+                                Out-of-Network</label>
+                            <a style="display: none;" class="vhiLab_Out" role="button" tabindex="0" data-toggle="popover"
+                                data-trigger="click" data-content-selector=".hiLab_Out" data-placement="top auto">
+                                <span class="glyphicon glyphicon-info-sign help-icon"></span>
+                            </a>
+                            <a style="display: none;" class="vsiLab_Out" role="button" tabindex="0" data-placement="top auto">
+                                <span class="glyphicon glyphicon glyphicon-volume-up"></span>
+                            </a>
+                            <div class="validator-container">
+                                <input name="ControlHost:lnkOOPBasic:iLab_OutD" type="text" id="ControlHost_lnkOOPBasic_iLab_OutD"
+                                    class="form-control iLab_OutD" />
+                                <span class="error-msg" data-toggle="tooltip" data-placement="top auto"></span>
+                            </div>
+                            <div class="hiLab_OutTitle" style="display: none;"></div>
+                            <div class="hiLab_Out" style="display: none;"></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-sm-6 viMHInpatient hidden-xs">
+                        <label for="iMHInpatient_In" class="control-label liMHInpatient">Mental Health Inpatient</label>
+                    </div>
+                    <div class="col-sm-3 viMHInpatient viMHInpatient_In">
+                        <div class="form-group">
+                            <label for="iMHInpatient_In" class="control-label liMHInpatient_In visible-xs">Mental
+                                Health Inpatient / In-Network</label>
+                            <a style="display: none;" class="vhiMHInpatient_In" role="button" tabindex="0" data-toggle="popover"
+                                data-trigger="click" data-content-selector=".hiMHInpatient_In" data-placement="top auto">
+                                <span class="glyphicon glyphicon-info-sign help-icon"></span>
+                            </a>
+                            <a style="display: none;" class="vsiMHInpatient_In" role="button" tabindex="0"
+                                data-placement="top auto">
+                                <span class="glyphicon glyphicon glyphicon-volume-up"></span>
+                            </a>
+                            <div class="validator-container">
+                                <input name="ControlHost:lnkOOPBasic:iMHInpatient_InD" type="text" id="ControlHost_lnkOOPBasic_iMHInpatient_InD"
+                                    class="form-control iMHInpatient_InD" />
+                                <span class="error-msg" data-toggle="tooltip" data-placement="top auto"></span>
+                            </div>
+                            <div class="hiMHInpatient_InTitle" style="display: none;"></div>
+                            <div class="hiMHInpatient_In" style="display: none;"></div>
+                        </div>
+                    </div>
+                    <div class="col-sm-3 viMHInpatient viMHInpatient_Out">
+                        <div class="form-group">
+                            <label for="iMHInpatient_Out" class="control-label liMHInpatient_Out visible-xs">Mental
+                                Health Inpatient / Out-of-Network</label>
+                            <a style="display: none;" class="vhiMHInpatient_Out" role="button" tabindex="0" data-toggle="popover"
+                                data-trigger="click" data-content-selector=".hiMHInpatient_Out" data-placement="top auto">
+                                <span class="glyphicon glyphicon-info-sign help-icon"></span>
+                            </a>
+                            <a style="display: none;" class="vsiMHInpatient_Out" role="button" tabindex="0"
+                                data-placement="top auto">
+                                <span class="glyphicon glyphicon glyphicon-volume-up"></span>
+                            </a>
+                            <div class="validator-container">
+                                <input name="ControlHost:lnkOOPBasic:iMHInpatient_OutD" type="text" id="ControlHost_lnkOOPBasic_iMHInpatient_OutD"
+                                    class="form-control iMHInpatient_OutD" />
+                                <span class="error-msg" data-toggle="tooltip" data-placement="top auto"></span>
+                            </div>
+                            <div class="hiMHInpatient_OutTitle" style="display: none;"></div>
+                            <div class="hiMHInpatient_Out" style="display: none;"></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-sm-6 viMHOutpatient hidden-xs">
+                        <label for="iMHOutpatient_In" class="control-label liMHOutpatient">Mental Health Individual
+                            Outpatient</label>
+                    </div>
+                    <div class="col-sm-3 viMHOutpatient viMHOutpatient_In">
+                        <div class="form-group">
+                            <label for="iMHOutpatient_In" class="control-label liMHOutpatient_In visible-xs">Mental
+                                Health Individual Outpatient / In-Network</label>
+                            <a style="display: none;" class="vhiMHOutpatient_In" role="button" tabindex="0" data-toggle="popover"
+                                data-trigger="click" data-content-selector=".hiMHOutpatient_In" data-placement="top auto">
+                                <span class="glyphicon glyphicon-info-sign help-icon"></span>
+                            </a>
+                            <a style="display: none;" class="vsiMHOutpatient_In" role="button" tabindex="0"
+                                data-placement="top auto">
+                                <span class="glyphicon glyphicon glyphicon-volume-up"></span>
+                            </a>
+                            <div class="validator-container">
+                                <input name="ControlHost:lnkOOPBasic:iMHOutpatient_InD" type="text" id="ControlHost_lnkOOPBasic_iMHOutpatient_InD"
+                                    class="form-control iMHOutpatient_InD" />
+                                <span class="error-msg" data-toggle="tooltip" data-placement="top auto"></span>
+                            </div>
+                            <div class="hiMHOutpatient_InTitle" style="display: none;"></div>
+                            <div class="hiMHOutpatient_In" style="display: none;"></div>
+                        </div>
+                    </div>
+                    <div class="col-sm-3 viMHOutpatient viMHOutpatient_Out">
+                        <div class="form-group">
+                            <label for="iMHOutpatient_Out" class="control-label liMHOutpatient_Out visible-xs">Mental
+                                Health Individual Outpatient / Out-of-Network</label>
+                            <a style="display: none;" class="vhiMHOutpatient_Out" role="button" tabindex="0"
+                                data-toggle="popover" data-trigger="click" data-content-selector=".hiMHOutpatient_Out"
+                                data-placement="top auto">
+                                <span class="glyphicon glyphicon-info-sign help-icon"></span>
+                            </a>
+                            <a style="display: none;" class="vsiMHOutpatient_Out" role="button" tabindex="0"
+                                data-placement="top auto">
+                                <span class="glyphicon glyphicon glyphicon-volume-up"></span>
+                            </a>
+                            <div class="validator-container">
+                                <input name="ControlHost:lnkOOPBasic:iMHOutpatient_OutD" type="text" id="ControlHost_lnkOOPBasic_iMHOutpatient_OutD"
+                                    class="form-control iMHOutpatient_OutD" />
+                                <span class="error-msg" data-toggle="tooltip" data-placement="top auto"></span>
+                            </div>
+                            <div class="hiMHOutpatient_OutTitle" style="display: none;"></div>
+                            <div class="hiMHOutpatient_Out" style="display: none;"></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-sm-12 hidden-xs"><br /></div>
+
+                    <div class="col-sm-6"><label for="" class="control-label"><u>Prescriptions</u></label></div>
+                    <div class="col-sm-3 hidden-xs"><label for="" class="control-label">Retail</label></div>
+                    <div class="col-sm-3 hidden-xs"><label for="" class="control-label">Mail Order</label></div>
+
+                    <div class="col-sm-6 viRxGeneric hidden-xs">
+                        <label for="iRxGeneric_Retail" class="control-label liRxGeneric">Generic</label>
+                    </div>
+                    <div class="col-sm-3 viRxGeneric viRxGeneric_Retail">
+                        <div class="form-group">
+                            <label for="iRxGeneric_Retail" class="control-label liRxGeneric_Retail visible-xs">Generic
+                                / Retail</label>
+                            <a style="display: none;" class="vhiRxGeneric_Retail" role="button" tabindex="0"
+                                data-toggle="popover" data-trigger="click" data-content-selector=".hiRxGeneric_Retail"
+                                data-placement="top auto">
+                                <span class="glyphicon glyphicon-info-sign help-icon"></span>
+                            </a>
+                            <a style="display: none;" class="vsiRxGeneric_Retail" role="button" tabindex="0"
+                                data-placement="top auto">
+                                <span class="glyphicon glyphicon glyphicon-volume-up"></span>
+                            </a>
+                            <div class="validator-container">
+                                <input name="ControlHost:lnkOOPBasic:iRxGeneric_RetailD" type="text" id="ControlHost_lnkOOPBasic_iRxGeneric_RetailD"
+                                    class="form-control iRxGeneric_RetailD" />
+                                <span class="error-msg" data-toggle="tooltip" data-placement="top auto"></span>
+                            </div>
+                            <div class="hiRxGeneric_RetailTitle" style="display: none;"></div>
+                            <div class="hiRxGeneric_Retail" style="display: none;"></div>
+                        </div>
+                    </div>
+                    <div class="col-sm-3 viRxGeneric viRxGeneric_Mail">
+                        <div class="form-group">
+                            <label for="iRxGeneric_Mail" class="control-label liRxGeneric_Mail visible-xs">Generic /
+                                Mail Order</label>
+                            <a style="display: none;" class="vhiRxGeneric_Mail" role="button" tabindex="0" data-toggle="popover"
+                                data-trigger="click" data-content-selector=".hiRxGeneric_Mail" data-placement="top auto">
+                                <span class="glyphicon glyphicon-info-sign help-icon"></span>
+                            </a>
+                            <a style="display: none;" class="vsiRxGeneric_Mail" role="button" tabindex="0"
+                                data-placement="top auto">
+                                <span class="glyphicon glyphicon glyphicon-volume-up"></span>
+                            </a>
+                            <div class="validator-container">
+                                <input name="ControlHost:lnkOOPBasic:iRxGeneric_MailD" type="text" id="ControlHost_lnkOOPBasic_iRxGeneric_MailD"
+                                    class="form-control iRxGeneric_MailD" />
+                                <span class="error-msg" data-toggle="tooltip" data-placement="top auto"></span>
+                            </div>
+                            <div class="hiRxGeneric_MailTitle" style="display: none;"></div>
+                            <div class="hiRxGeneric_Mail" style="display: none;"></div>
+                        </div>
+                    </div>
+
+                    <div class="col-sm-6 viRxPreferred hidden-xs">
+                        <label for="iRxPreferred_Retail" class="control-label liRxPreferred">Preferred Brand Name</label>
+                    </div>
+                    <div class="col-sm-3 viRxPreferred viRxPreferred_Retail">
+                        <div class="form-group">
+                            <label for="iRxPreferred_Retail" class="control-label liRxPreferred_Retail visible-xs">Preferred
+                                Brand Name / Retail</label>
+                            <a style="display: none;" class="vhiRxPreferred_Retail" role="button" tabindex="0"
+                                data-toggle="popover" data-trigger="click" data-content-selector=".hiRxPreferred_Retail"
+                                data-placement="top auto">
+                                <span class="glyphicon glyphicon-info-sign help-icon"></span>
+                            </a>
+                            <a style="display: none;" class="vsiRxPreferred_Retail" role="button" tabindex="0"
+                                data-placement="top auto">
+                                <span class="glyphicon glyphicon glyphicon-volume-up"></span>
+                            </a>
+                            <div class="validator-container">
+                                <input name="ControlHost:lnkOOPBasic:iRxPreferred_RetailD" type="text" id="ControlHost_lnkOOPBasic_iRxPreferred_RetailD"
+                                    class="form-control iRxPreferred_RetailD" />
+                                <span class="error-msg" data-toggle="tooltip" data-placement="top auto"></span>
+                            </div>
+                            <div class="hiRxPreferred_RetailTitle" style="display: none;"></div>
+                            <div class="hiRxPreferred_Retail" style="display: none;"></div>
+                        </div>
+                    </div>
+                    <div class="col-sm-3 viRxPreferred viRxPreferred_Mail">
+                        <div class="form-group">
+                            <label for="iRxPreferred_Mail" class="control-label liRxPreferred_Mail visible-xs">Preferred
+                                Brand Name / Mail Order</label>
+                            <a style="display: none;" class="vhiRxPreferred_Mail" role="button" tabindex="0"
+                                data-toggle="popover" data-trigger="click" data-content-selector=".hiRxPreferred_Mail"
+                                data-placement="top auto">
+                                <span class="glyphicon glyphicon-info-sign help-icon"></span>
+                            </a>
+                            <a style="display: none;" class="vsiRxPreferred_Mail" role="button" tabindex="0"
+                                data-placement="top auto">
+                                <span class="glyphicon glyphicon glyphicon-volume-up"></span>
+                            </a>
+                            <div class="validator-container">
+                                <input name="ControlHost:lnkOOPBasic:iRxPreferred_MailD" type="text" id="ControlHost_lnkOOPBasic_iRxPreferred_MailD"
+                                    class="form-control iRxPreferred_MailD" />
+                                <span class="error-msg" data-toggle="tooltip" data-placement="top auto"></span>
+                            </div>
+                            <div class="hiRxPreferred_MailTitle" style="display: none;"></div>
+                            <div class="hiRxPreferred_Mail" style="display: none;"></div>
+                        </div>
+                    </div>
+
+                    <div class="col-sm-6 viRxNonPreferred hidden-xs">
+                        <label for="iRxNonPreferred_Retail" class="control-label liRxNonPreferred">Non-preferred</label>
+                    </div>
+                    <div class="col-sm-3 viRxNonPreferred viRxNonPreferred_Retail">
+                        <div class="form-group">
+                            <label for="iRxNonPreferred_Retail" class="control-label liRxNonPreferred_Retail visible-xs">Non-preferred
+                                / Retail</label>
+                            <a style="display: none;" class="vhiRxNonPreferred_Retail" role="button" tabindex="0"
+                                data-toggle="popover" data-trigger="click" data-content-selector=".hiRxNonPreferred_Retail"
+                                data-placement="top auto">
+                                <span class="glyphicon glyphicon-info-sign help-icon"></span>
+                            </a>
+                            <a style="display: none;" class="vsiRxNonPreferred_Retail" role="button" tabindex="0"
+                                data-placement="top auto">
+                                <span class="glyphicon glyphicon glyphicon-volume-up"></span>
+                            </a>
+                            <div class="validator-container">
+                                <input name="ControlHost:lnkOOPBasic:iRxNonPreferred_RetailD" type="text" id="ControlHost_lnkOOPBasic_iRxNonPreferred_RetailD"
+                                    class="form-control iRxNonPreferred_RetailD" />
+                                <span class="error-msg" data-toggle="tooltip" data-placement="top auto"></span>
+                            </div>
+                            <div class="hiRxNonPreferred_RetailTitle" style="display: none;"></div>
+                            <div class="hiRxNonPreferred_Retail" style="display: none;"></div>
+                        </div>
+                    </div>
+                    <div class="col-sm-3 viRxNonPreferred viRxNonPreferred_Mail">
+                        <div class="form-group">
+                            <label for="iRxNonPreferred_Mail" class="control-label liRxNonPreferred_Mail visible-xs">Non-preferred
+                                / Mail Order</label>
+                            <a style="display: none;" class="vhiRxNonPreferred_Mail" role="button" tabindex="0"
+                                data-toggle="popover" data-trigger="click" data-content-selector=".hiRxNonPreferred_Mail"
+                                data-placement="top auto">
+                                <span class="glyphicon glyphicon-info-sign help-icon"></span>
+                            </a>
+                            <a style="display: none;" class="vsiRxNonPreferred_Mail" role="button" tabindex="0"
+                                data-placement="top auto">
+                                <span class="glyphicon glyphicon glyphicon-volume-up"></span>
+                            </a>
+                            <div class="validator-container">
+                                <input name="ControlHost:lnkOOPBasic:iRxNonPreferred_MailD" type="text" id="ControlHost_lnkOOPBasic_iRxNonPreferred_MailD"
+                                    class="form-control iRxNonPreferred_MailD" />
+                                <span class="error-msg" data-toggle="tooltip" data-placement="top auto"></span>
+                            </div>
+                            <div class="hiRxNonPreferred_MailTitle" style="display: none;"></div>
+                            <div class="hiRxNonPreferred_Mail" style="display: none;"></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-xs-12">
+                    <div id="ControlHost_lnkOOPBasic__ctl1_BTRValidationTable" class="ModelerValidationTable alert alert-danger"
+                        role="alert" title="Please review the following issues:" style="display: none;">
+                        <p><strong>Please review the following issues:</strong></p>
+                        <div id="ControlHost_lnkOOPBasic__ctl1__ctl1" style="display:none;">
+
+                        </div>
+                    </div>
+                </div>
+                <div class="ajaxloader"></div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary btn-save">Save Changes</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-xs-12">
+        <div id="ControlHost_lnkOOPBasic__ctl2_BTRValidationTable" class="ModelerValidationTable alert alert-danger"
+            role="alert" title="Please review the following issues:" style="display: none;">
+            <p><strong>Please review the following issues:</strong></p>
+            <div id="ControlHost_lnkOOPBasic__ctl2__ctl1" style="display:none;">
+
+            </div>
+        </div>
+    </div>
+</div>
+<div class="hidden" rbl-calcengine="KATApp_Sample2_CE"></div>

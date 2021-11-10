@@ -103,7 +103,7 @@
                     -->
                 </div>
                 <div class="text-center">
-                    <a class="btn btn-primary" href="javascript:$('a[ni-key=RETIREMENT_PLANNING]').trigger('click')">
+                    <a class="btn btn-primary" href="javascript:return false;" onclick="$('a[ni-key=RETIREMENT_PLANNING]').trigger('click')">
                         <span rbl-value="linkRetPlan"></span>
                     </a>
                 </div>

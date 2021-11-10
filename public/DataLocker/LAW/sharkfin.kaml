@@ -683,9 +683,6 @@
                 application.options, 
 				{
                     view: "LAW:IRP",
-                    debug: {
-                        saveConfigureUiCalculationLocation: null
-                    },
 					defaultInputs: {
 						iInputsFromModeler: 1,
 						iCurrentAge: application.getResultValue("variable", "iCurrentAge", "value") * 1,

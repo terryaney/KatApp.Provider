@@ -1,5 +1,5 @@
 
-<rbl-config calcengine="Conduent_FindDr_SE" templates="Standard_Templates,Input_TemplatesBS4"></rbl-config>
+<rbl-config calcengine="Conduent_FindDr_SE" templates="Standard_Templates"></rbl-config>
 
 <style>
 
@@ -929,7 +929,7 @@
 		view.on( "onCalculation.RBLe", function( event, calculationResults, calcOptions, application ) {
 			
 			//set up filter dismiss events
-			$(".specialties-selected .btn", view).on('click', function(){
+			$(".specialties-selected .btn", view).off('click.dr').on('click.dr', function(){
 				var el = $(this);
 				if ( el.hasClass("btn-info") ) {
 					var vals = $("select.ispecialtyIds_groups", view).selectpicker('val');
@@ -964,7 +964,7 @@
 				}
 				el.remove();
 			});
-			$(".plans-selected button", view).on('click', function(){
+			$(".plans-selected button", view).off('click.dr').on('click.dr', function(){
 				var el = $(this);
 				var vals = $("select.inetworkIds", view).selectpicker('val');
 				$("select.inetworkIds", view).selectpicker('val', vals.filter( function(i) {return (i != el.data("selectid"));}));
@@ -974,7 +974,7 @@
 			});
 
 			//setup events on input labels (why not on configureui? didn't work)
-			$("[data-inputname=iradiusInMiles] a", view).attr("href","#").on('click', function(e){
+			$("[data-inputname=iradiusInMiles] a", view).attr("href","#").off('click.dr').on('click.dr', function(e){
 				$("[rbl-display=vizipCode]", view).slideDown();
 				$(".izipCode", view).focus().select();
 			});
@@ -984,7 +984,7 @@
 			$(".result-pagenav .nextpage a", view).data("path", application.getResultValue("ejs-output", "groupedByProviderNext", "value", "") );
 			$(".iApiPath", view).val("");
 
-			$("a.otherlocations, a.doctor", view).on('click', function(){
+			$("a.otherlocations, a.doctor", view).off('click.dr').on('click.dr', function(){
 				var providerId = $(this).data("id");
 				//weird hack: must assign it twice.
 				doctor = application.getResultRow("zelis-groupedByProvider", providerId, "providerId");
@@ -1005,7 +1005,7 @@
 			});
 
 			//data issues; disabled for now
-			$("a.show-hospitalproviders", view).on('click', function(){
+			$("a.show-hospitalproviders", view).off('click.dr').on('click.dr', function(){
 				$(".iproviderName", view).val("");
 				$(".iproviderTypeIds", view).selectpicker('val','6,3,13,4,5,10,2,14,16');
 				$(".ihospitalAffiliationIds", view).val( $(this).data("id") );
@@ -1015,7 +1015,7 @@
 
 			//favorites
 			// add toggle to each doctor
-			$("input.favorite", view).click(function() {
+			$("input.favorite", view).off('click.dr').on('click.dr', function() {
 				if ( $(this).prop("checked") ) {
 					favs[ $(this).data("id") ] = true;
 				}
@@ -1118,10 +1118,7 @@
 		view.on( "onConfigureUICalculation.RBLe", function( event, calculationResults, calcOptions, application ) {
 	
 			//search when listbox closed
-			$("select.inetworkIds", view).on('hidden.bs.select', function () {
-				application.calculate();
-			});
-			$("select.ispecialtyIds_groups", view).on('hidden.bs.select', function () {
+			$("select.inetworkIds, select.ispecialtyIds_groups", view).on('hidden.bs.select', function () {
 				application.calculate();
 			});
 			//change standard close button to ">" for network

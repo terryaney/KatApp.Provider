@@ -51,9 +51,7 @@
         border: 2px solid #888;
         width: 80%; /* Could be more or less, depending on screen size */
     }
-</style>
 
-<style type="text/css">
     /*sharkfin*/
     /* noUIslider */
     .noUi-handle div {
@@ -718,31 +716,31 @@
 </script>
 
 <rbl-template tid="input-select"> <!--move some version of this 'simple' select to standard? -->
-    <div class="v{inputname}" style="display_: none;">
+    <div class="v{inputname}" rbl-display="v{inputname}">
         <div class="form-group">
             <div class="col-sm-8">
-                <label for="{inputname}" class="control-label l{inputname}">{inputname} Label</label>
-                <a style="display: none;" class="vh{inputname}" role="button" tabindex="0" data-toggle="popover" data-trigger="click" data-content-selector=".h{inputname}" data-placement="top" data-original-title="" title="">
-                    <span class="glyphicons glyphicons-question-sign"></span>
+                <label for="{inputname}" class="control-label l{inputname}" rbl-value="l{inputname}">{inputname} Label</label>
+                <a style="display: none;" class="vh{inputname}" rbl-display="vh{inputname}" role="button" tabindex="0" data-toggle="popover" data-trigger="click" data-content-selector=".h{inputname}" data-placement="top" data-original-title="" title="">
+                    <span class="glyphicon glyphicon-info-sign help-icon"></span>
                 </a>
             </div>
             <div class="col-sm-4">
                 <select class="form-control {inputname}" id_="{inputname}" name="{inputname}">
                 </select>
             </div>
-            <div class="h{inputname}Title" style="display: none;"></div>
-            <div class="h{inputname}" style="display: none;"></div>
+            <div class="h{inputname}Title" rbl-value="h{inputname}Title" style="display: none;"></div>
+            <div class="h{inputname}" rbl-value="h{inputname}" style="display: none;"></div>
         </div>
     </div>
 </rbl-template>
 
 <rbl-template tid="input-textbox2" type="katapp-textbox">
-    <div class="v{inputname}">
+    <div class="v{inputname}" rbl-display="v{inputname}">
         <div class="form-group">
             <div class="col-sm-8">
-                <label for="{inputname}" class="control-label l{inputname}"></label>
-                <a class="vh{inputname}" role="button" tabindex="0" data-toggle="popover" data-trigger="click" data-content-selector=".h{inputname}" data-placement="top" data-original-title="" title="">
-                    <span class="glyphicons glyphicons-question-sign"></span>
+                <label for="{inputname}" class="control-label l{inputname}" rbl-value="l{inputname}"></label>
+                <a class="vh{inputname}" rbl-display="vh{inputname}" role="button" tabindex="0" data-toggle="popover" data-trigger="click" data-content-selector=".h{inputname}" data-placement="top" data-original-title="" title="">
+                    <span class="glyphicon glyphicon-info-sign help-icon"></span>
                 </a>
             </div>
             <div class="col-sm-4">
@@ -751,23 +749,23 @@
                     <span class="error-msg ng-isolate-scope" law-data-content="" close-btn="focus" data-toggle="tooltip" data-placement="top" role="button" tabindex="0" data-original-title="" title=""></span>
                 </div>
             </div>
-            <div class="h{inputname}Title" style="display: none;"></div>
-            <div class="h{inputname}" style="display: none;"></div>
+            <div class="h{inputname}Title" rbl-value="h{inputname}Title" style="display: none;"></div>
+            <div class="h{inputname}" rbl-value="h{inputname}" style="display: none;"></div>
         </div>
     </div>
 </rbl-template>
 
 <rbl-template tid="input-slider2" type="katapp-slider">
-    <div class="form-group v{inputname}">
+    <div class="form-group v{inputname}" rbl-display="v{inputname}">
         <div class="col-sm-8">
             <label class="control-label" for="katapp_{id}_{inputname}">
-                <span class="l{inputname}"></span> <span class="sv{inputname}"></span>
-                <a style="display: none;" onclick="return false;" class="vh{inputname} help-icon-anchor" role="button"
+                <span class="l{inputname}" rbl-value="l{inputname}"></span> <span class="sv{inputname}"></span>
+                <a style="display: none;" onclick="return false;" rbl-display="vh{inputname}" class="vh{inputname} help-icon-anchor" role="button"
                     tabindex="0" data-toggle="popover" data-trigger="click" data-content-selector=".h{inputname}"
                     data-placement="top">
                     <span class="glyphicon glyphicon-info-sign help-icon"></span>
                 </a>
-                <a style="display: none;" onclick="return false;" class="vs{inputname} help-icon-anchor" role="button"
+                <a style="display: none;" onclick="return false;" rbl-display="vs{inputname}" class="vs{inputname} help-icon-anchor" role="button"
                     tabindex="0">
                     <span class="glyphicon glyphicon-volume-up"></span>
                 </a>
@@ -782,7 +780,7 @@
             </div>
         </div>
 
-        <div class="h{inputname}Title" style="display: none;"></div>
-        <div class="h{inputname}" style="display: none;"></div>
+        <div class="h{inputname}Title" rbl-value="h{inputname}Title" style="display: none;"></div>
+        <div class="h{inputname}" rbl-value="h{inputname}" style="display: none;"></div>
     </div>
 </rbl-template>

@@ -128,7 +128,7 @@
       <a style="display: none;" onclick="return false;" rbl-display="vs{inputname}" class="help-icon-anchor" role="button" tabindex="-1"><span class="glyphicon glyphicon-volume-up"></span></a>
     </label>
     <div class="validator-container">
-      <select name="{inputname}" id="katapp_{id}_{inputname}" class="form-control bootstrap-select show-tick {inputname}" tabindex="-1"></select>
+      <select name="{inputname}" id="katapp_{id}_{inputname}" class="form-control bootstrap-select show-tick {inputname}"></select>
       <span class="error-msg" data-toggle="tooltip" data-placement="top auto"></span>
     </div>
     <div rbl-value="h{inputname}Title" id="{id}_h{inputname}Title" style="display: none;"></div>

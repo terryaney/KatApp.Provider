@@ -2124,7 +2124,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
 
             if ( this.application.bootstrapVersion > 3 ) {
                 decodedContent = decodedContent
-                    .replace( /control-label/g, "col-form-label")
+                    .replace( /control-label/g, "form-label")
                     .replace( /glyphicon glyphicon-volume-up/g, "fa fa-volume-up" )            
                     .replace( /glyphicon glyphicon-info-sign/g, this.application.bootstrapVersion >= 5 ? "fa-light fa-circle-info" : "fa fa-question-circle" );
             }
@@ -3413,7 +3413,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                     return row !== undefined 
                         ? isExpression
                             ? this.processTableRowExpression( selector, row, 0 )
-                            : row[ returnColumn ] 
+                            : row[ returnColumn ] // ?? "" // Should this return blank if the 'row' is found b/c column isn't returned?
                         : undefined;
                 }
             }
@@ -3421,10 +3421,9 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
             return undefined;
         }
         
-        processRblValues(defaultCalcEngineKey: string | undefined, showInspector: boolean): void {
+        processRblValues(showInspector: boolean): void {
             const that: RBLeUtilities = this;
             const application = this.application;
-            const defaultCEKey = defaultCalcEngineKey ?? application.defaultCalcEngineKey;
     
             $("[rbl-value]", application.element)
                 .not("rbl-template *") // Not sure I'd need these to filter out rbl-value elements inside templates because { } should be used for 'values'
@@ -3442,7 +3441,9 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                         el.attr("title", inspectorTitle);
                     }
         
-                    const tabDef = that.getTabDef( el.attr('rbl-tab'), el.attr('rbl-ce') )
+                    const ceKey = el.attr('rbl-ce');
+                    const tabName = el.attr('rbl-tab');
+                    const tabDef = that.getTabDef( tabName, ceKey )
                     const value = 
                         that.getRblSelectorValue( tabDef, "rbl-value", el.attr('rbl-value')! ) ?? // eslint-disable-line @typescript-eslint/no-non-null-assertion
                         that.getRblSelectorValue( tabDef, "ejs-output", el.attr('rbl-value')! ); // eslint-disable-line @typescript-eslint/no-non-null-assertion
@@ -3456,7 +3457,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
 
                         if ( value.indexOf( "rbl-tid" ) > -1 ) {
                             // In case the markup from CE has a template specified...
-                            that.processRblSource(el, defaultCEKey, showInspector);                        
+                            that.processRblSources(el, ceKey, tabName, showInspector);                        
                         }
                     }
                     else {
@@ -3612,11 +3613,6 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                 });
         }
 
-        processRblSources(defaultCalcEngineKey: string | undefined, showInspector: boolean): void {
-            //[rbl-source] processing templates that use rbl results
-            this.processRblSource(this.application.element, defaultCalcEngineKey, showInspector);
-        }
-    
         private isFalsy( value: any ) : boolean {
             return value != undefined &&
                 ( value === "0" || ( typeof( value ) == "string" && value.toLowerCase() === "false" ) || !value );
@@ -3634,10 +3630,9 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
             return tableExpression.call(row, row, index, this.application);
         }
 
-        processRblSource(root: JQuery<HTMLElement>, defaultCalcEngineKey: string | undefined, showInspector: boolean): void {
+        processRblSources(root: JQuery<HTMLElement>, defaultCalcEngineKey: string | undefined, defaultTab: string | undefined, showInspector: boolean): void {
             const that: RBLeUtilities = this;
             const application = this.application;
-            const defaultCEKey = defaultCalcEngineKey ?? application.defaultCalcEngineKey;
             // If root itself is a templated item, I need to add (append) it to the list of
             // items to process, b/c selector below looking 'inside' root will not hit it.
             // The markup for this might look like:
@@ -3656,8 +3651,10 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
     
                         const elementData = application.dataAttributesToJson(el, "data-");
                         const tid = el.attr('rbl-tid');
-                        const tabDef = that.getTabDef( el.attr('rbl-tab'), el.attr('rbl-ce') )
-                        const tabDefName = tabDef?._fullName ?? ( el.attr( "rbl-ce" ) ?? defaultCEKey ) + "." + ( el.attr( "rbl-tab" ) ?? "default" );
+                        const sourceCE = el.attr('rbl-ce') ?? defaultCalcEngineKey;
+                        const sourceTab = el.attr( "rbl-tab" ) ?? defaultTab;
+                        const tabDef = that.getTabDef( sourceTab, sourceCE )
+                        const tabDefName = tabDef?._fullName ?? sourceCE + "." + sourceTab;
                         const rblSource = el.attr('rbl-source-table') ?? el.attr('rbl-source')!;
                         const isTableExpression = rblSource.indexOf("[") > -1;
                         
@@ -3748,7 +3745,8 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
 
                                     // Nested templates
                                     that.application.ui.injectTemplatesWithoutSource(el, showInspector);
-                                    that.processRblSource(el, defaultCEKey, showInspector);
+                                    // Nested rbl-source templates
+                                    that.processRblSources(el, sourceCE, sourceTab, showInspector);
                                     
                                     return hasRoot ? el : el.children();
                                 };
@@ -3898,14 +3896,13 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
             return undefined;
         };
 
-        processVisibilities( defaultCalcEngineKey: string | undefined, showInspector: boolean): void {
+        processVisibilities( showInspector: boolean): void {
             const that: RBLeUtilities = this;
             const application = this.application;
-            const defaultCEKey = defaultCalcEngineKey ?? application.defaultCalcEngineKey;
     
             // toggle visibility
             //[rbl-display] controls display = none|block(flex?).  
-            $("[rbl-display]", application.element)
+            $("[rbl-display]", this.application.element)
                 .not("rbl-template *") // not in templates
                 .each(function () {
                     const el = $(this);
@@ -3941,7 +3938,10 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                             el.attr("title", inspectorTitle);
                         }
             
-                        const tabDef = that.getTabDef( el.attr('rbl-tab'), el.attr('rbl-ce') )
+                        // Visibilities created inside templated results should use the source CE of parent template to look for rbl-display items
+                        const ceKey = el.attr('rbl-ce') ?? el.closest("[rbl-source][rbl-ce]").attr("rbl-ce");
+                        const tabName = el.attr('rbl-tab') ?? el.closest("[rbl-source][rbl-tab]").attr("rbl-tab")
+                        const tabDef = that.getTabDef( tabName, ceKey )
 
                         if ( tabDef != undefined ) {
                             const simpleExpression = that.getSimpleExpression(rblDisplay);
@@ -3968,7 +3968,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                             }
                         }
                         else {
-                            const tabDefName = ( el.attr( "rbl-ce" ) ?? defaultCEKey ) + "." + ( el.attr( "rbl-tab" ) ?? "default" );
+                            const tabDefName = ( ceKey ?? application.defaultCalcEngineKey ) + "." + ( tabName ?? "default" );
                             application.trace("<b style='color: Red;'>RBL WARNING</b>: no tab found for " + tabDefName + ", rbl-display=" + rblDisplay, TraceVerbosity.Detailed);
                         }
                     }
@@ -4791,9 +4791,9 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                 // rows have been processed and all rbl-markup in case they injected 'rbl-' items
                 // in markup that has to be processed
                 application.trace( "Processing all results 'pull' logic", TraceVerbosity.Normal );
-                const defaultCalcEngineKey = calculationOptions.calcEngines != undefined ? calculationOptions.calcEngines[0].key : undefined;
-                this.processRblSources( defaultCalcEngineKey, showInspector );
-                this.processRblValues( defaultCalcEngineKey, showInspector );
+
+                this.processRblSources( this.application.element, undefined, undefined, showInspector );
+                this.processRblValues( showInspector );
                 this.processRblAttributes( showInspector );
                 this.processTables();
                 this.processCharts();
@@ -4804,7 +4804,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
     
                 // These all need to be after processUI so if any inputs are built
                 // from results, they are done by the time these run
-                this.processVisibilities( defaultCalcEngineKey, showInspector );
+                this.processVisibilities( showInspector );
     
                 let sliderConfigIds: ( string | null )[] = [];
     
@@ -5987,6 +5987,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                     const labelCss = el.data("labelcss");
                     const displayOnly = el.data("displayonly") === true;
                     const hideLabel = el.data("hidelabel") ?? false;
+                    const mask = el.data("mask");
 
                     builder.ensureRblDisplay( el );
 
@@ -6046,6 +6047,54 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                         // 2 column templates and I want all the styling to apply (i.e. Nexgen:PensionEstimate)
                         // to all inputs but default value should only apply to current value
                         $("input[name='" + id + "']", el).val(value);
+                    }
+
+                    if ( mask != undefined ) {
+                        const isNumericInput = function(event: JQuery.KeyboardEventBase<HTMLElement, undefined, HTMLElement, HTMLElement>) {
+                            const key = event.keyCode;
+                            var valid = ((key >= 48 && key <= 57) || // Allow number line
+                                (key >= 96 && key <= 105) // Allow number pad
+                            );
+                            return valid;
+                        };
+            
+                        const isModifierKey = function(event: JQuery.KeyboardEventBase<HTMLElement, undefined, HTMLElement, HTMLElement>) {
+                            const key = event.keyCode;
+                            var value = (event.shiftKey === true || key === 35 || key === 36) || // Allow Shift, Home, End
+                                (key === 8 || key === 9 || key === 13 || key === 46) || // Allow Backspace, Tab, Enter, Delete
+                                (key > 36 && key < 41) || // Allow left, up, right, down
+                                (
+                                    // Allow Ctrl/Command + A,C,V,X,Z
+                                    (event.ctrlKey === true || event.metaKey === true) &&
+                                    (key === 65 || key === 67 || key === 86 || key === 88 || key === 90)
+                                )
+                            return value;
+                        };
+                        
+                        // Only support phone so far...
+
+                        if ( mask == "(###) ###-####" ) {
+                            input.on("keydown", function (event) {
+                                // Input must be of a valid number format or a modifier key, and not longer than ten digits
+                                if (!isNumericInput(event) && !isModifierKey(event)) {
+                                    event.preventDefault();
+                                }
+                            }).on("keyup", function (event) {
+                                if (isModifierKey(event)) { return; }
+                    
+                                const target = event.target as HTMLInputElement;
+                                const input = target.value.replace(/\D/g, '').substring(0, 10);
+
+                                // First ten digits of input only
+                                const zip = input.substring(0, 3);
+                                const middle = input.substring(3, 6);
+                                const last = input.substring(6, 10);
+                    
+                                if (input.length > 6) { target.value = "(" + zip + ") " + middle + "-" + last; }
+                                else if (input.length >= 3) { target.value = "(" + zip + ") " + middle; }
+                                else if (input.length > 0) { target.value = "(" + zip; }
+                            });                    
+                        }
                     }
 
                     const validatorContainer = $(".validator-container", el);
@@ -6276,7 +6325,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                     const hideLabel = el.data("hidelabel") ?? false;
                     const help = el.data("help");
                     const multiSelect = el.data("multiselect") ?? false;
-                    const liveSearch = el.data("livesearch") ?? true;
+                    const liveSearch = el.data("livesearch") ?? false;
                     const size = el.data("size") ?? "15";
                     const lookuptable = el.data("lookuptable");
                     const css = el.data("css");

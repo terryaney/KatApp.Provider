@@ -2225,10 +2225,10 @@ In addition to simply returning a falsey visibility value from the CalcEngine vi
 
 Expression Selector | Description
 ---|---
-idValue{operator}{value} | Display the item if row in `rbl-display` table where id is `idValue` does not exist or the `value` column compared to `value` does not return falsey.
-table.idValue{operator}{value} | Display the item if row in `table` table where id is `idValue` does not exist or the `value` column compared to `value` does not return falsey.
-table.idValue.column{operator}{value} | Display the item if row in `table` table where id is `idValue` does not exist or the `column` column compared to `value` does not return falsey.
-table.keyColumn.keyValue.returnColumn{operator}{value} | Display the item if row in `table` table where `keyColumn` is `keyValue` does not exist or the `returnColumn` column compared to `value` does not return falsey.
+idValue{operator}{value} | Process the item if row in `rbl-display` table where id is `idValue` exists and show if the `value` column compared to `value` does not return falsey.
+table.idValue{operator}{value} | Process the item if row in `table` table where id is `idValue` exists and show if the `value` column compared to `value` does not return falsey.
+table.idValue.column{operator}{value} | Process the item if row in `table` table where id is `idValue` exists and show if the `column` column compared to `value` does not return falsey.
+table.keyColumn.keyValue.returnColumn{operator}{value} | Process the item if row in `table` table where `keyColumn` is `keyValue` exists and show if the `returnColumn` column compared to `value` does not return falsey.
 
 ```html
 <!-- 
@@ -2268,6 +2268,18 @@ Row: 'wealth-summary' table where 'id' is 'benefit-start'
 Show if Row exists (if '@id' column from Row = 'benefit-start'), otherwise hide
 -->
 <div rbl-display="wealth-summary.benefit-start.@id=benefit-start">benefit-start row exists</div>
+```
+
+**Note**: If you need to show and hide something based on a row that may or may not exist, set `style="display: none;"` by default.  If the row is not present in the results, processing will not occur and the item will remain hidden.
+
+```html
+<!-- 
+Processing item where row might not exist in results
+
+Row: 'wealth-summary' table where 'id' is 'benefit-start-missing' (intentially bad ID)
+Show if Row exists (it will not in this case) and the value is not blank, otherwise leave hidden.
+-->
+<div rbl-display="wealth-summary.benefit-start-missing!=" style="display: none;">benefit-start-missing row exists</div>
 ```
 
 ### rbl-display v: Template Expression

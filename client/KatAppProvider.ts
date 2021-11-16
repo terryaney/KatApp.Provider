@@ -3457,7 +3457,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
 
                         if ( value.indexOf( "rbl-tid" ) > -1 ) {
                             // In case the markup from CE has a template specified...
-                            that.processRblSources(el, ceKey, tabName, showInspector);                        
+                            that.processRblSources(el, showInspector);                        
                         }
                     }
                     else {
@@ -3630,7 +3630,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
             return tableExpression.call(row, row, index, this.application);
         }
 
-        processRblSources(root: JQuery<HTMLElement>, defaultCalcEngineKey: string | undefined, defaultTab: string | undefined, showInspector: boolean): void {
+        processRblSources(root: JQuery<HTMLElement>, showInspector: boolean): void {
             const that: RBLeUtilities = this;
             const application = this.application;
             // If root itself is a templated item, I need to add (append) it to the list of
@@ -3651,8 +3651,8 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
     
                         const elementData = application.dataAttributesToJson(el, "data-");
                         const tid = el.attr('rbl-tid');
-                        const sourceCE = el.attr('rbl-ce') ?? defaultCalcEngineKey;
-                        const sourceTab = el.attr( "rbl-tab" ) ?? defaultTab;
+                        const sourceCE = el.attr('rbl-ce');
+                        const sourceTab = el.attr( "rbl-tab" );
                         const tabDef = that.getTabDef( sourceTab, sourceCE )
                         const tabDefName = tabDef?._fullName ?? sourceCE + "." + sourceTab;
                         const rblSource = el.attr('rbl-source-table') ?? el.attr('rbl-source')!;
@@ -3746,7 +3746,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                                     // Nested templates
                                     that.application.ui.injectTemplatesWithoutSource(el, showInspector);
                                     // Nested rbl-source templates
-                                    that.processRblSources(el, sourceCE, sourceTab, showInspector);
+                                    that.processRblSources(el, showInspector);
                                     
                                     return hasRoot ? el : el.children();
                                 };
@@ -3938,9 +3938,9 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                             el.attr("title", inspectorTitle);
                         }
             
-                        // Visibilities created inside templated results should use the source CE of parent template to look for rbl-display items
-                        const ceKey = el.attr('rbl-ce') ?? el.closest("[rbl-source][rbl-ce]").attr("rbl-ce");
-                        const tabName = el.attr('rbl-tab') ?? el.closest("[rbl-source][rbl-tab]").attr("rbl-tab")
+                        // Visibilities created inside templated results should use the source CE of parent *inline* template to look for rbl-display items
+                        const ceKey = el.attr('rbl-ce') ?? el.closest("[rbl-source][rbl-ce][rbl-tid^='_t_']").attr("rbl-ce");
+                        const tabName = el.attr('rbl-tab') ?? el.closest("[rbl-source][rbl-tab][rbl-tid^='_t_']").attr("rbl-tab")
                         const tabDef = that.getTabDef( tabName, ceKey )
 
                         if ( tabDef != undefined ) {
@@ -4792,7 +4792,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                 // in markup that has to be processed
                 application.trace( "Processing all results 'pull' logic", TraceVerbosity.Normal );
 
-                this.processRblSources( this.application.element, undefined, undefined, showInspector );
+                this.processRblSources( this.application.element, showInspector );
                 this.processRblValues( showInspector );
                 this.processRblAttributes( showInspector );
                 this.processTables();

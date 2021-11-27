@@ -184,7 +184,7 @@
   <tr_ rbl-display="{visibleSelector}">
     <td_>
       <span class="radio abc-radio">
-        <input id="{itemId}" type="radio" name="{id}:{inputName}" value="{value}" />
+        <input class="form-check-input" id="{itemId}" type="radio" name="{id}:{inputName}" value="{value}" />
         <label for="{itemId}">{text}</label>
         <a rbl-display="{helpIconSelector}" style="display: none;" onclick="return false;" class="help-icon-anchor" role="button" tabindex="-1" data-toggle="popover" data-trigger="click" data-content-selector="#{id}_{helpSelector}" data-placement="top"><span class="glyphicon glyphicon-info-sign help-icon"></span></a>
         <div rbl-value="{helpSelector}Title" id="{id}_{helpSelector}Title" style="display: none;"></div>
@@ -196,7 +196,7 @@
   
 <rbl-template tid="input-radiobuttonlist-horizontal-item">
   <div class='radio abc-radio' rbl-display="{visibleSelector}">
-    <input id="{itemId}" type="radio" name="{id}:{inputName}" value="{value}" />
+    <input class="form-check-input" id="{itemId}" type="radio" name="{id}:{inputName}" value="{value}" />
     <label for="{itemId}">{text}</label>
     <a rbl-display="{helpIconSelector}" style="display: none;" onclick="return false;" class="help-icon-anchor" role="button" tabindex="-1" data-toggle="popover" data-trigger="click" data-content-selector="#{id}_{helpSelector}" data-placement="top"><span class="glyphicon glyphicon-info-sign help-icon"></span></a>
     <div rbl-value="{helpSelector}Title" id="{id}_{helpSelector}Title" style="display: none;"></div>
@@ -231,8 +231,8 @@
 <rbl-template tid="input-checkboxlist-vertical-item">
   <tr_ rbl-display="{visibleSelector}">
     <td_>
-      <span class="checkbox abc-checkbox">
-        <input id="{itemId}" type="checkbox" name="{id}:{inputName}:{value}" data-value="{value}" data-input-name="{inputName}" />
+      <span class="checkbox abc-checkbox" data-inputname="{inputName}">
+        <input class="form-check-input" id="{itemId}" type="checkbox" name="{id}:{inputName}:{value}" data-value="{value}" />
         <label for="{itemId}">{text}</label>
         <a rbl-display="{helpIconSelector}" style="display: none;" onclick="return false;" class="help-icon-anchor" role="button" tabindex="-1" data-toggle="popover" data-trigger="click" data-content-selector="#{id}_{helpSelector}" data-placement="top"><span class="fa fa-question-circle help-icon"></span></a>
         <div rbl-value="{helpSelector}Title" id="{id}_{helpSelector}Title" style="display: none;"></div>
@@ -244,8 +244,8 @@
   
 <rbl-template tid="input-checkboxlist-horizontal-item">
   <!-- form-group - might need this -->
-  <div class='checkbox abc-checkbox' rbl-display="{visibleSelector}">
-    <input id="{itemId}" type="checkbox" name="{id}:{inputName}:{value}" data-value="{value}" data-input-name="{inputName}" />
+  <div class='checkbox abc-checkbox' rbl-display="{visibleSelector}" data-inputname="{inputName}">
+    <input class="form-check-input" id="{itemId}" type="checkbox" name="{id}:{inputName}:{value}" data-value="{value}" />
     <label for="{itemId}">{text}</label>
     <a rbl-display="{helpIconSelector}" style="display: none;" onclick="return false;" class="help-icon-anchor" role="button" tabindex="-1" data-toggle="popover" data-trigger="click" data-content-selector="#{id}_{helpSelector}" data-placement="top"><span class="fa fa-question-circle help-icon"></span></a>
     <div rbl-value="{helpSelector}Title" id="{id}_{helpSelector}Title" style="display: none;"></div>
@@ -256,8 +256,8 @@
 <rbl-template tid="input-checkbox" type="katapp-checkbox">
   <div class="form-group validator-container checkbox-container v{inputname}" rbl-display="v{inputname}">
     <span class="checkbox abc-checkbox {inputname}" rbl-value="l{inputname}">
-      <input id="katapp_{id}_{inputname}" type="checkbox" name="{inputname}" />
-      <label for="katapp_{id}_{inputname}">
+      <input class="form-check-input" id="katapp_{id}_{inputname}" type="checkbox" name="{inputname}" />
+      <label class="form-check-label" for="katapp_{id}_{inputname}">
         <span class="checkbox-label"></span>
         <a style="display: none;" onclick="return false;" rbl-display="vh{inputname}" class="help-icon-anchor" role="button" tabindex="-1" data-toggle="popover" data-trigger="click" data-content-selector="#{id}_h{inputname}" data-placement="top"><span class="glyphicon glyphicon-info-sign help-icon"></span></a>
         <a style="display: none;" onclick="return false;" rbl-display="vs{inputname}" class="help-icon-anchor" role="button" tabindex="-1"><span class="glyphicon glyphicon-volume-up"></span></a>

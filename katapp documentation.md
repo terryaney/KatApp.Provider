@@ -607,7 +607,7 @@ Click <a rbl-navigate="DB.Home">here</a> to see your Defined Benefit Portal.
 **Passing Default Inputs to the Next KatApp**
 If you need to pass inputs to the KatApp that is being navigated to assign defaults, the `rbl-navigate-input-selector` attribute can be used.  Any input that matches the JQuery selector provided will be pass to the next KatApp to be used as default inputs, similar to the `defaultInputs` property of the [KatAppOptions Object](#KatAppOptions-Object).
 
-By default, inputs passed during navigation are a one-time use input.  If you want inputs persisted to `Storage` indefinitely, use the `rbl-navigate-persist-inputs="true"` attribute.
+By default, inputs passed during navigation are persisted to `Storage` indefinitely.  If you want inputs to be flagged as one-time use, add the `rbl-navigate-persist-inputs="false"` attribute.
 
 ```html
 Click <a rbl-navigate="Benefits.HPF" rbl-navigate-input-selector=".iProviderTypeIds">here</a> to find a Benefit Provider.
@@ -3544,7 +3544,7 @@ This event is triggered during `calculate` if there is no data available to subm
 
 #### onCalculationOptions
 
-**`onCalculationOptions(event: Event, calculationOptions: KatAppOptions, application: KatApp )`**
+**`onCalculationOptions(event: Event, calculationOptions: KatAppOptions, application: KatApp, endpointOptions: KatAppActionOptions | undefined )`**
 
 This event is triggered during `calculate` immediately before submission to RBLe Service.  It allows Kaml Views to massage the `calculationOptions` before being submitted.  Use this method if you want to massage inputs or add custom inputs/tables to the `calculationOptions` that wouldn't normally be processed by the KatApp framework.
 

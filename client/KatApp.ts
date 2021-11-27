@@ -154,6 +154,7 @@ class KatApp
     static setNavigationInputs( inputs: {}, cachingKey: string | undefined ): void {
         const navigationCachingKey = cachingKey ?? "katapp:navigationInputs:global";
         const currentInputsJson = sessionStorage.getItem(navigationCachingKey);
+        
         let currentInputs = currentInputsJson != undefined 
             ? JSON.parse( currentInputsJson ) 
             : {};

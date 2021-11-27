@@ -112,14 +112,14 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
             this.init( options );
         }
     
-        dataAttributesToJson( container: JQuery, attributePrefix: string ): object {
+        dataAttributesToJson( container: JQuery, attributePrefix: string ): object | undefined {
             const attributeNames = 
                 [].slice.call(container.get(0).attributes).filter(function(attr: Attr) {
                     return attr && attr.name && attr.name.indexOf(attributePrefix) === 0
                 }).map( function( a: Attr ) { return a.name; } );
 
             const json = {};
-
+            let hasValues = false;
             const convertToCalcEngineNames = attributePrefix == "data-input-";
             const convertToVariableNames = convertToCalcEngineNames || attributePrefix == "data-param-";
 
@@ -137,10 +137,11 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                         });
                     }
 
+                    hasValues = true;
                     json[ inputName ] = value;
                 }
             });
-            return json;            
+            return hasValues ? json : undefined;
         } 
 
         private init( options: KatAppOptions ): void {
@@ -789,6 +790,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
 
         setNavigationInputs( inputs: {} | undefined, navigationId?: string, persist?: boolean, inputSelector?: string ): void {
             const inputsToPass = inputs ?? this.rble.getInputsBySelector( inputSelector ) ?? {};
+
             const cachingKey = 
                 navigationId == undefined // global
                     ? undefined
@@ -1263,7 +1265,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
             calculatePipeline( 0 );
         }
 
-        getEndpointSubmitData( options: KatAppOptions, customOptions: KatAppActionOptions): KatAppActionSubmitData {
+        getEndpointSubmitData( options: KatAppOptions, endpointOptions: KatAppActionOptions): KatAppActionSubmitData {
             const currentOptions = KatApp.extend(
                 {}, // make a clone of the options
                 KatApp.clone( 
@@ -1275,10 +1277,10 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                         return value; 
                     }
                 ), // original options
-                customOptions, // override options
+                endpointOptions, // override options
             ) as KatAppOptions;
 
-            const calculationOptions = this.rble.getSubmitCalculationOptions( currentOptions, undefined );
+            const calculationOptions = this.rble.getSubmitCalculationOptions( currentOptions, undefined, endpointOptions );
 
             const submitData: KatAppActionSubmitData = {
                 Inputs: calculationOptions.Inputs,
@@ -1777,8 +1779,10 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                     '</div>');
             }
 
-            $('.katappModalDialog .modal-body', this.element).html(confirm);
-
+            const modalBody = $('.katappModalDialog .modal-body', this.element);
+            modalBody.html(confirm);
+            this.templateBuilder.processNavigationLinks(modalBody);
+            
             $('.katappModalDialog .continueButton', this.element).off("click.ka").on("click.ka", function () {
                 onConfirm();
             });
@@ -1863,14 +1867,17 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                 }
             }
             else {
-                location.split('|').forEach( l => {
-                    this.options.nextCalculation?.saveLocations?.push( {
+                const locations = location.split('|');
+                this.options.nextCalculation!.saveLocations = this.options.nextCalculation!.saveLocations!.filter( e => locations.indexOf(e.location) == -1 );
+                locations.forEach( l => {
+                    this.options.nextCalculation!.saveLocations!.push( {
                         location: l,
                         serverSideOnly: serverSideOnly ?? false
                     });
                 });
             }
         }
+
         refreshCalcEngine(): void {
             if ( this.options.nextCalculation == undefined )
             {
@@ -2205,7 +2212,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
             }
         }
     
-        getTemplate( templateId: string, data: JQuery.PlainObject, includeDefaults: boolean ): { Content: string; Type: string | undefined } | undefined {
+        getTemplate( templateId: string, data: JQuery.PlainObject | undefined, includeDefaults: boolean ): { Content: string; Type: string | undefined } | undefined {
             const application = this.application;
             
             // Look first for template overriden directly in markup of view
@@ -2308,37 +2315,13 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                 isBootstrap3 ? "glyphicon glyphicon-info-sign" : 
                 isBootstrap4 ? "fa fa-question-circle" : 
                 isBootstrap5 ? "fa-light fa-circle-info" : "fa fa-question-circle";
-            const bsDataAttributePrefix = isBootstrap5 ? "data-bs-" : "data-";
 
             let configureHelp = false;
 
-            const inputTemplate = isRadio
-                ? "<input id='{itemId}' type='radio' name='{id}:{inputName}' value='{value}' />"
-                : "<input id='{itemId}' type='checkbox' name='{id}:{inputName}:{value}' data-value='{value}' data-input-name='{inputName}' />";
-
             const verticalItemTemplate = 
-                this.getTemplate( isRadio ? "input-radiobuttonlist-vertical-item" : "input-checkboxlist-vertical-item", {}, false )?.Content ??
-                "<tr rbl-display='{visibleSelector}'>\
-                    <td>\
-                        <span class='" + itemTypeClass + "'>\
-                            " + inputTemplate + "\
-                            <label for='{itemId}'>{text}</label>\
-                            <a rbl-display='{helpIconSelector}' style='display: none;' role='button' tabindex='0' " + bsDataAttributePrefix + "toggle='popover' " + bsDataAttributePrefix + "trigger='click' data-content-selector='#{id}_{helpSelector}' " + bsDataAttributePrefix + "placement='top'><span class='{helpIconCss} help-icon'></span></a>\
-                            <div rbl-value='{helpSelector}' id='{id}_{helpSelector}' style='display: none;'>{help}</div>\
-                            <div rbl-value='{helpSelector}Title' id='{id}_{helpSelector}Title' style='display: none;'></div>\
-                        </span>\
-                    </td>\
-                </tr>";
-
+                this.getTemplate( isRadio ? "input-radiobuttonlist-vertical-item" : "input-checkboxlist-vertical-item", {}, false )!.Content;
             const horizontalItemTemplate =
-                this.getTemplate( isRadio ? "input-radiobuttonlist-horizontal-item" : "input-checkboxlist-horizontal-item", {}, false )?.Content ??
-                "<div class='form-group " + itemTypeClass + "' rbl-display='{visibleSelector}'>\
-                    " + inputTemplate + "\
-                    <label for='{itemId}'>{text}</label>\
-                    <a rbl-display='{helpIconSelector}' style='display: none;' role='button' tabindex='0' " + bsDataAttributePrefix + "toggle='popover' " + bsDataAttributePrefix + "trigger='click' data-content-selector='#{id}_{helpSelector}' " + bsDataAttributePrefix + "placement='top'><span class='{helpIconCss} help-icon'></span></a>\
-                    <div rbl-value='{helpSelector}' id='{id}_{helpSelector}' style='display: none;'>{help}</div>\
-                    <div rbl-value='{helpSelector}Title' id='{id}_{helpSelector}Title' style='display: none;'></div>\
-                </div>";
+                this.getTemplate( isRadio ? "input-radiobuttonlist-horizontal-item" : "input-checkboxlist-horizontal-item", {}, false )!.Content;
 
             if ( rebuild ) {
                 itemsContainer.empty();
@@ -2424,13 +2407,15 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
         }
 
         getInputName(input: JQuery): string {
-            // Need to support : and $.  'Legacy' is : which is default mode a convert process has for VS, but Gu says to never use that, but it caused other issues that are documented in
-            // 4.1 Validators.cs file so allowing both.
+            // Need to support : and $.  'Legacy' is : which is default mode a convert process has for VS, but Gu says to never use 
+            // that, but it caused other issues that are documented in 4.1 Validators.cs file so allowing both.
             // http://bytes.com/topic/asp-net/answers/433532-control-name-change-asp-net-2-0-generated-html
             // http://weblogs.asp.net/scottgu/gotcha-don-t-use-xhtmlconformance-mode-legacy-with-asp-net-ajax
 
-            // data-input-name - Checkbox list items, I put the 'name' into a parent span (via attribute on ListItem)
-            let htmlName = input.parent().attr("data-input-name") || input.attr("name");
+            // data-inputname - Checkbox list items, I put the 'name' into a parent span (via attribute on ListItem)
+            // but if they are children of [data-itemtype="checkbox"] element, they are skipped and handled specifically
+            // and the data-inputname is expected on same element as [data-itemtype="checkbox"].
+            let htmlName = input.parent().attr("data-inputname") || input.attr("name");
 
             if ( htmlName === undefined ) {
                 const id = input.attr("id");
@@ -2494,7 +2479,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
             let eventCancelled = false;
             try {
                 application.trace("Calling " + eventName + " delegate: Starting...", TraceVerbosity.Diagnostic);
-                
+
                 // Make application.element[0] be 'this' in the event handler
                 const handlerResult = application.options[ eventName ]?.apply(application.element[0], args );
 
@@ -2881,18 +2866,20 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
             });
 
             // Checkbox list...
-            $("[data-itemtype='checkbox']", inputContainer).each(function() {
-                const cbl = $(this);
-                const name = cbl.data("inputname");
-                const value = 
-                    $("input:checked", cbl)
-                        .not("[kat-visible='0']")    
-                        .toArray()
-                        .map( chk => $(chk).data("value"))
-                        .join(",");
+            $("[data-itemtype='checkbox']", inputContainer)
+                .not("rbl-template *")
+                .each(function() {
+                    const cbl = $(this);
+                    const name = cbl.data("inputname");
+                    const value = 
+                        $("input:checked", cbl)
+                            .not("[kat-visible='0']")    
+                            .toArray()
+                            .map( chk => $(chk).data("value"))
+                            .join(",");
 
-                inputs[name] = value;
-            });
+                    inputs[name] = value;
+                });
 
             return inputs;
         }
@@ -3017,7 +3004,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
             return tables.length > 0 ? tables : undefined;
         }
 
-        getSubmitCalculationOptions( currentOptions: KatAppOptions, currentCalcEngine: CalcEngine | undefined ): SubmitCalculationOptions {
+        getSubmitCalculationOptions( currentOptions: KatAppOptions, currentCalcEngine: CalcEngine | undefined, endpointOptions: KatAppActionOptions | undefined ): SubmitCalculationOptions {
             // TODO Should make a helper that gets options (for both submit and register)            
     
             if ( currentOptions.defaultInputs !== undefined )
@@ -3086,7 +3073,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                 }
             };
 
-            this.application.ui.triggerEvent( "onCalculationOptions", calculationOptions, this.application );
+            this.application.ui.triggerEvent( "onCalculationOptions", calculationOptions, this.application, endpointOptions );
 
             return calculationOptions;
         }
@@ -3094,7 +3081,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
         submitCalculation( calcEngine: CalcEngine, currentOptions: KatAppOptions, submitCalculationHandler: SubmitCalculationCallback ): void {
             const application = this.application;
 
-            const calculationOptions = this.getSubmitCalculationOptions( currentOptions, calcEngine );    
+            const calculationOptions = this.getSubmitCalculationOptions( currentOptions, calcEngine, undefined );
             // Just getting InputTables in the property so visible in console
             application.calculationInputs = KatApp.extend( {}, calculationOptions.Inputs as object, { Tables: calculationOptions.InputTables } );
     
@@ -5509,7 +5496,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                         const id = actionLink.attr("rbl-navigate");
                         const inputSelector = actionLink.attr("rbl-navigate-input-selector");
                         const dataInputs = application.dataAttributesToJson( actionLink, "data-input-" );
-                        const persistInputs = actionLink.attr("rbl-navigate-persist-inputs") != "false";
+                        const persistInputs = ( actionLink.attr("rbl-navigate-persist-inputs") ?? "true" ) != "false";
 
                         if ( dataInputs != undefined || inputSelector != undefined ) {
                             application.setNavigationInputs( dataInputs, id, persistInputs, inputSelector );
@@ -5579,8 +5566,6 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                             //	This one didn't work (left a comment) because of needing to return text (error) or file (success).
                             
                             const parametersJson = application.dataAttributesToJson( actionLink, "data-param-");
-                            
-                            // Don't think this is ever used
                             const inputsJson = application.dataAttributesToJson( actionLink, "data-input-" );
 
                             application.apiAction(

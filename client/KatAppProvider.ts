@@ -1782,7 +1782,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
             const modalBody = $('.katappModalDialog .modal-body', this.element);
             modalBody.html(confirm);
             this.templateBuilder.processNavigationLinks(modalBody);
-            
+
             $('.katappModalDialog .continueButton', this.element).off("click.ka").on("click.ka", function () {
                 onConfirm();
             });
@@ -2677,8 +2677,11 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                                     }
                                 });
                             
-                            el.attr("data-rblon-initialized", "true")
-                              .attr("href", "#");
+                            el.attr("data-rblon-initialized", "true");
+
+                            if ( ( el.attr("href") ?? "" ) == "" ) {
+                                el.attr("href", "#");
+                            }
                         }
                     });
             }

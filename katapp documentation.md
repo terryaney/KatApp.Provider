@@ -22,18 +22,15 @@
         - [Removing Event Handlers](#Removing-Event-Handlers)
     - [rbl-navigate Attribute Details](#rbl-navigate-Attribute-Details)
     - [View Scoping](#View-Scoping)
-    - [Legacy _Push_ Processing](#Legacy-_Push_-Processing)
-        - [ejs-output Table](#**ejs-output**)
-        - [ejs-visibility Table](#**ejs-visibility**)
-    - [Required _Push_ Processing](#Required-_Push_-Processing)
-        - [ejs-defaults Table](#**ejs-defaults**)
-        - [ejs-listcontrol Table](#**ejs-listcontrol**)
-            - [ejs-listcontrol data source Tables](#**ejs-listcontrol-data-source**)
-        - [ejs-sliders Table](#**ejs-sliders**)
-        - [ejs-disabled Table](#**ejs-disabled**)
-        - [skip-RBLe Table](#**skip-RBLe**)
+    - [_Push_ Table Processing](#_Push_-Table-Processing)
+        - [rbl-defaults Table](#**rbl-defaults**)
+        - [rbl-listcontrol Table](#**rbl-listcontrol**)
+            - [rbl-listcontrol data source Tables](#**rbl-listcontrol-data-source**)
+        - [rbl-sliders Table](#**rbl-sliders**)
+        - [rbl-disabled Table](#**rbl-disabled**)
+        - [rbl-skip Table](#**rbl-skip**)
         - [errors And warnings Tables](#**errors/warnings**)
-        - [ejs-markup Table](#**ejs-markup**)
+        - [rbl-markup Table](#**rbl-markup**)
 - [Templates](#Templates)
     - [rbl-source Selectors](#rbl-source-Selectors)
     - [Template Default Attributes](#Template-Default-Attributes)
@@ -381,7 +378,7 @@ KatApp selectors are the syntax used to specify how to pull data from CalcEngine
 
 Selector&nbsp;Path | Description
 ---|---
-idValue | Look in `rbl-value` (legacy `ejs-output`) table for row where row id is `idValue` and return the value column.
+idValue | Look in `rbl-value` table for row where row id is `idValue` and return the value column.
 table.idValue | Look in `table` table for row where row id is `idValue` and return the value column.
 table.idValue.column | Look in `table` table for row where row id is `idValue` and return the `column` column.
 table.keyColumn.keyValue.column | Look in `table` table for row where `keyColumn` is `keyValue` and return the `column` column.
@@ -390,7 +387,7 @@ table.keyColumn.keyValue.column | Look in `table` table for row where `keyColumn
 There are two ways to use `rbl-value` attribute.  You can provide simply an 'id' that will look inside the `rbl-value` table or you can provide a KatApp Selector.  Both mechanisms can be used in conjunction with `rbl-ce` and `rbl-tab`.
 
 ```html
-<!-- Table: rbl-value/ejs-output, ID: ret-age, Column: value -->
+<!-- Table: rbl-value, ID: ret-age, Column: value -->
 <span rbl-value="ret-age"></span>
 
 <!-- Table: benefit-savings, ID: ret-age, Column: value -->
@@ -401,19 +398,19 @@ There are two ways to use `rbl-value` attribute.  You can provide simply an 'id'
 
 <!-- 
 CalcEngine:default, Tab: RBLRetire
-Table: rbl-value/ejs-output, ID: ret-age, Column: value
+Table: rbl-value, ID: ret-age, Column: value
 -->
 <span rbl-tab="RBLRetire" rbl-value="ret-age"></span>
 
 <!-- 
 CalcEngine: 'Shared' (key=Shared), Tab: first/default
-Table: rbl-value/ejs-output, ID: ret-age, Column: value
+Table: rbl-value, ID: ret-age, Column: value
 -->
 <span rbl-ce="Shared" rbl-value="ret-age"></span>
 
 <!-- 
 CalcEngine: 'Shared' (key=Shared), Tab: RBLRetire
-Table: rbl-value/ejs-output, ID: ret-age, Column: value
+Table: rbl-value, ID: ret-age, Column: value
 -->
 <span rbl-ce="Shared" rbl-tab="RBLRetire" rbl-value="ret-age"></span>
 ```
@@ -458,7 +455,7 @@ Selector: Table: rbl-value, ID: election-confirm, Column: value
 ```
 
 ## rbl-display Attribute Details
-The `rbl-display` attribute has all the same 'selector' capabilities described in [KatApp Selectors](#KatApp-Selectors).  Once a `value` is selected from a specified table (with a table priority of `rbl-display`, `ejs-visibility`, then `ejs-output` by default), a boolean 'falsey' logic is applied against the value.  An element will be hidden if the value is `0`, `false` or an empty string.
+The `rbl-display` attribute has all the same 'selector' capabilities described in [KatApp Selectors](#KatApp-Selectors).  Once a `value` is selected from a specified selector (or `rbl-display` as default table if only ID is provided), a boolean 'falsey' logic is applied against the value.  An element will be hidden if the value is `0`, `false` or an empty string.
 
 ```html
 <!-- Show or hide based on 'value' column from 'rbl-display' table where 'id' is 'show-wealth' -->
@@ -707,45 +704,11 @@ view.on("onInitialized.RBLe", function (event, application) {
 
 See [KatApp Events](#KatApp-Events) for more usage examples where scoping is required.
 
-## Legacy  _Push_ Processing
-
-KatApps are an upgrade to original RBLe Service processing in that Kaml Views are able to _pull_ information from the CalcEngine and able to pull it from specific locations using 'selector paths'.  After a calculation is finished, all elements using `rbl-value`, `rbl-source`, `rbl-tid`, or `rbl-display` binding attributes are automatically updated/processed.  
-
-The original RBLe Service processing was a _push_ pattern.  So instead of elements being bound to specific values, all CalcEngine results were processed and searched for any elements with special class names that matched `id` elements in the results and if a match was found, the CalcEngine value was pushed to the element.
-
-Kaml Views still supports legacy _push_ processing for values and visibility, but using the binding attributes is the preferred mechanism as it expresses clear intent of which elements are bound to the CalcEngine and where the data should be pulled from.
-
-### **ejs-output** 
-
-Legacy functionality replaced by `rbl-value` processing.  Set the content for any element based on CSS classes.  Once the Kaml View has all the `rbl-value` attributes correctly defined, this table should be renamed to `rbl-value`.
-
-Column | Description
----|---
-id | The CSS class of one or more elements in your Kaml View (i.e. `introText`). 
-value | The content to set.  (Supports text or HTML)
-
-<br/>
-
-**Note**: This table should no longer be used.  A `rbl-value` table should be used in its place (ensure that all elements that need content from the table have a `rbl-value=` attribute applied).
-
-### **ejs-visibility**
-
-Legacy functionality replaced by `rbl-display` processing.  Set the visiblity for any element based on CSS classes.  Once the Kaml View has all the `rbl-display` attributes correctly defined, this table should be renamed to `rbl-display`.
-
-Column | Description
----|---
-id | The CSS class of one or more elements in your Kaml View (i.e. `introText`). 
-value | Whether or not to hide the element.  If `value` is `0`, the element will be hidden.
-
-<br/>
-
-**Note**: This table should no longer be used.  A `rbl-display` table should be used in its place (ensure that all elements that toggle visibility using this table have a `rbl-display=` attribute applied). 
-
-## Required  _Push_ Processing
+## _Push_ Table Processing
 
 Even though it is preferrable to have _pull_ over _push_ for content and visibility, there are still some tables that either require push processing or are much better suited for a _push_ pattern.  In these cases, the source tables in the CalcEngines are usually very focused; only turned on during the initial configuration calculation and/or have a very limited number of rows.  By paying attention to the processing scope of these tables (only returning information when needed and minimizing the rows), you can ensure that Kaml Views remain performant.
 
-### **ejs-defaults**
+### **rbl-defaults**
 Set input values for any input on Kaml View.
 
 Column | Description
@@ -764,7 +727,7 @@ Text | `value` is simply applied.
 
 <br/>
 
-### **ejs-listcontrol** 
+### **rbl-listcontrol** 
 Find and populate 'list' controls (dropdown, radio button list, or checkbox list) that have a CSS class matching the `id` column.
 
 Column | Description
@@ -774,8 +737,8 @@ table | The name of the data source table that provides the list items for the c
 
 <br/>
 
-#### **ejs-listcontrol data source** 
-Typically, `ejs-listcontrol` and its data tables are only returned during a configuration calculation to initialize the user interface.  However, if the list control items are dynamic based on employee data or other inputs, the typical pattern is to return all list items possible for all situations during the configuration calculation, and then use the `visible` column to show and hide which items to show.  During subsequent calculations, when items are simply changing visibility, for performance enhancements, the only rows returned in the data source table should be the rows that have dynamic visiblity.
+#### **rbl-listcontrol data source** 
+Typically, `rbl-listcontrol` and its data tables are only returned during a configuration calculation to initialize the user interface.  However, if the list control items are dynamic based on employee data or other inputs, the typical pattern is to return all list items possible for all situations during the configuration calculation, and then use the `visible` column to show and hide which items to show.  During subsequent calculations, when items are simply changing visibility, for performance enhancements, the only rows returned in the data source table should be the rows that have dynamic visiblity.
 
 Column | Description
 ---|---
@@ -794,7 +757,7 @@ subtext<sup>2</sup> | Add subtext to an option.
 
 <br/>
 
-### **ejs-sliders** 
+### **rbl-sliders** 
 Find and configure slider inputs that have a CSS class matching the `id` column.
 
 Column | Description
@@ -810,17 +773,17 @@ pips&#x2011;values | When `pips-mode` is `values`, you can provide a comma delim
 pips&#x2011;density | Pre-scale the number of pips.  The `pips-density` value controls how many pips are placed on one percent of the slider range. With the default value of 1, there is one pip per percent. For a value of 2, a pip is placed for every 2 percent. A value below one will place more than one pip per percentage.
 
 <sup>1</sup> Default value has a few ways to be assigned and the precedence is as follows:
-1. The default selector path of `ejs-defaults.{id}.value`.
-2. The `default` column in the `ejs-slider` row.
+1. The default selector path of `rbl-defaults.{id}.value`.
+2. The `default` column in the `rbl-slider` row.
 3. The current value of the hidden slider html input (if set directly via markup).
-4. The `min` column in the `ejs-slider` row.
+4. The `min` column in the `rbl-slider` row.
 
 <sup>2</sup> The slider value is displayed in the element that has a CSS class of `sv{id}`.  
 <sup>3</sup> See [API documentation](https://refreshless.com/nouislider/pips/) for documentation on using `pips-*` values.
 
 <br/>
 
-### **ejs-disabled**
+### **rbl-disabled**
 Find and enable or disable inputs that have a CSS class matching the `id` column.
 
 Column | Description
@@ -830,7 +793,7 @@ value | Whether or not to enable or disable the input.  If `value` is `1`, the i
 
 <br/>
 
-### **skip-RBLe**
+### **rbl-skip**
 Find and prevent inputs in Kaml View from triggering a calculation upon change.  This table is legacy support that is equivalent to `rbl-nocalc` (see [RBLe Service Attributes / Classes](#RBLe-Service-Attributes-/-Classes)) and can only be used to _prevent an input from triggering a calculation_.  You can not use it to turn calculations back on for an input.  This table allows for the business logic of knowing which inputs trigger a calculation and which do not to be left inside the CalcEngine.  Using this table has the same effect as applying attributes manually in the Kaml View.
 
 Column | Description
@@ -850,8 +813,8 @@ text | The error message to display in the validation summary.  If `id` is provi
 
 <br/>
 
-### **ejs-markup**
-This table is an evolution of the legacy `ejs-outputs` table in the fact that is allows you to inject content into a Kaml View.  It also has ability to manage CSS class state for elements.
+### **rbl-markup**
+This table is an evolution of the `rbl-value` table in the fact that is allows you to inject content into a Kaml View.  It also has ability to manage CSS class state for elements.
 
 Column | Description
 ---|---
@@ -1375,7 +1338,7 @@ data-css | A CSS class to apply to the container `div`.  This is same `div` that
 data-multiselect | A `Boolean` value specifying whether this dropdown allows multi-selection (default is `false`).
 data-livesearch | A `Boolean` value specifying whether this dropdown allows live search capabilities when the dropdown is opened (default is `false`).
 data-size | The number of items to display when the dropdown is opened before rendering a scrollbar (default is `15`).
-data&#x2011;lookuptable | Specifies the name of lookup table to use as a data source when `ejs-listcontrols` from the results will _not_ provide the data source.
+data&#x2011;lookuptable | Specifies the name of lookup table to use as a data source when `rbl-listcontrols` from the results will _not_ provide the data source.
 data-* | All other data attributes present will be applied to the contained `select` element for processing from the [_bootstrap-select API_](#https://developer.snapappointments.com/bootstrap-select/).
 
 <br/>
@@ -1429,7 +1392,7 @@ data-help | The help tip.  When provided, the help icon will be displayed that c
 data-css | A CSS class to apply to the container `div`.  This is same `div` that has the `rbl-display` attribute and `form-group` CSS class assigned.
 data-value | A default value to use for the slider.
 
-See [ejs-sliders](#**ejs-sliders** ) for more information about the values that come from RBLe Service calculation results that control the configuration of the noUiSlider.
+See [rbl-sliders](#**rbl-sliders** ) for more information about the values that come from RBLe Service calculation results that control the configuration of the noUiSlider.
 
 <br/>
 
@@ -1449,7 +1412,7 @@ data-css | A CSS class to apply to the container `div`.  This is same `div` that
 data-formcss | A CSS class to use in place of the default `form-group`.
 data-horizontal | A `Boolean` value specifying whether the list items should be displayed in a horizontal layout versus vertical (default is `false`).
 data-hidelabel | A `Boolean` value specifying whether the contained `label` element should be remove to correct for UI layout issues when needed (default is `false`).
-data&#x2011;lookuptable | Specifies the name of lookup table to use as a data source when `ejs-listcontrols` from the results will _not_ provide the data source.
+data&#x2011;lookuptable | Specifies the name of lookup table to use as a data source when `rbl-listcontrols` from the results will _not_ provide the data source.
 
 <br/>
 
@@ -1556,7 +1519,7 @@ Every calculation sends back a set of framework inputs that are set programmatic
 Input | Description
 ---|---
 iConfigureUI | A value of `1` indicates that this is the first calculation called after the markup has been rendered.  Can be turned off via `KatAppOptions.runConfigureUICalculation`
-iDataBind | A value of `1` indicates that all `ejs-listcontrol` and `ejs-defaults` should be processed to set default data bound values (note, this happens on the same calculation that sends `iConfigureUI=1`).
+iDataBind | A value of `1` indicates that all `rbl-listcontrol` and `rbl-defaults` should be processed to set default data bound values (note, this happens on the same calculation that sends `iConfigureUI=1`).
 iInputTrigger | The name of the input that triggered the calculation (if any) will be passed.
 iCurrentPage | Describes which page the calculation is being submitted from.  Passed from `KatAppOptions.currentPage`
 iCurrentUICulture | Specifies which culture should be when generating results.  Passed from `KatAppOptions.currentUICulture`
@@ -3131,7 +3094,7 @@ view.on("onCalculationOptions.RBLe", function (event, calculationOptions, applic
     application.setNavigationInputs( { "iCurrentAge": currentAge }, "Sharkfin", false );
 });
 
-// Create defaults from any input with .default-from-ce class (calculated from CE and assigned via ejs-defaults) 
+// Create defaults from any input with .default-from-ce class (calculated from CE and assigned via rbl-defaults) 
 // to be used in next KatApp after navigation
 view.on("onCalculationOptions.RBLe", function (event, calculationOptions, application) {
     application.setNavigationInputs( undefined, undefined, false, ".default-from-ce" );

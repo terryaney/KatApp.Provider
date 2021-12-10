@@ -3939,7 +3939,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                             let visibilityValue = 
                                 simpleExpression?.left ??
                                 that.getRblSelectorValue( tabDef, "rbl-display", simpleExpression?.selector ?? rblDisplay ) ??
-                                that.getRblSelectorValue( tabDef, "ejs-visibility", simpleExpression?.selector ?? rblDisplay ); // Should remove this and only check ejs-visibility as the 'default'
+                                that.getRblSelectorValue( tabDef, "ejs-visibility", simpleExpression?.selector ?? rblDisplay );
                 
                             // Reassign the value you are checking if they are using simple expressions
                             // by passing in the value from getRblSelectorValue to the expression created
@@ -3998,10 +3998,10 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
     
         processRBLSkips( tabDef: TabDef ): void {
             // Legacy, might not be needed (what class do you want me to drop in there)
-            let skipRows = this.getResultTable<RBLeRowWithId>( tabDef, "skip-RBLe" );
+            let skipRows = this.getResultTable<RBLeRowWithId>( tabDef, "rbl-skip" );
 
             if ( skipRows.length == 0 ) {
-                skipRows = this.getResultTable<RBLeRowWithId>( tabDef, "rbl-skip" );
+                skipRows = this.getResultTable<RBLeRowWithId>( tabDef, "skip-RBLe" );
             }
 
             const application = this.application;
@@ -4081,10 +4081,10 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
         }
     
         processDefaults( tabDef: TabDef ): void {
-            let defaultRows = this.getResultTable<RBLeDefaultRow>( tabDef, "ejs-defaults" );
+            let defaultRows = this.getResultTable<RBLeDefaultRow>( tabDef, "rbl-defaults" );
     
             if ( defaultRows.length == 0 ) {
-                defaultRows = this.getResultTable<RBLeDefaultRow>( tabDef, "rbl-defaults" );
+                defaultRows = this.getResultTable<RBLeDefaultRow>( tabDef, "ejs-defaults" );
             }
 
             defaultRows.forEach( row => {
@@ -4095,10 +4095,10 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
     
         processDisabled( tabDef: TabDef ): void {
             const application = this.application;
-            let disabledRows = this.getResultTable<RBLeDefaultRow>( tabDef, "ejs-disabled" );
+            let disabledRows = this.getResultTable<RBLeDefaultRow>( tabDef, "rbl-disabled" );            
 
             if ( disabledRows.length == 0 ) {
-                disabledRows = this.getResultTable<RBLeDefaultRow>( tabDef, "rbl-disabled" );
+                disabledRows = this.getResultTable<RBLeDefaultRow>( tabDef, "ejs-disabled" );
             }
     
             disabledRows.forEach( row => {
@@ -4560,10 +4560,9 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
         }
     
         processSliders( tabDef: TabDef ): void {
-            let sliderRows = this.getResultTable<SliderConfigurationRow>( tabDef, "ejs-sliders" );
-
+            let sliderRows = this.getResultTable<SliderConfigurationRow>( tabDef, "rbl-sliders" );
             if ( sliderRows.length == 0 ) {
-                sliderRows = this.getResultTable<SliderConfigurationRow>( tabDef, "rbl-sliders" );
+                sliderRows = this.getResultTable<SliderConfigurationRow>( tabDef, "ejs-sliders" );
             }
 
             const application = this.application;
@@ -4588,8 +4587,8 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                     const input = $("." + id, application.element);
     
                     const defaultConfigValue =
-                        this.getResultValue( tabDef, "ejs-defaults", id, "value") || // what is in ejs-defaults
-                        this.getResultValue( tabDef, "rbl-defaults", id, "value") ||
+                        this.getResultValue( tabDef, "rbl-defaults", id, "value") || // what is in this table?
+                        this.getResultValue( tabDef, "ejs-defaults", id, "value") || 
                         config.default || // what was in ejs-slider/default
                         input.val() || // what was put in the text box
                         config.min; //could/should use this
@@ -4711,10 +4710,10 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
         processListControls( tabDef: TabDef ): void {
             const application = this.application;
             const ui = this.application.ui;
-            let configRows = this.getResultTable<ListControlRow>( tabDef, "ejs-listcontrol" );
+            let configRows = this.getResultTable<ListControlRow>( tabDef, "rbl-listcontrol" );
 
             if ( configRows.length == 0 ) {
-                configRows = this.getResultTable<ListControlRow>( tabDef, "rbl-listcontrol" );
+                configRows = this.getResultTable<ListControlRow>( tabDef, "ejs-listcontrol" );
             }
 
             configRows.forEach( row => {
@@ -4802,10 +4801,9 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                 // be after all html updates from prior loop and from any possible template 
                 // processing that happens in rbl-source processing
                 results.forEach(tabDef => {
-                    let markUpRows = this.getResultTable<HtmlContentRow>( tabDef, "ejs-markup" );
-                    
+                    let markUpRows = this.getResultTable<HtmlContentRow>( tabDef, "rbl-markup" )
                     if ( markUpRows.length == 0 ) {
-                        markUpRows = this.getResultTable<HtmlContentRow>( tabDef, "rbl-markup" )
+                        markUpRows = this.getResultTable<HtmlContentRow>( tabDef, "ejs-markup" );
                     }
 
                     // Apply dynamic classes after all html updates 
@@ -4843,9 +4841,9 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                     });
     
                     if ( application.calculationInputs?.iConfigureUI === 1 ) {
-                        let sliderRows = this.getResultTable<SliderConfigurationRow>( tabDef, "ejs-sliders" );
+                        let sliderRows = this.getResultTable<SliderConfigurationRow>( tabDef, "rbl-sliders" );
                         if ( sliderRows.length == 0 ) {
-                            sliderRows = this.getResultTable<SliderConfigurationRow>( tabDef, "rbl-sliders" );
+                            sliderRows = this.getResultTable<SliderConfigurationRow>( tabDef, "ejs-sliders" );
                         }
                         sliderConfigIds = sliderConfigIds.concat( sliderRows.map( r => r["@id"]) );
                     }                

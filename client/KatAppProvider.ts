@@ -46,17 +46,9 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                         .attr("kat-disabled", "true");
 
                     if ( typeof $.fn.selectpicker === "function" ) {
-                        $("select.bootstrap-select[data-kat-bootstrap-select-initialized='true'][kat-disabled='true']").selectpicker("refresh");
+                        $("select[data-kat-bootstrap-select-initialized='true'][kat-disabled='true']").selectpicker("refresh");
                     }
                 }
-
-                /*
-                $( ".slider-control, input:enabled, select:enabled", application.element ).attr("disabled", "disabled").attr("kat-disabled", "true");
-
-                if ( typeof $.fn.selectpicker === "function" ) {
-                    $("select.bootstrap-select[data-kat-bootstrap-select-initialized='true'][kat-disabled='true']").selectpicker("refresh");
-                }
-                */
             },
             onCalculateEnd: function( application: KatAppPlugIn ) {
                 $(".needsRBLeConfig", application.element).removeClass("needsRBLeConfig");
@@ -3886,20 +3878,18 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
             return undefined;
         };
 
-        processVisibilities( showInspector: boolean): void {
+        private processRblFalseyAttribute( showInspector: boolean, attributeName: string, legacyTable: string, processFalsey: ( el: JQuery<HTMLElement>, value: boolean )=> void ): void {
             const that: RBLeUtilities = this;
             const application = this.application;
     
-            // toggle visibility
-            //[rbl-display] controls display = none|block(flex?).  
-            $("[rbl-display]", this.application.element)
+            $("[" + attributeName + "]", application.element)
                 .not("rbl-template *") // not in templates
                 .each(function () {
                     const el = $(this);
-                    const rblDisplay = el.attr('rbl-display');
+                    const attributeValue = el.attr(attributeName);
 
-                    // rbl-display - current support
-                    // id - rbl-display[@id=id]/value || ejs-visibilty[@id=id]/value returns falsy
+                    // rbl-display/rbl-disable - current support
+                    // id - attributeName[@id=id]/value || legacyTable[@id=id]/value returns falsy
                     // table.idValue - table[@id=idValue]/value returns falsy
                     // table.idValue.column - table[@id=idValue]/column returns falsy
                     // table.keyColumn.keyValue.column - table[keyColumn=keyValue]/column returns falsy
@@ -3914,10 +3904,11 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                     //
                     // Complex Expressions - [expression] or table[expression]:
                     // Process until expression returns != undefined, then evaluate.
-                    if ( rblDisplay != undefined ) {
-                        if ( showInspector && !el.hasClass("kat-inspector-display") ) {
-                            el.addClass("kat-inspector-display");
-                            let inspectorTitle = "[rbl-display={value}]".format( { value: rblDisplay } );
+                    if ( attributeValue != undefined ) {
+                        const inspectorClass = "kat-inspector-" + attributeName.split("-")[ 1 ];
+                        if ( showInspector && !el.hasClass(inspectorClass) ) {
+                            el.addClass(inspectorClass);
+                            let inspectorTitle = "[{name}={value}]".format( { name: attributeName, value: attributeValue } );
                             const existingTitle = el.attr("title");
                             
                             if ( existingTitle != undefined ) {
@@ -3934,35 +3925,85 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                         const tabDef = that.getTabDef( tabName, ceKey )
 
                         if ( tabDef != undefined ) {
-                            const simpleExpression = that.getSimpleExpression(rblDisplay);
+                            const simpleExpression = that.getSimpleExpression(attributeValue);
 
-                            let visibilityValue = 
+                            let resultValue = 
                                 simpleExpression?.left ??
-                                that.getRblSelectorValue( tabDef, "rbl-display", simpleExpression?.selector ?? rblDisplay ) ??
-                                that.getRblSelectorValue( tabDef, "ejs-visibility", simpleExpression?.selector ?? rblDisplay );
+                                that.getRblSelectorValue( tabDef, attributeName, simpleExpression?.selector ?? attributeValue ) ??
+                                that.getRblSelectorValue( tabDef, legacyTable, simpleExpression?.selector ?? attributeValue );
                 
                             // Reassign the value you are checking if they are using simple expressions
                             // by passing in the value from getRblSelectorValue to the expression created
                             // originally by {operator}{value} and it will return 1 or 0.
                             if ( simpleExpression != undefined ) {
-                                visibilityValue = simpleExpression.evaluate(visibilityValue);
+                                resultValue = simpleExpression.evaluate(resultValue);
                             }
 
-                            if (visibilityValue != undefined) {
-                                if ( that.isFalsy( visibilityValue ) ) {
-                                    el.hide();
-                                }
-                                else {
-                                    el.show();
-                                }
+                            if (resultValue != undefined) {
+                                processFalsey( el, that.isFalsy( resultValue ) );
                             }
                         }
                         else {
                             const tabDefName = ( ceKey ?? application.defaultCalcEngineKey ) + "." + ( tabName ?? "default" );
-                            application.trace("<b style='color: Red;'>RBL WARNING</b>: no tab found for " + tabDefName + ", rbl-display=" + rblDisplay, TraceVerbosity.Detailed);
+                            application.trace("<b style='color: Red;'>RBL WARNING</b>: no tab found for " + tabDefName + ", " + attributeName + "=" + attributeValue, TraceVerbosity.Detailed);
                         }
                     }
                 });
+        }
+
+        processRblDisabled( showInspector: boolean): void {
+            this.processRblFalseyAttribute(
+                showInspector,
+                "rbl-disabled",
+                "ejs-disabled",
+                ( el, value ) => {
+                    const isListContainer = el.hasClass("list-container");
+                    const isSlider = el.data("slider-type") == "nouislider";                    
+                    const isInput = el.is(":input");
+                    const useClass = !isListContainer && !isSlider && !isInput;
+
+                    const target = isListContainer
+                        ? $("input", el) // check/radio list
+                        : el;
+
+                    if ( value ) {
+                        if ( useClass ) {
+                            target.addClass("disabled");
+                        }
+                        else {
+                            target.prop("disabled", true).removeAttr("kat-disabled");
+                        }
+                    }
+                    else {
+                        if ( useClass ) {
+                            target.removeClass("disabled");
+                        }
+                        else {
+                            target.prop("disabled", false);
+                        }
+                    }
+                    
+                    if (target.attr("data-kat-bootstrap-select-initialized") !== undefined) {
+                        target.selectpicker('refresh');
+                    }
+                }
+            );
+        }
+
+        processRblDisplays( showInspector: boolean): void {
+            this.processRblFalseyAttribute(
+                showInspector,
+                "rbl-display",
+                "ejs-visibility",
+                ( el, value ) => {
+                    if ( value ) {
+                        el.hide();
+                    }
+                    else {
+                        el.show();
+                    }
+                }
+            );
         }
     
         processRblDatas( tabDef: TabDef ): void {
@@ -4068,9 +4109,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                 else if ( input.length > 0 ) {
                     input.val( input[ 0 ].hasAttribute( "multiple" ) ? value.split("^") : value );
     
-                    // In case it is bootstrap-select
-                    const isSelectPicker = input.attr("data-kat-bootstrap-select-initialized") !== undefined;
-                    if (isSelectPicker) {
+                    if (input.attr("data-kat-bootstrap-select-initialized") !== undefined) {
                         input.selectpicker("refresh");
                     }
                 }
@@ -4093,6 +4132,22 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
             });
         }
     
+        processVisibilities( tabDef: TabDef ): void {
+            const application = this.application;
+            const visibilityRows = this.getResultTable<RBLeDefaultRow>( tabDef, "ejs-visibility" );
+            visibilityRows.forEach( row => {
+                const selector = application.ui.getJQuerySelector( row["@id"] ) + ", [rbl-display='" + row["@id"] + "']";
+                if ( selector !== undefined ) {
+                    if (row.value === "1") {
+                        $(selector, application.element).show();
+                    }
+                    else {
+                        $(selector, application.element).hide();
+                    }
+                }
+            });
+        }
+
         processDisabled( tabDef: TabDef ): void {
             const application = this.application;
             let disabledRows = this.getResultTable<RBLeDefaultRow>( tabDef, "rbl-disabled" );            
@@ -4110,30 +4165,22 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                     // @id input - checkbox and list controls
                     // slider-@id - noUiSlider
                     const value = row.value ?? "";
-                    const input = $(selector + ", " + selector + " input", application.element);
-                    const sliderContainer = this.application.ui.findNoUiSliderContainer( id, application.element );
-    
-                    if (sliderContainer !== undefined) {
-                        if (value === "1") {
-                            sliderContainer.attr("disabled", "true").removeAttr("kat-disabled");
-                        }
-                        else {
-                            sliderContainer.removeAttr("disabled");
-                        }
-                    }
-                    else if ( input.length > 0 ) {
-                        if (value === "1") {
-                            input.prop("disabled", true).removeAttr("kat-disabled");
-                        }
-                        else {
-                            input.prop("disabled", false);
-                        }
-    
-                        if (input.hasClass("bootstrap-select")) {
-                            input.selectpicker('refresh');
-                        }
+                    const target = 
+                        this.application.ui.findNoUiSliderContainer( id, application.element ) ??
+                        $(selector + ", " + selector + " input", application.element);
+
+                    if (value === "1") {
+                        target.prop("disabled", true).removeAttr("kat-disabled");
                     }
                     else {
+                        target.prop("disabled", false);
+                    }
+
+                    if (target.attr("data-kat-bootstrap-select-initialized") !== undefined) {
+                        target.selectpicker('refresh');
+                    }
+        
+                    if ( target.length == 0 ) {
                         application.trace("<b style='color: Red;'>RBL WARNING</b>: No rbl-disabled input can be found for " + id, TraceVerbosity.Detailed);
                     }
                 }
@@ -4793,8 +4840,9 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
     
                 // These all need to be after processUI so if any inputs are built
                 // from results, they are done by the time these run
-                this.processVisibilities( showInspector );
-    
+                this.processRblDisplays( showInspector );
+                this.processRblDisabled( showInspector );
+
                 let sliderConfigIds: ( string | null )[] = [];
     
                 // Now loop again to run rest of 'push' items from each tab.  This has to
@@ -4825,21 +4873,8 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                             }
                         }
                     });
-    
-                    // ProcessVisibilities - should removed after rbl-display is fixed
-                    const visibilityRows = this.getResultTable<RBLeDefaultRow>( tabDef, "ejs-visibility" );
-                    visibilityRows.forEach( row => {
-                        const selector = application.ui.getJQuerySelector( row["@id"] ) + ", [rbl-display='" + row["@id"] + "']";
-                        if ( selector !== undefined ) {
-                            if (row.value === "1") {
-                                $(selector, application.element).show();
-                            }
-                            else {
-                                $(selector, application.element).hide();
-                            }
-                        }
-                    });
-    
+
+                    // Debug info - just getting all sliderConfigIds
                     if ( application.calculationInputs?.iConfigureUI === 1 ) {
                         let sliderRows = this.getResultTable<SliderConfigurationRow>( tabDef, "rbl-sliders" );
                         if ( sliderRows.length == 0 ) {
@@ -4848,10 +4883,13 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                         sliderConfigIds = sliderConfigIds.concat( sliderRows.map( r => r["@id"]) );
                     }                
         
+                    // Should removed after rbl-display attribute is on all items
+                    this.processVisibilities( tabDef );
                     this.processSliders( tabDef )
                     this.processRBLSkips( tabDef );
                     this.processListControls( tabDef );
                     this.processDefaults( tabDef );
+                    // Should removed after rbl-disable attribute is on all items
                     this.processDisabled( tabDef );
                     this.processValidations( tabDef );
                     
@@ -6297,10 +6335,9 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
 
             const selectPickerAvailable = typeof $.fn.selectpicker === "function";
             const that = this;
+            const isBootstrap5 = this.application.bootstrapVersion == 5;
 
-            if ( !selectPickerAvailable && dropdowns.length > 0 ) {
-                this.application.trace("bootstrap-select javascript is not present", TraceVerbosity.None);
-            }
+            let selectPickerNotAvailWarning = true;
 
             dropdowns
                 .each( function() {
@@ -6315,8 +6352,14 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                     const size = el.data("size") ?? "15";
                     const lookuptable = el.data("lookuptable");
                     const css = el.data("css");
+                    const useSelectPicker = el.data("use-selectpicker") ?? true;
 
-                    const dataItemsProcessed = [ "data-inputname", "data-label", "data-hidelabel", "data-help", "data-multiselect", "data-livesearch", "data-size", "data-lookuptable", "data-css" ];
+                    const dataItemsProcessed = [ "data-inputname", "data-label", "data-hidelabel", "data-help", "data-multiselect", "data-livesearch", "data-size", "data-lookuptable", "data-css", "data-use-selectpicker" ];
+
+                    if ( useSelectPicker && !selectPickerAvailable && selectPickerNotAvailWarning ) {
+                        that.application.trace("bootstrap-select javascript is not present", TraceVerbosity.None);
+                        selectPickerNotAvailWarning = false;
+                    }
 
                     that.ensureRblDisplay( el );
 
@@ -6336,19 +6379,6 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                         $("a[rbl-display='vh" + id + "']", el).show();
                     }
 
-                    input.attr("data-size", size);
-
-                    if ( multiSelect ) {
-                        input.addClass("select-all");
-                        input.attr("multiple", "multiple");
-                        input.attr("data-actions-box", "true");
-                        input.attr("data-selected-text-format", "count > 2");
-                    }
-                    
-                    if ( liveSearch ) {
-                        input.attr("data-live-search", "true");
-                    }
-
                     if ( lookuptable !== undefined ) {
                         that.application.ui.processDropdownItems(
                             input, 
@@ -6359,22 +6389,56 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                         );
                     }
 
-                    // Merge all other data-* attributes they might want to pass through to bootstrap-select
-                    $.each(this.attributes, function(i, attrib){
-                        const name = attrib.name;
-                        if ( name.startsWith( "data-") && dataItemsProcessed.indexOf(name) == -1 ) {
-                            input.attr(name, attrib.value);
-                        }
-                    });
+                    if ( useSelectPicker ) {
+                        input.attr("data-size", size);
 
-                    if ( selectPickerAvailable ) {
-                        $(".bootstrap-select", el)
-                            .selectpicker()
-                            .attr("data-kat-bootstrap-select-initialized", "true")
-                            .next(".error-msg")
-                                .addClass("selectpicker"); /* aid in css styling */ /* TODO: Don't think this is matching and adding class */
+                        if ( multiSelect ) {
+                            input.addClass("select-all");
+                            input.attr("multiple", "multiple");
+                            input.attr("data-actions-box", "true");
+                            input.attr("data-selected-text-format", "count > 2");
+                        }
+                        
+                        if ( liveSearch ) {
+                            input.attr("data-live-search", "true");
+                        }
+
+                        // Merge all other data-* attributes they might want to pass through to bootstrap-select
+                        $.each(this.attributes, function(i, attrib){
+                            const name = attrib.name;
+                            if ( name.startsWith( "data-") && dataItemsProcessed.indexOf(name) == -1 ) {
+                                input.attr(name, attrib.value);
+                            }
+                        });
+
+                        if ( selectPickerAvailable ) {
+                            $(".bootstrap-select", el)
+                                .next(".error-msg")
+                                .addClass("drop-down"); /* aid in css styling */
+
+                            $(".bootstrap-select", el)
+                                .selectpicker()
+                                .attr("data-kat-bootstrap-select-initialized", "true");
+                        }
                     }
-            
+                    else {
+                        // Need to deal with data-placeholder ... some hacks out
+                        // there that are supported by modern browsers, but I haven't
+                        // implemented yet.
+                        // https://stackoverflow.com/questions/5805059/how-do-i-make-a-placeholder-for-a-select-box
+                        
+                        $("select", el).removeClass("bootstrap-select show-tick");
+                        
+                        // This should be done before this if statement, but bootstrap-select
+                        // doesn't support form-select class styling yet
+                        if ( isBootstrap5 ) {
+                            $("select", el)
+                                .removeClass("form-control")
+                                .addClass("form-select")
+                                .next(".error-msg")
+                                .addClass("drop-down"); /* aid in css styling */
+                        }
+                    }
                     el.attr("data-katapp-initialized", "true");
                 });
         }

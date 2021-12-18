@@ -5412,7 +5412,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                             const dataContentSelector = $(this).data('content-selector');
                             let content = dataContent == undefined
                                 ? dataContentSelector == undefined ? $(this).next().html() : $(dataContentSelector).html()
-                                : dataContent;
+                                : dataContent as string;
             
                             // Replace {Label} in content with the trigger provided...used in Error Messages
                             const labelFix = $(this).data("label-fix");
@@ -5433,12 +5433,20 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                                 const isWarning = $("label.warning", $(e.target)).length == 1;
                                 if (isWarning) {
                                     const templateId = "#" + $(e.target).attr("aria-describedby");
-                                    $(templateId, view).removeClass("error").addClass("warning");
+                                    $(templateId).removeClass("error").addClass("warning");
                                 }
                             });
                     }
                     else {
-                        $(this).popover(options);
+                        $(this)
+                            .popover(options)
+                            .on('inserted.bs.popover', function (e) {
+                                debugger;
+                                const templateId = "#" + $(e.target).attr("aria-describedby");
+                                const currentPopover = $(templateId);
+                                $("[rbl-action-link]", currentPopover).attr("data-katapp-initialized", "false");
+                                application.templateBuilder.processActionLinks(currentPopover);
+                            });
                     }
                                 
                 })
@@ -5473,14 +5481,6 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                     .on("show.bs.popover.RBLe", function() { hideVisiblePopover(); })
                     .on("shown.bs.popover.RBLe", function( e ) { 
                         KatApp[ "visiblePopover"] = e.target; 
-                        
-                        //$("div.katapp-css[role='tooltip'] [rbl-action-link]").attr("data-katapp-initialized", "false");
-                        //application.templateBuilder.processActionLinks($("div.katapp-css[role='tooltip']"));
-                        
-                        // Think scoping here is better
-                        const currentPopover = $(e.target);
-                        $("[rbl-action-link]", currentPopover).attr("data-katapp-initialized", "false");
-                        application.templateBuilder.processActionLinks(currentPopover);
                     })
                     .on("hide.bs.popover.RBLe", function() { 
                         KatApp[ "visiblePopover"] = undefined; 

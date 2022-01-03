@@ -2193,7 +2193,9 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                     target.html("");
                 }
                 else {
+                    // This will run any <script> tags that are present
                     target.html( template.Content );
+
                     if ( template.Type !== undefined ) {
                         target.attr("rbl-template-type", template.Type);
                     }
@@ -2664,7 +2666,9 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                                             } );
                                         }
                                         else {
-                                            el.on( eventName + ".ka",  application.options.handlers![ functionName ] );
+                                            el.on( eventName + ".ka", function() {
+                                                application.options.handlers![ functionName ].apply(this, arguments);
+                                            });
                                         }
                                     }
                                 });
@@ -2693,7 +2697,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                     $(this).off("change.RBLe").on("change.RBLe", function () {
                         that.changeRBLe($(this));
                     });
-                    });
+                });
             }
         }
 
@@ -3521,7 +3525,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
             const application = this.application;
     
             $("[rbl-attr]", application.element)
-                .not("rbl-template *") // Not sure I'd need these to filter out rbl-value elements inside templates because { } should be used for 'values'
+                .not("rbl-template *")
                 .each(function () {
                     let el = $(this);
         
@@ -3573,10 +3577,19 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                                 el = application.ui.getAspNetCheckboxLabel( el ) ?? el;
                             }
 
-                            // set attribute and data
+                            // rbl-attr="data-foo:fooValue" data-foo="Terry"
+                            // Calc 1: fooValue = Aney
+                            //  previous = undefined
+                            //  currentValue = "Terry"
+                            //  newValue = "Terry Aney"
+                            // Calc 2: fooValue = Craig
+                            //  previous = "Aney"
+                            //  currentValue = "Terry Aney"
+                            //  newValue = "Terry Craig"
                             const dataName = "rbl-attr-" + attrName + "-previous";
                             const previous = el.data(dataName);
                             const currentValue = el.attr(attrName) || "";
+
                             const newValue = previous != undefined
                                 ? currentValue.replace(previous, value).trim()
                                 : ( currentValue == "" ? value : currentValue + " " + value ).trim();
@@ -3867,9 +3880,10 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                     evaluate: function( value ) {
                         if ( value == undefined ) return undefined;
 
-                        const expression = this.isNumber
-                            ? "{v1} {op} {v2}".format( { v1: +value, op: this.operator, v2: +this.right } )
+                        const expression = this.isNumber || value.startsWith("'")
+                            ? "{v1} {op} {v2}".format( { v1: value, op: this.operator, v2: this.right } )
                             : "\"{v1}\" {op} \"{v2}\"".format( { v1: value, op: this.operator, v2: this.right } );
+
                         return <boolean>eval(expression) ? "1" : "0";
                     }
                 };
@@ -3966,7 +3980,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                         ? $("input", el) // check/radio list
                         : el;
 
-                    if ( value ) {
+                    if ( !value ) {
                         if ( useClass ) {
                             target.addClass("disabled");
                         }
@@ -3997,7 +4011,9 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                 "ejs-visibility",
                 ( el, value ) => {
                     if ( value ) {
-                        el.hide();
+                        // couldn't use .hide() because elements with 
+                        // 'flex' display had important on it
+                        el.attr('style','display:none !important');
                     }
                     else {
                         el.show();
@@ -4167,7 +4183,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                     const value = row.value ?? "";
                     const target = 
                         this.application.ui.findNoUiSliderContainer( id, application.element ) ??
-                        $(selector + ", " + selector + " input", application.element);
+                        $(selector + ":not(div), " + selector + " input", application.element);
 
                     if (value === "1") {
                         target.prop("disabled", true).removeAttr("kat-disabled");

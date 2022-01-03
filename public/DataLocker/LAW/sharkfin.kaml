@@ -485,6 +485,10 @@
             </div>
 
         </div>
+
+        <div class="col-sm-12">
+            <div rbl-tid="validation-summary"></div>
+        </div>
     </div>
 
     <div class="row">

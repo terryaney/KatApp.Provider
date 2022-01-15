@@ -258,7 +258,7 @@ class KatApp
         // viewParts[ 0 ], viewParts[ 1 ]
         // folder: string, resource: string, optional Version
 
-        var checkLocalServer = function(): Deferred {
+        const checkLocalServer = function(): Deferred {
             const d = $.Deferred();
 
             if ( localWebServer === undefined || application.element.data("kat-local-domain-reachable") !== undefined ) {
@@ -453,7 +453,7 @@ class KatApp
                                         const script = document.createElement('script');
                                         script.setAttribute("rbl-script", "true");
 
-                                        var scriptLines = scriptContent.split('\n');
+                                        const scriptLines = scriptContent.split('\n');
                                         if ( !success.isLocalServer && scriptLines[ scriptLines.length - 1 ] == "//# sourceMappingURL=KatAppProvider.js.map" ) {
                                             scriptLines.pop();
                                             scriptContent = scriptLines.join("\n");
@@ -470,7 +470,7 @@ class KatApp
                                 .map( r => r.value as GetResourceSuccess )
                                 .filter( r => !r.isScript )
                                 .forEach( r => {
-                                    callbackResults[ r.key ] = r.content!;
+                                    callbackResults[ r.key ] = r.content!; // eslint-disable-line @typescript-eslint/no-non-null-assertion
                                 });
 
                             

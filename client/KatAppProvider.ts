@@ -1,7 +1,7 @@
 const providerVersion = 9.02; // eslint-disable-line @typescript-eslint/no-unused-vars
 // Hack to get bootstrap modals in bs5 working without having to bring in the types from bs5.
 // If I brought in types of bs5, I had more compile errors that I didn't want to battle yet.
-declare var bootstrap: any;
+declare const bootstrap: any; // eslint-disable-line @typescript-eslint/no-explicit-any
 
 KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosity.Detailed);
 
@@ -281,9 +281,9 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
             }
             
             const convertInlineTemplatesToStandardTemplates = function(templateContainer: JQuery<HTMLElement>, containerName: string ): void {
-                const convertInlineTemplateToStandardTemplate = function(inlineTemplate: JQuery<HTMLElement>) {
+                const convertInlineTemplateToStandardTemplate = function(inlineTemplate: JQuery<HTMLElement>): void {
                     const inlineParent = inlineTemplate.parent();
-                    const templateType = inlineTemplate.attr("rbl-tid")!;
+                    const templateType = inlineTemplate.attr("rbl-tid")!; // eslint-disable-line @typescript-eslint/no-non-null-assertion
                     const templateIdAttribute = templateType == "inline"
                         ? "rbl-tid"
                         : "rbl-empty-tid";
@@ -740,25 +740,25 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
 
         runRBLeCommand(commandName: string): void {
             // Debugging helper
-            const application = this;
+            const that = this;
 
-            const logSuccess = function( result: any ): void { 
+            const logSuccess = function( result: RBLeServiceResults ): void { 
                 if ( result.payload !== undefined ) {
                     result = JSON.parse(result.payload);
                 }
 
                 console.log( JSON.stringify( result ) ); 
             };
-            const logError = function(xhr: JQuery.jqXHR<any> ): void { 
+            const logError = function(xhr: JQuery.jqXHR ): void { 
                 console.log( "Error: " + xhr.status + ", " + xhr.statusText ); 
             };
             const data = {
                 "Command": commandName, 
-                "Token": application.options.registeredToken!
+                "Token": that.options.registeredToken! // eslint-disable-line @typescript-eslint/no-non-null-assertion
             };
 
-            if ( application.options.submitCalculation != null ) {
-                application.options.submitCalculation( application, data, logSuccess, logError );
+            if ( that.options.submitCalculation != null ) {
+                that.options.submitCalculation( that, data, logSuccess, logError );
             }
             else {
                 $.ajax( { 
@@ -1171,28 +1171,31 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                             debugger;
                         }
                         else {
-                            const base64toBlob = function(base64Data : string, contentType: string = 'application/octet-stream', sliceSize: number = 1024): Blob {
+                            const base64toBlob = function(base64Data: string, contentType = 'application/octet-stream', sliceSize = 1024): Blob {
                                 // https://stackoverflow.com/a/20151856/166231                
-                                var byteCharacters = atob(base64Data);
-                                var bytesLength = byteCharacters.length;
-                                var slicesCount = Math.ceil(bytesLength / sliceSize);
-                                var byteArrays = new Array(slicesCount);
+                                const byteCharacters = atob(base64Data);
+                                const bytesLength = byteCharacters.length;
+                                const slicesCount = Math.ceil(bytesLength / sliceSize);
+                                const byteArrays = new Array(slicesCount);
                             
-                                for (var sliceIndex = 0; sliceIndex < slicesCount; ++sliceIndex) {
-                                    var begin = sliceIndex * sliceSize;
-                                    var end = Math.min(begin + sliceSize, bytesLength);
+                                for (let sliceIndex = 0; sliceIndex < slicesCount; ++sliceIndex) {
+                                    const begin = sliceIndex * sliceSize;
+                                    const end = Math.min(begin + sliceSize, bytesLength);
                             
-                                    var bytes = new Array(end - begin);
-                                    for (var offset = begin, i = 0; offset < end; ++i, ++offset) {
+                                    const bytes = new Array(end - begin);
+                                    for (let offset = begin, i = 0; offset < end; ++i, ++offset) {
                                         bytes[i] = byteCharacters[offset].charCodeAt(0);
                                     }
                                     byteArrays[sliceIndex] = new Uint8Array(bytes);
                                 }
                                 return new Blob(byteArrays, { type: contentType });
                             }
+
+                            /*
                             const base64toBlobFetch = (base64 : string, type: string = 'application/octet-stream'): Promise<Blob> => 
                                 // Can't use in IE :(
                                 fetch(`data:${type};base64,${base64}`).then(res => res.blob())
+                            */
 
                             const base64 = docGenApiRow[ "content" ];
                             const contentType = docGenApiRow[ "content-type" ];
@@ -1284,7 +1287,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
 
         buildFormData(submitData: KatAppActionSubmitData): FormData {
             // https://gist.github.com/ghinda/8442a57f22099bdb2e34#gistcomment-3405266
-            const buildForm = function (formData: FormData, data: Object, parentKey?: string, asDictionary?: boolean): void {
+            const buildForm = function (formData: FormData, data: object, parentKey?: string, asDictionary?: boolean): void {
                 if (data && typeof data === 'object' && !(data instanceof Date) && !(data instanceof File) && !(data instanceof Blob)) {
                     Object.keys(data).forEach( (key, index) => {
                         if ( asDictionary ?? false ) {
@@ -1293,9 +1296,10 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                         }
                         else {
                             const formName = parentKey ? `${parentKey}[${key}]` : key;
-                            var createDictionary = 
+                            const createDictionary = 
                                 formName == "Inputs" || formName == "Configuration[customInputs]" || formName == "Configuration[manualInputs]";
-                                buildForm(formData, data[key], formName, createDictionary);
+                            
+                            buildForm(formData, data[key], formName, createDictionary);
                         }
                     });
                 } else if ( data != null ) {
@@ -1304,7 +1308,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                         : data;
 
                     if ( typeof value !== "function" ) {
-                        formData.append(parentKey!, value);
+                        formData.append(parentKey!, value); // eslint-disable-line @typescript-eslint/no-non-null-assertion
                     }
                 }
             };
@@ -1463,7 +1467,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                     if ( t["@name"] == undefined ) {
                         t["@name"] = "RBLResults" + ( i + 1 );
                     }
-                    results!.push( t );
+                    results!.push( t ); // eslint-disable-line @typescript-eslint/no-non-null-assertion
                 });
             }
 
@@ -1543,17 +1547,17 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                 return;
             }
 
-            const application = this;
+            const that = this;
             const isDownload = actionOptions.isDownload ?? false;
             const runCalculate = actionOptions.calculateOnSuccess ?? false;
             const errors: ValidationRow[] = [];
             const warnings: ValidationRow[] = [];
 
-            application.rble.initializeValidationSummaries();
+            that.rble.initializeValidationSummaries();
             this.showAjaxBlocker();
         
             let url = "api/" + commandName;
-            const serviceUrlParts = application.options.sessionUrl?.split( "?" );
+            const serviceUrlParts = that.options.sessionUrl?.split( "?" );
 
             if ( serviceUrlParts != undefined && serviceUrlParts.length === 2 ) {
                 url += "?" + serviceUrlParts[ 1 ];
@@ -1564,28 +1568,28 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
             // No one was using this yet, not sure I need it
             // this.ui.triggerEvent( "onActionStart", commandName, data, this, actionLink );
 
-            const data = application.getEndpointSubmitData(options, actionOptions);
+            const data = that.getEndpointSubmitData(options, actionOptions);
 
-            application.ui.triggerEvent( "onActionStart", commandName, data, application, data.Configuration, actionLink );
+            that.ui.triggerEvent( "onActionStart", commandName, data, that, data.Configuration, actionLink );
 
             // Couldn't figure out how to model bind JObject or Dictionary, so hacking with this
             data[ "inputTablesRaw" ] = data.InputTables != undefined ? JSON.stringify( data.InputTables ) : undefined;
 
-            var fd = application.buildFormData( data );
+            const fd = that.buildFormData( data );
 
-            const clearServerOnlySaveInstructions = function() {
-                if ( application.options.nextCalculation?.saveLocations != undefined ) {
-                    application.options.nextCalculation.saveLocations = 
-                        application.options.nextCalculation.saveLocations.filter( l => !l.serverSideOnly );
+            const clearServerOnlySaveInstructions = function(): void {
+                if ( that.options.nextCalculation?.saveLocations != undefined ) {
+                    that.options.nextCalculation.saveLocations = 
+                        that.options.nextCalculation.saveLocations.filter( l => !l.serverSideOnly );
                 }
             };
-            const finishApiAction = function() {
+            const finishApiAction = function(): void {
                 clearServerOnlySaveInstructions();
-                const errorSummary = $("#" + application.id + "_ModelerValidationTable", application.element);
-                const warningSummary = $("#" + application.id + "_ModelerWarnings", application.element);
-                application.rble.processValidationRows( errorSummary, errors );
-                application.rble.processValidationRows( warningSummary, warnings );
-                application.rble.finalizeValidationSummaries();
+                const errorSummary = $("#" + that.id + "_ModelerValidationTable", that.element);
+                const warningSummary = $("#" + that.id + "_ModelerWarnings", that.element);
+                that.rble.processValidationRows( errorSummary, errors );
+                that.rble.processValidationRows( warningSummary, warnings );
+                that.rble.finalizeValidationSummaries();
 
                 if ( errors.length > 0 ) {
                     debugger;
@@ -1596,14 +1600,14 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                     console.log( errors );
                     console.groupEnd();
 
-                    application.ui.triggerEvent( "onActionFailed", commandName, errorResponse, application, data.Configuration, actionLink );
+                    that.ui.triggerEvent( "onActionFailed", commandName, errorResponse, that, data.Configuration, actionLink );
                 }
                 else {
-                    application.ui.triggerEvent( "onActionResult", commandName, successResponse, application, data.Configuration, actionLink );
+                    that.ui.triggerEvent( "onActionResult", commandName, successResponse, that, data.Configuration, actionLink );
                 }
 
-                application.hideAjaxBlocker();
-                application.ui.triggerEvent( "onActionComplete", commandName, application, data.Configuration, actionLink );
+                that.hideAjaxBlocker();
+                that.ui.triggerEvent( "onActionComplete", commandName, that, data.Configuration, actionLink );
 
                 if ( done != undefined ) {
                     done( successResponse, errorResponse);
@@ -1622,8 +1626,8 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                     settings[ "responseFields" ][ "binary" ] = "responseBinary";
                 },
                 xhr: function() {
-                    var xhr = new XMLHttpRequest();
-                    xhr.onreadystatechange = function() {
+                    const xhr = new XMLHttpRequest();
+                    xhr.onreadystatechange = function(): void {
                         // https://stackoverflow.com/a/29039823/166231
                         if (xhr.readyState == 2) {
                             if (isDownload && xhr.status == 200) {
@@ -1648,7 +1652,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                             filename = disposition.split('filename=')[1].split(';')[0];
                         }
             
-                        application.downloadBlob(blob, filename);
+                        that.downloadBlob(blob, filename);
                     }
                     else {
                         successResponse = result as KatAppActionResult;
@@ -1657,7 +1661,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                             successResponse = undefined;
                             errorResponse = result;
                             errors.push( { "@id": "System", text: errorResponse[ "Message"] });
-                            delete application.endpointRBLeInputsCache[ commandName ];
+                            delete that.endpointRBLeInputsCache[ commandName ];
                         }
                         else {
                             if ( successResponse.ValidationWarnings != undefined ) {
@@ -1667,22 +1671,22 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                             }
 
                             if ( successResponse.RBLeInputs != undefined ) {
-                                application.endpointRBLeInputsCache[ commandName ] = successResponse.RBLeInputs;
+                                that.endpointRBLeInputsCache[ commandName ] = successResponse.RBLeInputs;
                             }
                             else {
-                                delete application.endpointRBLeInputsCache[ commandName ];
+                                delete that.endpointRBLeInputsCache[ commandName ];
                             }
                             if ( runCalculate ) {
                                 clearServerOnlySaveInstructions();
-                                application.calculate( undefined, finishApiAction );
+                                that.calculate( undefined, finishApiAction );
                             }
                         }
                     }
                 },
-                function( xhr, _status, _errorInfo) {
+                function( xhr ) {
                     errorResponse = xhr[ "responseBinary" ];
                     debugger;
-                    delete application.endpointRBLeInputsCache[ commandName ];
+                    delete that.endpointRBLeInputsCache[ commandName ];
                     if ( errorResponse != undefined ) {
                         if ( errorResponse[ "Validations" ] != undefined ) {
                             errorResponse[ "Validations" ].forEach((v: { [x: string]: string }) => {
@@ -1694,7 +1698,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                             // errors.push( { "@id": "System", text: errorResponse[ "Message" ] });
                         }
                         if ( errorResponse[ "InvalidateKatApp" ] ?? false ) {
-                            application.invalidate();
+                            that.invalidate();
                         }
                     }
 
@@ -1790,7 +1794,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
             }
     
             if (this.bootstrapVersion==5) {
-                var myModal = new bootstrap.Modal($('.katappModalDialog', this.element)[0]);
+                const myModal = new bootstrap.Modal($('.katappModalDialog', this.element)[0]);
                 myModal.show();
             }
             else {
@@ -1860,9 +1864,9 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
             }
             else {
                 const locations = location.split('|');
-                this.options.nextCalculation!.saveLocations = this.options.nextCalculation!.saveLocations!.filter( e => locations.indexOf(e.location) == -1 );
+                this.options.nextCalculation!.saveLocations = this.options.nextCalculation!.saveLocations!.filter( e => locations.indexOf(e.location) == -1 ); // eslint-disable-line @typescript-eslint/no-non-null-assertion
                 locations.forEach( l => {
-                    this.options.nextCalculation!.saveLocations!.push( {
+                    this.options.nextCalculation!.saveLocations!.push( {// eslint-disable-line @typescript-eslint/no-non-null-assertion
                         location: l,
                         serverSideOnly: serverSideOnly ?? false
                     });
@@ -1943,7 +1947,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
             }
             const that = this;
 
-            const onConfirm = function () {
+            const onConfirm = function (): void {
                 link.data("confirmed", "true");
 
                 if ( confirmAction != undefined ) {
@@ -2073,7 +2077,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
             }
         }
 
-        encodeTemplateContent( content: string) : string {
+        encodeTemplateContent( content: string): string {
             return content
                 .replace(/-toggle=/g, "-toggle_=")
                 .replace(/ id=/g, " id_=")
@@ -2158,7 +2162,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                         debugger; // Want to see what type of template causes this to be true, I can't think of case where this would be true
                     }
 
-                    const templateId = item.attr('rbl-tid')!;
+                    const templateId = item.attr('rbl-tid')!; // eslint-disable-line @typescript-eslint/no-non-null-assertion
                     that.injectTemplate( item, templateId );
 
                     // If not inside a template, mark it done 'forever', otherwise, don't mark this
@@ -2255,7 +2259,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
             const itemType: string = container.data("itemtype" );
             const isRadio = itemType === "radio";
 
-            const templateContainer = container.closest("[rbl-tid='input-radiobuttonlist'], [rbl-template-type='katapp-radiobuttonlist'], [rbl-tid='input-checkboxlist'], [rbl-template-type='katapp-checkboxlist']")
+            // const templateContainer = container.closest("[rbl-tid='input-radiobuttonlist'], [rbl-template-type='katapp-radiobuttonlist'], [rbl-tid='input-checkboxlist'], [rbl-template-type='katapp-checkboxlist']")
 
             if ( itemType == "checkbox" ) {
                 /*                
@@ -2313,9 +2317,9 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
             let configureHelp = false;
 
             const verticalItemTemplate = 
-                this.getTemplate( isRadio ? "input-radiobuttonlist-vertical-item" : "input-checkboxlist-vertical-item", {}, false )!.Content;
+                this.getTemplate( isRadio ? "input-radiobuttonlist-vertical-item" : "input-checkboxlist-vertical-item", {}, false )!.Content; // eslint-disable-line @typescript-eslint/no-non-null-assertion
             const horizontalItemTemplate =
-                this.getTemplate( isRadio ? "input-radiobuttonlist-horizontal-item" : "input-checkboxlist-horizontal-item", {}, false )!.Content;
+                this.getTemplate( isRadio ? "input-radiobuttonlist-horizontal-item" : "input-checkboxlist-horizontal-item", {}, false )!.Content; // eslint-disable-line @typescript-eslint/no-non-null-assertion
 
             if ( rebuild ) {
                 itemsContainer.empty();
@@ -2537,7 +2541,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                     .not("rbl-template *")
                     .each(function() {
                         const template = $(this);
-                        const handlers = template.attr("rbl-on")!.split("|");
+                        const handlers = template.attr("rbl-on")!.split("|"); // eslint-disable-line @typescript-eslint/no-non-null-assertion
                         // Remove to signal no more processing needed, will be added back on as needed below
                         // if unable to move to target element
                         template.removeAttr("rbl-on");
@@ -2603,7 +2607,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                     .not("rbl-template *")
                     .each(function() {
                         const htmlContainer = $(this);
-                        const handlers = htmlContainer.attr("rbl-on")!.split("|");
+                        const handlers = htmlContainer.attr("rbl-on")!.split("|"); // eslint-disable-line @typescript-eslint/no-non-null-assertion
 
                         handlers
                             .forEach( h => {
@@ -2629,7 +2633,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                     .not("rbl-template *")
                     .each(function() {
                         const el = $(this);
-                        const handlers = el.attr("rbl-on")!.split("|");
+                        const handlers = el.attr("rbl-on")!.split("|"); // eslint-disable-line @typescript-eslint/no-non-null-assertion
                         const isSlider = el.attr("data-slider-type") == "nouislider";
                         const noUiSlider = isSlider 
                             ? application.ui.getNoUiSlider(el)
@@ -2646,7 +2650,9 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                                     const functionName = handler[1];
                                     
                                     if ( noUiSlider != undefined ) {
-                                        noUiSlider.on( eventName + ".ka",  application.options.handlers![ functionName ] );
+                                        if ( application.options.handlers != undefined ) {
+                                            noUiSlider.on( eventName + ".ka",  application.options.handlers[ functionName ] );
+                                        }
                                     }
                                     else {
                                         const confirmSelector = el.attr("rbl-action-confirm-selector");
@@ -2655,19 +2661,23 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                                             const confirm = $(confirmSelector, application.element).html() || "";
                                             el.on( eventName + ".ka",  function() {
                                                 const eventArgs = arguments;
-                                                const link = this;
+                                                const that = this;
                                                 return application.ui.onConfirmLinkClick(
                                                     $(this), 
                                                     confirm, 
                                                     function() {
-                                                        application.options.handlers![ functionName ].apply(link, eventArgs )
+                                                        if ( application.options.handlers != undefined ) {
+                                                            application.options.handlers[ functionName ].apply(that, eventArgs )
+                                                        }
                                                     }
                                                 );
                                             } );
                                         }
                                         else {
                                             el.on( eventName + ".ka", function() {
-                                                application.options.handlers![ functionName ].apply(this, arguments);
+                                                if ( application.options.handlers != undefined ) {
+                                                    application.options.handlers[ functionName ].apply(this, arguments);
+                                                }
                                             });
                                         }
                                     }
@@ -2886,23 +2896,22 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
         clearInputsBySelector( inputSelector: string | undefined, container?: JQuery<HTMLElement> ): {} | undefined {
             if ( inputSelector == undefined ) return undefined;
 
-            const inputs = {};
             const ui: UIUtilities = this.application.ui;
-            const rble = this;
+            const that = this;
             const inputContainer = container ?? this.application.element;
             const validInputs =  $(inputSelector, inputContainer).not(inputsToIgnoreSelector);
 
             validInputs.each(function () {
                 const input = $(this);
                 const name = ui.getInputName(input);
-                rble.setInput( name, "");
+                that.setInput( name, "");
             });
 
             $("input[type='file']", inputContainer).each(function() {
                 const input = $(this);
                 ( input.wrap('<form>').closest('form').get(0) as HTMLFormElement ).reset();
                 input.unwrap();
-                rble.setInput( ui.getInputName(input) + "Display", "");
+                that.setInput( ui.getInputName(input) + "Display", "");
             });
 
             // Checkbox list...
@@ -2964,7 +2973,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                 tables.push(table);
             });
 
-            const mergeCachedTable = function( tableCache: any ) {
+            const mergeCachedTable = function( tableCache: undefined | object ): void {
                 if ( tableCache != undefined ) {
 
                     Object.keys(tableCache).forEach( k => {
@@ -2977,7 +2986,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                             tableRows = tableRows[ "Rows" ];
                         }
 
-                        var inputTable: CalculationInputTable = {
+                        const inputTable: CalculationInputTable = {
                             Name: tableName,
                             Rows: tableRows != undefined ? tableRows.slice() : []
                         };
@@ -3097,7 +3106,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                     const timings: string[] = [];
                     if ( payload.Diagnostics.Timings != null ) {
                         const utcDateLength = 28;
-                        payload.Diagnostics.Timings.Status.forEach( ( t, i ) => {
+                        payload.Diagnostics.Timings.Status.forEach( t => {
                             const start = ( t["@Start"] + "       " ).substring(0,utcDateLength);
                             timings.push( start + ": " + t["#text"] );
                         })
@@ -3452,11 +3461,11 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                 });
         }
     
-        private getRblAttributeValueWithExpressions( el: JQuery<HTMLElement> ): { expressions: {}, rblAttr: string } {
+        private getRblAttributeValueWithExpressions( el: JQuery<HTMLElement> ): { expressions: {}; rblAttr: string } {
             const format = "[...]",
                 formatParts = /^([\S\s]+?)\.\.\.([\S\s]+)/,
                 metaChar = /[-[\]{}()*+?.\\^$|,]/g,
-                escape = function (str: string) {
+                escape = function (str: string): string {
                     return str.replace(metaChar, "\\$&");
                 };
         
@@ -3608,20 +3617,20 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                 });
         }
 
-        private isFalsy( value: any ) : boolean {
+        private isFalsy( value: string | undefined | boolean ): boolean {
             return value != undefined &&
                 ( value === "0" || ( typeof( value ) == "string" && value.toLowerCase() === "false" ) || !value );
         }
 
-        private processTableRowExpression( expression: string, row: JSON, index: number ): any {
-            const expressionStart = expression.indexOf("[");
-
+        private processTableRowExpression( expression: string, row: JSON, index: number ): any { // eslint-disable-line @typescript-eslint/no-explicit-any
             let tableExpressionScript = expression.substring( expression.indexOf("[") + 1, expression.lastIndexOf("]") );
 
             if ( !tableExpressionScript.endsWith(";" ) ) {
                 tableExpressionScript += ";";
             }
-            const tableExpression =  function ( row: JSON, index: number, application: KatAppPlugIn ): any { return eval(tableExpressionScript); } // eslint-disable-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-non-null-assertion
+            const tableExpression =  function ( row: JSON, index: number, application: KatAppPlugIn ): any { // eslint-disable-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unused-vars
+                return eval(tableExpressionScript); 
+            };
             return tableExpression.call(row, row, index, this.application);
         }
 
@@ -3650,7 +3659,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                         const sourceTab = el.attr( "rbl-tab" );
                         const tabDef = that.getTabDef( sourceTab, sourceCE )
                         const tabDefName = tabDef?._fullName ?? sourceCE + "." + sourceTab;
-                        const rblSource = el.attr('rbl-source-table') ?? el.attr('rbl-source')!;
+                        const rblSource = el.attr('rbl-source-table') ?? el.attr('rbl-source') ?? "NOSOURCE";
                         const isTableExpression = rblSource.indexOf("[") > -1;
                         
                         if ( el.attr('rbl-source-table') != undefined ) {
@@ -3668,7 +3677,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                                 : rblSource.split('.');
     
                         const tableName = rblSourceParts[0].split("[")[ 0 ];
-                        let templateContent = tid != undefined 
+                        const templateContent = tid != undefined 
                             ? application.ui.getTemplate( tid, elementData, false )?.Content 
                             : undefined;
     
@@ -3811,7 +3820,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                                             const templateResult = generateTemplateData(
                                                 KatApp.extend( {}, row, { _index0: index, _index1: index + 1 } ),
                                                 // compiler mis-stating that templateContent could be undefined
-                                                templateContent!
+                                                templateContent! // eslint-disable-line @typescript-eslint/no-non-null-assertion
                                             );
         
                                             appendTemplateResult(el, templateResult, prepend, prependBeforePreserve);
@@ -3838,7 +3847,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                 });
         }
     
-        getSimpleExpression(simpleExpression: string): { selector: string, operator: string, left: string | undefined, right: string, isNumber: boolean, evaluate: ( value: string | undefined )=> string | undefined } | undefined {
+        getSimpleExpression(simpleExpression: string): { selector: string; operator: string; left: string | undefined; right: string; isNumber: boolean; evaluate: ( value: string | undefined )=> string | undefined } | undefined {
             const simpleExpressionParts = simpleExpression.split(".");
             const expression = simpleExpressionParts[ simpleExpressionParts.length - 1]            
 
@@ -3877,14 +3886,14 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                     left: simpleExpression.startsWith( "v:" ) ? simpleExpression.substring( 2, simpleExpression.lastIndexOf( splitOperator ) ) : undefined,
                     right: expressionParts[ 1 ],
                     isNumber: isLTE || isLT || isGTE || isGT,
-                    evaluate: function( value ) {
+                    evaluate: function( value ): string | undefined {
                         if ( value == undefined ) return undefined;
 
                         const expression = this.isNumber || value.startsWith("'")
                             ? "{v1} {op} {v2}".format( { v1: value, op: this.operator, v2: this.right } )
                             : "\"{v1}\" {op} \"{v2}\"".format( { v1: value, op: this.operator, v2: this.right } );
 
-                        return <boolean>eval(expression) ? "1" : "0";
+                        return eval(expression) as boolean ? "1" : "0";
                     }
                 };
             }
@@ -4315,7 +4324,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
         
                         let colGroupDef: string | undefined = undefined; // This was an optional param in RBLe
         
-                        const getBootstrapColumnCss = function( c: ResultTableColumnConfiguration ) {
+                        const getBootstrapColumnCss = function( c: ResultTableColumnConfiguration ): string {
                             let bsClass = c.xsColumns !== undefined ? " col-xs-" + c.xsColumns : "";
                             bsClass += c.smColumns !== undefined ? " col-sm-" + c.smColumns : "";
                             bsClass += c.mdColumns !== undefined ? " col-md-" + c.mdColumns : "";
@@ -4323,7 +4332,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
 
                             return bsClass.trim();
                         }
-                        const getBootstrapSpanColumnCss = function( start: number, length: number ) {
+                        const getBootstrapSpanColumnCss = function( start: number, length: number ): string {
                             const spanCols = tableColumns.filter( ( c, i ) => i >= start && i <= start + length );
                             const xs = spanCols.reduce( ( sum, curr ) => sum + ( curr.xsColumns ?? 0 ), 0 );
                             const sm = spanCols.reduce( ( sum, curr ) => sum + ( curr.smColumns ?? 0 ), 0 );
@@ -4535,7 +4544,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
     
         processValidationRows(summary: JQuery<HTMLElement>, errors: ValidationRow[]): void {
             if (errors.length > 0) {
-                var bootstrapVersion = this.application.bootstrapVersion;
+                const bootstrapVersion = this.application.bootstrapVersion;
                 errors.forEach( r => {
                     const selector = this.application.ui.getJQuerySelector( r["@id"] );
                     // div is bootstrap select
@@ -5281,8 +5290,6 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
 
                 if ( dataRows.length > 0 ) {
                     this.ensureCulture();
-
-                    const builder = this;
                     const getOptionValue = function( configurationName: string ): string | undefined {
                         // Look in override table first, then fall back to 'regular' options table
                         return overrideRows?.find(r => KatApp.stringCompare(r.key, configurationName, true) === 0)?.value ??
@@ -5468,8 +5475,6 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                 })
                 .attr("data-katapp-initialized", "true");
 
-            const that = this;
-
             // Code to hide tooltips if you click anywhere outside the tooltip
             // Combo of http://stackoverflow.com/a/17375353/166231 and https://stackoverflow.com/a/21007629/166231 (and 3rd comment)
             // This one looked interesting too: https://stackoverflow.com/a/24289767/166231 but I didn't test this one yet
@@ -5534,7 +5539,6 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
 
         processNavigationLinks( container?: JQuery<HTMLElement> ): void {
             const view = container ?? this.application.element;
-            const that = this;
             const application = this.application;
 
             $('[rbl-navigate]', view)
@@ -5672,7 +5676,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                     // If rendered template has first element with rbl-display, duplicate
                     // it on the rbl-tid item, otherwise reponsibility of kaml author to put
                     // rbl-display on rbl-tid item.
-                    templateContainer.attr("rbl-display", rblDisplayItems.attr("rbl-display")!)
+                    templateContainer.attr("rbl-display", rblDisplayItems.attr("rbl-display")!); // eslint-disable-line @typescript-eslint/no-non-null-assertion
                 }
             }
         }
@@ -5688,7 +5692,6 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
         }
 
         private processCarousels( container?: JQuery<HTMLElement> ): void {
-            const that: StandardTemplateBuilder = this;
             const application = this.application;
             const view = container ?? application.element;
 
@@ -5710,7 +5713,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                             .first().addClass("active");
     
                         $(".carousel-indicators button", el).not("[rbl-tid='inline']")
-                            .attr("data-bs-target", "#" + carousel.attr("id")!)
+                            .attr("data-bs-target", "#" + carousel.attr("id")!) // eslint-disable-line @typescript-eslint/no-non-null-assertion
                             .first().addClass("active").attr("aria-current", "true");
     
                         const carouselAll = $('.carousel-all', el);
@@ -5736,8 +5739,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
         }
 
         private processCheckboxes( container: JQuery<HTMLElement> ): void {
-            const application = this.application;
-            const builder = this;
+            const that = this;
 
             $('[rbl-tid="input-checkbox"],[rbl-template-type="katapp-checkbox"]', container)
                 .not("rbl-template *") // not in templates
@@ -5752,7 +5754,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                     const css = el.data("css");
                     const inputCss = el.data("inputcss");
 
-                    builder.ensureRblDisplay( el );
+                    that.ensureRblDisplay( el );
 
                     if ( css !== undefined ) {
                         $("[rbl-display='v" + id + "']", el).addClass(css);
@@ -5843,7 +5845,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                         file.val("").trigger("change");
                     });
 
-                    const uploadFileHandler = function () {
+                    const uploadFileHandler = function (): void {
                         if ( !application.ensureApplicationValid() ) {
                             return;
                         }
@@ -5905,8 +5907,8 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                                 settings[ "responseFields" ][ "binary" ] = "responseBinary";
                             },
                             xhr: function() {
-                                var xhr = new XMLHttpRequest();
-                                xhr.onreadystatechange = function() {
+                                const xhr = new XMLHttpRequest();
+                                xhr.onreadystatechange = function(): void {
                                     // https://stackoverflow.com/a/29039823/166231
                                     if (xhr.readyState == 2) {
                                         // We are always returning json (binary/responseBinary) from our endpoints
@@ -6000,10 +6002,9 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
             const application = this.application;
             const applicationId = application.id;
             const bootstrapVersion = application.bootstrapVersion;
-            const isBootstrap3 = bootstrapVersion == 3;
             const isBootstrap4 = bootstrapVersion == 4;
             const isBootstrap5 = bootstrapVersion == 5;
-            const builder = this;
+            const that = this;
 
             $('[rbl-tid="input-textbox"],[rbl-template-type="katapp-textbox"]', container)
                 .not("rbl-template *") // not in templates
@@ -6029,7 +6030,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                     const hideLabel = el.data("hidelabel") ?? false;
                     const mask = el.data("mask");
 
-                    builder.ensureRblDisplay( el );
+                    that.ensureRblDisplay( el );
 
                     if ( css !== undefined ) {
                         $("[rbl-display='v" + id + "']", el).addClass(css);
@@ -6090,17 +6091,17 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                     }
 
                     if ( mask != undefined ) {
-                        const isNumericInput = function(event: JQuery.KeyboardEventBase<HTMLElement, undefined, HTMLElement, HTMLElement>) {
+                        const isNumericInput = function(event: JQuery.KeyboardEventBase<HTMLElement, undefined, HTMLElement, HTMLElement>): boolean {
                             const key = event.keyCode;
-                            var valid = ((key >= 48 && key <= 57) || // Allow number line
+                            const valid = ((key >= 48 && key <= 57) || // Allow number line
                                 (key >= 96 && key <= 105) // Allow number pad
                             );
                             return valid;
                         };
             
-                        const isModifierKey = function(event: JQuery.KeyboardEventBase<HTMLElement, undefined, HTMLElement, HTMLElement>) {
+                        const isModifierKey = function(event: JQuery.KeyboardEventBase<HTMLElement, undefined, HTMLElement, HTMLElement>): boolean {
                             const key = event.keyCode;
-                            var value = (event.shiftKey === true || key === 35 || key === 36) || // Allow Shift, Home, End
+                            const value = (event.shiftKey === true || key === 35 || key === 36) || // Allow Shift, Home, End
                                 (key === 8 || key === 9 || key === 13 || key === 46) || // Allow Backspace, Tab, Enter, Delete
                                 (key > 36 && key < 41) || // Allow left, up, right, down
                                 (
@@ -6460,7 +6461,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
         }
 
         private processSliders( container: JQuery<HTMLElement> ): void {
-            const builder = this;
+            const that = this;
 
             // Only need to process data-* attributes here because RBLeUtilities.processResults will push out 'configuration' changes
             $('[rbl-tid="input-slider"],[rbl-template-type="katapp-slider"]', container)
@@ -6475,7 +6476,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                     const help = el.data("help");
                     const value = el.data("value");
                             
-                    builder.ensureRblDisplay( el );
+                    that.ensureRblDisplay( el );
 
                     if ( css !== undefined ) {
                         $("[rbl-display='v" + id + "']", el).addClass(css);
@@ -6599,16 +6600,16 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
     }
     if (!Array.prototype.find) {
         Object.defineProperty(Array.prototype, 'find', {
-            value: function (predicate: any) {
+            value: function (predicate: any) { // eslint-disable-line @typescript-eslint/no-explicit-any
                 // 1. Let O be ? ToObject(this value).
                 if (this == null) {
                     throw TypeError('"this" is null or not defined');
                 }
 
-                var o = Object(this);
+                const o = Object(this);
 
                 // 2. Let len be ? ToLength(? Get(O, "length")).
-                var len = o.length >>> 0;
+                const len = o.length >>> 0;
 
                 // 3. If IsCallable(predicate) is false, throw a TypeError exception.
                 if (typeof predicate !== 'function') {
@@ -6616,10 +6617,10 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                 }
 
                 // 4. If thisArg was supplied, let T be thisArg; else let T be undefined.
-                var thisArg = arguments[1];
+                const thisArg = arguments[1];
 
                 // 5. Let k be 0.
-                var k = 0;
+                let k = 0;
 
                 // 6. Repeat, while k < len
                 while (k < len) {
@@ -6627,7 +6628,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                     // b. Let kValue be ? Get(O, Pk).
                     // c. Let testResult be ToBoolean(? Call(predicate, T, « kValue, k, O »)).
                     // d. If testResult is true, return kValue.
-                    var kValue = o[k];
+                    const kValue = o[k];
                     if (predicate.call(thisArg, kValue, k, o)) {
                         return kValue;
                     }
@@ -6739,7 +6740,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
 
         $.fn.KatApp.templateOn = function( events: string, fn: TemplateOnDelegate ): void {
             if ( $.fn.KatApp.currentView != undefined ){
-                $.fn.KatApp.currentView!.on( events, fn );
+                $.fn.KatApp.currentView!.on( events, fn ); // eslint-disable-line @typescript-eslint/no-non-null-assertion
             }
         };
     }

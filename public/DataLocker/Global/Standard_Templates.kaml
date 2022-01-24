@@ -158,13 +158,13 @@
 </rbl-template>
   
 <rbl-template tid="input-radiobuttonlist" type="katapp-radiobuttonlist">
-  <div class="form-check" rbl-display="v{inputname}">
+  <div class="form-group" rbl-display="v{inputname}">
     <label class="control-label" for="katapp_{id}_{inputname}">
       <span rbl-value="l{inputname}"></span>
       <a style="display: none;" onclick="return false;" rbl-display="vh{inputname}" class="help-icon-anchor" role="button" tabindex="-1" data-toggle="popover" data-trigger="click" data-content-selector="#{id}_h{inputname}" data-placement="top"><span class="glyphicon glyphicon-info-sign help-icon"></span></a>
       <a style="display: none;" onclick="return false;" rbl-display="vs{inputname}" class="help-icon-anchor" role="button" tabindex="-1"><span class="glyphicon glyphicon-volume-up"></span></a>
     </label>
-    <div class="validator-container list-container" rbl-disabled="{inputname}">
+    <div class="validator-container list-container form-check" rbl-disabled="{inputname}">
       <!-- Radio list injected here -->
       <div class="{inputname}" data-inputname="{inputname}" data-id="{id}" data-itemtype="radio"></div>
       <span class="error-msg" data-toggle="tooltip" data-placement="top auto"></span>
@@ -205,13 +205,13 @@
 </rbl-template>
   
 <rbl-template tid="input-checkboxlist" type="katapp-checkboxlist">
-  <div class="form-check" rbl-display="v{inputname}">
+  <div class="form-group" rbl-display="v{inputname}">
     <label class="control-label" for="katapp_{id}_{inputname}">
       <span rbl-value="l{inputname}"></span> <span class="sv{inputname}"></span>
       <a style="display: none;" onclick="return false;" rbl-display="vh{inputname}" class="help-icon-anchor" role="button" tabindex="-1" data-toggle="popover" data-trigger="click" data-content-selector="#{id}_h{inputname}" data-placement="top"><span class="glyphicon glyphicon-info-sign help-icon"></span></a>
       <a style="display: none;" onclick="return false;" rbl-display="vs{inputname}" class="help-icon-anchor" role="button" tabindex="-1"><span class="glyphicon glyphicon-volume-up"></span></a>
     </label>
-    <div class="validator-container list-container" rbl-disabled="{inputname}">
+    <div class="validator-container list-container form-check" rbl-disabled="{inputname}">
       <!-- Checkbox list injected here -->
       <div class="{inputname}" data-inputname="{inputname}" data-id="{id}" data-itemtype="checkbox"></div>
       <span class="error-msg" data-toggle="tooltip" data-placement="top auto"></span>
@@ -499,6 +499,7 @@
   
       .katapp-css .slider-container.error,
       .katapp-css .checkbox-container.error,
+      .katapp-css .list-container.error,
       .katapp-css .validator-container.error .form-control {
           background-image: url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAAGXRFWHRTb2Z0d2FyZQBBZG9iZSBJbWFnZVJlYWR5ccllPAAAAyJpVFh0WE1MOmNvbS5hZG9iZS54bXAAAAAAADw/eHBhY2tldCBiZWdpbj0i77u/IiBpZD0iVzVNME1wQ2VoaUh6cmVTek5UY3prYzlkIj8+IDx4OnhtcG1ldGEgeG1sbnM6eD0iYWRvYmU6bnM6bWV0YS8iIHg6eG1wdGs9IkFkb2JlIFhNUCBDb3JlIDUuMy1jMDExIDY2LjE0NTY2MSwgMjAxMi8wMi8wNi0xNDo1NjoyNyAgICAgICAgIj4gPHJkZjpSREYgeG1sbnM6cmRmPSJodHRwOi8vd3d3LnczLm9yZy8xOTk5LzAyLzIyLXJkZi1zeW50YXgtbnMjIj4gPHJkZjpEZXNjcmlwdGlvbiByZGY6YWJvdXQ9IiIgeG1sbnM6eG1wPSJodHRwOi8vbnMuYWRvYmUuY29tL3hhcC8xLjAvIiB4bWxuczp4bXBNTT0iaHR0cDovL25zLmFkb2JlLmNvbS94YXAvMS4wL21tLyIgeG1sbnM6c3RSZWY9Imh0dHA6Ly9ucy5hZG9iZS5jb20veGFwLzEuMC9zVHlwZS9SZXNvdXJjZVJlZiMiIHhtcDpDcmVhdG9yVG9vbD0iQWRvYmUgUGhvdG9zaG9wIENTNiAoV2luZG93cykiIHhtcE1NOkluc3RhbmNlSUQ9InhtcC5paWQ6QUM2RTlEMUEyQjY0MTFFNTlBNDVDOTVDM0M4OERCNDYiIHhtcE1NOkRvY3VtZW50SUQ9InhtcC5kaWQ6QUM2RTlEMUIyQjY0MTFFNTlBNDVDOTVDM0M4OERCNDYiPiA8eG1wTU06RGVyaXZlZEZyb20gc3RSZWY6aW5zdGFuY2VJRD0ieG1wLmlpZDpBQzZFOUQxODJCNjQxMUU1OUE0NUM5NUMzQzg4REI0NiIgc3RSZWY6ZG9jdW1lbnRJRD0ieG1wLmRpZDpBQzZFOUQxOTJCNjQxMUU1OUE0NUM5NUMzQzg4REI0NiIvPiA8L3JkZjpEZXNjcmlwdGlvbj4gPC9yZGY6UkRGPiA8L3g6eG1wbWV0YT4gPD94cGFja2V0IGVuZD0iciI/PkpK80MAAAJHSURBVHja7FbNSxRhGP/NTtuuGuNhY09BYpAiZUgRXSOowI/KQvSfqEvX6FCRIHXp1E26hpkbdRGEKAgpdIvKW3YI1h1dsJRxd2femX7vfOgyerEZEWIeeHbffd/n4/d8vM+7iuM42E9KYZ8pAZAASAAc+CetgetdSCkXuOokq+QfsJ23KEzM7taUsqtB1Hs1R8dPoKojqNcBfRmwbeBwDmhpASxrhkBu4vXLb/EDuNwvo/7AlUZHQHMz4++gBQVY/AksE0wmE0hfwZtCIb4euNSnwXHmIGyNDKxUgNZWYPQB8PA+0HEctaUy3DOPp6jTHV8PCDHOz8wWbOI2jK3ztTUmQpFyjVoyA23RM3D+YjsNX3ONByzrXq0CQfmMDbilbJQR4ih1B6IDEGIoZNhzVqt5QCRt7AhA8mD0Etji2I77VQIw2Yyq6oHxZMNSuegAhK2Gt2S0yvo6kPXbguWwbb8BQ7csBgDi1zarbDjBFKuTU7wNGrD6G+l0OtyEkv5EB2BZLxjxnTAA0zShvnvPAXQIZqXCi5GCw70QTSuRm3ButkgAn2SKZeol67qO7JnTwOMx4N5dpIeHUCqVNs8lU97g93gsg4jGRiSAgEU41cyIxenYeE7nw6niRye2UVw/0dNH2VfB7xo7X+vvdUeyMTHplkWWwS/R7YNf5x/F/hhVu06do/xTOuqWeuVy2Y04n8+7TcjIS3R+K/v98/O9eQ19MjpP3qDeWS6P+FdNp+Mi+VnTwhexd89x8pcsAZAA+B8B/BVgABTBPRBlYPNqAAAAAElFTkSuQmCC);
           background-repeat: no-repeat;
@@ -517,6 +518,7 @@
     
   .katapp-css .slider-container.warning,
   .katapp-css .checkbox-container.warning,
+  .katapp-css .list-container.warning,
   .katapp-css .validator-container.warning .form-control {
       background-image: url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAJcEhZcwAADsIAAA7CARUoSoAAAAKWSURBVFhH7ZZNaxNRFIbPmaQhFao22mLowo9KkRYEd9LEKnahdqGoVLsRBBEXZZJWaNyoUayLJE0w5B+I4Bfqwo1raTV/QMSFCzcuXDQVUUk7c69nJseazFcmFglCHpic8x5u7rxz7p2boJQS2onCsW10DDTsAUTk7N/gtN/+2w5gRo0/QJBnKH2cKi1e5HpTrF34KwO5RHyKvveQJaACZ+eKS89ZerJhA/nZg92aFnhPI3dyiSaFj2HsGUmWXlW55IrVQMt7QNODs/U3NyDfg6vK9wTLlmipA/Mzh6IhXXygtKdWgQpdvbUUvmJIDM3l335h7ciGOhDS5DwF8+ZSCZxKlZYiCIHzhia2yFXlDue+8W1gQR07QLf9vdv1a8XXL41kc3XfC7NCSJCXson4fpa+8G1AgCgAro8P3Esc7TeSSvhd1KwQCBigHhdY+sKXgWwidpqe7whLE02uDRoxoCh7zcIfxjPJ0ZOcN6WpgSfpyRD1Nsuynt3Gh9Bhj6nqQIG59ORwiKUnTQ18qnxWKVifEnQpTAMItWhhaFM0Ms25J54G7qrxPnprrrNsgF7ZXZzaOmCAUtxYuHp4O0tXPA0EpbxNYWtNWRETWXX0GW26cS5YwF5d02+xcMXVQGEmNoIoL7O0IUEpg6I8omOlzCUbKMSVnBofZumIqwFNhzxNEWRp5duPyPJUqrj4tH9b1zlapp9cbwQxKFDSPO44GsgkxiYoHKspO/TU4e7lPvMcWFmBHbTgrjseJRzPJWMnWNpwNIBSv8mpI/SL0aWAVqbz4f6a0N6YB5AHQkCaUxvOSyBhgDMvBmjcBYrrJ6Eb1AXX+ZwNKFiiyat0iY1etD+q5nwudP6Utt1AwxK0g84StNkAwC83KPQlBG8bmQAAAABJRU5ErkJggg==);
       background-repeat: no-repeat;

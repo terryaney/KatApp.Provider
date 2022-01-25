@@ -59,7 +59,7 @@
         - [Using Template Type Attribute](#Using-Template-Type-Attribute)
 - [View and Template Expressions](#View-and-Template-Expressions)
     - [Simple rbl-display Expression Selector](#Simple-rbl-display-Expression-Selector)
-    - [rbl-display v: Template Expression](#rbl-display-v:Template--Expression)
+    - [rbl-display v: Template Expression](#rbl-display-v-Template-Expression)
     - [Complex rbl-source Expressions](#Complex-rbl-source-Expressions)
     - [Complex KatApp Selector Expressions](#Complex-KatApp-Selector-Expressions)
 - [RBLe Service](#RBLe-Service)
@@ -163,7 +163,7 @@
         - [static setNavigationInputs](#static-setNavigationInputs)
 
 # Overview
-A KatApp is a dynamic html application delivered to a host platform such as Life@Work.  Conceptually, its like a CMS, but instead of static content, it provides for dynamic content containing potentially complex business logic and controls and data and results.
+A KatApp is a dynamic html application delivered to a host platform.  Conceptually, its like a CMS, but instead of static content, it provides for dynamic content containing potentially complex business logic and controls and data and results.
 
 See [KatApp Debugging Methods](#KatApp-Debugging-Methods) for the most commonly used methods during the development cycle to aid in obtaining debug CalcEngines, seeing intermediate results/inputs, etc.
 
@@ -179,7 +179,7 @@ CalcEngine | Specialized Excel speadsheet that drives business logic
 RBLe Results | Results from RBLe Service
 KatApp Plugin | Jquery plugin to enable KatApp's
 KatApp element | HTML element that is target for the KatApp.  Example: `<div id="KatApp"></div>`
-Host Platform | Web Application hosting the KatApp, i.e. Life@Work / Phoneix
+Host Platform | Web Application hosting the KatApp
 Kaml | _KatApp Markup Language_ is a combination of HTML, CSS, and Javascript where the HTML supports attribute decoration to bind elements to CalcEngine results.
 Kaml View | Kaml file dynamically used by KatApp.
 Kaml View CMS | System for updating Kaml View.
@@ -558,7 +558,7 @@ To override this default selector, and the required way to specify the selector 
 <ul rbl-on="click:handleResource:a:not([target])">
     <li><a href="#">Resource 1</a></li>
     <li><a href="#">Resource 2</a></li>
-    <li><a target="_blank" href="www.conduent.com">Conduent [no rbl-on]</a></li>
+    <li><a target="_blank" href="www.google.com">Google [no rbl-on]</a></li>
 </ul>
 
 <!-- Assigning showDate to an element with data-type='year' attribute assigned -->
@@ -973,7 +973,7 @@ Templates can be created inside Kaml View files in addition to a separate Kaml T
 
 **Sample Kaml View File**
 ```html
-<rbl-config calcengine="Conduent_DST_CE" templates="Standard_Templates,Client_Templates"></rbl-config>
+<rbl-config calcengine="ABC_DST_CE" templates="Standard_Templates,Client_Templates"></rbl-config>
 
 <!-- Kaml View Markup -->
 
@@ -1310,7 +1310,7 @@ The KatApp framework includes a _Standard\_Templates.kaml_ Template that has the
 
 ```html
 <!-- When Bootstrap 4 is being used, the view's templates attribute should be configured as follows -->
-<rbl-config calcengine="Conduent_DST_CE" templates="Standard_Templates,Input_TemplatesBS4"></rbl-config>
+<rbl-config calcengine="ABC_DST_CE" templates="Standard_Templates,Input_TemplatesBS4"></rbl-config>
 ```
 
 Each input can have its own set of data attributes to configure the functionality and appearance of the input.  For some templated inputs, results from the CalcEngine can provide all or additional configuration as well.
@@ -2444,8 +2444,8 @@ registerDataWithService | boolean | Whether or not data will be registered with 
 registeredToken | string | If the participant data was registered by hosting site, it will provide the `registeredToken` to the KatApp so that it can pass that to the RBLe Service during calculation ajax calls.
 data | [KatAppData](#KatAppData-Object) | Participant data to pass to RBLe Service for calculations.
 shareDataWithOtherApplications | boolean | If multiple KatApps on are on page, one data source can be shared across all KatApps by setting this to `true`.
-sessionUrl | url | When `registerDataWithService` is `true`, this url will be called for calculation ajax calls.  Default value is `https://btr.lifeatworkportal.com/services/evolution/Calculation.ashx`.
-functionUrl | url | This url is used for all resource requests and also, if `registerDataWithService` is `false`, all calculation ajax calls.  Default value is `https://btr.lifeatworkportal.com/services/evolution/CalculationFunction.ashx`.
+sessionUrl | url | When `registerDataWithService` is `true`, this url will be called for calculation ajax calls.  Default value is `/services/evolution/Calculation.ashx`.
+functionUrl | url | This url is used for all resource requests and also, if `registerDataWithService` is `false`, all calculation ajax calls.  Default value is `/services/evolution/CalculationFunction.ashx`.
 currentPage | string | String identifier for the current page.  This value is passed to CalcEngines in the `iCurrentPage` input.
 requestIP | string | IP Address of client browser.  Used during calculation job logging.
 environment | string | The environment the current Kaml View is running in.  This value is passed to CalcEngines in the `iEnvironment` input.
@@ -2509,7 +2509,7 @@ The KatAppData object is a json object representing all the data for the current
 {
     data: {
         AuthID: "11111111",
-        Client: "Conduent",
+        Client: "ABC",
         Profile: {
             nameFirst: "John",
             nameLast: "Smith",
@@ -2550,7 +2550,7 @@ A TabDef is a json object representation of all the tables exported from a RBLRe
 
 ```javascript
 {
-    "@calcEngine": "Conduent_CalcEngine_SE.xlsm",
+    "@calcEngine": "ABC_CalcEngine_SE.xlsm",
     "@version": "1.0047",
     "@name": "RBLResult", // TabDef name
     "@GlobalTables.Version": "1.0",
@@ -2663,8 +2663,8 @@ The `submitCalculation` property is a delegate handler with the following signat
 **`function( application: KatAppPlugInInterface, options: KatAppOptions, done: ( data: KatAppData ), fail: ( jqXHR: JQuery.jqXHR, textStatus: string, errorThrown: string ) )`**
 
 ```javascript
-// Sample application that calls API endpoint relative to containing site.  Note that the KatApp framework has built in code to look for a `.payload` property on the returned value
-// to support common implementation for Life @ Work
+// Sample application that calls API endpoint relative to containing site.  Note that the KatApp framework 
+// has built in code to look for a `.payload` property on the returned value to support legacy implementations
 {
     submitCalculation: function( application, options, done, fail ) {
         $.ajax({

@@ -24,13 +24,13 @@
 <div class="ajaxContent">
     <div class="row">
 		<div rbl-tid="input-dropdown" data-css="col-sm-4" data-inputname="iFamilyStatus"></div>
-		<div rbl-tid="input-slider" data-css="col-sm-4 skipRBLe" data-inputname="iSpouseAge"></div>
-		<div rbl-tid="input-slider" data-css="col-sm-3 skipRBLe" data-inputname="iYoungestChildAge"></div>
+		<div rbl-tid="input-slider" data-css="col-sm-4 rbl-nocalc" data-inputname="iSpouseAge"></div>
+		<div rbl-tid="input-slider" data-css="col-sm-3 rbl-nocalc" data-inputname="iYoungestChildAge"></div>
     </div>
     <div class="row pull-bottom">
-		<div class="col-sm-4"><div rbl-tid="input-textbox" data-css="skipRBLe" data-inputname="iAnnualIncomeReplacement" data-prefix="$"></div></div>
-		<div class="col-sm-4"><div rbl-tid="input-textbox" data-css="skipRBLe" data-inputname="iCurrentLifeInsurance" data-prefix="$"></div></div>
-		<div class="col-sm-3"><div rbl-tid="input-textbox" data-css="skipRBLe" data-inputname="iCurrentInvestments" data-prefix="$"></div></div>
+		<div class="col-sm-4"><div rbl-tid="input-textbox" data-css="rbl-nocalc" data-inputname="iAnnualIncomeReplacement" data-prefix="$"></div></div>
+		<div class="col-sm-4"><div rbl-tid="input-textbox" data-css="rbl-nocalc" data-inputname="iCurrentLifeInsurance" data-prefix="$"></div></div>
+		<div class="col-sm-3"><div rbl-tid="input-textbox" data-css="rbl-nocalc" data-inputname="iCurrentInvestments" data-prefix="$"></div></div>
     </div>
 	<div class="ajaxloader"></div>
 </div>

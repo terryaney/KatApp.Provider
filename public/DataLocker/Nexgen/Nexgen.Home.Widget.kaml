@@ -183,7 +183,7 @@
 		<br>
 	</div>
 </rbl-template>
-<div class="d-none skipRBLe">
+<div class="d-none rbl-nocalc">
 	<input name="{id}:iAgeCommStart" type="text" class="iAgeCommStart" val="1" />
 	<input name="{id}:iAlertType" type="text" class="iAlertType" val="home" />
 </div>

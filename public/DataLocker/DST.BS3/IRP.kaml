@@ -118,7 +118,7 @@
 									<span class="glyphicon glyphicon-info-sign help-icon"></span>
 								</a>
 								<div class="hidden hassumptionType_{id}">Use the dropdown to toggle between your Data/Assumptions and your Changes in Finances.</div>
-								<select class="form-control bootstrap-select notRBLe skipRBLe assumptionType_{id}">
+								<select class="form-control bootstrap-select rbl-exclude rbl-nocalc assumptionType_{id}">
 									<option selected="selected" value=".tabDataAssumptions_{id}">Data / Assumptions</option>
 									<option value=".tabFutureFinancial_{id}">Changes in Finances</option>
 								</select>
@@ -179,7 +179,7 @@
     </div>
 </div>
 
-<div class="RBLe skipRBLe modal fade modal-worksheet" tabindex="-1" role="dialog" id="iAnnualFuturePayIncreaseRate-worksheet" data-backdrop="static">
+<div class="RBLe rbl-nocalc modal fade modal-worksheet" tabindex="-1" role="dialog" id="iAnnualFuturePayIncreaseRate-worksheet" data-backdrop="static">
 	<div class="modal-dialog">
 		<div class="modal-content">
 			<div class="modal-header"><h4 class="modal-title">Advanced Annual Future Pay Increase Rates</h4></div>
@@ -206,7 +206,7 @@
 	</div>
 </div>
 
-<div class="skipRBLe modal fade modal-worksheet" tabindex="-1" role="dialog" id="iMedicalCostInflation-worksheet" data-backdrop="static">
+<div class="rbl-nocalc modal fade modal-worksheet" tabindex="-1" role="dialog" id="iMedicalCostInflation-worksheet" data-backdrop="static">
 	<div class="modal-dialog">
 		<div class="modal-content">
 			<div class="modal-header"><h4 class="modal-title">Advanced Health Care Cost Inflation Rates</h4></div>
@@ -233,7 +233,7 @@
 	</div>
 </div>
 
-<div class="skipRBLe modal fade modelingDefaultsModal" tabindex="-1" role="dialog" data-backdrop="static">
+<div class="rbl-nocalc modal fade modelingDefaultsModal" tabindex="-1" role="dialog" data-backdrop="static">
   <div class="modal-dialog" role="document">
     <div class="modal-content">
       <div class="modal-header">

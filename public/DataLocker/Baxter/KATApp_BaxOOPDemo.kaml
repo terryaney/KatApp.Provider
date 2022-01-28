@@ -559,7 +559,7 @@
     <div class="ajaxloader"></div>
 </div>
 
-<div class="modal fade skipRBLe RBLe" tabindex="-1" role="dialog" id="modal-worksheet" data-backdrop="static"
+<div class="modal fade rbl-nocalc RBLe" tabindex="-1" role="dialog" id="modal-worksheet" data-backdrop="static"
     data-keyboard="false">
     <div class="modal-dialog">
         <div class="modal-content">

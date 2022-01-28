@@ -85,7 +85,7 @@
     </div>
 </div>
 
-<div class="modal fade skipRBLe" tabindex="-1" role="dialog" id="modal-worksheet" data-backdrop="static">
+<div class="modal fade rbl-nocalc" tabindex="-1" role="dialog" id="modal-worksheet" data-backdrop="static">
 	<div class="modal-dialog">
 		<div class="modal-content">
 			<div class="modal-header"><h4 class="modal-title">Health Care Worksheet</h4></div>

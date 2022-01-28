@@ -4077,7 +4077,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                 if ( selector !== undefined ) {
                     const el = $(selector, application.element);
                     
-                    el.addClass("rbl-nocalc skipRBLe").off(".RBLe");
+                    el.addClass("rbl-nocalc").off(".RBLe");
                     $(":input", el).off(".RBLe");
                     // leave update.RBLe (for updating label) and change.RBLe (for keeping 'wizard sliders' in sync) on...
                     this.application.ui.getNoUiSlider( $("div[data-slider-type='nouislider']", el.parent()) )?.off('set.RBLe');
@@ -4890,9 +4890,10 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                         if ( r.selector !== undefined ) {
                             if ( r.addclass !== undefined && r.addclass.length > 0 ) {
                                 const el = $(r.selector, application.element);
-                                el.addClass(r.addclass);
+                                const classValue = r.addclass.replace("skipRBLe", "rbl-nocalc");
+                                el.addClass(classValue);
     
-                                if ( r.addclass.indexOf("skipRBLe") > -1 || r.addclass.indexOf("rbl-nocalc") > -1 ) {
+                                if ( classValue.indexOf("rbl-nocalc") > -1 ) {
                                     el.off(".RBLe");
                                     $(":input", el).off(".RBLe");
                                     this.application.ui.getNoUiSlider( $("div[data-slider-type='nouislider']", el.parent()) )?.off('.RBLe');

@@ -34,7 +34,7 @@
 									<span class="glyphicon glyphicon-info-sign help-icon"></span>
 								</a>
 								<div class="hidden hassumptionType">Use the dropdown to toggle between your Financial Information and your Insurance Assumptions inputs.</div>
-								<select class="form-control bootstrap-select notRBLe skipRBLe assumptionType_{id}">
+								<select class="form-control bootstrap-select rbl-exclude rbl-nocalc assumptionType_{id}">
 									<option selected="selected" value=".tabFutureFinancial_{id}">Financial Information</option>
 									<option value=".tabBeneficiaryInputs_{id}">Insurance Assumptions</option>
 								</select>
@@ -128,7 +128,7 @@
     </div>
 </div>
 
-<div class="skipRBLe notRBLe">
+<div class="rbl-nocalc rbl-exclude">
 	<div class="modal fade modal-worksheet" tabindex="-1" role="dialog" id="finalexpense-worksheet-{id}" data-backdrop="static">
 		<div class="modal-dialog">
 			<div class="modal-content">

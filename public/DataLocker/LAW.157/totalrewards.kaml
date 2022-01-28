@@ -462,10 +462,10 @@
                 $(".fd-equity").show();
 			});
 			
-			$(":input.rbl-nocalc, :input.skipRBLe", view).bind("change", function() {
+			$(":input.rbl-nocalc", view).bind("change", function() {
                 showRecalc();
             });
-            $("input.rbl-nocalc, :input.skipRBLe", view).prev(".slider-control").each(function(index) {
+            $("input.rbl-nocalc", view).prev(".slider-control").each(function(index) {
                 var slider = $(this)[0];
                 slider.noUiSlider.on('set', function() {
                     showRecalc();

@@ -6,7 +6,7 @@
         <script>with debugger line as placeholder/sample</script>
 -->
 
-<rbl-config calcengine="Conduent_LAWSharkfin157_SE" templates="Standard_Templates" bootstrap="3"></rbl-config>
+<rbl-config calcengine="Conduent_LAWSharkfin769_SE" templates="Standard_Templates" bootstrap="3"></rbl-config>
 
 <style>
     rbl-template,
@@ -75,7 +75,7 @@
         border-right: 2px black solid;
         text-align: center;
     }
-
+    
     /* KatApp modals */
     .katapp-modal {
         display: none; /* Hidden by default */
@@ -354,21 +354,6 @@
         background: #ffffff;
         z-index: 100;
     }
-
-    .thisClass .radio.abc-radio.bs-listcontrol {
-        margin-left: 20px;
-        margin-top: 2px;
-        margin-bottom: 2px;
-    }
-
-    .thisClass span.radio.abc-radio {
-        margin-top: 2px;
-        margin-bottom: 2px;
-    }
-
-    .thisClass [rbl-display=viContribType] {
-        margin-bottom: 10px;
-    }
 </style>
 
 <div class="loader">
@@ -393,10 +378,10 @@
             <ul rbl-on="shown.bs.tab:viewChange:a" class="nav nav-tabs" role="tablist">
                 <li role="presentation" class="active"><a style="width: 160px; min-width: 160px;" data-target="#paneCashFlow" role="tab" data-tab-input="cf" data-toggle="tab" class="text-center" aria-expanded="true">Cash Flow</a></li>
                 <li role="presentation" class=""><a style="width: 160px; min-width: 160px;" data-target="#paneBalanceDisplay" role="tab" data-tab-input="bd" data-toggle="tab" class="text-center" aria-expanded="false">Balance Display</a></li>
-                <li role="presentation" class=""><a style="width: 160px; min-width: 160px;" data-target="#paneLifetimeIncome" role="tab" data-tab-input="li" data-toggle="tab" class="text-center" aria-expanded="false">Lifetime Income</a></li>            </ul>
+                <li role="presentation" class=""><a style="width: 160px; min-width: 160px;" data-target="#paneLifetimeIncome" role="tab" data-tab-input="li" data-toggle="tab" class="text-center" aria-expanded="false">Lifetime Income</a></li>
+            </ul>
             <div class="tab-content ajaxContent">
-                <div class="ajaxloader"></div>
-
+                <!-- charts -->
                 <div role="tabpanel" class="tab-pane fade active in" id="paneCashFlow">
                     <div class="row match-height">
                         <div class="col-sm-12">
@@ -423,6 +408,9 @@
                         <div class="col-xs-12" rbl-value="lifetime-income-footnote"></div>
                     </div>
                 </div>
+
+                <!-- overlays -->
+                <div class="ajaxloader"></div>
                 <div class="recalc-notice">
                     <div id="alert-recalc" class="alert alert-danger" role="alert" style="width:50%">
                         <h4 class="alert-heading">Please Note</h4>
@@ -433,13 +421,12 @@
                 </div>
             </div>
 
-            <br/>
-
             <div class="row" style="min-height: 0;">
                 <div class="col-sm-12">
                     <div rbl-tid="validation-summary"></div>
-                </div>
+                </div>    
             </div>
+
         </div>
 
         <div class="col-md-6">
@@ -464,11 +451,10 @@
                             </div>
                         </div>
                     </div>
-                    <hr style="margin-bottom: 10px;">
+                    <hr>
                     <div class="row">
                         <div class="col-sm-9">
-                            <div rbl-tid="input-radiobuttonlist" data-inputname="iContribType"></div>
-                            <div rbl-tid="input-slider" data-inputname="iContribRatePct" rbl-display="viContribRatePct"></div>
+                            <div rbl-tid="input-slider" data-inputname="iContribRatePct"></div>
                         </div>
                         <div class="col-sm-3">
                             <div class="text-center retirementIconWrapper">
@@ -476,11 +462,8 @@
                                 <p>Increase your contributions</p>
                             </div>
                         </div>
-                        <div class="col-sm-12">
-                            <div rbl-tid="input-textbox1" data-inputname="iContribRateDollar" rbl-display="viContribRateDollar" data-prefix="$"></div>
-                        </div>
                     </div>
-                    <hr style="margin-bottom: 10px;">
+                    <hr>
                     <div class="row">
                         <div class="col-sm-9">
                             <div rbl-tid="input-slider" data-inputname="iReturn"></div>
@@ -511,12 +494,12 @@
                         <div class="col-sm-12" rbl-tid="input-slider2" data-inputname="iSalaryIncrease"></div>
                         <div class="col-sm-12" rbl-tid="input-textbox2" data-inputname="iNumeric1UserDef" data-suffix="%"></div>
                     </div>
-                    <hr style="margin-bottom: 10px;">
+                    <hr>
                     <div class="row">
                         <div class="col-sm-12" rbl-tid="input-slider2" data-inputname="iSSRetAge"></div>
                         <div class="col-sm-12" rbl-tid="input-textbox2" data-inputname="iSSOverride" data-prefix="$"></div>
                     </div>
-                    <hr style="margin-bottom: 10px;">
+                    <hr>
                     <div class="row">
                         <div class="col-sm-12">
                             <div rbl-tid="input-textbox2" data-inputname="iPersonalSavings" data-prefix="$"></div>
@@ -540,13 +523,11 @@
                 <div class="col-xs-12 col-sm-6"><span class="lSaveMessage">Important: Click 'Save Inputs' for your next session.<br>Last saved: 6/30/2019</span></div>
             </div>
             <div class="row">
-                <div class="col-sm-12">
-                    <div class="alert alert-danger saveError" role="alert" title="Please review the following issues:">
-                        <p><strong>Save is not successful. Please try again.</strong></p>
-                    </div>
-                    <div class="alert alert-success saveSuccess" role="alert" title="Please review the following issues:">
-                        <p><strong>Data is saved successfully.</strong></p>
-                    </div>
+                <div class="alert alert-danger saveError" role="alert" title="Please review the following issues:">
+                    <p><strong>Save is not successful. Please try again.</strong></p>
+                </div>
+                <div class="alert alert-success saveSuccess" role="alert" title="Please review the following issues:">
+                    <p><strong>Data is saved successfully.</strong></p>
                 </div>
             </div>
         </div>
@@ -566,7 +547,6 @@
         </div>
         <div class="hidden-xs col-sm-6"></div>
     </div>
-
     <div class="blockapp" style="display: none;"></div>
     <div class="ajaxerror alert alert-danger" role="alert" style="display: none;">
         <p><strong><br>Please review the following issues:</strong></p>
@@ -595,10 +575,6 @@
     if ( $("{thisView}").data("debugger" ) == true ) debugger;
 
     (function() {
-        try {
-		    Highcharts.setOptions({"lang":{"decimalPoint":".","thousandsSep":",","months":["January","February","March","April","May","June","July","August","September","October","November","December",""],"shortMonths":["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec",""],"weekdays":["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"],"shortWeekdays":["Sun","Mon","Tue","Wed","Thu","Fri","Sat"]}});
-    	} catch (e) { }
-
         var view = $("{thisView}");
         var application = view.KatApp();
 
@@ -612,6 +588,7 @@
 				}
 			}
 		);
+
         view.on( "onInitialized.RBLe", function( event, application ) {
             //attach click event
             $(".recalcButton", view).on('click', function (e) {
@@ -790,7 +767,6 @@
 			$(".irp-modal").css("display", "block");
 		});
     })();
-
     //# sourceURL=sharkfin.kaml
 </script>
 
@@ -806,27 +782,6 @@
             <div class="col-sm-4">
                 <select class="form-control {inputname}" id_="{inputname}" name="{inputname}">
                 </select>
-            </div>
-            <div class="h{inputname}Title" rbl-value="h{inputname}Title" style="display: none;"></div>
-            <div class="h{inputname}" rbl-value="h{inputname}" style="display: none;"></div>
-        </div>
-    </div>
-</rbl-template>
-
-<rbl-template tid="input-textbox1" type="katapp-textbox">
-    <div class="v{inputname}" rbl-display="v{inputname}">
-        <div class="form-group" style="margin-bottom: 0px;">
-            <div class="col-sm-8" style="padding-left: 0px; margin-top: 10px; margin-bottom: 10px;">
-                <label for="{inputname}" class="control-label l{inputname}" rbl-value="l{inputname}"></label>
-                <a class="vh{inputname}" rbl-display="vh{inputname}" role="button" tabindex="0" data-toggle="popover" data-trigger="click" data-content-selector=".h{inputname}" data-placement="top" data-original-title="" title="">
-                    <span class="glyphicon glyphicon-info-sign help-icon"></span>
-                </a>
-            </div>
-            <div class="col-sm-4">
-                <div class="validator-container input-group">
-                    <input name="{inputname}" type="text" id_="{inputname}" class="form-control {inputname}">
-                    <span class="error-msg ng-isolate-scope" law-data-content="" close-btn="focus" data-toggle="tooltip" data-placement="top" role="button" tabindex="0" data-original-title="" title=""></span>
-                </div>
             </div>
             <div class="h{inputname}Title" rbl-value="h{inputname}Title" style="display: none;"></div>
             <div class="h{inputname}" rbl-value="h{inputname}" style="display: none;"></div>

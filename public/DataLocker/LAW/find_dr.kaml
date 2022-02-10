@@ -764,7 +764,7 @@
 				"zip": "132091234",
 				"site_name": "demo"
 			}
-			if ( document.location.href.indexOf( "dataoverride=1")  >=0  ) postDataDefault = {"comp_nr":"879","typeopt":"01AV|01ED|01EH|01EM|01ER|01EV|01EZ|01G2|01G3|01G4|0232|0233|0234|0301|0401|0709|0710|0711|0805|0806|0807|1101|1102|1103|1104|1105|1106|1107|1108|1521|1522|1801|2001|2101|2501|2701|3003|3004|3005|3006|3007|3008|3009|3101|3102|3103|3104|3105|3106|3107|3201|3202|3203|3401|3402|3501|3502|3801|3802|4201|4202|4205|4211|4401|4402|4403|4404|4701,01AV|01ED|01EH|01EM|01ER|01EV|01EZ|01G2|01G3|01G4|0232|0233|0234|0301|0401|0709|0710|0711|0805|0806|0807|1101|1102|1103|1104|1105|1106|1107|1108|1521|1522|1801|2001|2101|2501|2701|3003|3004|3005|3006|3007|3008|3009|3101|3102|3103|3104|3105|3106|3107|3201|3202|3203|3401|3402|3501|3502|3801|3802|4201|4202|4205|4211|4401|4402|4403|4404|4701","mixed_medicare_typeopt":"","planyear":"2021","city":"TEST CITY                ","state":"GA","zip":"301521234","pingurl":"https%3A%2F%2Fqalmc.lifeatworkportal.com%2Fportal60%2Fbenefits%2Frks%2Fkeepalive%2Fkeepalive.htm","contact_center_name":"Lockheed Martin Employee Service Center","contact_center_phone":"866-562-2363","site_name":"LMC"};
+			if ( document.location.href.indexOf( "dataoverride=1")  >=0  ) postDataDefault = {"comp_nr":"879","typeopt":"01AV|01ED|01EH|01EM|01ER|01EV|01EZ|01G2|01G3|01G4|0232|0233|0234|0301|0401|0709|0710|0711|0805|0806|0807|1101|1102|1103|1104|1105|1106|1107|1108|1521|1522|1801|2001|2101|2501|2701|3003|3004|3005|3006|3007|3008|3009|3101|3102|3103|3104|3105|3106|3107|3201|3202|3203|3401|3402|3501|3502|3801|3802|4201|4202|4205|4211|4401|4402|4403|4404|4701,01AV|01ED|01EH|01EM|01ER|01EV|01EZ|01G2|01G3|01G4|0232|0233|0234|0301|0401|0709|0710|0711|0805|0806|0807|1101|1102|1103|1104|1105|1106|1107|1108|1521|1522|1801|2001|2101|2501|2701|3003|3004|3005|3006|3007|3008|3009|3101|3102|3103|3104|3105|3106|3107|3201|3202|3203|3401|3402|3501|3502|3801|3802|4201|4202|4205|4211|4401|4402|4403|4404|4701","mixed_medicare_typeopt":"","planyear":"2022","city":"TEST CITY                ","state":"GA","zip":"301521234","pingurl":"https%3A%2F%2Fqalmc.lifeatworkportal.com%2Fportal60%2Fbenefits%2Frks%2Fkeepalive%2Fkeepalive.htm","contact_center_name":"Lockheed Martin Employee Service Center","contact_center_phone":"866-562-2363","site_name":"LMC"};
 
 			//copy data to postDataX
 			var postDataX = {};
@@ -929,7 +929,7 @@
 		view.on( "onCalculation.RBLe", function( event, calculationResults, calcOptions, application ) {
 			
 			//set up filter dismiss events
-			$(".specialties-selected .btn", view).off('click.dr').on('click.dr', function(){
+			$(".specialties-selected .btn", view).on('click', function(){
 				var el = $(this);
 				if ( el.hasClass("btn-info") ) {
 					var vals = $("select.ispecialtyIds_groups", view).selectpicker('val');
@@ -964,7 +964,7 @@
 				}
 				el.remove();
 			});
-			$(".plans-selected button", view).off('click.dr').on('click.dr', function(){
+			$(".plans-selected button", view).on('click', function(){
 				var el = $(this);
 				var vals = $("select.inetworkIds", view).selectpicker('val');
 				$("select.inetworkIds", view).selectpicker('val', vals.filter( function(i) {return (i != el.data("selectid"));}));
@@ -974,7 +974,7 @@
 			});
 
 			//setup events on input labels (why not on configureui? didn't work)
-			$("[data-inputname=iradiusInMiles] a", view).attr("href","#").off('click.dr').on('click.dr', function(e){
+			$("[data-inputname=iradiusInMiles] a", view).attr("href","#").on('click', function(e){
 				$("[rbl-display=vizipCode]", view).slideDown();
 				$(".izipCode", view).focus().select();
 			});
@@ -984,7 +984,7 @@
 			$(".result-pagenav .nextpage a", view).data("path", application.getResultValue("ejs-output", "groupedByProviderNext", "value", "") );
 			$(".iApiPath", view).val("");
 
-			$("a.otherlocations, a.doctor", view).off('click.dr').on('click.dr', function(){
+			$("a.otherlocations, a.doctor", view).on('click', function(){
 				var providerId = $(this).data("id");
 				//weird hack: must assign it twice.
 				doctor = application.getResultRow("zelis-groupedByProvider", providerId, "providerId");
@@ -1005,7 +1005,7 @@
 			});
 
 			//data issues; disabled for now
-			$("a.show-hospitalproviders", view).off('click.dr').on('click.dr', function(){
+			$("a.show-hospitalproviders", view).on('click', function(){
 				$(".iproviderName", view).val("");
 				$(".iproviderTypeIds", view).selectpicker('val','6,3,13,4,5,10,2,14,16');
 				$(".ihospitalAffiliationIds", view).val( $(this).data("id") );
@@ -1015,7 +1015,7 @@
 
 			//favorites
 			// add toggle to each doctor
-			$("input.favorite", view).off('click.dr').on('click.dr', function() {
+			$("input.favorite", view).click(function() {
 				if ( $(this).prop("checked") ) {
 					favs[ $(this).data("id") ] = true;
 				}
@@ -1118,7 +1118,10 @@
 		view.on( "onConfigureUICalculation.RBLe", function( event, calculationResults, calcOptions, application ) {
 	
 			//search when listbox closed
-			$("select.inetworkIds, select.ispecialtyIds_groups", view).on('hidden.bs.select', function () {
+			$("select.inetworkIds", view).on('hidden.bs.select', function () {
+				application.calculate();
+			});
+			$("select.ispecialtyIds_groups", view).on('hidden.bs.select', function () {
 				application.calculate();
 			});
 			//change standard close button to ">" for network

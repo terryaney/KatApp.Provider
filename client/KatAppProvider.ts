@@ -2296,8 +2296,11 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
 
             const itemTypeClass: string = isRadio ? "radio abc-radio" : "checkbox abc-checkbox";
 
-            if ( horizontal ) {
+            if ( horizontal && !isBootstrap5 ) {
                 container.parent().addClass( "bs-listcontrol form-inline form-inline-vtop" );
+            }
+            else if ( horizontal && isBootstrap5 ) {
+                container.addClass( "row" );
             }
             else if ( itemsContainer.length === 0 ) {
                 const temlpateContent = 
@@ -2413,7 +2416,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
             // data-inputname - Checkbox list items, I put the 'name' into a parent span (via attribute on ListItem)
             // but if they are children of [data-itemtype="checkbox"] element, they are skipped and handled specifically
             // and the data-inputname is expected on same element as [data-itemtype="checkbox"].
-            let htmlName = input.parent().attr("data-inputname") || input.attr("name");
+            let htmlName = input.parent().attr("data-inputname") || input.attr("data-inputname") || input.attr("name");
 
             if ( htmlName === undefined ) {
                 const id = input.attr("id");
@@ -5775,9 +5778,16 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                     if ( label !== undefined ) {
                         let target = $("span[rbl-value='l" + id + "'] label span.checkbox-label", el);
 
+                        /* Don't think needed
                         if ( target.length === 0 ) {
                             target = $("span[rbl-value='l" + id + "'] label", el);
                         }
+                        */
+
+                        if ( target.length === 0 ) {
+                            target = $("label[rbl-value='l" + id + "']", el);
+                        }
+
                         target.html(label);
                     }
 
@@ -6312,7 +6322,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                                     
                     that.ensureRblDisplay( el );
 
-                    // To make it easier during RBL processing to determine what to do
+                    // To make it easier during result/listitem processing to determine what to do
                     listContainer.attr("data-horizontal", horizontal);
 
                     if ( horizontal ) {

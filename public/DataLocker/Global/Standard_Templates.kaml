@@ -164,7 +164,7 @@
       <a style="display: none;" onclick="return false;" rbl-display="vh{inputname}" class="help-icon-anchor" role="button" tabindex="-1" data-toggle="popover" data-trigger="click" data-content-selector="#{id}_h{inputname}" data-placement="top"><span class="glyphicon glyphicon-info-sign help-icon"></span></a>
       <a style="display: none;" onclick="return false;" rbl-display="vs{inputname}" class="help-icon-anchor" role="button" tabindex="-1"><span class="glyphicon glyphicon-volume-up"></span></a>
     </label>
-    <div class="validator-container list-container form-check" rbl-disabled="{inputname}">
+    <div class="validator-container list-container" rbl-disabled="{inputname}">
       <!-- Radio list injected here -->
       <div class="{inputname}" data-inputname="{inputname}" data-id="{id}" data-itemtype="radio"></div>
       <span class="error-msg" data-toggle="tooltip" data-placement="top auto"></span>
@@ -183,24 +183,26 @@
 <rbl-template tid="input-radiobuttonlist-vertical-item">
   <tr_ rbl-display="{visibleSelector}">
     <td_>
-      <span class="radio abc-radio">
+      <div class="radio abc-radio form-check">
         <input class="form-check-input" id="{itemId}" type="radio" name="{id}:{inputName}" value="{value}" />
-        <label for="{itemId}">{text}</label>
+        <label class="form-check-label" for="{itemId}">{text}</label>
         <a rbl-display="{helpIconSelector}" style="display: none;" onclick="return false;" class="help-icon-anchor" role="button" tabindex="-1" data-toggle="popover" data-trigger="click" data-content-selector="#{id}_{helpSelector}" data-placement="top"><span class="glyphicon glyphicon-info-sign help-icon"></span></a>
         <div rbl-value="{helpSelector}Title" id="{id}_{helpSelector}Title" style="display: none;"></div>
         <div rbl-value="{helpSelector}" id="{id}_{helpSelector}" style="display: none;"></div>
-      </span>
+      </div>
     </td_>
   </tr_>
 </rbl-template>
   
 <rbl-template tid="input-radiobuttonlist-horizontal-item">
-  <div class='radio abc-radio' rbl-display="{visibleSelector}">
-    <input class="form-check-input" id="{itemId}" type="radio" name="{id}:{inputName}" value="{value}" />
-    <label for="{itemId}">{text}</label>
-    <a rbl-display="{helpIconSelector}" style="display: none;" onclick="return false;" class="help-icon-anchor" role="button" tabindex="-1" data-toggle="popover" data-trigger="click" data-content-selector="#{id}_{helpSelector}" data-placement="top"><span class="glyphicon glyphicon-info-sign help-icon"></span></a>
-    <div rbl-value="{helpSelector}Title" id="{id}_{helpSelector}Title" style="display: none;"></div>
-    <div rbl-value="{helpSelector}" id="{id}_{helpSelector}" style="display: none;"></div>
+  <div class='radio abc-radio col-auto' rbl-display="{visibleSelector}">
+    <div class="form-check">
+      <input class="form-check-input" id="{itemId}" type="radio" name="{id}:{inputName}" value="{value}" />
+      <label class="form-check-label" for="{itemId}">{text}</label>
+      <a rbl-display="{helpIconSelector}" style="display: none;" onclick="return false;" class="help-icon-anchor" role="button" tabindex="-1" data-toggle="popover" data-trigger="click" data-content-selector="#{id}_{helpSelector}" data-placement="top"><span class="glyphicon glyphicon-info-sign help-icon"></span></a>
+      <div rbl-value="{helpSelector}Title" id="{id}_{helpSelector}Title" style="display: none;"></div>
+      <div rbl-value="{helpSelector}" id="{id}_{helpSelector}" style="display: none;"></div>
+    </div>
   </div>
 </rbl-template>
   
@@ -211,7 +213,7 @@
       <a style="display: none;" onclick="return false;" rbl-display="vh{inputname}" class="help-icon-anchor" role="button" tabindex="-1" data-toggle="popover" data-trigger="click" data-content-selector="#{id}_h{inputname}" data-placement="top"><span class="glyphicon glyphicon-info-sign help-icon"></span></a>
       <a style="display: none;" onclick="return false;" rbl-display="vs{inputname}" class="help-icon-anchor" role="button" tabindex="-1"><span class="glyphicon glyphicon-volume-up"></span></a>
     </label>
-    <div class="validator-container list-container form-check" rbl-disabled="{inputname}">
+    <div class="validator-container list-container" rbl-disabled="{inputname}">
       <!-- Checkbox list injected here -->
       <div class="{inputname}" data-inputname="{inputname}" data-id="{id}" data-itemtype="checkbox"></div>
       <span class="error-msg" data-toggle="tooltip" data-placement="top auto"></span>
@@ -230,31 +232,32 @@
 <rbl-template tid="input-checkboxlist-vertical-item">
   <tr_ rbl-display="{visibleSelector}">
     <td_>
-      <span class="checkbox abc-checkbox" data-inputname="{inputName}">
+      <div class="checkbox abc-checkbox form-check" data-inputname="{inputName}">
         <input class="form-check-input" id="{itemId}" type="checkbox" name="{id}:{inputName}:{value}" data-value="{value}" />
-        <label for="{itemId}">{text}</label>
+        <label class="form-check-label" for="{itemId}">{text}</label>
         <a rbl-display="{helpIconSelector}" style="display: none;" onclick="return false;" class="help-icon-anchor" role="button" tabindex="-1" data-toggle="popover" data-trigger="click" data-content-selector="#{id}_{helpSelector}" data-placement="top"><span class="fa fa-question-circle help-icon"></span></a>
         <div rbl-value="{helpSelector}Title" id="{id}_{helpSelector}Title" style="display: none;"></div>
         <div rbl-value="{helpSelector}" id="{id}_{helpSelector}" style="display: none;"></div>
-      </span>
+      </div>
     </td_>
   </tr_>
 </rbl-template>
   
 <rbl-template tid="input-checkboxlist-horizontal-item">
-  <!-- form-group - might need this -->
-  <div class='checkbox abc-checkbox' rbl-display="{visibleSelector}" data-inputname="{inputName}">
-    <input class="form-check-input" id="{itemId}" type="checkbox" name="{id}:{inputName}:{value}" data-value="{value}" />
-    <label for="{itemId}">{text}</label>
-    <a rbl-display="{helpIconSelector}" style="display: none;" onclick="return false;" class="help-icon-anchor" role="button" tabindex="-1" data-toggle="popover" data-trigger="click" data-content-selector="#{id}_{helpSelector}" data-placement="top"><span class="fa fa-question-circle help-icon"></span></a>
-    <div rbl-value="{helpSelector}Title" id="{id}_{helpSelector}Title" style="display: none;"></div>
-    <div rbl-value="{helpSelector}" id="{id}_{helpSelector}" style="display: none;"></div>
+  <div class='checkbox abc-checkbox col-auto' rbl-display="{visibleSelector}" data-inputname="{inputName}">
+    <div class="form-check">
+      <input class="form-check-input" id="{itemId}" type="checkbox" name="{id}:{inputName}:{value}" data-value="{value}" />
+      <label class="form-check-label" for="{itemId}">{text}</label>
+      <a rbl-display="{helpIconSelector}" style="display: none;" onclick="return false;" class="help-icon-anchor" role="button" tabindex="-1" data-toggle="popover" data-trigger="click" data-content-selector="#{id}_{helpSelector}" data-placement="top"><span class="fa fa-question-circle help-icon"></span></a>
+      <div rbl-value="{helpSelector}Title" id="{id}_{helpSelector}Title" style="display: none;"></div>
+      <div rbl-value="{helpSelector}" id="{id}_{helpSelector}" style="display: none;"></div>
+    </div>
   </div>
 </rbl-template>
   
 <rbl-template tid="input-checkbox" type="katapp-checkbox">
-  <div class="form-check validator-container checkbox-container v{inputname}" rbl-display="v{inputname}">
-    <span class="checkbox abc-checkbox {inputname}" rbl-value="l{inputname}">
+  <div class="validator-container checkbox-container v{inputname}" rbl-display="v{inputname}">
+    <span class="checkbox abc-checkbox {inputname} form-check" rbl-value="l{inputname}">
       <input class="form-check-input" id="katapp_{id}_{inputname}" type="checkbox" name="{inputname}" rbl-disabled="{inputname}" />
       <label class="form-check-label" for="katapp_{id}_{inputname}">
         <span class="checkbox-label"></span>
@@ -269,7 +272,7 @@
 </rbl-template>
   
 <rbl-template tid="input-checkbox-simple" type="katapp-checkbox">
-  <div class="form-check" rbl-display="v{inputname}">
+  <div class="validator-container checkbox-container form-check" rbl-display="v{inputname}">
     <input class="form-check-input {inputname}" id="{inputname}" type="checkbox" name="{inputname}" rbl-disabled="{inputname}" />
     <label class="form-check-label" rbl-value="l{inputname}" for="{inputname}"></label>
     <a style="display: none;" onclick="return false;" rbl-display="vh{inputname}" class="help-icon-anchor" role="button" tabindex="-1" data-toggle="popover" data-trigger="click" data-content-selector="#{id}_h{inputname}" data-placement="top"><span class="glyphicon glyphicon-info-sign help-icon"></span></a>
@@ -506,6 +509,9 @@
           background-position: right center;
           border-color: red;
           border-width: 1px;
+      }
+      .katapp-css div[data-horizontal='true'] .list-container.error {
+        background-position-y: -3px;
       }
       .katapp-css .validator-container.error .form-select {
           background: url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAAGXRFWHRTb2Z0d2FyZQBBZG9iZSBJbWFnZVJlYWR5ccllPAAAAyJpVFh0WE1MOmNvbS5hZG9iZS54bXAAAAAAADw/eHBhY2tldCBiZWdpbj0i77u/IiBpZD0iVzVNME1wQ2VoaUh6cmVTek5UY3prYzlkIj8+IDx4OnhtcG1ldGEgeG1sbnM6eD0iYWRvYmU6bnM6bWV0YS8iIHg6eG1wdGs9IkFkb2JlIFhNUCBDb3JlIDUuMy1jMDExIDY2LjE0NTY2MSwgMjAxMi8wMi8wNi0xNDo1NjoyNyAgICAgICAgIj4gPHJkZjpSREYgeG1sbnM6cmRmPSJodHRwOi8vd3d3LnczLm9yZy8xOTk5LzAyLzIyLXJkZi1zeW50YXgtbnMjIj4gPHJkZjpEZXNjcmlwdGlvbiByZGY6YWJvdXQ9IiIgeG1sbnM6eG1wPSJodHRwOi8vbnMuYWRvYmUuY29tL3hhcC8xLjAvIiB4bWxuczp4bXBNTT0iaHR0cDovL25zLmFkb2JlLmNvbS94YXAvMS4wL21tLyIgeG1sbnM6c3RSZWY9Imh0dHA6Ly9ucy5hZG9iZS5jb20veGFwLzEuMC9zVHlwZS9SZXNvdXJjZVJlZiMiIHhtcDpDcmVhdG9yVG9vbD0iQWRvYmUgUGhvdG9zaG9wIENTNiAoV2luZG93cykiIHhtcE1NOkluc3RhbmNlSUQ9InhtcC5paWQ6QUM2RTlEMUEyQjY0MTFFNTlBNDVDOTVDM0M4OERCNDYiIHhtcE1NOkRvY3VtZW50SUQ9InhtcC5kaWQ6QUM2RTlEMUIyQjY0MTFFNTlBNDVDOTVDM0M4OERCNDYiPiA8eG1wTU06RGVyaXZlZEZyb20gc3RSZWY6aW5zdGFuY2VJRD0ieG1wLmlpZDpBQzZFOUQxODJCNjQxMUU1OUE0NUM5NUMzQzg4REI0NiIgc3RSZWY6ZG9jdW1lbnRJRD0ieG1wLmRpZDpBQzZFOUQxOTJCNjQxMUU1OUE0NUM5NUMzQzg4REI0NiIvPiA8L3JkZjpEZXNjcmlwdGlvbj4gPC9yZGY6UkRGPiA8L3g6eG1wbWV0YT4gPD94cGFja2V0IGVuZD0iciI/PkpK80MAAAJHSURBVHja7FbNSxRhGP/NTtuuGuNhY09BYpAiZUgRXSOowI/KQvSfqEvX6FCRIHXp1E26hpkbdRGEKAgpdIvKW3YI1h1dsJRxd2femX7vfOgyerEZEWIeeHbffd/n4/d8vM+7iuM42E9KYZ8pAZAASAAc+CetgetdSCkXuOokq+QfsJ23KEzM7taUsqtB1Hs1R8dPoKojqNcBfRmwbeBwDmhpASxrhkBu4vXLb/EDuNwvo/7AlUZHQHMz4++gBQVY/AksE0wmE0hfwZtCIb4euNSnwXHmIGyNDKxUgNZWYPQB8PA+0HEctaUy3DOPp6jTHV8PCDHOz8wWbOI2jK3ztTUmQpFyjVoyA23RM3D+YjsNX3ONByzrXq0CQfmMDbilbJQR4ih1B6IDEGIoZNhzVqt5QCRt7AhA8mD0Etji2I77VQIw2Yyq6oHxZMNSuegAhK2Gt2S0yvo6kPXbguWwbb8BQ7csBgDi1zarbDjBFKuTU7wNGrD6G+l0OtyEkv5EB2BZLxjxnTAA0zShvnvPAXQIZqXCi5GCw70QTSuRm3ButkgAn2SKZeol67qO7JnTwOMx4N5dpIeHUCqVNs8lU97g93gsg4jGRiSAgEU41cyIxenYeE7nw6niRye2UVw/0dNH2VfB7xo7X+vvdUeyMTHplkWWwS/R7YNf5x/F/hhVu06do/xTOuqWeuVy2Y04n8+7TcjIS3R+K/v98/O9eQ19MjpP3qDeWS6P+FdNp+Mi+VnTwhexd89x8pcsAZAA+B8B/BVgABTBPRBlYPNqAAAAAElFTkSuQmCC), url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3e%3cpath fill='none' stroke='%23343a40' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M2 5l6 6 6-6'/%3e%3c/svg%3e");

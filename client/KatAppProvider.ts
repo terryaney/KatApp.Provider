@@ -1299,7 +1299,9 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                             const createDictionary = 
                                 formName == "Inputs" || formName == "Configuration[customInputs]" || formName == "Configuration[manualInputs]";
                             
-                            buildForm(formData, data[key], formName, createDictionary);
+                            if ( key != "manualResults" ) {
+                                buildForm(formData, data[key], formName, createDictionary);
+                            }
                         }
                     });
                 } else if ( data != null ) {

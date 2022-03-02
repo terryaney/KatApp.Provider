@@ -83,6 +83,8 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
         options: KatAppOptions = {};
         id: string;
         applicationIsInvalid = false;
+        inputsHaveBeenCached = false;
+
         endpointRBLeInputsCache = {};
 
         displayId: string;
@@ -204,17 +206,8 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
 
             const that: KatAppPlugIn = this;
 
-            const initPipeline = function(offset: number ): void {
-                if ( pipelineIndex > 0 ) {
-                    that.trace( pipelineNames[ pipelineIndex - 1 ] + ".finish", TraceVerbosity.Detailed );
-                }
-
-                pipelineIndex += offset;
-
-                if ( pipelineIndex < pipeline.length ) {
-                    that.trace( pipelineNames[ pipelineIndex ] + ".start", TraceVerbosity.Detailed );
-                    pipeline[ pipelineIndex++ ]();
-                }
+            const initPipeline = function( offset: number ): void {
+                that.processPipeline( pipeline, pipelineNames, ++pipelineIndex, offset );
             };
 
             let pipelineError: string | undefined = undefined;
@@ -781,7 +774,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
         }
 
         setNavigationInputs( inputs: {} | undefined, navigationId?: string, persist?: boolean, inputSelector?: string ): void {
-            const inputsToPass = inputs ?? this.rble.getInputsBySelector( inputSelector ) ?? {};
+            const inputsToPass = inputs ?? this.getInputsBySelector( inputSelector ) ?? {};
 
             const cachingKey = 
                 navigationId == undefined // global
@@ -835,6 +828,11 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                 customOptions, // override options
             ) as KatAppOptions;
 
+            let currentResults: TabDef[] | undefined = undefined;
+            let currentCalculationInputs: object | undefined = undefined;
+            const inputs = this.getOptionInputs( currentOptions ); 
+            const inputTables = this.getInputTables( currentOptions ) ?? [];
+
             const cancelCalculation = !this.ui.triggerEvent( "onCalculateStart", this );
 
             if ( cancelCalculation ) {
@@ -845,7 +843,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
             if ( currentOptions.calcEngines === undefined ) {
 
                 if ( currentOptions.manualResults != undefined ) {
-                    this.setResults( [], currentOptions );
+                    this.results = this.buildResults( [], currentOptions );
                     this.processResults( currentOptions );
                     this.ui.triggerEvent( "onCalculateEnd", this );
                 }
@@ -854,24 +852,13 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
             }
 
             const that: KatAppPlugIn = this;
+
             const pipeline: Array<()=> void> = [];
             const pipelineNames: Array<string> = [];
             let pipelineIndex = 0;
 
             const calculatePipeline = function( offset: number ): void {
-                if ( pipelineIndex > 0 ) {
-                    that.trace( pipelineNames[ pipelineIndex - 1 ] + ".finish", TraceVerbosity.Detailed );              
-                }
-            
-                pipelineIndex += offset;
-            
-                if ( pipelineIndex < pipeline.length ) {
-                    that.trace( pipelineNames[ pipelineIndex ] + ".start", TraceVerbosity.Detailed );
-                    pipeline[ pipelineIndex++ ]();
-                }
-                else if ( pipelineDone != undefined ) {
-                    pipelineDone();
-                }
+                that.processPipeline( pipeline, pipelineNames, ++pipelineIndex, offset, pipelineDone );
             };
 
             const callSharedCallbacks = function( error: string | undefined | unknown ): void {
@@ -922,7 +909,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                     }
                     else if ( shareDataWithOtherApplications && _sharedData.lastRequested != null && ( that.options._sharedDataLastRequested === undefined || _sharedData.lastRequested > that.options._sharedDataLastRequested ) ) {
                         // Protecting against following scenario:
-                        // Two applications registered data on server and timed out due to inactivity.  Then both
+                        // Two applications originally registered data on server and timed out due to inactivity.  Then both
                         // applications triggered calculations at 'similar times' and both submit to server.  
                         // Both throw an error because they can not find registered transaction package.
                         // 1. Application 1 returns from error and enters *this* pipeline to get data.
@@ -1032,9 +1019,10 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                 // 1. Do we want to do only if api/save data don't throw error?
     
                 const hasInputCaching = currentOptions.inputCaching;
-                if ( hasInputCaching ) {
+                if ( hasInputCaching && !that.inputsHaveBeenCached ) {
+                    that.inputsHaveBeenCached = true;
                     const inputCachingKey = "katapp:cachedInputs:" + currentOptions.currentPage + ":" + ( currentOptions.userIdHash ?? "EveryOne" );
-                    const inputsCache = KatApp.extend({}, that.calculationInputs);
+                    const inputsCache = KatApp.extend({}, currentCalculationInputs);
                     that.ui.triggerEvent( "onInputsCache", inputsCache, that );
 
                     // that.calculationInputs has Inputs and Tables in it { input1, input2, Tables: [ ... ] }
@@ -1046,15 +1034,18 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
             // .calculate() cannot be called with expectation of synchronous execution because of this
             // pipeline function that uses Deferred objects to handle asynchronous submission of 1..N CalcEngines
             const submitCalculation = function(): void {
-                
                 const calculations = currentOptions.calcEngines != undefined && currentOptions.calcEngines.length > 0
                     ? currentOptions.calcEngines.map( c => {
                         const d = $.Deferred();
 
                         try {
-                            that.rble.submitCalculation( 
+                            const submitCalculationOptions = that.getSubmitCalculationOptions( currentOptions, inputs, inputTables, c, undefined );
+                            currentCalculationInputs = KatApp.extend( {}, submitCalculationOptions.Inputs as object, { Tables: submitCalculationOptions.InputTables } );
+
+                            that.submitCalculation( 
                                 c,
                                 currentOptions,
+                                submitCalculationOptions,
                                 ( errorMessage, result ) => { 
                                     if ( errorMessage != undefined ) {
                                         d.reject( { "calcEngine": c, "errorMessage": errorMessage } );
@@ -1106,12 +1097,28 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
 
                                     tabDefs = tabDefs.concat( resultTabs );
                                 });
-                            that.setResults( tabDefs, currentOptions );
+                            currentResults = that.buildResults( tabDefs, currentOptions );
                             cacheInputs();
                             calculatePipeline( 0 );
                         }
                     }
                 );
+            };
+
+            // This is needed b/c if a calculation event (i.e. jwt update) triggers another calculation
+            // the flow would be...
+            // 1. Calc A, gets/sets results/inputs
+            // 2. Calc A, Process updateData, finishes
+            // 3. Calc A, Raises apiAction Copmlete event
+            // 4. KAML triggers a application.calculate() event in api Complete (to resync UI/updated data)
+            // 5. Calc B, Starts, set results/inputs to undefined
+            // 6. Calc B, Submits calc which is ajax...so code 'releases' back to step 4 where KAML triggered calc
+            // 7. Calc A, Flow picks up again and calls processResults and raises onCalculation() etc. however results
+            //              and inputs are undefined.
+
+            const ensureResults = function(): void {
+                that.results = currentResults;
+                that.calculationInputs = currentCalculationInputs;
             };
 
             // Success - processApiActions
@@ -1120,6 +1127,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                 const jwtUpdateCommand = "calculations/jwtupdate";
 
                 try {
+                    ensureResults();
                     const jwtToken = {
                         Tokens: that.getResultTable<JSON>( "jwt-data")
                             .map( r => ({ Name: r[ "@id"], Token: r[ "value" ] }) )
@@ -1164,6 +1172,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
             // Error - calculateEnd (checks pipeline error before processing)
             const processApiActions = function(): void {
                 try {
+                    ensureResults();
                     const docGenApiRow = that.getResultRow<JSON>( "api-actions", "DocGen", "action" );
                     if ( docGenApiRow != undefined ) {
                         if ( docGenApiRow[ "exception" ] != undefined ) {
@@ -1217,11 +1226,15 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
 
             // Always go to calculateEnd
             const processResults = function(): void {
+                ensureResults();
                 that.processResults( currentOptions );
                 calculatePipeline( 0 );
             };
 
             const calculateEnd = function(): void {
+                ensureResults();
+                that.inputsHaveBeenCached = false;
+
                 // Remove temp apiAction error flag now that processing is finished
                 $('.validator-container.error.apiAction, .validator-container.warning.apiAction', that.element).removeClass('apiAction');
 
@@ -1260,6 +1273,148 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
             calculatePipeline( 0 );
         }
 
+        processPipeline( pipeline: Array<()=> void>, pipelineNames: Array<string>, pipelineIndex: number, offset: number, pipelineDone?: ()=> void ): void {
+            if ( pipelineIndex > 1 ) {
+                this.trace( pipelineNames[ pipelineIndex - 2 ] + ".finish", TraceVerbosity.Detailed );              
+            }
+        
+            pipelineIndex += offset;
+        
+            if ( pipelineIndex <= pipeline.length ) {
+                this.trace( pipelineNames[ pipelineIndex - 1 ] + ".start", TraceVerbosity.Detailed );
+                pipeline[ pipelineIndex - 1 ]();
+            }
+            else if ( pipelineDone != undefined ) {
+                pipelineDone();
+            }
+        };
+
+        getSubmitCalculationOptions( currentOptions: KatAppOptions, inputs: CalculationInputs, inputTables: CalculationInputTable[], currentCalcEngine: CalcEngine | undefined, endpointOptions: KatAppActionOptions | undefined ): SubmitCalculationOptions {
+            // TODO Should make a helper that gets options (for both submit and register)
+            const calcEngine = currentCalcEngine ||
+                ( 
+                    currentOptions.calcEngines != undefined && currentOptions.calcEngines.length > 0
+                        ? currentOptions.calcEngines[ 0 ]
+                        : null
+                );
+
+            let preCalcs = calcEngine?.preCalcs;
+
+            if (inputs.iInputTrigger !== undefined) {
+                const rblOnChange = $("." + inputs.iInputTrigger).data("rbl-on-change") as string ?? "";
+                const triggerPreCalc = rblOnChange.indexOf("update-tp") > -1;
+                preCalcs = triggerPreCalc 
+                    ? $("." + inputs.iInputTrigger).data("rbl-update-tp-params") || preCalcs 
+                    : preCalcs;
+            }
+
+            const application = this;
+            const saveCalcEngineLocation = application.options.nextCalculation?.saveLocations != undefined
+                ? application.options.nextCalculation.saveLocations.map( l => l.location ).join("|")
+                : "";
+            const traceCalcEngine = application.options.nextCalculation?.trace ?? false;
+            const refreshCalcEngine = application.options.nextCalculation?.expireCache ?? false;
+
+            const calculationOptions: SubmitCalculationOptions = {
+                Data: !( currentOptions.registerDataWithService ?? true ) ? currentOptions.data : undefined,
+                Inputs: inputs,
+                InputTables: inputTables, 
+                Configuration: {
+                    CalcEngine: calcEngine?.name ?? "Conduent_NotAvailable_CE",
+                    Token: ( currentOptions.registerDataWithService ?? true ) ? currentOptions.registeredToken : undefined,
+                    TraceEnabled: traceCalcEngine ? 1 : 0,
+                    InputTab: calcEngine?.inputTab ?? "RBLInput",
+                    ResultTabs: calcEngine?.resultTabs ?? [ "RBLResult" ],
+                    SaveCE: saveCalcEngineLocation,
+                    RefreshCalcEngine: refreshCalcEngine || ( currentOptions.debug?.refreshCalcEngine ?? false ),
+                    PreCalcs: preCalcs,
+        
+                    // In case a non-session submission, pass these along
+                    // TODO: should we be using JWT for AuthID, AdminAuthID, Client?
+                    AuthID: currentOptions.data?.AuthID ?? "NODATA",
+                    AdminAuthID: undefined,
+                    Client: currentOptions.data?.Client ?? "KatApp",
+                    TestCE: currentOptions.debug?.useTestCalcEngine ?? false,
+                    CurrentPage: currentOptions.currentPage ?? "KatApp:" + ( currentOptions.view ?? "UnknownView" ),
+                    RequestIP: currentOptions.requestIP ?? "1.1.1.1",
+                    CurrentUICulture: currentOptions.currentUICulture ?? "en-US",
+                    Environment: currentOptions.environment ?? "EW.PROD",
+                    Framework: "KatApp"
+                }
+            };
+
+            this.ui.triggerEvent( "onCalculationOptions", calculationOptions, application, endpointOptions );
+
+            return calculationOptions;
+        }
+
+        submitCalculation( calcEngine: CalcEngine, currentOptions: KatAppOptions, calculationOptions: SubmitCalculationOptions, submitCalculationHandler: SubmitCalculationCallback ): void {
+            const application = this;
+
+            const submitDone: RBLeServiceCallback = function( payload ): void {
+                if ( payload.payload !== undefined ) {
+                    payload = JSON.parse(payload.payload);
+                }
+    
+                const traceCalcEngine = application.options.nextCalculation?.trace ?? false;
+                    
+                if ( traceCalcEngine && payload.Diagnostics != null ) {
+                    console.group(calcEngine.name + " " + payload.Diagnostics.CalcEngineVersion + " Diagnostics");
+
+                    const timings: string[] = [];
+                    if ( payload.Diagnostics.Timings != null ) {
+                        const utcDateLength = 28;
+                        payload.Diagnostics.Timings.Status.forEach( t => {
+                            const start = ( t["@Start"] + "       " ).substring(0,utcDateLength);
+                            timings.push( start + ": " + t["#text"] );
+                        })
+                    }
+
+                    const diag = {
+                        Server: payload.Diagnostics.RBLeServer,
+                        Session: payload.Diagnostics.SessionID,
+                        Url: payload.Diagnostics.ServiceUrl,
+                        Timings: timings,
+                        Trace: payload.Diagnostics.Trace?.Item.map( i => i.substring( 2 ))
+                    };
+                    console.log(diag);
+
+                    console.groupEnd();
+                }
+
+                if ( payload.Exception === undefined ) {
+                    submitCalculationHandler( undefined, payload.RBL );
+                }
+                else {
+                    application.exception = payload;
+                    application.trace( "RBLe Service Result Exception: " + payload.Exception.Message, TraceVerbosity.Quiet )
+                    submitCalculationHandler( "RBLe Service Result Exception: " + payload.Exception.Message );
+                }
+            };
+    
+            const submitFailed: JQueryFailCallback = function( _jqXHR, textStatus ): void {
+                application.trace("submitCalculation AJAX Error Status: " + textStatus, TraceVerbosity.Quiet);
+                submitCalculationHandler( "submitCalculation AJAX Error Status: " + textStatus );
+            };
+    
+            const submit: SubmitCalculationDelegate =
+                currentOptions.submitCalculation ??
+                function( _app, o, done, fail ): void {
+                    $.ajax({
+                        url: currentOptions.registerDataWithService ? currentOptions.sessionUrl : currentOptions.functionUrl,
+                        data: JSON.stringify(o),
+                        method: "POST",
+                        // dataType: "json",
+                        headers: currentOptions.registerDataWithService 
+                            ? { 'x-rble-session': calculationOptions.Configuration.Token, 'Content-Type': undefined }
+                            : undefined
+                    })
+                    .then( done, fail )
+                };
+    
+            submit( application, calculationOptions, submitDone, submitFailed );
+        }
+    
         getEndpointSubmitData( options: KatAppOptions, endpointOptions: KatAppActionOptions): KatAppActionSubmitData {
             const currentOptions = KatApp.extend(
                 {}, // make a clone of the options
@@ -1275,7 +1430,9 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                 endpointOptions, // override options
             ) as KatAppOptions;
 
-            const calculationOptions = this.rble.getSubmitCalculationOptions( currentOptions, undefined, endpointOptions );
+            const inputs = this.getOptionInputs( currentOptions ); 
+            const inputTables = this.getInputTables( currentOptions ) ?? [];
+            const calculationOptions = this.getSubmitCalculationOptions( currentOptions, inputs, inputTables, undefined, endpointOptions );
 
             const submitData: KatAppActionSubmitData = {
                 Inputs: calculationOptions.Inputs,
@@ -1374,8 +1531,8 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
 
                 if ( options.manualResults != undefined ) {
                     // Need to process results...
-                    this.setResults( this.results?.filter( r => r._name != "ManualResults" ), this.options );
-                    this.processResults(this.options);
+                    this.results = this.buildResults( this.results?.filter( r => r._name != "ManualResults" ), this.options );
+                    this.processResults( this.options );
                 }
             }
 
@@ -1387,11 +1544,11 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
         }
 
         clearInputs( container?: JQuery<HTMLElement>): void {
-            this.rble.clearInputsBySelector( this.options.inputSelector, container );
+            this.clearInputsBySelector( this.options.inputSelector, container );
         }
 
         getInputs(): CalculationInputs {
-            return this.rble.getInputs( this.options )
+            return this.getOptionInputs( this.options )
         }
 
         setInputs( inputs: JSON | CalculationInputs, calculate = true ): void {
@@ -1411,6 +1568,170 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
             if ( calculate ) {
                 this.calculate();
             }
+        }
+
+        private getOptionInputs( currentOptions: KatAppOptions ): CalculationInputs {
+            if ( currentOptions.defaultInputs !== undefined )
+            {
+                // Currently can't pass this in.  Not sure ever needed, but if so, multi page
+                // KatApps (i.e. LifeInputs and Life) sometimes pass all the inputs through to 
+                // a secondary load of KatApps based on proper conditions in onCalculation.  For
+                // the problem I saw, it was loading secondary app when iInputTrigger was a specific
+                // value.  But then it just turned into a recursive call because this input stayed
+                // in the inputs and it just called a load over and over
+                delete currentOptions.defaultInputs.iInputTrigger;
+            }
+
+            const inputs = this.getInputsBySelector( currentOptions.inputSelector ) ?? {};
+
+            // const result = KatApp.extend( {}, inputs, { InputTables: this.ui.getInputTables() }, this.options.defaultInputs, this.options.manualInputs ) as JSON;
+            const result = KatApp.extend( {}, 
+                inputs, 
+                currentOptions.manualInputs,
+                currentOptions.defaultInputs
+            ) as CalculationInputs;
+
+            delete result[ "Tables" ];
+
+            Object.keys(this.endpointRBLeInputsCache).forEach( k => {
+                const inputCache = this.endpointRBLeInputsCache[k];
+
+                if ( inputCache != undefined ) {
+                    KatApp.extend(result,inputCache[ "Inputs" ]);
+                }
+            });
+            
+            return result;
+        };
+
+        private getInputTables( currentOptions: KatAppOptions ): CalculationInputTable[] | undefined {
+            const utilities: UIUtilities = this.ui;
+            const tables: CalculationInputTable[] = [];
+
+            jQuery.each($(".RBLe-input-table", this.element), function () {
+                const table: CalculationInputTable = {
+                    Name: $(this).data("table"),
+                    Rows: []
+                };
+
+                jQuery.each($("[data-index]", this), function () {
+                    const row: CalculationInputTableRow = {
+                        index: $(this).data("index")
+                    };
+
+                    jQuery.each($("[data-column]", this), function () {
+                        const input = $(this);
+                        const value = utilities.getInputValue(input);
+
+                        if (value !== undefined) {
+                            row[input.data("column")] = value;
+                        }
+                    });
+
+                    table.Rows.push(row);
+                });
+
+                tables.push(table);
+            });
+
+            const mergeCachedTable = function( tableCache: undefined | object ): void {
+                if ( tableCache != undefined ) {
+
+                    Object.keys(tableCache).forEach( k => {
+                        let tableRows = tableCache[k];
+                        let tableName = k;
+
+                        if ( tableRows[ "Name" ] != undefined ) {
+                            // Then this is from *Inputs instead of api result, so need to massage info
+                            tableName = tableRows[ "Name" ];
+                            tableRows = tableRows[ "Rows" ];
+                        }
+
+                        const inputTable: CalculationInputTable = {
+                            Name: tableName,
+                            Rows: tableRows != undefined ? tableRows.slice() : []
+                        };
+                                                    
+                        tables.push(inputTable);        
+                    });
+                }
+            };
+
+            const optionTables = KatApp.extend( {}, 
+                currentOptions.manualInputs,
+                currentOptions.defaultInputs
+            );
+
+            mergeCachedTable( optionTables[ "Tables" ] );
+
+            Object.keys(this.endpointRBLeInputsCache).forEach( k => {
+                const inputCache = this.endpointRBLeInputsCache[k];
+                mergeCachedTable(inputCache?.Tables );
+            });
+
+            return tables.length > 0 ? tables : undefined;
+        }
+
+        private getInputsBySelector( inputSelector: string | undefined, container?: JQuery<HTMLElement> ): {} | undefined {
+            if ( inputSelector == undefined ) return undefined;
+
+            const inputs = {};
+            const ui: UIUtilities = this.ui;
+            const inputContainer = container ?? this.element;
+            const validInputs =  $(inputSelector, inputContainer).not(inputsToIgnoreSelector);
+
+            jQuery.each(validInputs, function () {
+                const input = $(this);
+                const value = ui.getInputValue(input);
+
+                if (value !== undefined) {
+                    const name = ui.getInputName(input);
+                    inputs[name] = value;
+                }
+            });
+
+            // Checkbox list...
+            $("[data-itemtype='checkbox']", inputContainer)
+                .not("rbl-template *")
+                .each(function() {
+                    const cbl = $(this);
+                    const name = cbl.data("inputname");
+                    const value = 
+                        $("input:checked", cbl)
+                            .not("[kat-visible='0']")    
+                            .toArray()
+                            .map( chk => $(chk).data("value"))
+                            .join(",");
+
+                    inputs[name] = value;
+                });
+
+            return inputs;
+        }
+
+        private clearInputsBySelector( inputSelector: string | undefined, container?: JQuery<HTMLElement> ): {} | undefined {
+            if ( inputSelector == undefined ) return undefined;
+
+            const ui: UIUtilities = this.ui;
+            const that = this;
+            const inputContainer = container ?? this.element;
+            const validInputs =  $(inputSelector, inputContainer).not(inputsToIgnoreSelector);
+
+            validInputs.each(function () {
+                const input = $(this);
+                const name = ui.getInputName(input);
+                that.setInput( name, "");
+            });
+
+            $("input[type='file']", inputContainer).each(function() {
+                const input = $(this);
+                ( input.wrap('<form>').closest('form').get(0) as HTMLFormElement ).reset();
+                input.unwrap();
+                that.setInput( ui.getInputName(input) + "Display", "");
+            });
+
+            // Checkbox list...
+            $("[data-itemtype='checkbox'] input", inputContainer).prop("checked", false);
         }
 
         serverCalculation( customInputs: {} | undefined, actionLink?: JQuery<HTMLElement> ): void {
@@ -1453,7 +1774,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
             }
         }
 
-        setResults( results: TabDef[] | undefined, calculationOptions: KatAppOptions = this.options ): void {
+        buildResults( results: TabDef[] | undefined, calculationOptions: KatAppOptions = this.options ): TabDef[] | undefined {
             const calcEngines = ( calculationOptions.calcEngines ?? [] ).map( ce => ({ name: ce.name, key: ce.key }) );
 
             if ( calculationOptions.manualResults != undefined ) {
@@ -1499,7 +1820,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                 } );
             }
 
-            this.results = results;
+            return results;
         }
 
         downloadBlob(blob: Blob, filename: string): void {
@@ -1719,19 +2040,21 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
         private processResults( calculationOptions: KatAppOptions ): void {
             this.trace("Processing results from calculation", TraceVerbosity.Detailed);
             const start = new Date();
+
             try {
+                const calculationResults = this.results;
                 this.options.nextCalculation = undefined;
                 this.options.defaultInputs = undefined;
     
-                this.ui.triggerEvent( "onResultsProcessing", this.results, calculationOptions, this );
+                this.ui.triggerEvent( "onResultsProcessing", calculationResults, calculationOptions, this );
                 
-                this.rble.processResults( calculationOptions );
+                this.rble.processResults( calculationResults, calculationOptions );
                
                 if ( this.calculationInputs?.iConfigureUI === 1 ) {
-                    this.ui.triggerEvent( "onConfigureUICalculation", this.results, calculationOptions, this );
+                    this.ui.triggerEvent( "onConfigureUICalculation", calculationResults, calculationOptions, this );
                 }
     
-                this.ui.triggerEvent( "onCalculation", this.results, calculationOptions, this );
+                this.ui.triggerEvent( "onCalculation", calculationResults, calculationOptions, this );
             } catch (error) {
                 this.trace( "Error during result processing: " + error, TraceVerbosity.None );
                 this.ui.triggerEvent( "onCalculationErrors", "ProcessResults", error, this.exception, calculationOptions, this );
@@ -2859,307 +3182,6 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
             }
     
             register( application, currentOptions, registerDone, registerFailed );
-        }
-    
-        getInputsBySelector( inputSelector: string | undefined, container?: JQuery<HTMLElement> ): {} | undefined {
-            if ( inputSelector == undefined ) return undefined;
-
-            const inputs = {};
-            const ui: UIUtilities = this.application.ui;
-            const inputContainer = container ?? this.application.element;
-            const validInputs =  $(inputSelector, inputContainer).not(inputsToIgnoreSelector);
-
-            jQuery.each(validInputs, function () {
-                const input = $(this);
-                const value = ui.getInputValue(input);
-
-                if (value !== undefined) {
-                    const name = ui.getInputName(input);
-                    inputs[name] = value;
-                }
-            });
-
-            // Checkbox list...
-            $("[data-itemtype='checkbox']", inputContainer)
-                .not("rbl-template *")
-                .each(function() {
-                    const cbl = $(this);
-                    const name = cbl.data("inputname");
-                    const value = 
-                        $("input:checked", cbl)
-                            .not("[kat-visible='0']")    
-                            .toArray()
-                            .map( chk => $(chk).data("value"))
-                            .join(",");
-
-                    inputs[name] = value;
-                });
-
-            return inputs;
-        }
-
-        clearInputsBySelector( inputSelector: string | undefined, container?: JQuery<HTMLElement> ): {} | undefined {
-            if ( inputSelector == undefined ) return undefined;
-
-            const ui: UIUtilities = this.application.ui;
-            const that = this;
-            const inputContainer = container ?? this.application.element;
-            const validInputs =  $(inputSelector, inputContainer).not(inputsToIgnoreSelector);
-
-            validInputs.each(function () {
-                const input = $(this);
-                const name = ui.getInputName(input);
-                that.setInput( name, "");
-            });
-
-            $("input[type='file']", inputContainer).each(function() {
-                const input = $(this);
-                ( input.wrap('<form>').closest('form').get(0) as HTMLFormElement ).reset();
-                input.unwrap();
-                that.setInput( ui.getInputName(input) + "Display", "");
-            });
-
-            // Checkbox list...
-            $("[data-itemtype='checkbox'] input", inputContainer).prop("checked", false);
-        }
-
-        getInputs( currentOptions: KatAppOptions ): CalculationInputs {
-            const submitOptions = currentOptions ?? this.application.options;
-
-            const inputs = this.getInputsBySelector( submitOptions.inputSelector ) ?? {};
-
-            // const result = KatApp.extend( {}, inputs, { InputTables: this.ui.getInputTables() }, this.options.defaultInputs, this.options.manualInputs ) as JSON;
-            const result = KatApp.extend( {}, 
-                inputs, 
-                submitOptions.manualInputs,
-                submitOptions.defaultInputs
-            ) as CalculationInputs;
-
-            delete result[ "Tables" ];
-
-            Object.keys(this.application.endpointRBLeInputsCache).forEach( k => {
-                const inputCache = this.application.endpointRBLeInputsCache[k];
-
-                if ( inputCache != undefined ) {
-                    KatApp.extend(result,inputCache[ "Inputs" ]);
-                }
-            });
-            
-            return result;
-        };
-
-        getInputTables( currentOptions: KatAppOptions ): CalculationInputTable[] | undefined {
-            const utilities: UIUtilities = this.application.ui;
-            const tables: CalculationInputTable[] = [];
-
-            jQuery.each($(".RBLe-input-table", this.application.element), function () {
-                const table: CalculationInputTable = {
-                    Name: $(this).data("table"),
-                    Rows: []
-                };
-
-                jQuery.each($("[data-index]", this), function () {
-                    const row: CalculationInputTableRow = {
-                        index: $(this).data("index")
-                    };
-
-                    jQuery.each($("[data-column]", this), function () {
-                        const input = $(this);
-                        const value = utilities.getInputValue(input);
-
-                        if (value !== undefined) {
-                            row[input.data("column")] = value;
-                        }
-                    });
-
-                    table.Rows.push(row);
-                });
-
-                tables.push(table);
-            });
-
-            const mergeCachedTable = function( tableCache: undefined | object ): void {
-                if ( tableCache != undefined ) {
-
-                    Object.keys(tableCache).forEach( k => {
-                        let tableRows = tableCache[k];
-                        let tableName = k;
-
-                        if ( tableRows[ "Name" ] != undefined ) {
-                            // Then this is from *Inputs instead of api result, so need to massage info
-                            tableName = tableRows[ "Name" ];
-                            tableRows = tableRows[ "Rows" ];
-                        }
-
-                        const inputTable: CalculationInputTable = {
-                            Name: tableName,
-                            Rows: tableRows != undefined ? tableRows.slice() : []
-                        };
-                                                    
-                        tables.push(inputTable);        
-                    });
-                }
-            };
-
-            const submitOptions = currentOptions ?? this.application.options;
-            const optionTables = KatApp.extend( {}, 
-                submitOptions.manualInputs,
-                submitOptions.defaultInputs
-            );
-
-            mergeCachedTable( optionTables[ "Tables" ] );
-
-            Object.keys(this.application.endpointRBLeInputsCache).forEach( k => {
-                const inputCache = this.application.endpointRBLeInputsCache[k];
-                mergeCachedTable(inputCache?.Tables );
-            });
-
-            return tables.length > 0 ? tables : undefined;
-        }
-
-        getSubmitCalculationOptions( currentOptions: KatAppOptions, currentCalcEngine: CalcEngine | undefined, endpointOptions: KatAppActionOptions | undefined ): SubmitCalculationOptions {
-            // TODO Should make a helper that gets options (for both submit and register)            
-    
-            if ( currentOptions.defaultInputs !== undefined )
-            {
-                // Currently can't pass this in.  Not sure ever needed, but if so, multi page
-                // KatApps (i.e. LifeInputs and Life) sometimes pass all the inputs through to 
-                // a secondary load of KatApps based on proper conditions in onCalculation.  For
-                // the problem I saw, it was loading secondary app when iInputTrigger was a specific
-                // value.  But then it just turned into a recursive call because this input stayed
-                // in the inputs and it just called a load over and over
-                delete currentOptions.defaultInputs.iInputTrigger;
-            }
-
-            const inputs = this.getInputs( currentOptions ); 
-            const inputTables = this.getInputTables( currentOptions ) ?? [];
-
-            const calcEngine = currentCalcEngine ||
-                ( 
-                    currentOptions.calcEngines != undefined && currentOptions.calcEngines.length > 0
-                        ? currentOptions.calcEngines[ 0 ]
-                        : null
-                );
-
-            let preCalcs = calcEngine?.preCalcs;
-
-            if (inputs.iInputTrigger !== undefined) {
-                const rblOnChange = $("." + inputs.iInputTrigger).data("rbl-on-change") as string ?? "";
-                const triggerPreCalc = rblOnChange.indexOf("update-tp") > -1;
-                preCalcs = triggerPreCalc 
-                    ? $("." + inputs.iInputTrigger).data("rbl-update-tp-params") || preCalcs 
-                    : preCalcs;
-            }
-
-            const application = this.application;
-            const saveCalcEngineLocation = application.options.nextCalculation?.saveLocations != undefined
-                ? application.options.nextCalculation.saveLocations.map( l => l.location ).join("|")
-                : "";
-            const traceCalcEngine = application.options.nextCalculation?.trace ?? false;
-            const refreshCalcEngine = application.options.nextCalculation?.expireCache ?? false;
-
-            const calculationOptions: SubmitCalculationOptions = {
-                Data: !( currentOptions.registerDataWithService ?? true ) ? currentOptions.data : undefined,
-                Inputs: inputs,
-                InputTables: inputTables, 
-                Configuration: {
-                    CalcEngine: calcEngine?.name ?? "Conduent_NotAvailable_CE",
-                    Token: ( currentOptions.registerDataWithService ?? true ) ? currentOptions.registeredToken : undefined,
-                    TraceEnabled: traceCalcEngine ? 1 : 0,
-                    InputTab: calcEngine?.inputTab ?? "RBLInput",
-                    ResultTabs: calcEngine?.resultTabs ?? [ "RBLResult" ],
-                    SaveCE: saveCalcEngineLocation,
-                    RefreshCalcEngine: refreshCalcEngine || ( currentOptions.debug?.refreshCalcEngine ?? false ),
-                    PreCalcs: preCalcs,
-
-                    // In case a non-session submission, pass these along
-                    // TODO: should we be using JWT for AuthID, AdminAuthID, Client?
-                    AuthID: currentOptions.data?.AuthID ?? "NODATA",
-                    AdminAuthID: undefined,
-                    Client: currentOptions.data?.Client ?? "KatApp",
-                    TestCE: currentOptions.debug?.useTestCalcEngine ?? false,
-                    CurrentPage: currentOptions.currentPage ?? "KatApp:" + ( currentOptions.view ?? "UnknownView" ),
-                    RequestIP: currentOptions.requestIP ?? "1.1.1.1",
-                    CurrentUICulture: currentOptions.currentUICulture ?? "en-US",
-                    Environment: currentOptions.environment ?? "EW.PROD",
-                    Framework: "KatApp"
-                }
-            };
-
-            this.application.ui.triggerEvent( "onCalculationOptions", calculationOptions, this.application, endpointOptions );
-
-            return calculationOptions;
-        }
-
-        submitCalculation( calcEngine: CalcEngine, currentOptions: KatAppOptions, submitCalculationHandler: SubmitCalculationCallback ): void {
-            const application = this.application;
-
-            const calculationOptions = this.getSubmitCalculationOptions( currentOptions, calcEngine, undefined );
-            // Just getting InputTables in the property so visible in console
-            application.calculationInputs = KatApp.extend( {}, calculationOptions.Inputs as object, { Tables: calculationOptions.InputTables } );
-    
-            const submitDone: RBLeServiceCallback = function( payload ): void {
-                if ( payload.payload !== undefined ) {
-                    payload = JSON.parse(payload.payload);
-                }
-    
-                const traceCalcEngine = application.options.nextCalculation?.trace ?? false;
-                    
-                if ( traceCalcEngine && payload.Diagnostics != null ) {
-                    console.group(calcEngine.name + " " + payload.Diagnostics.CalcEngineVersion + " Diagnostics");
-
-                    const timings: string[] = [];
-                    if ( payload.Diagnostics.Timings != null ) {
-                        const utcDateLength = 28;
-                        payload.Diagnostics.Timings.Status.forEach( t => {
-                            const start = ( t["@Start"] + "       " ).substring(0,utcDateLength);
-                            timings.push( start + ": " + t["#text"] );
-                        })
-                    }
-
-                    const diag = {
-                        Server: payload.Diagnostics.RBLeServer,
-                        Session: payload.Diagnostics.SessionID,
-                        Url: payload.Diagnostics.ServiceUrl,
-                        Timings: timings,
-                        Trace: payload.Diagnostics.Trace?.Item.map( i => i.substring( 2 ))
-                    };
-                    console.log(diag);
-
-                    console.groupEnd();
-                }
-
-                if ( payload.Exception === undefined ) {
-                    submitCalculationHandler( undefined, payload.RBL );
-                }
-                else {
-                    application.exception = payload;
-                    application.trace( "RBLe Service Result Exception: " + payload.Exception.Message, TraceVerbosity.Quiet )
-                    submitCalculationHandler( "RBLe Service Result Exception: " + payload.Exception.Message );
-                }
-            };
-    
-            const submitFailed: JQueryFailCallback = function( _jqXHR, textStatus ): void {
-                application.trace("submitCalculation AJAX Error Status: " + textStatus, TraceVerbosity.Quiet);
-                submitCalculationHandler( "submitCalculation AJAX Error Status: " + textStatus );
-            };
-    
-            const submit: SubmitCalculationDelegate =
-                currentOptions.submitCalculation ??
-                function( _app, o, done, fail ): void {
-                    $.ajax({
-                        url: currentOptions.registerDataWithService ? currentOptions.sessionUrl : currentOptions.functionUrl,
-                        data: JSON.stringify(o),
-                        method: "POST",
-                        // dataType: "json",
-                        headers: currentOptions.registerDataWithService 
-                            ? { 'x-rble-session': calculationOptions.Configuration.Token, 'Content-Type': undefined }
-                            : undefined
-                    })
-                    .then( done, fail )
-                };
-    
-            submit( application, calculationOptions, submitDone, submitFailed );
         }
     
         getTabDef( tabDef?: string | null, calcEngine?: string | null ): TabDef | undefined {
@@ -4827,10 +4849,9 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
             });
         }
     
-        processResults( calculationOptions: KatAppOptions ): boolean {
+        processResults( results: TabDef[] | undefined, calculationOptions: KatAppOptions ): boolean {
             const application = this.application;
-            const results = application.results;
-    
+
             if ( results !== undefined ) {
                 const showInspector = application.calculationInputs?.iConfigureUI === 1 && ( calculationOptions.debug?.showInspector ?? false );
                 

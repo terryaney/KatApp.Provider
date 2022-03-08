@@ -207,7 +207,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
             const that: KatAppPlugIn = this;
 
             const initPipeline = function( offset: number ): void {
-                that.processPipeline( pipeline, pipelineNames, ++pipelineIndex, offset );
+                that.processPipeline( pipeline, pipelineNames, pipelineIndex += ( offset + 1 ), offset );
             };
 
             let pipelineError: string | undefined = undefined;
@@ -858,7 +858,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
             let pipelineIndex = 0;
 
             const calculatePipeline = function( offset: number ): void {
-                that.processPipeline( pipeline, pipelineNames, ++pipelineIndex, offset, pipelineDone );
+                that.processPipeline( pipeline, pipelineNames, pipelineIndex += ( offset + 1 ), offset, pipelineDone );
             };
 
             const callSharedCallbacks = function( error: string | undefined | unknown ): void {
@@ -1274,11 +1274,9 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
         }
 
         processPipeline( pipeline: Array<()=> void>, pipelineNames: Array<string>, pipelineIndex: number, offset: number, pipelineDone?: ()=> void ): void {
-            if ( pipelineIndex > 1 ) {
-                this.trace( pipelineNames[ pipelineIndex - 2 ] + ".finish", TraceVerbosity.Detailed );              
+            if ( ( pipelineIndex - offset ) > 1 ) {
+                this.trace( pipelineNames[ ( pipelineIndex - offset ) - 2 ] + ".finish", TraceVerbosity.Detailed );              
             }
-        
-            pipelineIndex += offset;
         
             if ( pipelineIndex <= pipeline.length ) {
                 this.trace( pipelineNames[ pipelineIndex - 1 ] + ".start", TraceVerbosity.Detailed );

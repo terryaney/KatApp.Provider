@@ -22,6 +22,7 @@
         - [Assigning Multiple Event Handlers](#Assigning-Multiple-Event-Handlers)
         - [Removing Event Handlers](#Removing-Event-Handlers)
     - [rbl-navigate Attribute Details](#rbl-navigate-Attribute-Details)
+    - [rbl-modal Attribute Details](#rbl-modal-Attribute-Details)
     - [View Scoping](#View-Scoping)
     - [_Push_ Table Processing](#_Push_-Table-Processing)
         - [rbl-defaults Table](#**rbl-defaults**)
@@ -84,9 +85,9 @@
             - [Standard Series Options](#Standard-Series-Options)
             - [Property Value Parsing](#Property-Value-Parsing)
             - [Language Support](#Language-Support)
-- [Advanced Configuration](#Advanced-Configuration)
-    - [RBLe Service Attributes / Classes](#RBLe-Service-Attributes-/-Classes)
-    - [Precalc Pipelines](#Precalc-Pipelines)
+    - [Advanced Configuration](#Advanced-Configuration)
+        - [RBLe Service Attributes / Classes](#RBLe-Service-Attributes-/-Classes)
+        - [Precalc Pipelines](#Precalc-Pipelines)
 - [KatApp API](#KatApp-API)
     - [KatApp Object Properties](#KatApp-Object-Properties)
         - [KatAppOptions Object](#KatAppOptions-Object)
@@ -158,6 +159,11 @@
             - [onUploaded](#onUploaded)
             - [onUploadFailed](#onUploadFailed)
             - [onUploadComplete](#onUploadComplete)
+        - [KatApp Modal Application Lifecycle Events](#KatApp-Modal-Application-Lifecycle-Events)
+            - [onModalAppConfirm](#onModalAppConfirm)
+            - [onModalAppCancel](#onModalAppCancel)
+            - [onModalAppConfirmed](#onModalAppConfirmed)
+            - [onModalAppCancelled](#onModalAppCancelled)
         - [Template Event Handlers](#Template-Event-Handlers)
     - [Global Methods](#Global-Methods)
         - [static setNavigationInputs](#static-setNavigationInputs)
@@ -639,6 +645,21 @@ In addition to rbl-navigate-input-selector, `data-input-*` attributes can be use
 -->
 Click <a rbl-navigate="Benefits.HPF" data-input-provider-type-ids="ABC,XYZ">here</a> to find a Benefit Provider.
 ```
+
+## rbl-modal Attribute Details
+The `rbl-modal` attribute can be used to launch an independent KatApp application inside of a modal popup.
+
+```html
+Click <a rbl-modal="Channel.Home">here</a> to see your dashboard.
+```
+
+Attribute | Description
+---|---
+rbl-action-calculate | (boolean) Determines if an `application.calculate()` should be called upon modal application confirmation (default is `false`).
+data-label-continue | Change the text of the continue button (default is Continue).
+data-label-cancel | Change the text of the cancel button (default is Cancel).
+data-show-cancel | (boolean) Whether or not to show the cancel button (default is `true`).
+data-input-* | Passed as the `manualInputs` to the modal application.  (i.e. to pass `iDependentId=1`, use `data-input-dependent-id="1"`.  The 'input name' will be created automatically to match RBLe CalcEngine input name pattern)
 
 ## View Scoping
 
@@ -1530,6 +1551,141 @@ Some Kaml Views need to use input templates provided from Standard_Templates.kam
 
 The following template types are supported: `katapp-textbox`, `katapp-dropdown`, `katapp-checkbox`, `katapp-radiobuttonlist`, `katapp-checkboxlist`, `katapp-fileupload`, and `katapp-highcharts`.
 
+# View and Template Expressions
+
+Simple and complex expression logic can be used in with both [KatApp Selectors](#KatApp-Selectors) and [`rbl-source` selectors](#rbl-source-Selectors).  For `rbl-display`, simple expression logic provides a single operator/value comparison at the end of a selector path.  Complex expressions (denoted by `[]` in the selector path) are much more powerful and provide the full capabilities of Javascript programming to create predicate expressions.
+
+## Simple rbl-display Expression Selector
+
+In addition to simply returning a falsey visibility value from the CalcEngine via a [KatApp Selector](#KatApp-Selectors), the `rbl-display` attribute can contain simple operator expressions. The operators that are supported are `=`, `!=`, `>=`, `>`, `<=`, and `<`.
+
+Expression Selector | Description
+---|---
+idValue{operator}{value} | Process the item if row in `rbl-display` table where id is `idValue` exists and show if the `value` column compared to `value` does not return falsey.
+table.idValue{operator}{value} | Process the item if row in `table` table where id is `idValue` exists and show if the `value` column compared to `value` does not return falsey.
+table.idValue.column{operator}{value} | Process the item if row in `table` table where id is `idValue` exists and show if the `column` column compared to `value` does not return falsey.
+table.keyColumn.keyValue.returnColumn{operator}{value} | Process the item if row in `table` table where `keyColumn` is `keyValue` exists and show if the `returnColumn` column compared to `value` does not return falsey.
+
+```html
+<!-- 
+Row: 'rbl-display' table where 'id' is 'vWealth'
+Show if 'value' column from Row = 2, otherwise hide 
+-->
+<div rbl-display="vWealth=2">Wealth Information</div>
+
+<!-- 
+Row: 'wealth-summary' table where 'id' is 'benefit-start'
+Show if 'value' column from Row = 1, otherwise hide 
+-->
+<div rbl-display="wealth-summary.benefit-start=1">Wealth Information</div>
+
+<!-- 
+Row: 'wealth-summary' table where 'id' is 'benefit-start'
+Show if 'enabled' column from Row = 1, otherwise hide 
+-->
+<div rbl-display="wealth-summary.benefit-start.enabled=1">Wealth Information</div>
+
+<!-- 
+Row: 'wealth-summary' table where 'group' column is 'HW'
+Show if 'enabled' column from Row = 1, otherwise hide 
+-->
+<div rbl-display="wealth-summary.group.HW.enabled=1">Wealth Information</div>
+
+<!-- 
+Row: 'contact-info' table where 'id' is 'work'
+Show if 'address1' column from Row is not blank, otherwise hide 
+-->
+<div rbl-display="contact-info.work.address1!=">Work Address: <span rbl-value="contact-info.work.address1"></span></div>
+
+<!-- 
+Checking existence of a row
+
+Row: 'wealth-summary' table where 'id' is 'benefit-start'
+Show if Row exists (if '@id' column from Row = 'benefit-start'), otherwise hide
+-->
+<div rbl-display="wealth-summary.benefit-start.@id=benefit-start">benefit-start row exists</div>
+```
+
+**Note**: If you need to show and hide something based on a row that may or may not exist, set `style="display: none;"` by default.  If the row is not present in the results, processing will not occur and the item will remain hidden.
+
+```html
+<!-- 
+Processing item where row might not exist in results
+
+Row: 'wealth-summary' table where 'id' is 'benefit-start-missing' (intentially bad ID)
+Show if Row exists (it will not in this case) and the value is not blank, otherwise leave hidden.
+-->
+<div rbl-display="wealth-summary.benefit-start-missing!=" style="display: none;">benefit-start-missing row exists</div>
+```
+
+## rbl-display v: Template Expression
+
+The `rbl-display` attribute usually works off of falsey values returned via [KatApp Selectors](#KatApp-Selectors) from a CalcEngine result.  However, inside [templates](#Templates), controlling visibility by looking at values on the current row being processed can be accomplished by using a `v:` prefix (v for value) and providing a simple operator expression.
+
+All comparison operators (`=`, `!=`, `<`, `<=`, `>`, and `>=`) are supported.
+
+For example, if the data processed by a template had a `code` and `count` column, the following could be leveraged.
+
+```html
+<div rbl-display="v:{code}=YES">Show if the `code` column is `'YES'`.</div>
+
+<div rbl-display="v:{count}>=2">Show if the `count` column is greater than or equal to 2.</div>
+
+<div rbl-display="v:{field}=">Show if the `field` column is blank.</div>
+```
+
+Note: As shown in the example above, to use an empty string in the expression, simply skip providing anything (do not provide `''` for empty string).
+
+## Complex rbl-source Expressions
+
+Similar to a [`rbl-source` selector](#rbl-source-Selectors) that only specifies a `table` (to process all rows), expressions can be supplied and evaluated via the addition of javascript predicate support. 
+
+Expression&nbsp;Selector | Description
+---|---
+table[predicate] | `predicate` is a javascript expression that should return `true` or `false`.  In the expression, the `this` reference will be current row being processed.  Each row evaluated will only be applied to the template specified if the predicate returns `true`.
+
+The javascript predicate has a signature of: `predicate( row: JSON, index: integer, application: KatAppPlugInInterface)`.  Therefore, within the predicate expression, you can use these parameters if needed.
+
+```html
+<!-- Call the name-item template with each row in foundingfathers table where the last column contains 'Mad'. -->
+<div rbl-tid="name-item" rbl-source="foundingfathers[this.last.indexOf('Mad')>-1]"></div>
+```
+
+## Complex KatApp Selector Expressions
+
+When using a [KatApp Selector](#KatApp-Selectors) to specify how to pull a value from CalcEngine results, expressions increase the power of selectors by enabling expression coding to extend the base selector capability (via `[]` expression coding).
+
+KatApp Selectors are used for [rbl-value](#rbl-value-Attribute-Details), [rbl-display](#rbl-display-Attribute-Details), and [rbl-attr](#rbl-attr-Attribute-Details) attribute processing.  Expressions extend default behavior by allowing a javascript code to be supplied on top of the default selector to return any value the Kaml View developer sees fit.
+
+There are a couple differences in the KatApp Selector syntax when they are used in conjuction with expressions.
+
+KatApp&nbsp;Selector | With&nbsp;Expressions
+---|---
+Only one segment provided indicates a `idValue`.  `rbl-value="liDateTerm"` means look in the default table of `rbl-value` for row with `id=liDateTerm` and return the `value` column. | Only one segment provided indicates a table name.  All rows should be processed by the expression until *one* of the rows returns a value *other than* `undefined`  `rbl-value="election-data[index==1 ? row.form : undefined]"` means loop all rows in `election-data` until index (zero based) is 1, then return the `form` column.
+Must have at least one segment. | Can supply *only* an expression *without* any selector segments and it defaults to using the 'default' table based on attribute being processed (`rbl-value` and `rbl-attr` default to `rbl-value` table and `rbl-display` defaults to `rbl-display` table). `rbl-value="[index==1 ? row.form : undefined]"` processes the same as the example above.
+
+Expression&nbsp;Selector | Description
+---|---
+[expression] | Run the `expression` on each row from the 'default' table until the expression returns value not equal to `undefined`.
+table[expression] | Run the `expression` on each row from the `table` table until the expression returns value not equal to `undefined`.
+table.idValue[expression] | Run the `expression` on the row from `table` where `@id=idValue`.
+table.keyColumn.keyValue[expression] | Run the `expression` on the row from `table` where `keyColumn=keyValue`.
+
+Once the value is returned, which could be `undefined` when processing all table rows based on expression, normal work flow for the currently processing attribute (`rbl-value`, `rbl-display`, or `rbl-attr`) with proceed in the same manner as if a value has been returned from a standard KatApp Selector.
+
+The javascript expression has a signature of: `expression( row: JSON, index: integer, application: KatAppPlugInInterface)`.  Therefore, within the expression, you can use these parameters if needed (`index` will always be `0` if more than one segment is provided in the KatApp Selector to indicate row filtering *before* the expression is executed).
+
+```html
+<!--
+    If the CalcEngine results has rbl-value row with id='pageHeader' and value='TOTAL REWARDS`, then
+    all samples below should output: Hi TOTAL BENEFITS.
+-->
+<div rbl-value="[row['@id'] == 'pageHeader' ? 'Hi ' + row.value.replace('REWARDS', 'BENEFITS') : undefined]"></div>
+<div rbl-value="rbl-value[row['@id'] == 'pageHeader' ? 'Hi ' + row.value.replace('REWARDS', 'BENEFITS') : undefined]"></div>
+<div rbl-value="rbl-value.pageHeader[row.value.indexOf('TOTAL')>-1 ? 'Hi ' + row.value.replace('REWARDS', 'BENEFITS') : undefined]"></div>
+<div rbl-value="rbl-value.@id.pageHeader[row.value.indexOf('TOTAL')>-1 ? 'Hi ' + row.value.replace('REWARDS', 'BENEFITS') : undefined]"></div>
+```
+
 # RBLe Service
 
 The RBLe Service is the backbone of KatApps.  The service is able to marshall inputs and results in and out of RBLe CalcEngines.  These results drive the functionality of KatApps.
@@ -2196,146 +2352,11 @@ numeric | numeric | If the value returned can be parsed into a number, a numeric
 
 The 'culture' of the table can be set via the CalcEngine.  If the results have a `variable` row with `id` of 'culture', then the language preference will be set to the `value` column of this row.  This enables culture specific number and date formatting and is in the format of `languagecode2-country/regioncode2`.  By default, `en-US` is used.
 
-# Advanced Configuration
+## Advanced Configuration
 
 KatApps have advanced features that can be configured that provide expression capabilities, manage input handling (via attributes), CalcEngines (via Precalc Pipelines) and hooking into the calculation lifecycle events.
 
-## View and Template Expressions
-
-Simple and complex expression logic can be used in with both [KatApp Selectors](#KatApp-Selectors) and [`rbl-source` selectors](#rbl-source-Selectors).  For `rbl-display`, simple expression logic provides a single operator/value comparison at the end of a selector path.  Complex expressions (denoted by `[]` in the selector path) are much more powerful and provide the full capabilities of Javascript programming to create predicate expressions.
-
-### Simple rbl-display Expression Selector
-
-In addition to simply returning a falsey visibility value from the CalcEngine via a [KatApp Selector](#KatApp-Selectors), the `rbl-display` attribute can contain simple operator expressions. The operators that are supported are `=`, `!=`, `>=`, `>`, `<=`, and `<`.
-
-Expression Selector | Description
----|---
-idValue{operator}{value} | Process the item if row in `rbl-display` table where id is `idValue` exists and show if the `value` column compared to `value` does not return falsey.
-table.idValue{operator}{value} | Process the item if row in `table` table where id is `idValue` exists and show if the `value` column compared to `value` does not return falsey.
-table.idValue.column{operator}{value} | Process the item if row in `table` table where id is `idValue` exists and show if the `column` column compared to `value` does not return falsey.
-table.keyColumn.keyValue.returnColumn{operator}{value} | Process the item if row in `table` table where `keyColumn` is `keyValue` exists and show if the `returnColumn` column compared to `value` does not return falsey.
-
-```html
-<!-- 
-Row: 'rbl-display' table where 'id' is 'vWealth'
-Show if 'value' column from Row = 2, otherwise hide 
--->
-<div rbl-display="vWealth=2">Wealth Information</div>
-
-<!-- 
-Row: 'wealth-summary' table where 'id' is 'benefit-start'
-Show if 'value' column from Row = 1, otherwise hide 
--->
-<div rbl-display="wealth-summary.benefit-start=1">Wealth Information</div>
-
-<!-- 
-Row: 'wealth-summary' table where 'id' is 'benefit-start'
-Show if 'enabled' column from Row = 1, otherwise hide 
--->
-<div rbl-display="wealth-summary.benefit-start.enabled=1">Wealth Information</div>
-
-<!-- 
-Row: 'wealth-summary' table where 'group' column is 'HW'
-Show if 'enabled' column from Row = 1, otherwise hide 
--->
-<div rbl-display="wealth-summary.group.HW.enabled=1">Wealth Information</div>
-
-<!-- 
-Row: 'contact-info' table where 'id' is 'work'
-Show if 'address1' column from Row is not blank, otherwise hide 
--->
-<div rbl-display="contact-info.work.address1!=">Work Address: <span rbl-value="contact-info.work.address1"></span></div>
-
-<!-- 
-Checking existence of a row
-
-Row: 'wealth-summary' table where 'id' is 'benefit-start'
-Show if Row exists (if '@id' column from Row = 'benefit-start'), otherwise hide
--->
-<div rbl-display="wealth-summary.benefit-start.@id=benefit-start">benefit-start row exists</div>
-```
-
-**Note**: If you need to show and hide something based on a row that may or may not exist, set `style="display: none;"` by default.  If the row is not present in the results, processing will not occur and the item will remain hidden.
-
-```html
-<!-- 
-Processing item where row might not exist in results
-
-Row: 'wealth-summary' table where 'id' is 'benefit-start-missing' (intentially bad ID)
-Show if Row exists (it will not in this case) and the value is not blank, otherwise leave hidden.
--->
-<div rbl-display="wealth-summary.benefit-start-missing!=" style="display: none;">benefit-start-missing row exists</div>
-```
-
-### rbl-display v: Template Expression
-
-The `rbl-display` attribute usually works off of falsey values returned via [KatApp Selectors](#KatApp-Selectors) from a CalcEngine result.  However, inside [templates](#Templates), controlling visibility by looking at values on the current row being processed can be accomplished by using a `v:` prefix (v for value) and providing a simple operator expression.
-
-All comparison operators (`=`, `!=`, `<`, `<=`, `>`, and `>=`) are supported.
-
-For example, if the data processed by a template had a `code` and `count` column, the following could be leveraged.
-
-```html
-<div rbl-display="v:{code}=YES">Show if the `code` column is `'YES'`.</div>
-
-<div rbl-display="v:{count}>=2">Show if the `count` column is greater than or equal to 2.</div>
-
-<div rbl-display="v:{field}=">Show if the `field` column is blank.</div>
-```
-
-Note: As shown in the example above, to use an empty string in the expression, simply skip providing anything (do not provide `''` for empty string).
-
-### Complex rbl-source Expressions
-
-Similar to a [`rbl-source` selector](#rbl-source-Selectors) that only specifies a `table` (to process all rows), expressions can be supplied and evaluated via the addition of javascript predicate support. 
-
-Expression&nbsp;Selector | Description
----|---
-table[predicate] | `predicate` is a javascript expression that should return `true` or `false`.  In the expression, the `this` reference will be current row being processed.  Each row evaluated will only be applied to the template specified if the predicate returns `true`.
-
-The javascript predicate has a signature of: `predicate( row: JSON, index: integer, application: KatAppPlugInInterface)`.  Therefore, within the predicate expression, you can use these parameters if needed.
-
-```html
-<!-- Call the name-item template with each row in foundingfathers table where the last column contains 'Mad'. -->
-<div rbl-tid="name-item" rbl-source="foundingfathers[this.last.indexOf('Mad')>-1]"></div>
-```
-
-### Complex KatApp Selector Expressions
-
-When using a [KatApp Selector](#KatApp-Selectors) to specify how to pull a value from CalcEngine results, expressions increase the power of selectors by enabling expression coding to extend the base selector capability (via `[]` expression coding).
-
-KatApp Selectors are used for [rbl-value](#rbl-value-Attribute-Details), [rbl-display](#rbl-display-Attribute-Details), and [rbl-attr](#rbl-attr-Attribute-Details) attribute processing.  Expressions extend default behavior by allowing a javascript code to be supplied on top of the default selector to return any value the Kaml View developer sees fit.
-
-There are a couple differences in the KatApp Selector syntax when they are used in conjuction with expressions.
-
-KatApp&nbsp;Selector | With&nbsp;Expressions
----|---
-Only one segment provided indicates a `idValue`.  `rbl-value="liDateTerm"` means look in the default table of `rbl-value` for row with `id=liDateTerm` and return the `value` column. | Only one segment provided indicates a table name.  All rows should be processed by the expression until *one* of the rows returns a value *other than* `undefined`  `rbl-value="election-data[index==1 ? row.form : undefined]"` means loop all rows in `election-data` until index (zero based) is 1, then return the `form` column.
-Must have at least one segment. | Can supply *only* an expression *without* any selector segments and it defaults to using the 'default' table based on attribute being processed (`rbl-value` and `rbl-attr` default to `rbl-value` table and `rbl-display` defaults to `rbl-display` table). `rbl-value="[index==1 ? row.form : undefined]"` processes the same as the example above.
-
-Expression&nbsp;Selector | Description
----|---
-[expression] | Run the `expression` on each row from the 'default' table until the expression returns value not equal to `undefined`.
-table[expression] | Run the `expression` on each row from the `table` table until the expression returns value not equal to `undefined`.
-table.idValue[expression] | Run the `expression` on the row from `table` where `@id=idValue`.
-table.keyColumn.keyValue[expression] | Run the `expression` on the row from `table` where `keyColumn=keyValue`.
-
-Once the value is returned, which could be `undefined` when processing all table rows based on expression, normal work flow for the currently processing attribute (`rbl-value`, `rbl-display`, or `rbl-attr`) with proceed in the same manner as if a value has been returned from a standard KatApp Selector.
-
-The javascript expression has a signature of: `expression( row: JSON, index: integer, application: KatAppPlugInInterface)`.  Therefore, within the expression, you can use these parameters if needed (`index` will always be `0` if more than one segment is provided in the KatApp Selector to indicate row filtering *before* the expression is executed).
-
-```html
-<!--
-    If the CalcEngine results has rbl-value row with id='pageHeader' and value='TOTAL REWARDS`, then
-    all samples below should output: Hi TOTAL BENEFITS.
--->
-<div rbl-value="[row['@id'] == 'pageHeader' ? 'Hi ' + row.value.replace('REWARDS', 'BENEFITS') : undefined]"></div>
-<div rbl-value="rbl-value[row['@id'] == 'pageHeader' ? 'Hi ' + row.value.replace('REWARDS', 'BENEFITS') : undefined]"></div>
-<div rbl-value="rbl-value.pageHeader[row.value.indexOf('TOTAL')>-1 ? 'Hi ' + row.value.replace('REWARDS', 'BENEFITS') : undefined]"></div>
-<div rbl-value="rbl-value.@id.pageHeader[row.value.indexOf('TOTAL')>-1 ? 'Hi ' + row.value.replace('REWARDS', 'BENEFITS') : undefined]"></div>
-```
-
-## RBLe Service Attributes / Classes
+### RBLe Service Attributes / Classes
 
 By decorating elements with specific CSS class names<sup>1</sup>, RBLe Service functionality can be controlled.
 
@@ -2349,7 +2370,7 @@ rbl&#x2011;preserve | Use this class in child elements beneath `[rbl-source]` so
 <sup>1</sup> Future versions of KatApp's may move these classes to attributes.  
 <sup>2</sup> Legacy class name.  Prefer using the current class name when possible.  
 
-## Precalc Pipelines
+### Precalc Pipelines
 Precalc CalcEngines simply allow a CalcEngine developer to put some shared logic inside a helper CalcEngine that can be reused.  Results from each CalcEngine specified will flow through a pipeline into the next CalcEngine.  Precalc CalcEngines are ran in the order they are specified ending with the calculation of the Primary CalcEngine.
 
 The format used to specify precalc CalcEngines is a comma delimitted list of CalcEngines, i.e. `CalcEngine1,CalcEngineN`.  By default, if only a CalcEngine name is provided, the input and the result tab with the *same* name as the tabs<sup>1</sup> configured on the primary CalcEngine will be used.  To use different tabs, each CalcEngine 'entity' becomes `CalcEngine|InputTab|ResultTab`.  
@@ -2361,7 +2382,7 @@ By specifying precalc CalcEngine(s), the flow in RBLe Service is as follows.
 
 <sup>1</sup> For precalc CalcEngines, only one result tab is supported.
 
-### Sample 1: Two precalc CalcEngines
+#### Sample 1: Two precalc CalcEngines
 Configure two CalcEngines to run in the pipeline before the primary CalcEngine.  In following sample, LAW_Wealth_Helper1_CE and LAW_Wealth_Helper2_CE both use the same tabs configured on LAW_Wealth_CE.
 
 ```html
@@ -2372,7 +2393,7 @@ Configure two CalcEngines to run in the pipeline before the primary CalcEngine. 
     rbl-precalcs="LAW_Wealth_Helper1_CE,LAW_Wealth_Helper2_CE"></div>
 ```
 
-### Sample 2: Custom CalcEngine Tabs
+#### Sample 2: Custom CalcEngine Tabs
 Configure two CalcEngines with different tabs to run in the pipeline before the primary CalcEngine.  In following sample, LAW_Wealth_Helper1_CE specifies custom tabs, while LAW_Wealth_Helper2_CE uses same tabs configured on LAW_Wealth_CE.
 
 ```html
@@ -3499,7 +3520,7 @@ KatApp Calculation Lifecycle Events are events that pertain to preparing, execut
 
 **`onCalculateStart(event: Event, application: KatApp ): bool | undefined`**
 
-This event is triggered at the start of the `calculate` method.  Use this event to perform any actions that need to occur before the calculation is submitted (i.e. custom processing of UI blockers or enabled state of inputs).  If the handler returns `false`, then the calculation is immediately cancelled.
+This event is triggered at the start of the `calculate` method.  Use this event to perform any actions that need to occur before the calculation is submitted (i.e. custom processing of UI blockers or enabled state of inputs).  If the handler returns `false` or calls `e.preventDefault()`, then the calculation is immediately cancelled.
 
 By default, the KatApp framework does the following:
 
@@ -3706,7 +3727,7 @@ This event is triggered after the `apiAction` has processed and will trigger on 
 
 ### KatApp Upload Lifecycle Events
 
-KatApp Action Lifecycle Events are events that occur during the processing of a [`apiAction`](#apiAction) method call.
+KatApp Upload Lifecycle Events are events that occur during the process of uploading a file, normally via [input-fileupload](#input-fileupload) template input.
 
 <hr/>
 
@@ -3742,7 +3763,126 @@ This event is triggered after the file upload has finished processing and will t
 
 <hr/>
 
+### KatApp Modal Application Lifecycle Events
 
+KatApp Modal Application Lifecycle Events are events that occur during processing of a modal application launched via [rbl-modal](#rbl-modal-Attribute-Details) links.  
+
+Almost always, the `onModalAppConfirm` and `onModalAppCancel` events are going to call an endpoint via an [apiAction](#apiAction) method call.  Therefore, the traditional `view.on("", function() { })` syntax is not allowed.  This is because, `apiAction` uses an asyncronous flow and the event handler needs to wait until the endpoint/`apiAction` result is returned before dismissing.  For that reason, these lifecycle events are hooked up in the KAML via the [updateOptions](#updateOptions) method call.
+
+```javascript
+// This code would be inside the KAML that is being hosted *as* the modal application.
+application.updateOptions(
+    {
+        onModalAppConfirm: function (hostApplication, modalLink, dismiss) {
+            // logic to perform, then call dismiss(); if the modal dialog should be closed.
+        },
+        onModalAppCancel: function (hostApplication, modalLink, dismiss) {
+            // logic to perform, then call dismiss(); if the modal dialog should be closed.
+        }
+    }
+);
+```
+
+**Note:** The `onModalAppConfirmed` and `onModalAppCancelled` events can be hooked up with standard `view.on("", function() {})` syntax or via KatApp options.
+
+<hr/>
+
+#### onModalAppConfirm
+
+**`onModalAppConfirm(hostApplication: KatApp, modalLink: JQuery<HTMLElement>, dismiss: ( message?: string )=> void)`**
+
+This event is triggered when the 'continue' button is clicked in the modal.  The `hostApplication` is the main application and `modalLink` is the link that was clicked to trigger the creation of the application.  Either can be referred to if additional information is needed by the hosted application to determine logic.
+
+After the modal application has performed any desired logic, the modal can be dismissed by calling `dismiss();`. `message` can be returned to allow for the hosting application to display or act upon it.
+
+Note that the `this` reference will be the modal dialogs 'continue' button.
+
+```javascript
+// This code would be inside the KAML that is being hosted *as* the modal application.
+application.updateOptions(
+    {
+        onModalAppConfirm: function (hostApplication, modalLink, dismiss) {
+            application.apiAction(
+                "dependents/update",
+                application.options,
+                { 
+                    customParameters: { SendEmails: modalLink.data("send-email") }, 
+                },
+                this,
+                function (successResponse, failureResponse) {
+                    if ( successResponse != undefined ) {
+                        dismiss( "Thanks for submitting!" );
+                    }
+                    else {
+                        // KatApp Provider code has already displayed errors, additional inspection
+                        // and use of failureResponse could be done.
+                    }
+                }
+            );
+        }
+    }
+);
+```
+
+<hr/>
+
+#### onModalAppCancel
+
+**`onModalAppCancel(hostApplication: KatApp, modalLink: JQuery<HTMLElement>, dismiss: ( message?: string )=> void)`**
+
+This event is triggered when the 'cancel' button is clicked in the modal.  The `hostApplication` is the main application and `modalLink` is the link that was clicked to trigger the creation of the application.  Either can be referred to if additional information is needed by the hosted application to determine logic.
+
+After the modal application has performed any desired logic, the modal can be dismissed by calling `dismiss();`. `message` can be returned to allow for the hosting application to display or act upon it.
+
+Note that the `this` reference will be the modal dialogs 'continue' button.
+
+```javascript
+// This code would be inside the KAML that is being hosted *as* the modal application.
+application.updateOptions(
+    {
+        onModalAppCancel: function (hostApplication, modalLink, dismiss) {
+            dismiss("We wish you would have continued.");
+        }
+    }
+);
+```
+
+<hr/>
+
+#### onModalAppConfirmed
+
+**`onModalAppConfirmed(event: Event, applicationId: string, application: KatApp, modalLink: JQuery<HTMLElement>, message: string | undefined)`**
+
+This event is triggered after a modal application has been successfully confirmed and dismissed.  If the modal application returned a `message`, it can be displayed in some form (alert, modal).  Other actions can be performed as well (i.e. calculations, navigations, etc.) by the hosting application as needed.
+
+```javascript
+// This code would be inside the KAML that is *the host* application
+view.on("onModalAppConfirmed.RBLe", function (event, applicationId, application, modalLink, message) {
+	if (applicationId == "Channel.Home") {
+		application.createModalDialog( message );
+        application.calculate();
+	}
+});
+```
+
+<hr/>
+
+#### onModalAppCancelled
+
+**`onModalAppCancelled(event: Event, applicationId: string, application: KatApp, modalLink: JQuery<HTMLElement>, message: string | undefined)`**
+
+This event is triggered after a modal application has been cancelled and dismissed.  If the modal application returned a `message`, it can be displayed in some form (alert, modal).  Other actions can be performed as well (i.e. calculations, navigations, etc.) by the hosting application as needed.
+
+```javascript
+// This code would be inside the KAML that is *the host* application
+view.on("onModalAppCancelled.RBLe", function (event, applicationId, application) {
+	if (applicationId == "Channel.Home") {
+		application.createModalDialog( "Sorry you didn't want to do this." );
+	}
+});
+```
+
+<hr/>
 
 ### Template Event Handlers
 

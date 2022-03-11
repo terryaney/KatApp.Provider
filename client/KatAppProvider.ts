@@ -5656,13 +5656,16 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
         }
 
         createModalApplication( applicationId: string, viewId: string, actionLink: JQuery<HTMLElement> ): void {
-            const application = this.application;
+            const hostApplication = this.application;
             const labelCancel = actionLink.data("label-cancel") ?? "Cancel";
             const labelContinue = actionLink.data("label-continue") ?? "Continue";
             const showCancel = actionLink.data("show-cancel") ?? true;
 
             const isBootstrap5 = this.application.bootstrapVersion == 5;
             const bsDataAttributePrefix = isBootstrap5 ? "data-bs-" : "data-";
+
+            let modalApp: KatAppPlugIn | undefined = undefined;
+            let modalBS5: any | undefined = undefined;
 
             // dismiss, but I want to do programattically so removing
             // " ' + bsDataAttributePrefix + 'dismiss="modal"
@@ -5688,14 +5691,24 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
             if ( !showCancel ) {
                 $(".cancelButton", modal).remove();
             }
+            
+            hostApplication.element.after( modal );
 
-            application.element.after( modal );
-
-            let modalApp: KatAppPlugIn | undefined = undefined;
-            let modalBS5: any | undefined = undefined;
+            $(".katapp-modal-app", modal).on( "onConfigureUICalculation.RBLe", function(e, calculationResults_, calcOptions_, childApplication) { 
+                if (hostApplication.bootstrapVersion==5) {
+                    modalBS5 = new bootstrap.Modal(modal[0]);
+                    modalBS5.show();
+                }
+                else {
+                    modal.modal({ show: true });
+                }                               
+            } ).on("onInitialized.RBLe", function (e, application) {
+                modalApp = application as KatAppPlugIn;
+                hostApplication.ui.triggerEvent( "onModalAppInitialized", applicationId, hostApplication, modalApp, actionLink );
+			});
 
             const closeModal = function(message?: string ) {
-                if (application.bootstrapVersion==5) {
+                if (hostApplication.bootstrapVersion==5) {
                     modalBS5.hide();
                 }
                 else {
@@ -5703,25 +5716,24 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                 }                                                                    
                 modal.remove();
             };
-            const confirmModal = function(message?: string ) {
-                closeModal( message );
-                application.ui.triggerEvent( "onModalAppConfirmed", applicationId, application, actionLink, message );
-
-                if ( actionLink.attr("rbl-action-calculate") == "true" ) {
-                    application.calculate();
-                }
-            };
-            const cancelModal = function(message?: string ) {
-                closeModal( message );
-                application.ui.triggerEvent( "onModalAppCancelled", applicationId, application, actionLink, message );
-            };
+            const reenableModal = function() { $(".modal-footer .btn", modal).prop("disabled", false); };
 
             $('.continueButton', modal).on("click.ka", function (e) {
                 e.preventDefault();
+                $(this).prop("disabled", true);
 
                 if ( modalApp != undefined) {
+                    const confirmModal = function(message?: string ) {
+                        closeModal( message );
+                        hostApplication.ui.triggerEvent( "onModalAppConfirmed", applicationId, hostApplication, modalApp, actionLink, message );
+        
+                        if ( actionLink.attr("rbl-action-calculate") == "true" ) {
+                            hostApplication.calculate();
+                        }
+                    };
+
                     if ( modalApp.options.onModalAppConfirm != undefined ) {
-                        modalApp.options.onModalAppConfirm.apply(this, [ application, actionLink, confirmModal ] );
+                        modalApp.options.onModalAppConfirm.apply(this, [ hostApplication, actionLink, confirmModal, reenableModal ] );
                     }
                     else {
                         confirmModal();
@@ -5730,10 +5742,16 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
             });
             $('.cancelButton, .btn-close', modal).on("click.ka", function (e) {
                 e.preventDefault();
+                $(this).prop("disabled", true);
 
                 if ( modalApp != undefined) {
+                    const cancelModal = function(message?: string ) {
+                        closeModal( message );
+                        hostApplication.ui.triggerEvent( "onModalAppCancelled", applicationId, hostApplication, modalApp, actionLink, message );
+                    };
+
                     if ( modalApp.options.onModalAppCancel != undefined ) {
-                        modalApp.options.onModalAppCancel.apply(this, [ application, actionLink, cancelModal ] );
+                        modalApp.options.onModalAppCancel.apply(this, [ hostApplication, actionLink, cancelModal, reenableModal ] );
                     }
                     else {
                         cancelModal();
@@ -5741,28 +5759,13 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                 }
             });
 
-            const dataInputs = application.dataAttributesToJson( actionLink, "data-input-" );
+            const dataInputs = hostApplication.dataAttributesToJson( actionLink, "data-input-" );
 
             const modalAppOptions = 
                 KatApp.extend( {}, 
-                    application.options, 
-                    {
-                        view: viewId
-                    },
-                    {
-                        manualInputs: dataInputs,
-                        onConfigureUICalculation: function(calculationResults_: JSON, calcOptions_: KatAppOptions, childApplication: KatAppPlugInInterface) { 
-                            modalApp = childApplication as KatAppPlugIn;
-
-                            if (application.bootstrapVersion==5) {
-                                modalBS5 = new bootstrap.Modal(modal[0]);
-                                modalBS5.show();
-                            }
-                            else {
-                                modal.modal({ show: true });
-                            }                                                                    
-                        }
-                    }
+                    hostApplication.options, 
+                    { view: viewId },
+                    { manualInputs: dataInputs }
                 );
                 
             delete modalAppOptions["calcEngines"]; // So it doesn't use parent CE

@@ -99,10 +99,11 @@ interface KatAppOptions
     onActionFailed?: (this: HTMLElement, commandName: string, exception: JSON, application: KatAppPlugInInterface, currentOptions: KatAppOptions, actionLink: JQuery<HTMLElement>)=> void;
     onActionComplete?: (this: HTMLElement, commandName: string, application: KatAppPlugInInterface, currentOptions: KatAppOptions, actionLink: JQuery<HTMLElement>)=> void;
 
-    onModalAppConfirm?: (this: HTMLElement, hostApplication: KatAppPlugInInterface, modalLink: JQuery<HTMLElement>, dismiss: ( message: string | undefined )=> void)=> void;
-    onModalAppCancel?: (this: HTMLElement, hostApplication: KatAppPlugInInterface, modalLink: JQuery<HTMLElement>, dismiss: ( message: string | undefined )=> void)=> void;
-    onModalAppConfirmed?: (this: HTMLElement, applicationId: string, application: KatAppPlugInInterface, modalLink: JQuery<HTMLElement>, message: string | undefined)=> void;
-    onModalAppCancelled?: (this: HTMLElement, applicationId: string, application: KatAppPlugInInterface, modalLink: JQuery<HTMLElement>, message: string | undefined)=> void;
+    onModalAppConfirm?: (this: HTMLElement, hostApplication: KatAppPlugInInterface, modalLink: JQuery<HTMLElement>, dismiss: ( message: string | undefined )=> void, enable: ()=> void)=> void;
+    onModalAppCancel?: (this: HTMLElement, hostApplication: KatAppPlugInInterface, modalLink: JQuery<HTMLElement>, dismiss: ( message: string | undefined )=> void, enable: ()=> void)=> void;
+    onModalAppInitialized?: (this: HTMLElement, applicationId: string, hostApplication: KatAppPlugInInterface, modalApplication: KatAppPlugInInterface, modalLink: JQuery<HTMLElement>)=> void;
+    onModalAppConfirmed?: (this: HTMLElement, applicationId: string, hostApplication: KatAppPlugInInterface, modalApplication: KatAppPlugInInterface, modalLink: JQuery<HTMLElement>, message: string | undefined)=> void;
+    onModalAppCancelled?: (this: HTMLElement, applicationId: string, hostApplication: KatAppPlugInInterface, modalApplication: KatAppPlugInInterface, modalLink: JQuery<HTMLElement>, message: string | undefined)=> void;
     
     onUploadStart?: (this: HTMLElement, fileUpload: JQuery<HTMLElement>, formData: FormData, application: KatAppPlugInInterface)=> void;
     onUploaded?: (this: HTMLElement, fileUpload: JQuery<HTMLElement>, application: KatAppPlugInInterface)=> void;

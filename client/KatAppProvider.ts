@@ -5694,18 +5694,20 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
             
             hostApplication.element.after( modal );
 
-            $(".katapp-modal-app", modal).on( "onConfigureUICalculation.RBLe", function(e, calculationResults_, calcOptions_, childApplication) { 
-                if (hostApplication.bootstrapVersion==5) {
-                    modalBS5 = new bootstrap.Modal(modal[0]);
-                    modalBS5.show();
-                }
-                else {
-                    modal.modal({ show: true });
-                }                               
-            } ).on("onInitialized.RBLe", function (e, application) {
-                modalApp = application as KatAppPlugIn;
-                hostApplication.ui.triggerEvent( "onModalAppInitialized", applicationId, hostApplication, modalApp, actionLink );
-			});
+            $(".katapp-modal-app", modal)
+                .on("onInitialized.RBLe", function (e, application) {
+                    modalApp = application as KatAppPlugIn;
+                    hostApplication.ui.triggerEvent( "onModalAppInitialized", applicationId, hostApplication, modalApp, actionLink );
+                })
+                .on( "onConfigureUICalculation.RBLe", function(e, calculationResults_, calcOptions_, childApplication) { 
+                    if (hostApplication.bootstrapVersion==5) {
+                        modalBS5 = new bootstrap.Modal(modal[0]);
+                        modalBS5.show();
+                    }
+                    else {
+                        modal.modal({ show: true });
+                    }                               
+                } );
 
             const closeModal = function(message?: string ) {
                 if (hostApplication.bootstrapVersion==5) {

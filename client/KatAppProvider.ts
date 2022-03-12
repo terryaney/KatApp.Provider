@@ -5694,21 +5694,6 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
             
             hostApplication.element.after( modal );
 
-            $(".katapp-modal-app", modal)
-                .on("onInitialized.RBLe", function (e, application) {
-                    modalApp = application as KatAppPlugIn;
-                    hostApplication.ui.triggerEvent( "onModalAppInitialized", applicationId, hostApplication, modalApp, actionLink );
-                })
-                .on( "onConfigureUICalculation.RBLe", function(e, calculationResults_, calcOptions_, childApplication) { 
-                    if (hostApplication.bootstrapVersion==5) {
-                        modalBS5 = new bootstrap.Modal(modal[0]);
-                        modalBS5.show();
-                    }
-                    else {
-                        modal.modal({ show: true });
-                    }                               
-                } );
-
             const closeModal = function(message?: string ) {
                 if (hostApplication.bootstrapVersion==5) {
                     modalBS5.hide();
@@ -5761,18 +5746,30 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                 }
             });
 
-            const dataInputs = hostApplication.dataAttributesToJson( actionLink, "data-input-" );
-
             const modalAppOptions = 
                 KatApp.extend( {}, 
                     hostApplication.options, 
                     { view: viewId },
-                    { manualInputs: dataInputs }
+                    { manualInputs: hostApplication.dataAttributesToJson( actionLink, "data-input-" ) }
                 );
                 
             delete modalAppOptions["calcEngines"]; // So it doesn't use parent CE
             
-            $(".katapp-modal-app", modal).KatApp( modalAppOptions );
+            $(".katapp-modal-app", modal)
+                .on("onInitialized.RBLe", function (e, application) {
+                    modalApp = application as KatAppPlugIn;
+                    hostApplication.ui.triggerEvent( "onModalAppInitialized", applicationId, hostApplication, modalApp, actionLink );
+                })
+                .on( "onConfigureUICalculation.RBLe", function(e, calculationResults_, calcOptions_, childApplication) { 
+                    if (hostApplication.bootstrapVersion==5) {
+                        modalBS5 = new bootstrap.Modal(modal[0]);
+                        modalBS5.show();
+                    }
+                    else {
+                        modal.modal({ show: true });
+                    }                               
+                } )
+                .KatApp( modalAppOptions );
         }
 
         processActionLinks( container?: JQuery<HTMLElement> ): void {

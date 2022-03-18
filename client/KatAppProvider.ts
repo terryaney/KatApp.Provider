@@ -139,7 +139,6 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
         } 
 
         private init( options: KatAppOptions ): void {
-
             // MULTIPLE CE: Need to support nested config element of multiple calc engines I guess
             //              Problem.. if passed in options has calcEngine(s) specified or if there is config
             //              specified on this.element, how do match those up to what could be possibly multiple
@@ -1772,6 +1771,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
 
         buildResults( results: TabDef[] | undefined, calculationOptions: KatAppOptions = this.options ): TabDef[] | undefined {
             const calcEngines = ( calculationOptions.calcEngines ?? [] ).map( ce => ({ name: ce.name, key: ce.key }) );
+            const application = this;
 
             if ( calculationOptions.manualResults != undefined ) {
                 calcEngines.push( { name: "ManualResults", key: "ManualResults" } );
@@ -1816,6 +1816,22 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                         }
                     });    
                 } );
+
+                results[ "getResultTable" ] = function<T>( tableName: string, tabDef?: string, calcEngine?: string): Array<T> {
+                    return application.rble.getResultTable<T>( application.rble.getTabDef( tabDef, calcEngine ), tableName );
+                };
+                results[ "getResultRow" ] = function<T>(table: string, id: string, columnToSearch?: string, tabDef?: string, calcEngine?: string ): T | undefined { 
+                    return application.rble.getResultRow<T>( application.rble.getTabDef( tabDef, calcEngine ), table, id, columnToSearch ); 
+                };
+                results[ "getResultValue" ] = function( table: string, id: string, column: string, defautlValue?: string, tabDef?: string, calcEngine?: string ): string | undefined { 
+                    return application.rble.getResultValue( application.rble.getTabDef( tabDef, calcEngine ), table, id, column, defautlValue ); 
+                };
+                results[ "getResultValueByColumn" ] = function( table: string, keyColumn: string, key: string, column: string, defautlValue?: string, tabDef?: string, calcEngine?: string ): string | undefined { 
+                    return application.rble.getResultValueByColumn( application.rble.getTabDef( tabDef, calcEngine ), table, keyColumn, key, column, defautlValue ); 
+                };
+                results[ "pushResultRow" ] = function( tableName: string, row: object, tabDef?: string | null, calcEngine?: string | null ) {
+                    application.pushResultRow( tableName, row, tabDef, calcEngine );
+                };
             }
 
             return results;
@@ -2075,7 +2091,33 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
         getResultValueByColumn( table: string, keyColumn: string, key: string, column: string, defautlValue?: string, tabDef?: string, calcEngine?: string ): string | undefined { 
             return this.rble.getResultValueByColumn( this.rble.getTabDef( tabDef, calcEngine ), table, keyColumn, key, column, defautlValue ); 
         }
+        pushResultRow( tableName: string, row: object, tabDef?: string | null, calcEngine?: string | null ) {
+            const tab = this.rble.getTabDef( tabDef, calcEngine );
 
+            if ( tab == undefined ) {
+                throw new Error("Unable to find specified result tab." );
+            }
+
+            let resultTable = this.rble.getResultTable<object>( tab, tableName );
+
+            if ( resultTable.length == 0 ) {
+                tab[ tableName ] = resultTable = [];
+                tab._resultKeys.push( tableName );
+            }
+
+            if ( row[ "@id" ] == undefined ) {
+                row[ "@id" ] = "_pushId_" + resultTable.length;
+            }
+            const existingRow = this.rble.getResultRow<object>( tab, tableName, row[ "@id" ] );
+
+            if ( existingRow != undefined ) {
+                KatApp.extend( existingRow, row );
+            }
+            else {
+               resultTable.push( row );
+            }
+        };
+        
         createModalDialog(confirm: string, onConfirm?: ()=> void, onCancel?: ()=> void): void {
             if (!$('.katappModalDialog', this.element).length) {
                 const sCancel = "Cancel";
@@ -2132,6 +2174,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
             // Need to reset these so updated views are downloaded
             $("rbl-katapps > rbl-templates").remove(); // remove templates
             $.fn.KatApp.templatesUsedByAllApps = {};
+            $.fn.KatApp.templatesInjectingScript = [];
 
             // If || true is removed...update documentation to add the parameter
             if ( readViewOptions || true ) {
@@ -2419,6 +2462,9 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                 .replace(/<tfoot>/g, "<tfoot_>")
                 .replace(/<tfoot /g, "<tfoot_ ")
                 .replace(/<\/tfoot>/g, "</tfoot_>")
+                .replace(/<script>/g, "<script_>")
+                .replace(/<script /g, "<script_ ")
+                .replace(/<\/script>/g, "</script_>")
                 .replace(/<tr>/g, "<tr_>")
                 .replace(/<tr /g, "<tr_ ")
                 .replace(/<\/tr>/g, "</tr_>")
@@ -2448,7 +2494,8 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                 .replace( /tfoot_/g, "tfoot" ) // if table is in template and we replace tr -> tr_ when table added to DOM, it removes all the tr_ as 'invalid' and places them before the (now empty) table
                 .replace( /tr_/g, "tr" ) // if tr/td were *not* contained in a table in the template, browsers would just remove them when the template was injected into application, so replace here before injecting template
                 .replace( /th_/g, "th" )
-                .replace( /td_/g, "td" );
+                .replace( /td_/g, "td" )
+                .replace( /script_/g, "script" );
 
             if ( this.application.bootstrapVersion > 3 ) {
                 decodedContent = decodedContent
@@ -3770,6 +3817,14 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                                         el = $("<div>" + formattedContent + "</div>");
                                     }
 
+                                    if ( $.fn.KatApp.templatesInjectingScript.indexOf( tid! ) == -1 ) {
+                                        $.fn.KatApp.templatesInjectingScript.push( tid!);
+                                    }
+                                    else {                                        
+                                        // only inject script once per template name
+                                        el.find("script").remove();
+                                    }
+
                                     // Nested templates
                                     that.application.ui.injectTemplatesWithoutSource(el, showInspector);
                                     // Nested rbl-source templates
@@ -3785,6 +3840,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                                     // to only 
                                     try {
                                         $.fn.KatApp.currentView = application.element;
+                                        
                                         if ( prepend ) {
                                             dest.prepend( templateResult );
                                         }
@@ -3813,6 +3869,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                                         el.children()
                                             .not(".rbl-preserve")
                                             .remove();
+
                                         appendTemplateResult(el, templateResult, false, false);
                                     }
                                 }
@@ -6728,6 +6785,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
         // remove templates
         $("rbl-katapps > rbl-templates").remove();
         $.fn.KatApp.templatesUsedByAllApps = {};
+        $.fn.KatApp.templatesInjectingScript = [];
     }
 
     // Replace the applicationFactory to create real KatAppPlugIn implementations
@@ -6940,7 +6998,8 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
             </style>\
         </rbl-katapps>').appendTo("body");
         
-        $.fn.KatApp.templatesUsedByAllApps = {};        
+        $.fn.KatApp.templatesUsedByAllApps = {};
+        $.fn.KatApp.templatesInjectingScript = [];
         $.fn.KatApp.sharedData = { requesting: false, callbacks: [] };
 
         const navigationCachingKey = "katapp:navigationInputs:global";
@@ -6966,4 +7025,4 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
 })(jQuery, window, document);
 // https://stackoverflow.com/questions/9092125/how-to-debug-dynamically-loaded-javascript-with-jquery-in-the-browsers-debugg
 // Needed this line to make sure that I could debug in VS Code since this was dynamically loaded with $.getScript()
-//# sourceURL=DataLocker\Global\KatAppProvider.js
+//# sourceURL=KatApp\Global\KatAppProvider.js

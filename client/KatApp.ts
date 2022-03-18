@@ -176,13 +176,13 @@ class KatApp
                     return text;
                 }
             },
-            url: "http://" + ip + "/DataLocker/Global/ping.js",
+            url: "http://" + ip + "/js/ping.js",
             timeout: 1000,
             success: function( /* result */ ): void {
                 callback(true);
             },     
             error: function( /* result */ ): void {
-                callback(false);
+                callback( false );
             }
          });
     }
@@ -251,7 +251,7 @@ class KatApp
         let localWebServer: string | undefined = debugResourcesDomain;
         
         if ( localWebServer === undefined && allowLocalWebServer ) {
-            localWebServer = "http://localhost:8887/DataLocker/";
+            localWebServer = "http://localhost:8887/";
         }
 
         let useLocalWebServer = localWebServer !== undefined; // global value for all requested resources
@@ -279,7 +279,7 @@ class KatApp
                         application.element.data("kat-local-domain-reachable", true);
                     }
                     d.resolve();
-                });
+                } );
             }
 
             return d;
@@ -353,7 +353,7 @@ class KatApp
                             }
                             else {
                                 resourceUrl = tryLocalWebServer 
-                                    ? localWebServer + localWebServerFolder + localWebServerResource 
+                                    ? localWebServer + "KatApp/" + localWebServerFolder + localWebServerResource 
                                     : !isResourceInManagementSite
                                         ? resourceName
                                         : managementUrl;

@@ -44,6 +44,8 @@ interface Function {
     getResource( url: string, tryLocalServer: boolean, isInManagementSite: boolean, folder: string, name: string, version: string ): GetResourceXHR;
     ping( url: string, callback: ( responded: boolean, error?: string | Event )=> void ): void;
 
+    templatesInjectingScript: (string)[];
+
     // If multiple applications are rendered on one page, this object stores unique list of templates requested
     // so that if two applications request the same template but one is still waiting for a download, the second
     // application registers a callback and will be notified when the content is ready.

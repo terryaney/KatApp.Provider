@@ -5,7 +5,7 @@
     ],        
     "compilerOptions": {
         "composite": true,
-        "outDir": "./../public/DataLocker/Global",
+        "outDir": "./../public/KatApp/Global",
         // "module": "none",
         // "module": "ES6", // Support ES6 export/import
         "tsBuildInfoFile": "./../build/cache/client/.tsbuildinfo",

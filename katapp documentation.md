@@ -119,6 +119,7 @@
             - [getResultRow](#getResultRow)
             - [getResultValue](#getResultValue)
             - [getResultValueByColumn](#getResultValueByColumn)
+            - [pushResultRow](#pushResultRow)
         - [KatApp Advanced Methods](#KatApp-Advanced-Methods)
             - [apiAction](#apiAction)
             - [serverCalculation](#serverCalculation)
@@ -2485,7 +2486,7 @@ The following properties are available on the `DebugOptions` object, some of whi
 Property | Type | Description
 ---|---|---
 traceVerbosity | TraceVerbosity | Set the minimum allowed trace level to be displayed.  Values are : `None`, `Quiet`, `Minimal`, `Normal`, `Detailed`, or `Diagnostic`.
-debugResourcesDomain | string | Set the base domain/url to use if `allowLocalServer` is `true` when attempting to find local resource files.  Default value is `http://localhost:8887/DataLocker/`.
+debugResourcesDomain | string | Set the base domain/url to use if `allowLocalServer` is `true` when attempting to find local resource files.  Default value is `http://localhost:8887/KatApp/`.
 saveConfigureUiCalculationLocation | string | Signals to the RBLe Service that the ConfigureUI calculation should save a debug CalcEngine to this location.  By default, the `saveConfigureUI` querystring will set this.
 refreshCalcEngine | boolean | If `true`, it signals to the RBLe Service to check for new CalcEngines from the CalcEngine CMS immediately instead of waiting for cache to expire.  By default, the `expireCE=1` querystring will set this to true.
 useTestCalcEngine | boolean | Whether or not the RBLe Service should use the test version of a CalcEngine (if it is present).  By default, the `test=1` querystring will set this to true.
@@ -2900,6 +2901,8 @@ application.setInput("iRetireAge", 65, true);
 
 Get an array of `tableName` json objects representing each row returned in the calculation results.  `tabDef` and `calcEngine` can be provided if there are multiple result tabs or CalcEngines in the Kaml View.  If not provided, the `tableName` from the _first_ result tab and _first_ CalcEngine will be returned.
 
+**Note**: This method is also available on the `calculationResults` object in event handlers.
+
 ```javascript
 var payRows = $(".katapp").KatApp("getResultTable", "pay");
 var payRows = application.getResultTable("pay");
@@ -2922,6 +2925,8 @@ var payRows = application.getResultTable("pay", "RBLPayResults", "PayCE");
 Get a json object representing a row from the `tableName` in the calculation results.  `tabDef` and `calcEngine` can be provided if there are multiple result tabs or CalcEngines in the Kaml View.  If not provided, the `tableName` from the _first_ result tab and _first_ CalcEngine will be returned.
 
 If `columnToSearch` is `undefined` or not provided, the row with its id column matching `key` will be returned.  Otherwise, the row with its `columnToSearch` column matching `key` will be returned.
+
+**Note**: This method is also available on the `calculationResults` object in event handlers.
 
 ```javascript
 // to get the row with id = 2021
@@ -2951,6 +2956,8 @@ Return the `column` value from the `table` row with the id column matching `key`
 
 If the value returned from the calculation result is `undefined`, the `defaultValue` (if provided) will be returned.
 
+**Note**: This method is also available on the `calculationResults` object in event handlers.
+
 ```javascript
 // to get the bonus value from pay row with id = 2021, defaulting to $0 if not available
 var currentBonus = $(".katapp").KatApp("getResultValue", "pay", "2021", "bonus","$0");
@@ -2975,6 +2982,8 @@ Return the `column` value from the `table` row with the `keyColumn` column match
 
 If the value returned from the calculation result is `undefined`, the `defaultValue` (if provided) will be returned.
 
+**Note**: This method is also available on the `calculationResults` object in event handlers.
+
 ```javascript
 // to get the bonus value from pay row with year = 2021, defaulting to $0 if not available
 var currentBonus = $(".katapp").KatApp("getResultValueByColumn", "pay", "year", "2021", "bonus","$0");
@@ -2987,6 +2996,48 @@ var currentBonus = application.getResultValueByColumn("pay", "2021", "year", "bo
 // or, to get the bonus value from pay row with year = 2021, from the RBLPayResults on the PayCE CalcEngine
 var currentBonus = $(".katapp").KatApp("getResultValueByColumn", "pay", "year", "2021", "bonus", undefined, "RBLPayResults", "PayCE");
 var currentBonus = application.getResultValueByColumn("pay", "2021", "year", "bonus", undefined, "RBLPayResults", "PayCE");
+```
+
+#### pushResultRow
+
+**`pushResultRow( table: string, row: object, tabDef?: string, calcEngine?: string ): void`**
+
+Merges a row into the existing calculation results.  If the row `@id` is not present in existing results, the row is added.  If an existing row with the same `@id` exists, then the values from `row` are merged into existing calculation row.
+
+This can be helpful if the javascript inside the Kaml view contains the logic on how to inject values that would be beneficial to use in other locations in the Kaml markup/templates.
+
+**Note**: This method is also available on the `calculationResults` object in event handlers.
+
+```javascript
+    $(".katapp")
+        .on("onResultsProcessing.RBLe", function (event, calculationResults, calculationOptions, application) {
+            // push 'current page' into rbl-values for 'parent page' views/templates to use to render a link
+            // to navigate to a 'target page'
+            calculationResults.pushResultRow(
+                "rbl-value",
+                { "@id": "currentPage", "value": calculationOptions.currentPage.replace("lnkNexgenHost.", "") }
+            );
+            // if iReferrer input present (will be set via data-input-referrer 'parent page'), add to rbl-value
+            // so 'target' page can use it to create a navigate back link
+            calculationResults.pushResultRow(
+                "rbl-value",
+                { "@id": "referrerPage", "value": inputs.iReferrer || "" }
+            );
+        });
+```
+
+```html
+<!-- 
+    Parent page creates a link setting data-input-referrer to whatever is present in rbl-value.currentPage 
+    and passes it along to Benefits.DependentUpdate
+-->
+<a rbl-navigate="Benefits.DependentUpdate" rbl-attr="data-input-referrer:currentPage">Navigate</a>
+
+<!-- 
+    Target page (Benefits.DependentUpdate) can now put a 'back' button to navigate back to whatever page
+    brought the user here.  
+-->
+<button type="button" class="btn btn-secondary" rbl-attr="rbl-navigate:referrerPage">Cancel</button>
 ```
 
 ### KatApp Advanced Methods

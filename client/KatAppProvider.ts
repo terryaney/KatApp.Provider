@@ -5551,7 +5551,6 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                         $(this)
                             .popover(options)
                             .on('inserted.bs.popover', function (e) {
-                                debugger;
                                 const templateId = "#" + $(e.target).attr("aria-describedby");
                                 const currentPopover = $(templateId);
                                 $("[rbl-action-link]", currentPopover).attr("data-katapp-initialized", "false");

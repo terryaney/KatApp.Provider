@@ -2144,7 +2144,8 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
             modalBody.html(confirm);
             this.templateBuilder.processNavigationLinks(modalBody);
 
-            $('.katappModalDialog .continueButton', this.element).off("click.ka").on("click.ka", function () {
+            $('.katappModalDialog .continueButton', this.element).off("click.ka").on("click.ka", function (e) {
+                e.preventDefault();
                 if (onConfirm != undefined) {
                     onConfirm();
                 }
@@ -2153,7 +2154,8 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                 $('.katappModalDialog .cancelButton', this.element).hide();    
             }
             else {
-                $('.katappModalDialog .cancelButton', this.element).off("click.ka").show().on("click.ka", function () {
+                $('.katappModalDialog .cancelButton', this.element).off("click.ka").show().on("click.ka", function (e) {
+                    e.preventDefault();
                     if (onCancel != undefined) {
                         onCancel();
                     }

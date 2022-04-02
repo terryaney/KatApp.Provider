@@ -1526,7 +1526,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
 
                 if ( options.manualResults != undefined ) {
                     // Need to process results...
-                    this.results = this.buildResults( this.results?.filter( r => r._name != "ManualResults" ), this.options );
+                    this.results = this.buildResults( this.results?.filter( r => r._manualResult == undefined ), this.options );
                     this.processResults( this.options );
                 }
             }
@@ -1774,19 +1774,23 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
             const application = this;
 
             if ( calculationOptions.manualResults != undefined ) {
-                calcEngines.push( { name: "ManualResults", key: "ManualResults" } );
-
                 if ( results == undefined ) {
                     results = [];
                 }
                 
                 calculationOptions.manualResults.forEach( ( t, i ) => {
-                    t["@calcEngine"] = "ManualResults";
-                    t["@calcEngineKey"] = "ManualResults";
-                    if ( t["@name"] == undefined ) {
-                        t["@name"] = "RBLResults" + ( i + 1 );
+                    if ( t["@calcEngineKey"] == undefined ) {
+                        t["@calcEngineKey"] = "ManualResults";
                     }
+                    t["@calcEngine"] = t["@calcEngine"] ?? t["@calcEngineKey"];
+                    t["@name"] = t["@name"] ?? "RBLResults" + ( i + 1 );
+                    t["_manualResult"] = true;
+
                     results!.push( t ); // eslint-disable-line @typescript-eslint/no-non-null-assertion
+
+                    if ( calcEngines.findIndex( v => v.key == t["@calcEngineKey"] ) == -1 ) {
+                        calcEngines.push( { name: t["@calcEngine"], key: t["@calcEngineKey"] } );
+                    }
                 });
             }
 

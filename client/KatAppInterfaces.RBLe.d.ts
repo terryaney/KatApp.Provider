@@ -144,6 +144,7 @@ interface TabDef extends JSON
     _name: string;
     _fullName: string;
     _defaultCalcEngine: boolean;
+    _manualResult?: boolean;
     _resultKeys: string[];
     _resultRowLookups?: ResultRowLookupsInterface;
 }

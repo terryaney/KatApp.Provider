@@ -6919,65 +6919,6 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
         });
     }
 
-    $.whenAllDone = function ( deferredParams: Deferred[] ): Deferred {
-		// Update, made this more like Promises.allSettled
-        // Understanding promises
-		//	https://www.taniarascia.com/how-to-promisify-an-ajax-call/
-		//	https://blackninjadojo.com/javascript/2019/02/27/using-jquery-promises-and-deferreds.html
-		// whenAllDone - https://stackoverflow.com/a/15094263/166231 - current implementation
-		// whenAll - https://stackoverflow.com/a/7881733/166231 - another implementation I might want to look at
-
-        const deferreds: Deferred[] = [];
-        const result = $.Deferred();
-
-        // arguments - all the deferreds passed in to whenAllDone call
-        $.each(deferredParams, function (i, current) {
-            const currentDeferred = $.Deferred();
-            current.then(function (...args) {
-                currentDeferred.resolve(true, args);
-            }, function (...args) {
-                currentDeferred.resolve(false, args);
-            });
-            deferreds.push(currentDeferred);
-        });
-
-        const jqueryWhenUsesSubordinate = deferreds.length == 1;
-        
-        // call when on each deferred in the deferreds array, and it is always
-        // going to be a .then because the deferred items in the array always
-        // calls resolve (instead of reject) and passes true/false for status of failure
-        $.when.apply($, deferreds).then(function (...args) {
-            const settled: PromiseStatus[] = [];
-            
-            // arguments - the arguments passed on resolve/reject calls on any deferred items passed to whenAllDone
-            // Hack to deal with jquery.when: function( subordinate /* , ..., subordinateN */ ) { ...
-            // It has a line like: 
-            //
-            //  // If resolveValues consist of only a single Deferred, just use that.
-            //  deferred = remaining === 1 ? subordinate : jQuery.Deferred(),
-            //
-            // And this changes the shape of the arguments, so I had to put it back to common state regardless of how many
-            // deferred objects were passed in.
-            const deferredArgs = jqueryWhenUsesSubordinate
-                ? [[ args[ 0 ], args[ 1 ] ]]
-                : args
-            
-            $.each(deferredArgs, function (i, resolvedArgs) {
-                // If we resolved with `true` as the first parameter, it is success, otherwise failure
-                const status = !resolvedArgs[ 0 ] ? "rejected" : "fulfilled";
-                // Push either all arguments or the only one
-                const data = resolvedArgs[1].length === 1 ? resolvedArgs[1][0] : resolvedArgs[1];
-                const reason = !resolvedArgs[ 0 ] ? data : undefined;
-                const result = resolvedArgs[ 0 ] ? data : undefined;
-                settled.push( { status: status, reason: reason, value: result } );
-            });
-
-            return result.resolve.apply(result, settled);
-        });
-
-        return result;
-    }
-
     // Overwrite the implementation of getResources with latest version so that it can support
     // improvements made (i.e. checking local web server first), store copy of original function
     // from katapp.js so that if they call reset() I can restore that and not run functions in

@@ -58,7 +58,8 @@ class KatApp
             traceVerbosity: TraceVerbosity.None,
             useTestPlugin: KatApp.pageParameters[ "testplugin"] === "1",
             useTestView: KatApp.pageParameters[ "testview" ] === "1",
-            saveConfigureUiCalculationLocation: KatApp.pageParameters[ "saveConfigureUI" ]
+            saveConfigureUiCalculationLocation: KatApp.pageParameters[ "saveConfigureUI" ],
+            debugResourcesDomain: KatApp.pageParameters[ "localserver"]
         },
         functionUrl: KatApp.functionUrl
     };
@@ -167,16 +168,14 @@ class KatApp
     // ping and getResources duplicated in KatAppProvider now.  This allows for Views of L@W 
     // (or other clients that have own copy of KatApp.js but are unable to update it) to be served
     // from local server if enabled.
-    static ping( url: string, callback: ( responded: boolean, error?: string | Event )=> void ): void {
-        const ip = url.replace('http://','').replace('https://','').split(/[/?#]/)[0];
-
+    static ping( localWebServer: string, callback: ( responded: boolean, error?: string | Event )=> void ): void {
         $.ajax({
             converters: {
                 'text script': function (text: string): string {
                     return text;
                 }
             },
-            url: "http://" + ip + "/js/ping.js",
+            url: "h" + "t" + "t" + "p" + "://" + localWebServer + "/js/ping.js",
             timeout: 1000,
             success: function( /* result */ ): void {
                 callback(true);
@@ -246,14 +245,8 @@ class KatApp
         const currentOptions = application.options;
         const managementUrl = currentOptions.functionUrl ?? KatApp.defaultOptions.functionUrl ?? KatApp.functionUrl;
         const resourceArray = resources.split(",");
-        const allowLocalWebServer = application.options.debug?.allowLocalServer ?? KatApp.pageParameters[ "allowlocal"] === "1";
         
         let localWebServer: string | undefined = debugResourcesDomain;
-        
-        if ( localWebServer === undefined && allowLocalWebServer ) {
-            localWebServer = "http://localhost:8887/";
-        }
-
         let useLocalWebServer = localWebServer !== undefined; // global value for all requested resources
         // viewParts[ 0 ], viewParts[ 1 ]
         // folder: string, resource: string, optional Version
@@ -353,7 +346,7 @@ class KatApp
                             }
                             else {
                                 resourceUrl = tryLocalWebServer 
-                                    ? localWebServer + "KatApp/" + localWebServerFolder + localWebServerResource 
+                                    ? "h" + "t" + "t" + "p" + "://" + localWebServer + "/KatApp/" + localWebServerFolder + localWebServerResource 
                                     : !isResourceInManagementSite
                                         ? resourceName
                                         : managementUrl;

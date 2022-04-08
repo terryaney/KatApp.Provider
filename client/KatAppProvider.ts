@@ -22,8 +22,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                 saveConfigureUiCalculationLocation: KatApp.pageParameters[ "saveConfigureUI" ],
                 useTestCalcEngine: KatApp.pageParameters[ "test" ] === "1",
                 refreshCalcEngine: KatApp.pageParameters[ "expirece" ] === "1",
-                allowLocalServer: KatApp.pageParameters[ "allowlocal" ] === "1",
-                showInspector: KatApp.pageParameters[ "showInspector" ] === "1"
+                showInspector: KatApp.pageParameters[ "showinspector" ] === "1"
                 // Set in KatApp.ts
                 // useTestView: KatApp.pageParameters[ "testview"] === "1",
                 // useTestPlugin: KatApp.pageParameters[ "testplugin"] === "1",
@@ -302,7 +301,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                             inlineTemplate.removeAttr("rbl-inline-tid");
                         }
 
-                        const rblTemplateContent = that.ui.encodeTemplateContent(inlineTemplate[0].outerHTML);
+                        const rblTemplateContent = that.ui.encodeTemplateContent(inlineTemplate, true);
 
                         const rblTemplate = 
                             $("<rbl-template/>")
@@ -335,7 +334,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                     .not("[tid='lookup-tables']") // never injected...
                     .each(function() {
                         const t = $(this);
-                        t.html(that.ui.encodeTemplateContent(t.html()));
+                        t.html(that.ui.encodeTemplateContent(t, false));
                     });
             };
             
@@ -1121,7 +1120,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
             // Success - processApiActions
             // Error - calculateEnd
             const updateData = function(): void {
-                const jwtUpdateCommand = "calculations/jwtupdate";
+                const jwtUpdateCommand = "rble/jwtupdate";
 
                 try {
                     ensureResults();
@@ -2451,7 +2450,22 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
             }
         }
 
-        encodeTemplateContent( content: string): string {
+        encodeTemplateContent( template: JQuery<HTMLElement>, isInline: boolean ): string {
+            // When I change <script> to <script_>, browsers think that it is
+            // 'html' so it encodes the & as &amp; and other things '->" and < -> &lt;.  It was
+            // too much trouble to fix up (especially the ' -> "), so leaving the script tags in
+            // but injecting a conditional that will not evaluate the code when the template is injected
+            // into the markup inside <rbl-templates>, then I strip those out when injecting template content
+            // into real markup.
+            $("script", template).each(function () {
+                const script = $(this);
+                script.html("if ( false ) { // Do not run scripts inside templates\n" + script.html() + "\n} // Do not run scripts inside templates");
+            });
+
+            const content = isInline
+                ? template[0].outerHTML 
+                : template.html();
+
             return content
                 .replace(/-toggle=/g, "-toggle_=")
                 .replace(/ id=/g, " id_=")
@@ -2468,9 +2482,6 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                 .replace(/<tfoot>/g, "<tfoot_>")
                 .replace(/<tfoot /g, "<tfoot_ ")
                 .replace(/<\/tfoot>/g, "</tfoot_>")
-                .replace(/<script>/g, "<script_>")
-                .replace(/<script /g, "<script_ ")
-                .replace(/<\/script>/g, "</script_>")
                 .replace(/<tr>/g, "<tr_>")
                 .replace(/<tr /g, "<tr_ ")
                 .replace(/<\/tr>/g, "</tr_>")
@@ -2501,7 +2512,8 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                 .replace( /tr_/g, "tr" ) // if tr/td were *not* contained in a table in the template, browsers would just remove them when the template was injected into application, so replace here before injecting template
                 .replace( /th_/g, "th" )
                 .replace( /td_/g, "td" )
-                .replace( /script_/g, "script" );
+                .replace( /return; \/\/ Do not run scripts inside templates\\n/g, "" )
+                .replace( /\\n} \/\/ Do not run scripts inside templates/g, "");
 
             if ( this.application.bootstrapVersion > 3 ) {
                 decodedContent = decodedContent
@@ -2620,9 +2632,11 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                 return {
                     Type: template.attr("type"),
                     Content:
-                        this.decodeTemplateContent( ( contentSelector != undefined ? $(contentSelector, template) : template )
-                            .html()
-                            .format( KatApp.extend({}, templateDefaults, data, { id: application.id } ) ) )
+                        this.decodeTemplateContent( 
+                            ( contentSelector != undefined ? $(contentSelector, template) : template )
+                                .html()
+                                .format( KatApp.extend({}, templateDefaults, data, { id: application.id } ) ) 
+                        )
                 };
             }
         }
@@ -3840,10 +3854,6 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                                 };
 
                                 const appendTemplateResult = function( dest: JQuery<HTMLElement>, templateResult: JQuery<HTMLElement>, prepend: boolean, prependBeforePreserve: boolean ): void {
-                                    // Not sure there would ever be templateOn calls in a template
-                                    // used via rbl-source (b/c could result in many rows of content)
-                                    // so may need to put some conditions on this if that is the case
-                                    // to only 
                                     try {
                                         $.fn.KatApp.currentView = application.element;
                                         
@@ -5678,7 +5688,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                         const applicationId = actionLink.attr("rbl-modal");                        
 
                         if ( applicationId != undefined ) {
-                            let url = "api/katapp/verify-modal?applicationId=" + applicationId;
+                            let url = "api/rble/verify-katapp-modal?applicationId=" + applicationId;
                             const serviceUrlParts = application.options.sessionUrl?.split( "?" );
                 
                             if ( serviceUrlParts != undefined && serviceUrlParts.length === 2 ) {
@@ -6790,6 +6800,9 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
         // remove templates
         $("rbl-katapps > rbl-templates").remove();
         $.fn.KatApp.templatesUsedByAllApps = {};
+        
+        // Only want to inject script from templates one time...so this
+        // list keeps track of whether or not it has been added
         $.fn.KatApp.templatesInjectingScript = [];
     }
 

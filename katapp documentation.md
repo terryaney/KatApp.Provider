@@ -2486,13 +2486,12 @@ The following properties are available on the `DebugOptions` object, some of whi
 Property | Type | Description
 ---|---|---
 traceVerbosity | TraceVerbosity | Set the minimum allowed trace level to be displayed.  Values are : `None`, `Quiet`, `Minimal`, `Normal`, `Detailed`, or `Diagnostic`.
-debugResourcesDomain | string | Set the base domain/url to use if `allowLocalServer` is `true` when attempting to find local resource files.  Default value is `http://localhost:8887/KatApp/`.
+debugResourcesDomain | string | Set the base domain/url to use if provided when attempting to find local resource files.  By default, the `localserver=` querystring will set this value.
 saveConfigureUiCalculationLocation | string | Signals to the RBLe Service that the ConfigureUI calculation should save a debug CalcEngine to this location.  By default, the `saveConfigureUI` querystring will set this.
 refreshCalcEngine | boolean | If `true`, it signals to the RBLe Service to check for new CalcEngines from the CalcEngine CMS immediately instead of waiting for cache to expire.  By default, the `expireCE=1` querystring will set this to true.
 useTestCalcEngine | boolean | Whether or not the RBLe Service should use the test version of a CalcEngine (if it is present).  By default, the `test=1` querystring will set this to true.
 useTestView | boolean | Whether or not the Kaml View CMS should use the test version of a Kaml View (if it is present).  By default, the `testView=1` querystring will set this to true.  If `relativePathTemplates` is configured in the [KatAppOptions Object](#KatAppOptions-Object), this setting is ignored.
 useTestPlugin | boolean | Whether or not the Kaml View CMS should use the test version of the KatAppProvider.js file (if it is present).  By default, the `testPlugin=1` querystring will set this to true.
-allowLocalServer | boolean | Whether or not resource files (provider, views, and templates) should attempt to be loaded from the `debugResourcesDomain`.  By default, the `allowLocal=1` querystring sets this to true.
 showInspector | boolean | Whether or not the Kaml View will highlight elements that have `rbl-value`, `rbl-source`, and `rbl-display` attributes to aid in debugging.  By default, the `showInspector=1` querystring sets this to true.
 
 <br/>

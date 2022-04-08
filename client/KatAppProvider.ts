@@ -1730,7 +1730,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
 
         serverCalculation( customInputs: {} | undefined, actionLink?: JQuery<HTMLElement> ): void {
             this.apiAction(
-                "calculations/run",
+                "rble/calculation",
                 this.options, 
                 { 
                     customInputs: customInputs,

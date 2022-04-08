@@ -3103,18 +3103,18 @@ Each `endpoint`/`rbl-action-link` can, and most likely will, have its own set of
 
 ```html
 <!-- Same as sample above in Javascript, create a link generates a server side DocGen package for download -->
-<a rbl-action-link="PensionEstimates.DocGen.Forms" rbl-action-download="true" data-input-iDownloadForms="1" href="#">Download Forms</a>
+<a rbl-action-link="rble/docgen" rbl-action-download="true" data-input-iDownloadForms="1" href="#">Download Forms</a>
 
 <!-- Sample download of a static file -->
-<a rbl-action-link="DownloadFile" rbl-action-download="true" data-param-filename="PlanDocument.pdf" class="download-file" href="#">Download SPD</a>
+<a rbl-action-link="document-center/download" rbl-action-download="true" data-param-domain="SecureFile" data-param-filename="PlanDocument.pdf" class="download-file" href="#">Download SPD</a>
 
 <!-- Sample enrollment kaml deleting a 'required document' that was uploaded -->
-<a rbl-action-link="RetireOnline.DeleteDocument" rbl-action-confirm-selector="[data-required-document-prompt=\'delete\']" data-param-doc-id="PlanDocument" data-param-plan-id="{plan-id}" class="delete-file" href="#">Delete</a>
+<a rbl-action-link="document-center/delete" rbl-action-confirm-selector="[data-required-document-prompt=\'delete\']" data-param-domain="RequiredDocument" data-param-documentid="{document-id}" class="delete-file" href="#">Delete</a>
 
 <!-- 
 Using input-fileupload template to support file uploads using the `data-command` attribute.  Current inputs from the 'entire KatApp' are passed as well, so endpoint code can use that as well to determine which type of document they are uploading.
 -->
-<div rbl-tid="input-fileupload" class="col-md-9" data-hidelabel="false" data-label="File Name" data-inputname="iUpload" data-command="RetireOnline.UploadRequiredDocument"></div>
+<div rbl-tid="input-fileupload" class="col-md-9" data-hidelabel="false" data-label="File Name" data-inputname="iUpload" data-rbl-action="retireonline/documents/upload"></div>
 ```
 
 Note: There are API Endpoint lifecycle events that are triggered during the processing of an action.  See [KatApp Action Lifecycle Events](#KatApp-Action-Lifecycle-Events) for more information.
@@ -3161,7 +3161,7 @@ $(".saveButtonAction", view).on('click', function (e) {
 // The same functionality could be accomplished using the apiAction method call as well.
 $(".saveButtonAction", view).on('click', function (e) {
     application.apiAction(
-        "ServerCalculation", 
+        "rble/calculation", 
         {
             customInputs: customInputs
         },
@@ -3249,7 +3249,7 @@ createModalDialog is a helper method to show a simple 'Continue' / 'Cancel' Boot
 
 ```javascript
 view.on("onActionResult.RBLe", function (e, endpoint, _jsonResponse, application) {
-    if (endpoint == "update-payment-inst") {
+    if (endpoint == "ba7/update-withholding") {
         application.createModalDialog(
             "You bank information have been successfully updated.",
             function () {
@@ -3704,7 +3704,7 @@ A common use for these handlers during calculation could be to display a status 
 
 ```javascript
 view.on("onActionResult.RBLe", function (event, endpoint) {
-	if (endpoint == "calculations/jwtupdate") {
+	if (endpoint == "rble/jwtupdate") {
 		$(".saveSuccess", view).show(500).delay(7000).hide(500);
 	}
 });
@@ -3716,7 +3716,7 @@ Note: Even if data updating fails, 'normal calculation processing' will still be
 
 ```javascript
 view.on("onActionFailed.RBLe", function (event, endpoint) {
-	if (endpoint == "calculations/jwtupdate") {
+	if (endpoint == "rble/jwtupdate") {
 		$(".saveError", view).show(500).delay(3000).hide(500);
 	}
 });

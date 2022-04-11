@@ -1903,7 +1903,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                 url += ( url.indexOf( "?" ) > -1 ? "&" : "?" ) + serviceUrlParts[ 1 ];
             }
             
-            let errorResponse: JSON;
+            let errorResponse: KatAppActionResult;
             let successResponse: KatAppActionResult | undefined = undefined;
             // No one was using this yet, not sure I need it
             // this.ui.triggerEvent( "onActionStart", commandName, data, this, actionLink );
@@ -1932,7 +1932,6 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                 that.rble.finalizeValidationSummaries();
 
                 if ( errors.length > 0 ) {
-                    debugger;
                     console.group("Unable to process " + commandName + ": errorResponse");
                     console.log(errorResponse);
                     console.groupEnd();
@@ -1982,8 +1981,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                 }
             }).then(
                 function( result, status, xhr ) {
-                    if ( isDownload ) {
-            
+                    if ( isDownload ) {            
                         const blob = result; // xhr.response;
             
                         let filename = "Download.pdf";
@@ -1997,47 +1995,40 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                     else {
                         successResponse = result as KatAppActionResult;
 
-                        if ( successResponse.Status != 1 ) {
-                            successResponse = undefined;
-                            errorResponse = result;
-                            errors.push( { "@id": "System", text: errorResponse[ "Message"] });
-                            delete that.endpointRBLeInputsCache[ commandName ];
+                        if ( successResponse.ValidationWarnings != undefined ) {
+                            successResponse.ValidationWarnings.forEach( vr => {
+                                warnings.push( { "@id": vr.ID, text: vr.Message });
+                            });
                         }
-                        else {
-                            if ( successResponse.ValidationWarnings != undefined ) {
-                                successResponse.ValidationWarnings.forEach( vr => {
-                                    warnings.push( { "@id": vr.ID, text: vr.Message });
-                                });
-                            }
 
-                            if ( successResponse.RBLeInputs != undefined ) {
-                                that.endpointRBLeInputsCache[ commandName ] = successResponse.RBLeInputs;
-                            }
-                            else {
-                                delete that.endpointRBLeInputsCache[ commandName ];
-                            }
-                            if ( runCalculate ) {
-                                clearServerOnlySaveInstructions();
-                                that.calculate( undefined, finishApiAction );
-                            }
+                        delete that.endpointRBLeInputsCache[ commandName ];
+                        if ( successResponse.RBLeInputs != undefined ) {
+                            that.endpointRBLeInputsCache[ commandName ] = successResponse.RBLeInputs;
                         }
+
+                        if ( runCalculate ) {
+                            clearServerOnlySaveInstructions();
+                            that.calculate( undefined, finishApiAction );
+                        }
+                    }
+
+                    if ( !runCalculate ) {
+                        finishApiAction();
                     }
                 },
                 function( xhr ) {
-                    errorResponse = xhr[ "responseBinary" ];
                     debugger;
+                    errorResponse = xhr[ "responseBinary" ] as KatAppActionResult;
                     delete that.endpointRBLeInputsCache[ commandName ];
+
                     if ( errorResponse != undefined ) {
-                        if ( errorResponse[ "Validations" ] != undefined ) {
-                            errorResponse[ "Validations" ].forEach((v: { [x: string]: string }) => {
-                                errors.push( { "@id": v[ "ID" ], text: v[ "Message" ] });
+                        if ( errorResponse.Validations != undefined ) {
+                            errorResponse.Validations.forEach(v => {
+                                errors.push( { "@id": v.ID, text: v.Message });
                             });
                         }
-                        else if ( errorResponse[ "ExceptionMessage" ] != undefined && errorResponse[ "Message" ] != undefined ) {
-                            // Just want generic system message I think...
-                            // errors.push( { "@id": "System", text: errorResponse[ "Message" ] });
-                        }
-                        if ( errorResponse[ "InvalidateKatApp" ] ?? false ) {
+                        
+                        if ( errorResponse.InvalidateKatApp ?? false ) {
                             that.invalidate();
                         }
                     }
@@ -2045,13 +2036,9 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                     if ( errors.length == 0 ) {
                         errors.push( { "@id": "System", text: "An unexpected error has occurred.  Please try again and if the problem persists, contact technical support." });
                     }
-                }
-            )
-            .always( function() {
-                if ( errors.length > 0 || !runCalculate ) {
                     finishApiAction();
                 }
-            });
+            );
         }
         
         private processResults( calculationOptions: KatAppOptions ): void {
@@ -2303,7 +2290,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                 .not("rbl-template *") // not in templates
                 .not(".confirm-bound, .jquery-validate, .skip-confirm")
                 .addClass("confirm-bound")
-                .on("click", function() { 
+                .on("click.RBLe", function() { 
                     const link = $(this);
                     const confirm = 
                         link.data("confirm") || 
@@ -5537,14 +5524,14 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                             const dataContent = $(this).data('content') ?? $(this).data('bs-content');
                             const dataContentSelector = $(this).data('content-selector');
                             let content = dataContent == undefined
-                                ? dataContentSelector == undefined ? $(this).next().html() : $(dataContentSelector).html()
+                                ? dataContentSelector == undefined ? $(this).next().html() : $(dataContentSelector, view).html()
                                 : dataContent as string;
             
                             // Replace {Label} in content with the trigger provided...used in Error Messages
                             const labelFix = $(this).data("label-fix");
             
                             if (labelFix != undefined) {
-                                content = content.replace(/\{Label}/g, $("." + labelFix).html());
+                                content = content.replace(/\{Label}/g, $("." + labelFix, view).html());
                             }
             
                             return content;
@@ -5650,7 +5637,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                     if ( this.tagName == "A" ) {
                         $(this).attr("href", "#");
                     }
-                    $(this).on("click", function(e) {
+                    $(this).on("click.RBLe", function(e) {
                         const actionLink = $(this);
                         e.preventDefault();
 
@@ -5681,7 +5668,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                     if ( this.tagName == "A" ) {
                         $(this).attr("href", "#");
                     }
-                    $(this).on("click", function(e) {
+                    $(this).on("click.RBLe", function(e) {
                         const actionLink = $(this);
                         e.preventDefault();
 
@@ -5700,20 +5687,14 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                                 url: url,
                                 dataType: "json"
                             }).then(
-                                function( result, status, xhr ) {
+                                function( result ) {
                                     const successResponse = result as KatAppActionResult;
                             
-                                    if ( successResponse.Status != 1 ) {
-                                        console.log(successResponse);
-                                        application.trace("Unable to launch modal KatApp.", TraceVerbosity.None);
-                                    }
-                                    else {
-                                        that.createModalApplication(
-                                            applicationId,
-                                            successResponse[ "Path" ],
-                                            actionLink
-                                        );
-                                    }
+                                    that.createModalApplication(
+                                        applicationId,
+                                        successResponse[ "Path" ],
+                                        actionLink
+                                    );
                                 },
                                 function( xhr ) {
                                     console.log( xhr );
@@ -5857,7 +5838,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                         $(this).attr("href", "#");
                     }
 
-                    $(this).on("click", function(e) {
+                    $(this).on("click.RBLe", function(e) {
                         const actionLink = $(this);
                         e.preventDefault();
 
@@ -5997,12 +5978,12 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
     
                         //add buttons to show/hide
                         $(".carousel-indicators button[data-show-all='true']", el)
-                            .on("click", function () {
+                            .on("click.RBLe", function () {
                                 carousel.hide();
                                 carouselAll.show();
                             });
                         $(".carousel-all button[data-show-all='false']", el)
-                            .on("click", function () {
+                            .on("click.RBLe", function () {
                                 carouselAll.hide();
                                 carousel.show();
                             });
@@ -6124,7 +6105,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                         input.addClass(inputCss);
                     }
 
-                    $(".btn-file-remove", el).on("click", function () {
+                    $(".btn-file-remove", el).on("click.RBLe", function () {
                         const file = $(this).parents('.input-group').find(':file');
                         file.val("").trigger("change");
                     });
@@ -6252,10 +6233,10 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                         });
                     };
 
-                    $(".btn-file-upload", el).on("click", uploadFileHandler);
-                    $(el).on("UploadFile", uploadFileHandler);
+                    $(".btn-file-upload", el).on("click.RBLe", uploadFileHandler);
+                    $(el).on("UploadFile.RBLe", uploadFileHandler);
 
-                    $(".btn-file :file", el).on("change", function () {
+                    $(".btn-file :file", el).on("change.RBLe", function () {
                         const fileUpload = $(this),
                             files = ( fileUpload[0] as HTMLInputElement ).files,
                             numFiles = files?.length ?? 1,
@@ -6397,8 +6378,8 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                         };
                         
                         // Only support phone so far...
-
                         if ( mask == "(###) ###-####" ) {
+                            // Why can't I put .RBLe event namespace here??
                             input.on("keydown", function (event) {
                                 // Input must be of a valid number format or a modifier key, and not longer than ten digits
                                 if (!isNumericInput(event) && !isModifierKey(event)) {
@@ -6458,7 +6439,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                                     format: $(".bootstrapLocaleFormat").html(),
                                     zIndexOffset: 2000 /* admin site sticky bar */
                                 })
-                                .on("show", function () {
+                                .on("show.RBLe", function () {
                                     // To prevent the datepicker from being 'stuck' open if they are trying
                                     // to click icon *AGAIN* in an attempt to toggle/close the picker.  I
                                     // first check to see if my own custom data is added and if not I inject
@@ -6469,8 +6450,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                                         dp.datepicker('hide');
                                     }
                                     else {
-                                        dp.data("datepicker-show", true);
-        
+                                        dp.data("datepicker-show", true);        
                                         const dateInput = $("input", dp);
         
                                         // Originally, I had an .on("clearDate", ... ) event handler that simply
@@ -6481,15 +6461,13 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                                         // so that works, but problem is that input isn't cleared before change event happens
                                         // so I also clear the input myself.
                                         $(".datepicker-days .clear", dp).on("click.ka", function () {
-                                            dateInput.val("");
-                                            dateInput.change();
+                                            dateInput.val("").trigger("change");
                                         });
                                     }
                                 })
-                                .on("hide", function () {
+                                .on("hide.RBLe", function () {
                                     const dp = $(this);
                                     dp.removeData("datepicker-show");
-        
                                     $(".datepicker-days .clear", dp).off("click.ka");
                                 })
                                 .on('show.bs.modal', function (event) {
@@ -6503,18 +6481,18 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                             // click a date...since the input then blurs, it fires a calc and the 'click' into the date picker (a specific day)
                             // seems to be ignored, but rare case I guess.
                             $('.input-group.date input', el)
-                                .on("blur", function () {
+                                .on("blur.RBLe", function () {
                                     const dateInput = $(this);
                                     if (dateInput.data("datepicker-paste") != undefined) {
                                         dateInput.trigger("change");
                                     }
                                     dateInput.removeData("datepicker-paste");
                                 })
-                                .on("paste", function () {
+                                .on("paste.RBLe", function () {
                                     const dateInput = $(this);
                                     dateInput.data("datepicker-paste", true);
                                 })
-                                .on("keypress change", function () {
+                                .on("keypress.RBLe change.RBLe", function () {
                                     // If they paste, then type keyboard before blurring, it would calc twice
                                     const dateInput = $(this);
                                     dateInput.removeData("datepicker-paste");

@@ -125,13 +125,13 @@ interface KatAppActionSubmitData {
 }
 
 interface KatAppActionResult {
-    Status: number;
-    Message: string;
+    Validations: { ID: string, Message: string }[] | undefined;
     ValidationWarnings: { ID: string, Message: string }[] | undefined;
     RBLeInputs: {
         Tables: CalculationInputTable[] | undefined;
         Inputs: JSON | undefined
     } | undefined;
+    InvalidateKatApp?: boolean
 }
 
 // These are the only methods available to call on .KatApp() until onInitialized is triggered (meaning

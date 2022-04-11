@@ -2499,8 +2499,8 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                 .replace( /tr_/g, "tr" ) // if tr/td were *not* contained in a table in the template, browsers would just remove them when the template was injected into application, so replace here before injecting template
                 .replace( /th_/g, "th" )
                 .replace( /td_/g, "td" )
-                .replace( /return; \/\/ Do not run scripts inside templates\\n/g, "" )
-                .replace( /\\n} \/\/ Do not run scripts inside templates/g, "");
+                .replace( /if \( false \) { \/\/ Do not run scripts inside templates\n/g, "" )
+                .replace( /\n} \/\/ Do not run scripts inside templates/g, "");
 
             if ( this.application.bootstrapVersion > 3 ) {
                 decodedContent = decodedContent
@@ -2553,6 +2553,16 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
             });
         }
 
+        ensureTemplateScript( templateId: string, templateContent: JQuery<HTMLElement> ): void {
+            if ( $.fn.KatApp.templatesInjectingScript.indexOf( templateId ) == -1 ) {
+                $.fn.KatApp.templatesInjectingScript.push( templateId);
+            }
+            else {                                        
+                // only inject script once per template name
+                templateContent.find("script").remove();
+            }
+        }
+
         injectTemplate( target: JQuery<HTMLElement>, templateId: string ): void {
             try {
                 $.fn.KatApp.currentView = this.application.element;
@@ -2575,7 +2585,17 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                 }
                 else {
                     // This will run any <script> tags that are present
-                    target.html( template.Content );
+                    let el = $(template.Content);
+
+                    const hasRoot = el.length == 1;
+
+                    if ( !hasRoot ) {
+                        el = $("<div>" + template.Content + "</div>");
+                    }
+
+                    this.ensureTemplateScript( templateId, el );
+
+                    target.html( hasRoot ? el[ 0 ].outerHTML : el.html() );
 
                     if ( template.Type !== undefined ) {
                         target.attr("rbl-template-type", template.Type);
@@ -2615,14 +2635,19 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                 // Don't see anyone that uses content-selector, can try to remove
                 const contentSelector = template.attr("content-selector");
                 const templateDefaults = includeDefaults ? application.dataAttributesToJson(template, "default-") : {};
+                
+                template = contentSelector != undefined 
+                    ? $(contentSelector, template) 
+                    : template;
+
+                const templateFormatData =
+                    KatApp.extend({}, templateDefaults, data, { id: application.id } );
 
                 return {
                     Type: template.attr("type"),
                     Content:
                         this.decodeTemplateContent( 
-                            ( contentSelector != undefined ? $(contentSelector, template) : template )
-                                .html()
-                                .format( KatApp.extend({}, templateDefaults, data, { id: application.id } ) ) 
+                            template.html().format( templateFormatData ) 
                         )
                 };
             }
@@ -3824,13 +3849,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                                         el = $("<div>" + formattedContent + "</div>");
                                     }
 
-                                    if ( $.fn.KatApp.templatesInjectingScript.indexOf( tid! ) == -1 ) {
-                                        $.fn.KatApp.templatesInjectingScript.push( tid!);
-                                    }
-                                    else {                                        
-                                        // only inject script once per template name
-                                        el.find("script").remove();
-                                    }
+                                    that.application.ui.ensureTemplateScript( tid!, el );
 
                                     // Nested templates
                                     that.application.ui.injectTemplatesWithoutSource(el, showInspector);

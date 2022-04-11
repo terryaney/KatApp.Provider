@@ -143,8 +143,6 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
             //              specified on this.element, how do match those up to what could be possibly multiple
             //              CalcEngines defined in view
 
-            // MULTIPLE CE: Test if extend uses options passed in to replace
-
             // Transfer data attributes over if present...
             const attrCalcEngine = this.element.attr("rbl-calcengine");
             const calcEngine: CalcEngine | undefined = attrCalcEngine != undefined
@@ -2560,6 +2558,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
             else {                                        
                 // only inject script once per template name
                 templateContent.find("script").remove();
+                templateContent.find("style").remove();
             }
         }
 

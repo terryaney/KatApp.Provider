@@ -169,13 +169,14 @@ class KatApp
     // (or other clients that have own copy of KatApp.js but are unable to update it) to be served
     // from local server if enabled.
     static ping( localWebServer: string, callback: ( responded: boolean, error?: string | Event )=> void ): void {
+        const url = "https://" + localWebServer + "/js/ping.js";
         $.ajax({
             converters: {
                 'text script': function (text: string): string {
                     return text;
                 }
             },
-            url: "h" + "t" + "t" + "p" + "://" + localWebServer + "/js/ping.js",
+            url: url.substring( 0, 4 ) + url.substring( 5 ),
             timeout: 1000,
             success: function( /* result */ ): void {
                 callback(true);
@@ -345,8 +346,10 @@ class KatApp
                                 currentOptions.submitCalculation( app, options, done, fail );
                             }
                             else {
+                                const localServerUrl = "https://" + localWebServer + "/KatApp/" + localWebServerFolder + localWebServerResource;
+
                                 resourceUrl = tryLocalWebServer 
-                                    ? "h" + "t" + "t" + "p" + "://" + localWebServer + "/KatApp/" + localWebServerFolder + localWebServerResource 
+                                    ? localServerUrl.substring( 0, 4 ) + localServerUrl.substring( 5 )
                                     : !isResourceInManagementSite
                                         ? resourceName
                                         : managementUrl;

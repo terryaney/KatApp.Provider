@@ -236,7 +236,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                             b. If not waiting for any more templates, continue to next pipeline
                             c. If waiting for more, set flag and continue to wait
                     b. For any required templates *not* already requested *or* downloaded...
-                        1. Initialize the _templatesUsedByAllApps variable for template so other apps know it is requested
+                        1. Initialize the _templateFilesUsedByAllApps variable for template so other apps know it is requested
                         2. Get templates (will release flow control when ajax.get() called)
                             When templates are returned...
                                 a. If error, set pipelineError, call all template callbacks (of other apps) signalling error, and jump to finish
@@ -246,7 +246,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                 3. Inject templates ...
                     a. For all templates downloaded by *this* application...
                         1. Inject the template into markup
-                        2. Set the _templatesUsedByAllApps.data property
+                        2. Set the _templateFilesUsedByAllApps.data property
                         3. For all registered template callbacks, call the template callback signalling success.
                 4. Process templates ...
                     1. If any error during pipeline, log error
@@ -260,7 +260,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
             */
             //#endregion
 
-            const _templatesUsedByAllApps = $.fn.KatApp.templatesUsedByAllApps;
+            const _templateFilesUsedByAllApps = $.fn.KatApp.templateFilesUsedByAllApps;
             let viewElement: JQuery<HTMLElement> | undefined = undefined;
 
             let inlineContainer = $("rbl-katapps > rbl-templates[rbl-t='_INLINE']");
@@ -487,10 +487,10 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                 // Array of items this app will fetch that is *NOT* already requested for download or finished
                 const toFetch =
                     requiredTemplates
-                        .filter( r => !( _templatesUsedByAllApps[ r ]?.requested ?? false ) && _templatesUsedByAllApps[ r ]?.data === undefined );
+                        .filter( r => !( _templateFilesUsedByAllApps[ r ]?.requested ?? false ) && _templateFilesUsedByAllApps[ r ]?.data === undefined );
                 const toWait =
                     requiredTemplates
-                        .filter( r => ( _templatesUsedByAllApps[ r ]?.requested ?? false ) );
+                        .filter( r => ( _templateFilesUsedByAllApps[ r ]?.requested ?? false ) );
 
                 // Need the following allFetchedIsComplete flag due to following scenario:
                 // 1. KatAppA already requested Template1 that KatAppB need. So KatAppB adds a callback to be notified when Template1 is done
@@ -502,7 +502,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
 
                 // For every template this app is fetching, add it to the fetch list and set the state to 'requesting'
                 toFetch.forEach( function( r ) {
-                    _templatesUsedByAllApps[ r ] = { requested: true, callbacks: [] };
+                    _templateFilesUsedByAllApps[ r ] = { requested: true, callbacks: [] };
                 });
 
                 // For all templates that are already being fetched, create a callback to move on when 
@@ -511,7 +511,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                     otherResourcesNeeded++;
                     that.trace("Need to wait for already requested template: " + r, TraceVerbosity.Detailed);
 
-                    _templatesUsedByAllApps[ r ].callbacks.push(
+                    _templateFilesUsedByAllApps[ r ].callbacks.push(
                         function( errorMessage ) {
                             that.trace("Template: " + r + " is now ready", TraceVerbosity.Detailed);
 
@@ -572,12 +572,12 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                                 toFetch.forEach( r => {
                                     // call all registered callbacks from other apps
                                     let currentCallback: ( ( errorMessage: string )=> void ) | undefined = undefined;
-                                    while( ( currentCallback = _templatesUsedByAllApps[ r ].callbacks.pop() ) !== undefined )
+                                    while( ( currentCallback = _templateFilesUsedByAllApps[ r ].callbacks.pop() ) !== undefined )
                                     {
                                         that.trace("Calling error message callback on " + r + ": " + errorMessage, TraceVerbosity.Diagnostic);
                                         currentCallback( errorMessage );
                                     }
-                                    _templatesUsedByAllApps[ r ].requested = false; // remove it so someone else might try to download again
+                                    _templateFilesUsedByAllApps[ r ].requested = false; // remove it so someone else might try to download again
                                 });
 
                                 that.trace("Downloading " + toFetchList + " from " + ( debugResourcesDomain ?? functionUrl ) + " failed.  Jumping to finish.", TraceVerbosity.Diagnostic );
@@ -609,12 +609,12 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                         that.trace( r + " injected into markup", TraceVerbosity.Normal );
 
                         // Should only ever get template results for templates that I can request
-                        _templatesUsedByAllApps[ r ].data = data;
-                        _templatesUsedByAllApps[ r ].requested = false;
+                        _templateFilesUsedByAllApps[ r ].data = data;
+                        _templateFilesUsedByAllApps[ r ].requested = false;
                         
                         // Call all registered callbacks from other apps
                         let currentCallback: ( ( errorMessage: string | undefined )=> void ) | undefined = undefined;
-                        while( ( currentCallback = _templatesUsedByAllApps[ r ].callbacks.pop() ) !== undefined )
+                        while( ( currentCallback = _templateFilesUsedByAllApps[ r ].callbacks.pop() ) !== undefined )
                         {
                             currentCallback( undefined );
                         }
@@ -2163,8 +2163,8 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
         redraw( readViewOptions: boolean | undefined ): void {
             // Need to reset these so updated views are downloaded
             $("rbl-katapps > rbl-templates").remove(); // remove templates
-            $.fn.KatApp.templatesUsedByAllApps = {};
-            $.fn.KatApp.templatesInjectingScript = [];
+            $.fn.KatApp.templateFilesUsedByAllApps = {};
+            $.fn.KatApp.templatesInjectingScript = $.fn.KatApp.templatesInjectingScript.filter( key => !key.startsWith( this.id ) );
 
             // If || true is removed...update documentation to add the parameter
             if ( readViewOptions || true ) {
@@ -2552,8 +2552,8 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
         }
 
         ensureTemplateScript( templateId: string, templateContent: JQuery<HTMLElement> ): void {
-            if ( $.fn.KatApp.templatesInjectingScript.indexOf( templateId ) == -1 ) {
-                $.fn.KatApp.templatesInjectingScript.push( templateId);
+            if ( $.fn.KatApp.templatesInjectingScript.indexOf( this.application.id + ":" + templateId ) == -1 ) {
+                $.fn.KatApp.templatesInjectingScript.push( this.application.id + ":" + templateId );
             }
             else {                                        
                 // only inject script once per template name
@@ -6795,7 +6795,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
 
         // remove templates
         $("rbl-katapps > rbl-templates").remove();
-        $.fn.KatApp.templatesUsedByAllApps = {};
+        $.fn.KatApp.templateFilesUsedByAllApps = {};
         
         // Only want to inject script from templates one time...so this
         // list keeps track of whether or not it has been added
@@ -6946,14 +6946,14 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
     // it doesn't blow away existing shared data, so leave the if statement even though it seems like it shouldn't be
     // needed since when script is ran for 'first time' (which could be the 'only' time) obviously tempaltesUsedByAllApps
     // is undefined.
-    if ( $.fn.KatApp.templatesUsedByAllApps == undefined ) {
+    if ( $.fn.KatApp.templateFilesUsedByAllApps == undefined ) {
         $('<rbl-katapps>\
             <style>\
                 rbl-katapps, rbl-templates, rbl-template, [rbl-tid="inline"], [rbl-tid="empty"] { display: none; }\
             </style>\
         </rbl-katapps>').appendTo("body");
         
-        $.fn.KatApp.templatesUsedByAllApps = {};
+        $.fn.KatApp.templateFilesUsedByAllApps = {};
         $.fn.KatApp.templatesInjectingScript = [];
         $.fn.KatApp.sharedData = { requesting: false, callbacks: [] };
 

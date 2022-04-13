@@ -49,7 +49,7 @@ interface Function {
     // If multiple applications are rendered on one page, this object stores unique list of templates requested
     // so that if two applications request the same template but one is still waiting for a download, the second
     // application registers a callback and will be notified when the content is ready.
-    templatesUsedByAllApps: { 
+    templateFilesUsedByAllApps: { 
         [ key: string ]: { 
             requested: boolean; 
             data?: string; 

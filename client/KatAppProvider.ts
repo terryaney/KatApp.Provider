@@ -657,6 +657,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                         that.configureUI();
                     }
                     else if ( that.options.manualResults != undefined ) {
+                        that.results = that.buildResults( [], that.options );
                         that.processResults( that.options );
                     }
                 }
@@ -2858,7 +2859,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                 }
 
             }
-            else if (input.is(':checkbox')) {
+            else if (input.attr("type") === "checkbox") {
                 value = input.prop("checked") ? "1" : "0";
             }
 

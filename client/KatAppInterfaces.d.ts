@@ -190,6 +190,9 @@ interface KatAppPlugInInterface extends KatAppPlugInShimInterface {
 
     exception?: RBLeServiceResults;
 
+    select(selector: string, context?: JQuery | HTMLElement): JQuery;
+    closest(element: JQuery | HTMLElement, selector: string): JQuery;
+
     // Re-run configureUI calculation, it will have already ran during first calculate() 
     // method if runConfigureUICalculation was true. This call is usually only needed if
     // you want to explicitly save a CalcEngine from a ConfigureUI calculation, so you set
@@ -219,7 +222,7 @@ interface KatAppPlugInInterface extends KatAppPlugInShimInterface {
     // $("selector").KatApp("traceCalcEngine"); - return calc engine tracing from *next successful* calc for all selector items
     traceCalcEngine: ()=> void;
     // Redraw/re-render the view without triggering a calculation (speeds up view development time)
-    redraw: ( readViewOptions: boolean | undefined )=> void;
+    redraw: ( readViewOptions?: boolean )=> void;
 }
 
 interface CalcEngine {

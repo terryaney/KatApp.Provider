@@ -9,9 +9,9 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
 (function($, window, document, undefined?: undefined): void {
     const tableInputsAndBootstrapButtons = ", .RBLe-input-table :input, .dropdown-toggle, button";
     // Inputs NOT passed to RBLe
-    const inputsToIgnoreSelector = "[data-itemtype='checkbox'] :input, .notRBLe, .notRBLe :input, .rbl-exclude, .rbl-exclude :input, rbl-template :input, [type='search']" + tableInputsAndBootstrapButtons;
+    const inputsToIgnoreSelector = "[data-itemtype='checkbox'] :input, .notRBLe, .notRBLe :input, .rbl-exclude, .rbl-exclude :input, [type='search']" + tableInputsAndBootstrapButtons;
     // Inputs that do not trigger calculations
-    const skipBindingInputSelector = ".notRBLe, .notRBLe :input, .rbl-exclude, .rbl-exclude :input, .skipRBLe, .skipRBLe :input, .rbl-nocalc, .rbl-nocalc :input, rbl-template :input, [type='search']" + tableInputsAndBootstrapButtons;
+    const skipBindingInputSelector = ".notRBLe, .notRBLe :input, .rbl-exclude, .rbl-exclude :input, .skipRBLe, .skipRBLe :input, .rbl-nocalc, .rbl-nocalc :input, [type='search']" + tableInputsAndBootstrapButtons;
 
     // Reassign options here (extending with what client/host might have already set) allows
     // options (specifically events) to be managed by CMS - adding features when needed.
@@ -1718,7 +1718,6 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
 
             // Checkbox list...
             this.select("[data-itemtype='checkbox']", inputContainer)
-                .not("rbl-template *")
                 .each(function() {
                     const cbl = $(this);
                     const name = cbl.data("inputname");
@@ -2276,7 +2275,6 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
             });
         
             this.application.select("a[data-confirm], a[data-confirm-selector]")
-                .not("rbl-template *") // not in templates
                 .not(".confirm-bound, .jquery-validate, .skip-confirm")
                 .addClass("confirm-bound")
                 .on("click.RBLe", function() { 
@@ -2521,25 +2519,10 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
 
             itemsToProcess.each(function () {
                 const item = $(this);                    
-                const templateParent = item.parent("rbl-template");
-
-                // If not contained in an rbl-template, or contained in the template currently being processed
-                if ( templateParent.length == 0 || templateParent[0] == container[0] ) {
-                    if ( templateParent.length != 0 ) {
-                        debugger; // Want to see what type of template causes this to be true, I can't think of case where this would be true
-                    }
-
-                    const templateId = item.attr('rbl-tid')!; // eslint-disable-line @typescript-eslint/no-non-null-assertion
-                    that.injectTemplate( item, templateId );
-
-                    // If not inside a template, mark it done 'forever', otherwise, don't mark this
-                    // so that each time a template processes, it'll process the item
-                    if ( templateParent.length == 0 ) {
-                        item.attr("data-katapp-template-injected", "true");
-                    }
-
-                    that.injectTemplatesWithoutSource(item, showInspector);
-                }
+                const templateId = item.attr('rbl-tid')!; // eslint-disable-line @typescript-eslint/no-non-null-assertion
+                that.injectTemplate( item, templateId );
+                item.attr("data-katapp-template-injected", "true");
+                that.injectTemplatesWithoutSource(item, showInspector);
             });
         }
 
@@ -2918,7 +2901,6 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
         handleVoidAnchors(): void {
             this.application.select("a[href='#']")
                 .not("[data-katapp-nonav='true']")
-                .not("rbl-template *")
                 .on("click.RBLe", function(e) {
                     e.preventDefault();
                 }).attr("data-katapp-nonav", "true");
@@ -2929,7 +2911,6 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
             if ( application.options.handlers != undefined ) {
                 // move events on templated output into targets after template is rendered
                 application.select("[rbl-tid][rbl-on]")
-                    .not("rbl-template *")
                     .each(function() {
                         const template = $(this);
                         const handlers = template.attr("rbl-on")!.split("|"); // eslint-disable-line @typescript-eslint/no-non-null-assertion
@@ -2995,7 +2976,6 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                 application.select("[rbl-on]")
                     .not("[rbl-tid]")
                     .not("[data-rblon-initialized='true']")
-                    .not("rbl-template *")
                     .each(function() {
                         const htmlContainer = $(this);
                         const handlers = htmlContainer.attr("rbl-on")!.split("|"); // eslint-disable-line @typescript-eslint/no-non-null-assertion
@@ -3021,7 +3001,6 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                 application.select("[rbl-on]")
                     .not("[rbl-tid]")
                     .not("[data-rblon-initialized='true']")
-                    .not("rbl-template *")
                     .each(function() {
                         const el = $(this);
                         const handlers = el.attr("rbl-on")!.split("|"); // eslint-disable-line @typescript-eslint/no-non-null-assertion
@@ -3509,7 +3488,6 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
             const application = this.application;
     
             application.select("[rbl-value]")
-                .not("rbl-template *") // Not sure I'd need these to filter out rbl-value elements inside templates because { } should be used for 'values'
                 .each(function () {
                     let el = $(this);
         
@@ -3622,7 +3600,6 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
             const application = this.application;
     
             application.select("[rbl-attr]")
-                .not("rbl-template *")
                 .each(function () {
                     let el = $(this);
         
@@ -3734,7 +3711,6 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
             //  </rbl-template>
             application.select("[rbl-source]", root)
                 .add(root.is("[rbl-source]") ? root : [] ) 
-                .not("rbl-template *") // not in templates
                 .each(function () {
                     const el = $(this);
     
@@ -3994,7 +3970,6 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
             const application = this.application;
     
             application.select("[" + attributeName + "]")
-                .not("rbl-template *") // not in templates
                 .each(function () {
                     const el = $(this);
                     const attributeValue = el.attr(attributeName);
@@ -4320,7 +4295,6 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
             const that: RBLeUtilities = this;
     
             application.select("[rbl-tid='result-table']")
-                .not("rbl-template *") // not in templates
                 .each(function ( i, r ) {
                     const tableName = r.getAttribute( "rbl-tablename" ) ?? r.getAttribute( "rbl-source" );
                     const templateCss = r.getAttribute( "data-css" );
@@ -4562,7 +4536,6 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
             }            
     
             this.application.select('[rbl-tid="chart-highcharts"], [rbl-template-type="katapp-highcharts"]')
-                .not("rbl-template *")
                 .each(function () {
                     highchartsBuilder.renderChart( $(this) );
                 });
@@ -4854,8 +4827,8 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                 const tableName = row.table;
                 const controlName = row["@id"];
                 
-                const dropdown = application.select("." + controlName).not("div").not("rbl-template *");
-                const listControl = application.select("div." + controlName + "[data-itemtype]").not("rbl-template *");
+                const dropdown = application.select("." + controlName).not("div");
+                const listControl = application.select("div." + controlName + "[data-itemtype]");
                 const listRows = this.getResultTable<ListRow>( tabDef, tableName );
     
                 if ( listControl.length === 1 ) {
@@ -5424,7 +5397,6 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
 
             application.select(selector, view)
                 .not('.rbl-help, [data-katapp-initialized="true"]')
-                .not("rbl-template *") // not in templates
                 .each( function() {
                     const isErrorValidator = $(this).hasClass('error-msg');
                     let placement = $(this).data('placement') || $(this).data('bs-placement') || "top";
@@ -5591,7 +5563,6 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
             // When helptip <a/> for checkboxes were  moved inside <label/>, attempting to click the help icon simply toggled
             // the radio/check.  This stops that toggle and lets the help icon simply trigger it's own click to show or hide the help.
             application.select('.checkbox label a[data-toggle], .checkbox label a[data-bs-toggle], .abc-checkbox label a[data-toggle], .abc-checkbox label a[data-bs-toggle]', view)
-                .not("rbl-template *") // not in templates
                 .not("[data-katapp-checkbox-tips-initialized='true']")
                 .on('click', function (e) {
                     e.stopPropagation();
@@ -5605,7 +5576,6 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
             const application = this.application;
 
             application.select('[rbl-navigate]', view)
-                .not("rbl-template *") // not in templates
                 .not('[data-katapp-initialized="true"]')
                 .each(function () {
                     if ( this.tagName == "A" ) {
@@ -5636,7 +5606,6 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
             const that = this;
             
             application.select('[rbl-app]', view)
-                .not("rbl-template *") // not in templates
                 .not('[data-katapp-initialized="true"]')
                 .each(function () {
                     const nestedApp = $(this);
@@ -5691,7 +5660,6 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
             const that = this;
             
             application.select('[rbl-modal]', view)
-                .not("rbl-template *") // not in templates
                 .not('[data-katapp-initialized="true"]')
                 .each(function () {
                     if ( this.tagName == "A" ) {
@@ -5890,7 +5858,6 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
             const application = this.application;
 
             application.select('[rbl-action-link]', view)
-                .not("rbl-template *") // not in templates
                 .not('[data-katapp-initialized="true"]')
                 .each(function () {
                     if ( $(this).attr("href") == undefined ) {
@@ -6014,7 +5981,6 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
 
             // Hook up event handlers only when *not* already initialized            
             application.select('[rbl-tid="carousel"],[rbl-template-type="katapp-carousel"]', view)            
-                .not("rbl-template *") // not in templates
                 // .not('[data-katapp-initialized="true"]')
                 .each(function () {
                     const el = $(this);
@@ -6059,7 +6025,6 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
             const that = this;
 
             this.application.select('[rbl-tid="input-checkbox"],[rbl-template-type="katapp-checkbox"]', container)
-                .not("rbl-template *") // not in templates
                 .not('[data-katapp-initialized="true"]')
                 .each(function () {
                     const el = $(this);
@@ -6115,7 +6080,6 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
             const application = this.application;
 
             application.select('[rbl-tid="input-fileupload"],[rbl-template-type="katapp-fileupload"]', container)
-                .not("rbl-template *") // not in templates
                 .not('[data-katapp-initialized="true"]')
                 .each(function () {
                     const el = $(this);
@@ -6334,7 +6298,6 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
             const that = this;
 
             application.select('[rbl-tid="input-textbox"],[rbl-template-type="katapp-textbox"]', container)
-                .not("rbl-template *") // not in templates
                 .not('[data-katapp-initialized="true"]')
                 .each(function () {
                     const el = $(this);
@@ -6611,7 +6574,6 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
             const that = this;
 
             this.application.select('[rbl-tid="input-radiobuttonlist"],[rbl-template-type="radiobuttonlist"],[rbl-tid="input-checkboxlist"],[rbl-template-type="checkboxlist"]', container)
-                .not("rbl-template *") // not in templates
                 .not('[data-katapp-initialized="true"]')
                 .each( function() {
                     const el = $(this);
@@ -6671,7 +6633,6 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
         private processDropdowns( container: JQuery<HTMLElement> ): void {
             const dropdowns = 
                 this.application.select('[rbl-tid="input-dropdown"],[rbl-template-type="katapp-dropdown"]', container)
-                    .not("rbl-template *") // not in templates
                     .not('[data-katapp-initialized="true"]');
 
             const selectPickerAvailable = typeof $.fn.selectpicker === "function";
@@ -6789,7 +6750,6 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
 
             // Only need to process data-* attributes here because RBLeUtilities.processResults will push out 'configuration' changes
             this.application.select('[rbl-tid="input-slider"],[rbl-template-type="katapp-slider"]', container)
-                .not("rbl-template *") // not in templates
                 .not('[data-katapp-initialized="true"]')
                 .each( function() {
                     const el = $(this);

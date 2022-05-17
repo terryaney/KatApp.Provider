@@ -740,69 +740,6 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
             this.init( KatApp.extend({}, this.options, options) );
         }
 
-        redraw( readViewOptions?: boolean ): void {
-            // Need to reset these so updated views are downloaded
-            $("rbl-katapps > rbl-templates").remove(); // remove templates
-            $.fn.KatApp.templateFilesUsedByAllApps = {};
-            $.fn.KatApp.templatesInjectingScript = 
-                $.fn.KatApp.templatesInjectingScript
-                    .filter( key => !key.startsWith( this.id ) );
-            
-            // Remove any templates from nested applications, don't use .select()
-            // method because want to get all nested items no matter what
-            $("[rbl-application-id]", this.element).each(function() {
-                const id = $(this).attr("rbl-application-id")!;
-                $.fn.KatApp.templatesInjectingScript = 
-                    $.fn.KatApp.templatesInjectingScript
-                        .filter( key => !key.startsWith( id ) );
-            });
-
-            // If || true is removed...update documentation to add the parameter
-            if ( readViewOptions || true ) {
-                // Clear these out and read from the view
-                this.options.calcEngines = undefined;
-                this.options.viewTemplates = undefined;
-            }
-            
-            const that = this;
-
-            const isConfigureUI = that.calculationInputs?.iConfigureUI == 1;
-
-            const redrawInit = function(): void {
-                // From here down, some duplication from calculate(), not sure if make one
-                // private method that is used with optional param to 'use existing results'
-                // is better, but for now just putting this.
-                //
-                // NOTE: Below in error handler, I don't clear out results because if developer
-                // is calling this, presummably results worked previously and they just updated
-                // their view and want to test that.
-
-                const cancelCalculation = !that.ui.triggerEvent( "onCalculateStart", that );
-
-                if ( cancelCalculation ) {
-                    that.ui.triggerEvent( "onCalculateEnd", that );
-                    return;
-                }
-
-                that.ui.triggerEvent( "onResultsProcessing", that.results, that.options, that );
-
-                that.processResults(that.options);
-
-                if ( isConfigureUI ) {
-                    that.ui.triggerEvent( "onConfigureUICalculation", that.results, that.options, that );
-                }
-                that.ui.triggerEvent( "onCalculation", that.results, that.options, that );
-
-                that.ui.triggerEvent( "onCalculateEnd", that );
-                
-                that.element.off("onInitialized.RBLe", redrawInit);
-            };
-
-            // This returns right away, so need to hook up the event handler above to process everything 
-            // after view is loaded.  Don't run new calcs b/c need to just use existing results.
-            this.rebuild({ runConfigureUICalculation: false, onInitialized: redrawInit });
-        }
-
         // This was needed for 'redraw' method which simply wants to 'restart' the load
         // of the view and use last 'calculation' to re-render (it is a method for UI developers)
         // I couldn't use destroy because it deleted the KatApp and only the KatAppPlugIn 'sets' that
@@ -4186,37 +4123,6 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
             );
         }
     
-        processRblDatas( tabDef: TabDef ): void {
-            // Legacy, might not be needed
-            let dataRows = this.getResultTable<RBLeRowWithId>( tabDef, "ejs-rbl-data" );
-            if ( dataRows.length == 0 ) {
-                dataRows = this.getResultTable<RBLeRowWithId>( tabDef, "rbl-data" );
-            }
-            const application = this.application;
-    
-            if ( dataRows.length > 0 ) {
-                const propertyNames = Object.keys(dataRows[ 0 ]).filter( k => !k.startsWith( "@" ) );
-    
-                dataRows.forEach( row => {
-                    const selector = application.ui.getJQuerySelector( row["@id"] );
-    
-                    if ( selector !== undefined ) {
-                        const el = application.select(selector);
-                        propertyNames.forEach( a => {
-                            const value = row[ a ];
-    
-                            if (value ?? "" !== "") {
-                                el.data("rbl-" + a, value);
-                            }
-                            else {
-                                el.removeData("rbl-" + a);
-                            }
-                        });
-                    }
-                });
-            }
-        }
-    
         processRBLSkips( tabDef: TabDef ): void {
             // Legacy, might not be needed (what class do you want me to drop in there)
             let skipRows = this.getResultTable<RBLeRowWithId>( tabDef, "rbl-skip" );
@@ -4999,8 +4905,6 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                     const outputRows = this.getResultTable<HtmlContentRow>( tabDef, "ejs-output" )
                     outputRows.forEach( r => { this.createHtmlFromResultRow( r, true ); });
                     */
-
-                    this.processRblDatas( tabDef );
                 });
     
                 // Run all *pull* logic outside of tabdef loop, this has to be after all markup

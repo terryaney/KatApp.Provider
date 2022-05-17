@@ -221,8 +221,6 @@ interface KatAppPlugInInterface extends KatAppPlugInShimInterface {
     refreshCalcEngine: ()=> void;
     // $("selector").KatApp("traceCalcEngine"); - return calc engine tracing from *next successful* calc for all selector items
     traceCalcEngine: ()=> void;
-    // Redraw/re-render the view without triggering a calculation (speeds up view development time)
-    redraw: ( readViewOptions?: boolean )=> void;
 }
 
 interface CalcEngine {

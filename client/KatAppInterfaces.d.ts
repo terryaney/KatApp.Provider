@@ -250,6 +250,25 @@ interface KatAppResourceResult extends KatAppResource {
 interface ResourceResults { 
     [ key: string ]: string; 
 }
+interface TemplateFile { 
+    Name: string;
+
+    // If multiple applications are rendered on one page, this object stores unique list of templates requested
+    // so that if two applications request the same template but one is still waiting for a download, the second
+    // application registers a callback and will be notified when the content is ready.
+    Requested: boolean; 
+    Data?: string; 
+    Callbacks: Array<( errorMessage: string | undefined )=> void>; 
+    
+    Templates: Record<string, Template>;
+}
+interface Template { 
+    Name: string;
+    ContainerName?: string;
+    Content: JQuery;
+    // Only want to inject script from templates one time...so this list keeps track of whether or not it has been added
+    ApplicationsInjected: Record<string, string>;
+}
 
 interface RegisterDataOptions
 {

@@ -34,7 +34,6 @@ interface PromiseStatus {
 }
 interface Function {
     plugInShims?: KatAppPlugInShimInterface[]; // applications when they are in 'shim' format
-    applications?: KatAppPlugInShimInterface[]; // applications when they are in 'real' format
     reset(): void;
     applicationFactory( id: string, element: JQuery, options: KatAppOptions): KatAppPlugInShimInterface;
     // Debugging...let's me restore the original shim factory if I'm going to rebuild UI or script locations
@@ -44,18 +43,8 @@ interface Function {
     getResource( url: string, tryLocalServer: boolean, isInManagementSite: boolean, folder: string, name: string, version: string ): GetResourceXHR;
     ping( url: string, callback: ( responded: boolean, error?: string | Event )=> void ): void;
 
-    templatesInjectingScript: (string)[];
+    resourceTemplates: Record<string, TemplateFile>;
 
-    // If multiple applications are rendered on one page, this object stores unique list of templates requested
-    // so that if two applications request the same template but one is still waiting for a download, the second
-    // application registers a callback and will be notified when the content is ready.
-    templateFilesUsedByAllApps: { 
-        [ key: string ]: { 
-            requested: boolean; 
-            data?: string; 
-            callbacks: Array<( errorMessage: string | undefined )=> void>; 
-        };
-    };
     // When template content is being injected inside a view, if calls are made to templateOn, this variable
     // must/will be set so that the event handler being registered is correctly hooked to the view containing
     // the templated content.

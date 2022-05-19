@@ -2523,7 +2523,13 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
             // selector attribute, bootstrap crashes and doesn't process rest of the 'valid' toggles.  To fix,
             // disable bootstrap handling *in the template* by putting _ after toggle, then it is turned when
             // the rendered template content is injected.
+
+            const thisClassCss = ".katapp-" + this.application.id;
+
             let decodedContent = content
+                .replace( /{thisClass}/g, thisClassCss )
+                .replace( /\.thisClass/g, thisClassCss )
+                .replace( /thisClass/g, thisClassCss )
                 .replace( / src_=/g, " src=") // changed templates to have src_ so I didn't get browser warning about 404
                 .replace( / id_=/g, " id=") // changed templates to have id_ so I didn't get browser warning about duplicate IDs inside *template markup*
                 .replace( /-toggle_=/g, "-toggle=" ) // changed templates to have -toggle_ so that BS didn't 'process' items that were in templates
@@ -2947,11 +2953,14 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                 }).attr("data-katapp-nonav", "true");
         }
 
-        bindRblOnHandlers(): void {
+        bindRblOnHandlers(container?: JQuery<HTMLElement>): void {
             const application = this.application;
             if ( application.options.handlers != undefined ) {
+                // If it is popover, we can't scope it to application
+                const isPopover = container != undefined && container.attr("data-katapp-popover") == "true";
+
                 // move events on templated output into targets after template is rendered
-                application.select("[rbl-tid][rbl-on]")
+                application.select("[rbl-tid][rbl-on]", container)
                     .each(function() {
                         const template = $(this);
                         const handlers = template.attr("rbl-on")!.split("|"); // eslint-disable-line @typescript-eslint/no-non-null-assertion
@@ -3011,12 +3020,16 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                             });
                     });
 
+                let items = isPopover
+                    ? $('[rbl-on]', container)
+                    : application.select("[rbl-tid]", container);
+
                 // If a handler was put on an html container with a selector but the container was *not*
                 // a template, the handlers were not moved to targets in above method, so have to move them
-                // to the intended targets in this loop
-                application.select("[rbl-on]")
+                // to the intended targets in this loop.  NOTE: The move process is only done once...
+                items
                     .not("[rbl-tid]")
-                    .not("[data-rblon-initialized='true']")
+                    .not("[data-rblon-parent-initialized='true']")
                     .each(function() {
                         const htmlContainer = $(this);
                         const handlers = htmlContainer.attr("rbl-on")!.split("|"); // eslint-disable-line @typescript-eslint/no-non-null-assertion
@@ -3035,11 +3048,16 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                                         const currentHandler = target.attr("rbl-on");
                                         target.attr("rbl-on", currentHandler == undefined ? targetHandler : currentHandler + "|" + targetHandler);
                                     });
+                                    htmlContainer.attr("data-rblon-parent-initialized", "true");
                                 }
                             });
                     });
 
-                application.select("[rbl-on]")
+                items = isPopover
+                    ? $('[rbl-on]', container)
+                    : application.select("[rbl-on]", container);
+                
+                items
                     .not("[rbl-tid]")
                     .not("[data-rblon-initialized='true']")
                     .each(function() {
@@ -3393,55 +3411,6 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
             }
     
             return tabDef[tableKey] as Array<T> ?? [];
-        }
-    
-        createHtmlFromResultRow( resultRow: HtmlContentRow, processBlank: boolean ): void {
-            let content = resultRow.content ?? resultRow.html ?? resultRow.value ?? "";
-            const selector = 
-                this.application.ui.getJQuerySelector( resultRow.selector ) ?? 
-                this.application.ui.getJQuerySelector( resultRow["@id"] ) ?? "";
-    
-            if (( processBlank || content.length > 0 ) && selector.length > 0) {
-    
-                let target = this.application.select(selector);
-    
-                if ( target.length > 0 ) {
-    
-                    if ( target.length === 1 ) {
-                        target = this.application.ui.getAspNetCheckboxLabel( target ) ?? target;
-                    }
-    
-                    if ( content.startsWith("&") ) {
-                        content = content.substr(1);
-                    }
-                    else {
-                        target.empty();
-                    }
-    
-                    if ( content.length > 0 ) {
-                        // Might have to change this at some point to look for rbl-tid= in string, and then enclose content
-                        // in <div>+content+</div> then get the just the innerHTML.
-                        if ( content.startsWith("<") && content.endsWith(">") ) {                            
-                            const el = $(content);
-                            const templateId = el.attr("rbl-tid");
-
-                            // UPDATE: Continuing comment above, this looks to only process 'control' templates if only one returned in markup
-                            // row, but probably need to change to look for any items in el.  Then additionally, move 'inline' to templates as well
-                            // but for now, don't think anyone uses this, was more of a POC concept.
-                            if (templateId !== undefined && templateId != "inline" && el.attr("rbl-source") == undefined) {
-                                //Replace content with template processing, using data-* items in this pass
-                                this.application.ui.injectTemplate( el, templateId );
-                            }
-                            
-                            // Append 'templated' content
-                            el.appendTo(target);
-                        }
-                        else {
-                            target.append(content);
-                        }
-                    }
-                }
-            }
         }
     
         getRblSelectorValue( tabDef: TabDef | undefined, defaultTableName: string, selector: string ): string | undefined {
@@ -4901,14 +4870,36 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                         markUpRows = this.getResultTable<HtmlContentRow>( tabDef, "rbl-markup" )
                     }
 
-                    markUpRows.forEach( r => { this.createHtmlFromResultRow( r, false ); });
-                    
-                    /*
-                    // Legacy support, hopefully ejs-output would be removed from CalcEngine
-                    // to speed up processing
-                    const outputRows = this.getResultTable<HtmlContentRow>( tabDef, "ejs-output" )
-                    outputRows.forEach( r => { this.createHtmlFromResultRow( r, true ); });
-                    */
+                    markUpRows.forEach( resultRow => { 
+                        const processBlank = false;
+                        let content = resultRow.content ?? resultRow.html ?? resultRow.value ?? "";
+                        const selector = 
+                            this.application.ui.getJQuerySelector( resultRow.selector ) ?? 
+                            this.application.ui.getJQuerySelector( resultRow["@id"] ) ?? "";
+                
+                        if (( processBlank || content.length > 0 ) && selector.length > 0) {
+                
+                            let target = this.application.select(selector);
+                
+                            if ( target.length > 0 ) {
+                
+                                if ( target.length === 1 ) {
+                                    target = this.application.ui.getAspNetCheckboxLabel( target ) ?? target;
+                                }
+                
+                                if ( content.startsWith("&") ) {
+                                    content = content.substr(1);
+                                }
+                                else {
+                                    target.empty();
+                                }
+                
+                                if ( content.length > 0 ) {
+                                    target.append(content);
+                                }
+                            }
+                        }
+                    });
                 });
     
                 // Run all *pull* logic outside of tabdef loop, this has to be after all markup
@@ -4916,6 +4907,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                 // in markup that has to be processed
                 application.trace( "Processing all results 'pull' logic", TraceVerbosity.Normal );
 
+                this.application.ui.injectTemplatesWithoutSource(this.application.element, showInspector);
                 this.processRblSources( this.application.element, showInspector );
                 this.processRblValues( showInspector );
                 this.processRblAttributes( showInspector );
@@ -5488,8 +5480,8 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                         title: function () {
                             const  titleSelector = $(this).data('content-selector');
                             if (titleSelector != undefined) {
-                                const title = application.select(titleSelector + "Title").text();
-                                if (title != undefined) {
+                                const title = application.select(titleSelector + "Title").html();
+                                if (( title ?? "" ) != "" ) {
                                     return title;
                                 }
                             }                    
@@ -5533,8 +5525,13 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                             .on('inserted.bs.popover', function (e) {
                                 const templateId = "#" + $(e.target).attr("aria-describedby");
                                 const currentPopover = $(templateId);
+                                currentPopover.attr("data-katapp-popover", "true");
+
                                 $("[rbl-action-link]", currentPopover).attr("data-katapp-initialized", "false");
+                                $("[rbl-on]", currentPopover).attr("data-rblon-initialized", "false");
+
                                 application.templateBuilder.processActionLinks(currentPopover);
+                                application.ui.bindRblOnHandlers(currentPopover);
                             });
                     }
                                 
@@ -5881,7 +5878,13 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
             const that = this;
             const application = this.application;
 
-            application.select('[rbl-action-link]', view)
+            const isPopover = container != undefined && container.attr("data-katapp-popover") == "true";
+
+            const links = isPopover
+                ? $('[rbl-action-link]', view)
+                : application.select('[rbl-action-link]', view);
+
+            links
                 .not('[data-katapp-initialized="true"]')
                 .each(function () {
                     if ( $(this).attr("href") == undefined ) {
@@ -6822,7 +6825,9 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
         $.fn.KatApp.sharedData = { requesting: false, callbacks: [] };
         // For now, leave inputs to pass assigned to what it was
         // $.fn.KatApp.inputsToPassOnNavigate = undefined;
-
+        
+        // remove templates
+        $("rbl-katapps > rbl-resource").remove();
         $.fn.KatApp.resourceTemplates = {};
     }
 

@@ -148,7 +148,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                 }
             });
 
-            const inlineTemplates = $.fn.KatApp.resourceTemplates[ "_INLINE" ];
+            const inlineTemplates = this.getResourceTemplate( "_INLINE" );
 
             if ( inlineTemplates != undefined ) {
                 Object.keys(inlineTemplates.Templates).forEach( key => {
@@ -172,7 +172,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
             //          the ID will never exist
             if ( applicationsToRemove.filter( a => a.ID != undefined ).length > 0 ) {
                 Object.keys($.fn.KatApp.resourceTemplates).forEach( keyFile => {
-                    if ( keyFile != "_INLINE" ) {
+                    if ( keyFile != "_INLINE".toLowerCase() ) {
                         const resourceTemplates = $.fn.KatApp.resourceTemplates[ keyFile ].Templates;
                         Object.keys(resourceTemplates).forEach( keyTemplate => {
                             const template = resourceTemplates[ keyTemplate ];
@@ -5777,6 +5777,16 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
             
             hostApplication.element.after( modal );
 
+            const showModal = function() {
+                if (hostApplication.bootstrapVersion==5) {
+                    modalBS5 = bootstrap.Modal.getOrCreateInstance(modal[0]);
+                    modalBS5.show();
+                }
+                else {
+                    modal.modal({ show: true });
+                }                               
+            };
+
             const closeModal = function(message?: string ) {
                 if ( modalApp == undefined ) return;
 
@@ -5787,7 +5797,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                     modal.modal('hide');
                 }                                                                    
                 modal.remove();
-                
+
                 const applicationsToRemove: { View: string | undefined, ID: string | undefined }[] = [];
                 // Remove any templates from nested applications, don't use .select()
                 // method because want to get all nested items no matter what
@@ -5853,16 +5863,6 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                 
             delete modalAppOptions["calcEngines"]; // So it doesn't use parent CE
             
-            const showModal = function() {
-                if (hostApplication.bootstrapVersion==5) {
-                    modalBS5 = new bootstrap.Modal(modal[0]);
-                    modalBS5.show();
-                }
-                else {
-                    modal.modal({ show: true });
-                }                               
-            };
-
             $(".katapp-modal-app", modal)
                 .on("onInitialized.RBLe", function (e, application) {
                     modalApp = application as KatAppPlugIn;

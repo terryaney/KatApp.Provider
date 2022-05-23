@@ -94,10 +94,10 @@ interface KatAppOptions
     onCalculationErrors?: (this: HTMLElement, key: string, message: string, exception: Error, calcOptions: KatAppOptions, application: KatAppPlugInInterface)=> void;
     onCalculateEnd?: (this: HTMLElement, application: KatAppPlugInInterface )=> void;
 
-    onActionStart?: (this: HTMLElement, commandName: string, submitData: JSON, application: KatAppPlugInInterface, currentOptions: KatAppOptions, actionLink: JQuery<HTMLElement>)=> void;
-    onActionResult?: (this: HTMLElement, commandName: string, result: JSON | undefined, application: KatAppPlugInInterface, currentOptions: KatAppOptions, actionLink: JQuery<HTMLElement>)=> void;
-    onActionFailed?: (this: HTMLElement, commandName: string, exception: JSON, application: KatAppPlugInInterface, currentOptions: KatAppOptions, actionLink: JQuery<HTMLElement>)=> void;
-    onActionComplete?: (this: HTMLElement, commandName: string, application: KatAppPlugInInterface, currentOptions: KatAppOptions, actionLink: JQuery<HTMLElement>)=> void;
+    onActionStart?: (this: HTMLElement, endpoint: string, submitData: JSON, application: KatAppPlugInInterface, currentOptions: KatAppOptions, actionLink: JQuery<HTMLElement>)=> void;
+    onActionResult?: (this: HTMLElement, endpoint: string, result: JSON | undefined, application: KatAppPlugInInterface, currentOptions: KatAppOptions, actionLink: JQuery<HTMLElement>)=> void;
+    onActionFailed?: (this: HTMLElement, endpoint: string, exception: JSON, application: KatAppPlugInInterface, currentOptions: KatAppOptions, actionLink: JQuery<HTMLElement>)=> void;
+    onActionComplete?: (this: HTMLElement, endpoint: string, application: KatAppPlugInInterface, currentOptions: KatAppOptions, actionLink: JQuery<HTMLElement>)=> void;
 
     onModalAppConfirm?: (this: HTMLElement, hostApplication: KatAppPlugInInterface, modalLink: JQuery<HTMLElement>, dismiss: ( message: string | undefined )=> void, enable: ()=> void)=> void;
     onModalAppCancel?: (this: HTMLElement, hostApplication: KatAppPlugInInterface, modalLink: JQuery<HTMLElement>, dismiss: ( message: string | undefined )=> void, enable: ()=> void)=> void;

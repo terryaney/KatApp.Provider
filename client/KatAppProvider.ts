@@ -1979,7 +1979,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
             return true;
         }
 
-        apiAction( commandName: string, options: KatAppOptions, actionOptions: KatAppActionOptions, actionLink: JQuery<HTMLElement> | undefined, done?: ( successResponse: KatAppActionResult | undefined, failureResponse: {} | undefined )=> void ): void {
+        apiAction( endpoint: string, options: KatAppOptions, actionOptions: KatAppActionOptions, actionLink: JQuery<HTMLElement> | undefined, done?: ( successResponse: KatAppActionResult | undefined, failureResponse: {} | undefined )=> void ): void {
             if ( !this.ensureApplicationValid() ) {
                 if ( done != undefined ) {
                     done(
@@ -2002,7 +2002,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
             that.rble.initializeValidationSummaries();
             this.showAjaxBlocker();
         
-            let url = "api/" + commandName;
+            let url = "api/" + endpoint;
             const serviceUrlParts = that.options.sessionUrl?.split( "?" );
 
             if ( serviceUrlParts != undefined && serviceUrlParts.length === 2 ) {
@@ -2011,12 +2011,10 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
             
             let errorResponse: KatAppActionResult;
             let successResponse: KatAppActionResult | undefined = undefined;
-            // No one was using this yet, not sure I need it
-            // this.ui.triggerEvent( "onActionStart", commandName, data, this, actionLink );
 
             const data = that.getEndpointSubmitData(options, actionOptions);
 
-            that.ui.triggerEvent( "onActionStart", commandName, data, that, data.Configuration, actionLink );
+            that.ui.triggerEvent( "onActionStart", endpoint, data, that, data.Configuration, actionLink );
 
             // Couldn't figure out how to model bind JObject or Dictionary, so hacking with this
             data[ "inputTablesRaw" ] = data.InputTables != undefined ? JSON.stringify( data.InputTables ) : undefined;
@@ -2038,21 +2036,21 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                 that.rble.finalizeValidationSummaries();
 
                 if ( errors.length > 0 ) {
-                    console.group("Unable to process " + commandName + ": errorResponse");
+                    console.group("Unable to process " + endpoint + ": errorResponse");
                     console.log(errorResponse);
                     console.groupEnd();
-                    console.group("Unable to process " + commandName + ": errors");
+                    console.group("Unable to process " + endpoint + ": errors");
                     console.log( errors );
                     console.groupEnd();
 
-                    that.ui.triggerEvent( "onActionFailed", commandName, errorResponse, that, data.Configuration, actionLink );
+                    that.ui.triggerEvent( "onActionFailed", endpoint, errorResponse, that, data.Configuration, actionLink );
                 }
                 else {
-                    that.ui.triggerEvent( "onActionResult", commandName, successResponse, that, data.Configuration, actionLink );
+                    that.ui.triggerEvent( "onActionResult", endpoint, successResponse, that, data.Configuration, actionLink );
                 }
 
                 that.hideAjaxBlocker();
-                that.ui.triggerEvent( "onActionComplete", commandName, that, data.Configuration, actionLink );
+                that.ui.triggerEvent( "onActionComplete", endpoint, that, data.Configuration, actionLink );
 
                 if ( done != undefined ) {
                     done( successResponse, errorResponse);
@@ -2107,9 +2105,9 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                             });
                         }
 
-                        delete that.endpointRBLeInputsCache[ commandName ];
+                        delete that.endpointRBLeInputsCache[ endpoint ];
                         if ( successResponse.RBLeInputs != undefined ) {
-                            that.endpointRBLeInputsCache[ commandName ] = successResponse.RBLeInputs;
+                            that.endpointRBLeInputsCache[ endpoint ] = successResponse.RBLeInputs;
                         }
 
                         if ( runCalculate ) {
@@ -2124,7 +2122,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                 },
                 function( xhr ) {
                     errorResponse = xhr[ "responseBinary" ] as KatAppActionResult;
-                    delete that.endpointRBLeInputsCache[ commandName ];
+                    delete that.endpointRBLeInputsCache[ endpoint ];
 
                     if ( errorResponse != undefined ) {
                         if ( errorResponse.Validations != undefined ) {
@@ -2922,7 +2920,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
             try {
                 application.trace("Triggering " + eventName + ": Starting...", TraceVerbosity.Diagnostic);
                 const event = jQuery.Event( eventName + ".RBLe" );
-                application.element.trigger( event, args);                    
+                application.element.trigger( event, args);
                 application.trace("Triggering " + eventName + ": Complete", TraceVerbosity.Diagnostic);
 
                 if ( !( ( event as any ).result ?? true ) || event.isDefaultPrevented() ) {
@@ -5757,9 +5755,9 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                 $('<div class="modal fade katappModalAppDialog" tabindex="-1" role="dialog" ' + bsDataAttributePrefix + 'keyboard="false" ' + bsDataAttributePrefix + 'backdrop="static">\
                     <div class="modal-dialog modal-dialog-centered modal-xl">\
                         <div class="modal-content">\
-                            <div class="modal-header d-none">\
-                                <h5 class="modal-title d-none hidden">Modal title</h5>\
-                                <button type="button" class="btn-close aria-label="Close"></button>\
+                            <div class="modal-header d-none hidden">\
+                                <h5 class="modal-title">Modal title</h5>\
+                                <button type="button" class="btn-close d-none hidden" aria-label="Close"></button>\
                             </div>\
                             <div class="modal-body">\
                                 <div class="katapp-modal-app"></div>\
@@ -5773,15 +5771,19 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                 </div>');
 
             if ( labelTitle != undefined ) {
-                $(".modal-title", modal).html(labelTitle).removeClass("d-none");
+                $(".modal-title", modal).html(labelTitle);
+                $(".modal-header", modal).removeClass("d-none hidden");
             }
             if ( !showCancel ) {
-                $(".cancelButton", modal).remove();
+                $(".cancelButton, .btn-close", modal).hide();
             }
             
             hostApplication.element.after( modal );
 
-            const showModal = function() {
+            const showModal = function(childApplication: KatAppPlugIn) {
+                modalApp = childApplication;
+                hostApplication.ui.triggerEvent( "onModalAppInitialized", applicationId, hostApplication, modalApp, actionLink );
+
                 if (hostApplication.bootstrapVersion==5) {
                     modalBS5 = bootstrap.Modal.getOrCreateInstance(modal[0]);
                     modalBS5.show();
@@ -5839,6 +5841,11 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
             $('.cancelButton, .btn-close', modal).on("click.ka", function (e) {
                 e.preventDefault();
                 $(this).prop("disabled", true);
+                
+                if ( $(this).attr("data-katapp-error") == "true" ) {
+                    closeModal( undefined );
+                    return;
+                }
 
                 if ( modalApp != undefined) {
                     const cancelModal = function(message?: string ) {
@@ -5868,17 +5875,37 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
             delete modalAppOptions["calcEngines"]; // So it doesn't use parent CE
             
             $(".katapp-modal-app", modal)
-                .on("onInitialized.RBLe", function (e, application) {
-                    modalApp = application as KatAppPlugIn;
-                    hostApplication.ui.triggerEvent( "onModalAppInitialized", applicationId, hostApplication, modalApp, actionLink );
-
-                    if ( modalApp.options.calcEngines == undefined || !( modalApp.options.runConfigureUICalculation ?? true )) {
-                        showModal();
+                .on("onInitialized.RBLe", function (e, application: KatAppPlugIn) {
+                    if ( application.options.calcEngines == undefined || !( application.options.runConfigureUICalculation ?? true )) {
+                        showModal(application as KatAppPlugIn);
                     }
                 })
                 .on( "onConfigureUICalculation.RBLe", function(e, calculationResults_, calcOptions_, childApplication) { 
-                    showModal();
+                    showModal(childApplication as KatAppPlugIn);
                 } )
+                .on("onUnexpectedError.RBLe", function(e, ex) {
+                    // KatApp loaded, but error occurred during processing and don't even have results to show/hide things appropriately
+                    console.log("KatApp Modal Exception", ex);
+
+                    // Should probably have a backup in case no validation summary template is provided
+                    var summaryTemplate = hostApplication.ui.getTemplate("validation-summary", {}, false)!.TemplatedContent;
+                    var summary = $(summaryTemplate);
+
+                    $("ul", summary).append("<li>An unexpected error has occurred.  Please try again and if the problem persists, contact technical support.</li>");
+                    $(".modal-body", modal).children().remove();
+                    $(".modal-body", modal).append(summary);
+                    $('.continueButton', modal).remove();
+                    $('.cancelButton, .btn-close', modal)
+                        .show()
+                        .attr("data-katapp-error", "true");
+
+                    summary.show();
+                })
+                .on("onCalculationErrors.RBLe", function (event, key, message, ex, options, application: KatAppPlugIn) {
+                    if (key == "SubmitCalculation.ConfigureUI") {
+                        application.ui.triggerEvent("onUnexpectedError", ex)
+                    }
+                })
                 .KatApp( modalAppOptions );
         }
 

@@ -148,18 +148,21 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                 }
             });
 
-            const inlineTemplates = $.fn.KatApp.resourceTemplates[ "_INLINE" ].Templates;
-            Object.keys(inlineTemplates).forEach( key => {
-                const inlineTemplate = inlineTemplates[ key ];
-                applicationsToRemove.forEach( a => {
-                    const viewName = a.View;
-                    if ( viewName != undefined ) {
-                        if ( inlineTemplate.ContainerName == viewName.toLowerCase() ) {
-                            delete inlineTemplates[ key ];
+            const inlineTemplates = $.fn.KatApp.resourceTemplates[ "_INLINE" ];
+
+            if ( inlineTemplates != undefined ) {
+                Object.keys(inlineTemplates.Templates).forEach( key => {
+                    const inlineTemplate = inlineTemplates.Templates[ key ];
+                    applicationsToRemove.forEach( a => {
+                        const viewName = a.View;
+                        if ( viewName != undefined ) {
+                            if ( inlineTemplate.ContainerName == viewName.toLowerCase() ) {
+                                delete inlineTemplates.Templates[ key ];
+                            }
                         }
-                    }
-                });
-            });
+                    });
+                });   
+            }
 
             // Loop remaining 'template file' resources and if any templates have been
             // injected by the application to remove, remove reference so that next/first time 
@@ -726,7 +729,9 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                         that.trace( "Calling configureUI calculation...", TraceVerbosity.Detailed );
                         that.configureUI();
                     }
-                    else if ( that.options.manualResults != undefined ) {
+                    else if ( that.options.manualResults != undefined && ( that.options.calcEngines == null || that.options.calcEngines.length == 0 ) ) {
+                        // If there are calcEngines, but view has configureUI turned off, don't want to process
+                        // this yet.
                         that.results = that.buildResults( [], that.options );
                         that.processResults( that.options );
                     }

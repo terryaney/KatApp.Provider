@@ -5742,6 +5742,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
             const hostApplication = this.application;
             const labelCancel = actionLink.data("label-cancel") ?? "Cancel";
             const labelContinue = actionLink.data("label-continue") ?? "Continue";
+            const labelTitle = actionLink.data("label-title");
             const showCancel = actionLink.data("show-cancel") ?? true;
 
             const isBootstrap5 = this.application.bootstrapVersion == 5;
@@ -5771,6 +5772,9 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                     </div>\
                 </div>');
 
+            if ( labelTitle != undefined ) {
+                $(".modal-title", modal).html(labelTitle).removeClass("d-none");
+            }
             if ( !showCancel ) {
                 $(".cancelButton", modal).remove();
             }

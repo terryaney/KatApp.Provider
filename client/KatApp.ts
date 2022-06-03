@@ -84,12 +84,12 @@ class KatApp
                 : source[key];
 
             // Always do deep copy
-            if ( typeof value === "object" && !Array.isArray( value ) ) {
+            if ( typeof value === "object" && !Array.isArray( value ) && !( value instanceof jQuery ) && key != "modalAppOptions" ) {
                 if ( target[key] === undefined || typeof target[key] !== "object" )
                 {
                     target[key] = {};
                 }
-                this.copyProperties( target[key], value );
+                this.copyProperties( target[key], value, replacer );
             }
             else {
                 target[key] = value;

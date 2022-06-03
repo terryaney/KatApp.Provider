@@ -664,8 +664,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                 }
             };
 
-            const injectTemplates = function(): void {
-                    
+            const injectTemplates = function(): void {                    
                 if ( resourceResults != null ) {
                     // For the templates *this app* downloaded, inject them into markup                        
                     Object.keys(resourceResults).forEach( r => {
@@ -702,8 +701,15 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                 if ( pipelineError === undefined ) {
 
                     if ( viewElement != undefined ) {
-                        that.element.empty().append( viewElement );
-                        that.ui.triggerEvent( "onInitializing", that, that.options );
+                        that.element.empty();
+
+                        if ( that.options.modalAppOptions != null ) {
+                            that.createModalApplication( that.options.modalAppOptions, viewElement );
+                        }
+                        else {
+                            that.element.append( viewElement );
+                            that.triggerEvent( "onInitializing", that, that.options );
+                        }
                     }
 
                     // Update options.viewTemplates just in case someone is looking at them
@@ -723,7 +729,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                     that.ui.handleVoidAnchors();
                     that.ui.bindRblOnHandlers();
 
-                    that.ui.triggerEvent( "onInitialized", that );
+                    that.triggerEvent( "onInitialized", that );
 
                     if ( that.options.runConfigureUICalculation ) {
                         that.trace( "Calling configureUI calculation...", TraceVerbosity.Detailed );
@@ -760,6 +766,237 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
 
             // Start the pipeline
             initPipeline( 0 );
+        }
+
+        createModalApplication( modalAppOptions: ModalAppOptions, viewElement: JQuery<HTMLElement> ) {
+            // If NaN then not passed in options, so look in viewElement
+            const isBootstrap5 = isNaN(this.bootstrapVersion)
+                ? +($("rbl-config", viewElement).attr("bootstrap") ?? "3") == 5
+                : this.bootstrapVersion == 5;
+
+            const bsDataAttributePrefix = isBootstrap5 ? "data-bs-" : "data-";
+        
+            const hostApplication = modalAppOptions.hostApplication as KatAppPlugIn;
+            const modalApp = this;
+            let modalBS5: any | undefined = undefined;
+
+            try {
+                // dismiss, but I want to do programattically so removing " ' + bsDataAttributePrefix + 'dismiss="modal"
+                const modal =
+                    $('<div class="modal fade katappModalAppDialog" tabindex="-1" role="dialog" ' + bsDataAttributePrefix + 'backdrop="static">\
+                        <div class="modal-dialog modal-dialog-centered modal-xl">\
+                            <div class="modal-content">\
+                                <div class="modal-header d-none hidden">\
+                                    <h5 class="modal-title">Modal title</h5>\
+                                    <button type="button" class="btn-close" aria-label="Close"></button>\
+                                </div>\
+                                <div class="modal-body">\
+                                </div>\
+                                <div class="modal-footer">\
+                                    <button type="button" class="btn btn-default cancelButton">' + modalAppOptions.labels.cancel + '</button>\
+                                    <button type="button" class="btn btn-primary continueButton">' + modalAppOptions.labels.continue + '</button>\
+                                </div>\
+                            </div>\
+                        </div>\
+                    </div>');
+                
+                if ( modalAppOptions.size != "xl" ) {
+                    $(".modal-dialog", modal).removeClass("modal-xl").addClass("modal-" + modalAppOptions.size);
+                }
+                if ( modalAppOptions.labels.title != undefined ) {
+                    $(".modal-title", modal).html(modalAppOptions.labels.title);
+                    $(".modal-header", modal).removeClass("d-none hidden");
+                }
+                if ( !modalAppOptions.showCancel ) {
+                    $(".cancelButton, .btn-close", modal).hide();
+                    modal.attr(bsDataAttributePrefix + "keyboard","false");
+                }
+
+                const showModal = function() {
+                    if (isBootstrap5) {
+                        modalBS5 = bootstrap.Modal.getOrCreateInstance(modal[0]);
+                        modalBS5.show();
+                    }
+                    else {
+                        modal.modal({ show: true });
+                    }                               
+                };
+
+                const closeModal = function() {
+                    if (isBootstrap5) {
+                        modalBS5.hide();
+                    }
+                    else {
+                        modal.modal('hide');
+                    }
+            
+                    const applicationsToRemove: { View: string | undefined, ID: string | undefined }[] = [];
+                    // Remove any templates from nested applications, don't use .select()
+                    // method because want to get all nested items no matter what
+                    $("[rbl-application-id]", modal).each(function() {
+                        applicationsToRemove.push( { View: ( $(this).KatApp() as KatAppPlugInShimInterface ).options.view, ID: $(this).attr("rbl-application-id") } );
+                    });
+            
+                    hostApplication.removeResourceApplications( applicationsToRemove );
+
+                    modalApp.destroy();
+                    modalApp.element.remove();
+                };
+                
+                hostApplication.element
+                    .on("onModalAppConfirm.RBLe", function(e, message) { 
+                        hostApplication.triggerEvent( 
+                            "onModalAppConfirmed", 
+                            modalAppOptions.applicationId, 
+                            hostApplication, 
+                            modalApp, 
+                            modalAppOptions.actionLink, 
+                            function() {
+                                closeModal();
+            
+                                if ( modalAppOptions.calculateOnConfirm ) {
+                                    hostApplication.calculate();
+                                }        
+                            },
+                            message );
+                    })
+                    .on("onModalAppCancel.RBLe", function(e, message) { 
+                        hostApplication.triggerEvent( 
+                            "onModalAppCancelled", 
+                            modalAppOptions.applicationId, 
+                            hostApplication, 
+                            modalApp, 
+                            modalAppOptions.actionLink, 
+                            function() {
+                                closeModal();
+                            },
+                            message );
+                    })
+                    .on("onModalAppConfirmed.RBLe onModalAppCancelled.RBLe", function( e, applicationId, hostApplication, modalApplication, actionLink, dismiss) { 
+                        dismiss(); 
+                    });
+
+                $(".modal-body",modal).append(viewElement);
+                this.element.append( modal );
+    
+                // Modal app's initalize (allow modal app to modify UI in any manner they choose)
+                this.triggerEvent( "onInitializing", this, this.options );            
+                    
+                modalApp.element
+                    .on("onInitialized.RBLe", function () {
+                        if ( modalApp.options.calcEngines == undefined || !( modalApp.options.runConfigureUICalculation ?? true )) {
+                            showModal();
+                        }
+                    })
+                    .on( "onConfigureUICalculation.RBLe", function() { 
+                        showModal();
+                    } )
+                    .on("onCalculationErrors.RBLe", function (_e, key, _message, ex) {
+                        if (key == "SubmitCalculation.ConfigureUI") {
+                            modalApp.triggerEvent("onUnexpectedError", ex)
+                        }
+                    })
+                    .on("onUnexpectedError.RBLe", function(_e, ex) {
+                        // KatApp loaded, but error occurred during processing and don't even have results to show/hide things appropriately
+                        console.log("KatApp Modal Exception", ex);
+            
+                        // Should probably have a backup in case no validation summary template is provided
+                        var summaryTemplate = hostApplication.ui.getTemplate("validation-summary", {}, false)!.TemplatedContent;
+                        var summary = $(summaryTemplate);
+            
+                        $("ul", summary).append("<li>An unexpected error has occurred.  Please try again and if the problem persists, contact technical support.</li>");
+                        $(".modal-body, .modal-footer", modal).children().remove();
+                        
+                        $(".modal-body", modal).append(summary);
+
+                        // Re-add button in case they removed it or added their own...and just close modal instead of normal event flow
+                        $(".modal-footer", modal).append($('<button type="button" class="btn btn-default cancelButton">' + modalAppOptions.labels.cancel + '</button>'));
+                        $('.modal-footer .cancelButton, .modal-header .btn-close', modal).off("click.ka").on("click.ka", function (e) {
+                            e.preventDefault();
+                            const trigger = $(this);
+                            trigger.prop("disabled", true);
+                            
+                            closeModal();
+                        });
+            
+                        summary.show();
+                    });
+
+                // Only need if I want to support 'esc' to dismiss
+                const reenableModal = function( trigger: JQuery<HTMLElement> | undefined ) { 
+                    if ( trigger != undefined ) {
+                        trigger.prop("disabled", false); 
+                    }
+            
+                    if (modalBS5 != undefined) {
+                        modalBS5.show();
+                    }
+                    else {
+                        modal.modal({ show: true });
+                    }
+                };
+            
+                const cancelModal = function( trigger: HTMLElement | undefined ) {
+                    if ( modalApp.options.onCancel != undefined ) {
+                        modalApp.options.onCancel.apply(trigger ?? modal[ 0 ], 
+                            [ 
+                                hostApplication, modalAppOptions.actionLink,
+                                function( message? : string ) {
+                                    hostApplication.triggerEvent( "onModalAppCancel", message );
+                                },
+                                function() {
+                                    reenableModal( trigger != undefined ? $(trigger) : undefined );
+                                }
+                            ] );
+                    }
+                    else {
+                        hostApplication.triggerEvent( "onModalAppCancel" );
+                    }
+                };
+                
+                // Hook up default event handling...
+                modal.on("hidden.bs.modal", function() {
+                    // Triggered when ESC is clicked (when programmatically close, this isn't triggered)
+                    cancelModal( undefined );
+                });
+                $('.cancelButton, .btn-close', modal).on("click.ka", function (e) {
+                    e.preventDefault();
+                    const trigger = $(this);
+                    trigger.prop("disabled", true);
+
+                    cancelModal( this );
+                });
+
+                if ( modalAppOptions.continueActionLink != undefined ) {
+                    $('.continueButton', modal).attr("rbl-action-link", modalAppOptions.continueActionLink);
+                }
+                else {
+                    $('.continueButton', modal).on("click.ka", function (e) {
+                        e.preventDefault();
+                        const trigger = $(this);
+                        trigger.prop("disabled", true);
+                        
+                        if ( modalApp.options.onConfirm != undefined ) {
+                            modalApp.options.onConfirm.apply(this, 
+                                [ 
+                                    hostApplication, modalAppOptions.actionLink,
+                                    function( message? : string ) { hostApplication.triggerEvent( "onModalAppConfirm", message ); },
+                                    function() { reenableModal( trigger ); }
+                                ] );
+                        }
+                        else {
+                            hostApplication.triggerEvent( "onModalAppConfirm" );
+                        }
+                    });
+                }
+                
+                // Host app's 'modal initalized'
+                hostApplication.triggerEvent( "onModalAppInitialized", modalAppOptions.applicationId, hostApplication, modalApp, modalAppOptions.actionLink );
+                
+            } catch (error) {
+                modalApp.destroy();
+                modalApp.element.remove();
+            }
         }
 
         setRegisteredToken( token: string ): void {
@@ -803,7 +1040,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
 
         destroy(): void {
             this.unregister();
-            this.ui.triggerEvent( "onDestroyed", this );
+            this.triggerEvent( "onDestroyed", this );
             delete this.element[ 0 ].KatApp;
         }
 
@@ -829,7 +1066,54 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
         }
 
         pushNotification(name: string, information: {} | undefined): void {
-            this.ui.pushNotification(this, name, information);
+            const from = this;
+        
+            $("[rbl-application-id]").each(function() {
+                const a = this.KatApp as KatAppPlugIn;
+                if ( a != undefined ) {
+                    if ( from.id != a.id ) {
+                        // Only trigger event for *other* KatApps
+                        a.triggerEvent( "onKatAppNotification", name, information, a );
+                    }
+                }
+            });
+        }
+
+        triggerEvent(eventName: string, ...args: ( object | string | undefined | unknown )[]): boolean | string | undefined {
+            // If event is cancelled, return false;
+            const application = this;
+            try {
+                application.trace("Calling " + eventName + " delegate: Starting...", TraceVerbosity.Diagnostic);
+                // Make application.element[0] be 'this' in the event handler
+                const delegateResult = application.options[ eventName ]?.apply(application.element[0], args );
+                
+                if ( delegateResult != undefined ) {
+                    return delegateResult;
+                }
+
+                application.trace("Calling " + eventName + " delegate: Complete", TraceVerbosity.Diagnostic);
+            } catch (error) {
+                application.trace("Error calling " + eventName + ": " + error, TraceVerbosity.None);
+            }
+
+            try {
+                application.trace("Triggering " + eventName + ": Starting...", TraceVerbosity.Diagnostic);
+                const event = jQuery.Event( eventName + ".RBLe" );
+                application.element.trigger( event, args);
+                application.trace("Triggering " + eventName + ": Complete", TraceVerbosity.Diagnostic);
+
+                const eventResult = ( event as JQuery.TriggeredEvent ).result
+                if ( event.isDefaultPrevented() ) {
+                    return false;
+                }
+
+                return eventResult;
+
+            } catch (error) {
+                application.trace("Error triggering " + eventName + ": " + error, TraceVerbosity.None);
+            }
+
+            return true;
         }
 
         runRBLeCommand(commandName: string): void {
@@ -871,7 +1155,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                 this.setNavigationInputs( defaultInputs, navigationId, persistInputs ?? true );
             }
 
-            this.ui.triggerEvent( "onKatAppNavigate", navigationId, this );
+            this.triggerEvent( "onKatAppNavigate", navigationId, this );
         }
 
         setNavigationInputs( inputs: {} | undefined, navigationId?: string, persist?: boolean, inputSelector?: string ): void {
@@ -934,8 +1218,9 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
             const inputs = this.getOptionInputs( currentOptions ); 
             const inputTables = this.getInputTables( currentOptions ) ?? [];
 
-            if ( !this.ui.triggerEvent( "onCalculateStart", this ) ) {
-                this.ui.triggerEvent( "onCalculateEnd", this );
+            const calcStartResult = this.triggerEvent( "onCalculateStart", this );
+            if ( typeof calcStartResult == "boolean" && !calcStartResult ) {
+                this.triggerEvent( "onCalculateEnd", this );
                 return;
             }
 
@@ -944,7 +1229,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                 if ( currentOptions.manualResults != undefined ) {
                     this.results = this.buildResults( [], currentOptions );
                     this.processResults( currentOptions );
-                    this.ui.triggerEvent( "onCalculateEnd", this );
+                    this.triggerEvent( "onCalculateEnd", this );
                 }
 
                 return;
@@ -1077,7 +1362,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                     }
                 } catch (error) {
                     pipelineError = "GetData.Pipeline exception: " + error;
-                    that.ui.triggerEvent( "onCalculationErrors", "GetData", error, that.exception, currentOptions, that );
+                    that.triggerEvent( "onCalculationErrors", "GetData", error, that.exception, currentOptions, that );
                     calculatePipeline( 4 ); // If error, jump to finish
                 }
             };
@@ -1108,7 +1393,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                     if ( shareDataWithOtherApplications ) {
                         callSharedCallbacks( pipelineError );
                     }
-                    that.ui.triggerEvent( "onCalculationErrors", "RegisterData", error, that.exception, currentOptions, that );
+                    that.triggerEvent( "onCalculationErrors", "RegisterData", error, that.exception, currentOptions, that );
                     calculatePipeline( 3 );                            
                 }
             };
@@ -1122,7 +1407,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                     that.inputsHaveBeenCached = true;
                     const inputCachingKey = "katapp:cachedInputs:" + currentOptions.currentPage + ":" + ( currentOptions.userIdHash ?? "EveryOne" );
                     const inputsCache = KatApp.extend({}, currentCalculationInputs);
-                    that.ui.triggerEvent( "onInputsCache", inputsCache, that );
+                    that.triggerEvent( "onInputsCache", inputsCache, that );
 
                     // that.calculationInputs has Inputs and Tables in it { input1, input2, Tables: [ ... ] }
                     sessionStorage.setItem(inputCachingKey, JSON.stringify(inputsCache));
@@ -1180,7 +1465,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                             });
 
                             pipelineError = failures[ 0 ].reason.errorMessage; 
-                            that.ui.triggerEvent( "onCalculationErrors", "SubmitCalculation" + ( that.calculationInputs?.iConfigureUI == 1 ? ".ConfigureUI" : "" ), pipelineError, that.exception, currentOptions, that );
+                            that.triggerEvent( "onCalculationErrors", "SubmitCalculation" + ( that.calculationInputs?.iConfigureUI == 1 ? ".ConfigureUI" : "" ), pipelineError, that.exception, currentOptions, that );
                             calculatePipeline( 2 );
                         }
                         else {
@@ -1262,7 +1547,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                     }
                 } catch (error) {
                     that.trace( "Error during jwt update data processing: " + error, TraceVerbosity.None );
-                    that.ui.triggerEvent( "onActionFailed", jwtUpdateCommand, error, that, currentOptions, undefined );
+                    that.triggerEvent( "onActionFailed", jwtUpdateCommand, error, that, currentOptions, undefined );
                     calculatePipeline( 2 );
                 }
             };
@@ -1318,7 +1603,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                     }
                 } catch (error) {
                     that.trace( "Error during api-actions processing: " + error, TraceVerbosity.None );
-                    that.ui.triggerEvent( "onCalculationErrors", "ProcessApiActions", error, that.exception, currentOptions, that );
+                    that.triggerEvent( "onCalculationErrors", "ProcessApiActions", error, that.exception, currentOptions, that );
                     calculatePipeline( 1 );
                 }
             };
@@ -1337,7 +1622,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                 // Remove temp apiAction error flag now that processing is finished
                 that.select('.validator-container.error.apiAction, .validator-container.warning.apiAction').removeClass('apiAction');
 
-                that.ui.triggerEvent( "onCalculateEnd", that );
+                that.triggerEvent( "onCalculateEnd", that );
 
                 calculatePipeline( 0 );
             };
@@ -1440,7 +1725,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                 }
             };
 
-            this.ui.triggerEvent( "onCalculationOptions", calculationOptions, application, endpointOptions );
+            this.triggerEvent( "onCalculationOptions", calculationOptions, application, endpointOptions );
 
             return calculationOptions;
         }
@@ -1518,7 +1803,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                 KatApp.clone( 
                     options,
                     function( key, value ) {
-                        if ( key == "handlers" || typeof value === "function" ) {
+                        if ( key == "handlers" || typeof value === "function" || value instanceof jQuery || key == "modalAppOptions" ) {
                             return; // don't want any functions passed along to api
                         }
                         return value; 
@@ -1633,7 +1918,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                 }
             }
 
-            this.ui.triggerEvent( "onOptionsUpdated", this );
+            this.triggerEvent( "onOptionsUpdated", this );
         }
 
         clearValidationSummaries(): void {
@@ -1858,7 +2143,6 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                 }
             }
         }
-
         hideAjaxBlocker(): void {
             this.blockerCount--;
 
@@ -2014,8 +2298,12 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
 
             const data = that.getEndpointSubmitData(options, actionOptions);
 
-            that.ui.triggerEvent( "onActionStart", endpoint, data, that, data.Configuration, actionLink );
-
+            const startResult = that.triggerEvent( "onActionStart", endpoint, data, that, data.Configuration, actionLink );
+            if ( typeof startResult == "boolean" && !startResult ) {
+                this.hideAjaxBlocker();
+                return;
+            }
+            
             // Couldn't figure out how to model bind JObject or Dictionary, so hacking with this
             data[ "inputTablesRaw" ] = data.InputTables != undefined ? JSON.stringify( data.InputTables ) : undefined;
 
@@ -2043,14 +2331,14 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                     console.log( errors );
                     console.groupEnd();
 
-                    that.ui.triggerEvent( "onActionFailed", endpoint, errorResponse, that, data.Configuration, actionLink );
+                    that.triggerEvent( "onActionFailed", endpoint, errorResponse, that, data.Configuration, actionLink );
                 }
                 else {
-                    that.ui.triggerEvent( "onActionResult", endpoint, successResponse, that, data.Configuration, actionLink );
+                    that.triggerEvent( "onActionResult", endpoint, successResponse, that, data.Configuration, actionLink );
                 }
 
                 that.hideAjaxBlocker();
-                that.ui.triggerEvent( "onActionComplete", endpoint, that, data.Configuration, actionLink );
+                that.triggerEvent( "onActionComplete", endpoint, that, data.Configuration, actionLink );
 
                 if ( done != undefined ) {
                     done( successResponse, errorResponse);
@@ -2153,18 +2441,18 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                 this.options.nextCalculation = undefined;
                 this.options.defaultInputs = undefined;
     
-                this.ui.triggerEvent( "onResultsProcessing", calculationResults, calculationOptions, this );
+                this.triggerEvent( "onResultsProcessing", calculationResults, calculationOptions, this );
                 
                 this.rble.processResults( calculationResults, calculationOptions );
                
                 if ( this.calculationInputs?.iConfigureUI === 1 ) {
-                    this.ui.triggerEvent( "onConfigureUICalculation", calculationResults, calculationOptions, this );
+                    this.triggerEvent( "onConfigureUICalculation", calculationResults, calculationOptions, this );
                 }
     
-                this.ui.triggerEvent( "onCalculation", calculationResults, calculationOptions, this );
+                this.triggerEvent( "onCalculation", calculationResults, calculationOptions, this );
             } catch (error) {
                 this.trace( "Error during result processing: " + error, TraceVerbosity.None );
-                this.ui.triggerEvent( "onCalculationErrors", "ProcessResults", error, this.exception, calculationOptions, this );
+                this.triggerEvent( "onCalculationErrors", "ProcessResults", error, this.exception, calculationOptions, this );
             }
             finally {
                 this.trace("Processing results took " + ( Date.now() - start.getTime() ) + "ms", TraceVerbosity.Detailed);
@@ -2211,66 +2499,105 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
             }
         };
         
-        createModalDialog(confirm: string, onConfirm?: ()=> void, onCancel?: ()=> void): void {
-            if (!this.select('.katappModalDialog').length) {
-                const sCancel = "Cancel";
-                const sContinue = "Continue";
+        createModalDialog(modalOptions: string | ModalDialogOptions, onConfirm?: ()=> void, onCancel?: ()=> void): void {
+            this.select('.katappModalDialog').remove();
 
-                const isBootstrap5 = this.bootstrapVersion == 5;
-                const bsDataAttributePrefix = isBootstrap5 ? "data-bs-" : "data-";
+            const confirm = typeof( modalOptions ) == "string" ? modalOptions : modalOptions.confirmation;
+            const sCancel = typeof( modalOptions ) == "object" ? modalOptions.labels?.cancel ?? "Cancel" : "Cancel";
+            const sContinue = typeof( modalOptions ) == "object" ? modalOptions.labels?.continue ?? "Continue" : "Continue";
+            const sTitle = typeof( modalOptions ) == "object" ? modalOptions.labels?.title : undefined
 
-                this.element.append(
-                    '<div class="modal fade katappModalDialog" tabindex="-1" role="dialog" ' + bsDataAttributePrefix + 'keyboard="false" ' + bsDataAttributePrefix + 'backdrop="static">' +
-                        '<div class="modal-dialog">' +
-                            '<div class="modal-content">' +
-                                '<div class="modal-body"></div>' +
-                                '<div class="modal-footer">' +
-                                    '<button class="btn btn-default cancelButton" ' + bsDataAttributePrefix + 'dismiss="modal" aria-hidden="true">' + sCancel + '</button>' +
-                                    '<button type="button" class="btn btn-primary continueButton" ' + bsDataAttributePrefix + 'dismiss="modal">' + sContinue + '</button>' +
-                                '</div>' +
-                            '</div>' +
-                        '</div>' +
-                    '</div>');
+            const isBootstrap5 = this.bootstrapVersion == 5;
+            const bsDataAttributePrefix = isBootstrap5 ? "data-bs-" : "data-";
+            
+            const modal = $(
+                '<div class="modal fade katappModalDialog" tabindex="-1" role="dialog" ' + bsDataAttributePrefix + 'backdrop="static">\
+                    <div class="modal-dialog">\
+                        <div class="modal-content">\
+                        <div class="modal-header d-none hidden">\
+                            <h5 class="modal-title"></h5>\
+                            <button type="button" class="btn-close" aria-label="Close"></button>\
+                        </div>\
+                        <div class="modal-body"></div>\
+                            <div class="modal-footer">\
+                                <button type="button" class="btn btn-default cancelButton" aria-hidden="true">' + sCancel + '</button>\
+                                <button type="button" class="btn btn-primary continueButton">' + sContinue + '</button>\
+                            </div>\
+                        </div>\
+                    </div>\
+                </div>');
+
+            this.element.append( modal );
+
+            let modalBS5: any | undefined = undefined;
+            const closeModal = function() {
+                if (isBootstrap5) {
+                    modalBS5.hide();
+                }
+                else {
+                    modal.modal('hide');
+                }                                                                    
+                modal.remove();
             }
 
-            const modalBody = this.select('.katappModalDialog .modal-body');
-            modalBody.html(confirm);
-            this.templateBuilder.processNavigationLinks(modalBody);
-
-            this.select('.katappModalDialog .continueButton').off("click.ka").on("click.ka", function (e) {
+            $('.continueButton', modal).on("click.ka", function (e) {
                 e.preventDefault();
                 if (onConfirm != undefined) {
                     onConfirm();
                 }
+                closeModal();
             });
             if ( onCancel == undefined ) {
-                this.select('.katappModalDialog .cancelButton').hide();
+                $('.cancelButton, .btn-close', modal).remove();
+                modal.attr(bsDataAttributePrefix + "keyboard","false");
             }
             else {
-                this.select('.katappModalDialog .cancelButton').off("click.ka").show().on("click.ka", function (e) {
+                $('.cancelButton, .btn-close', modal).on("click.ka", function (e) {
                     e.preventDefault();
-                    if (onCancel != undefined) {
-                        onCancel();
-                    }
+                    onCancel();
+                    closeModal();
                 });
+
+                modal
+                    .on("hidden.bs.modal", function() {
+                        // Triggered when ESC is clicked (when programmatically close, this isn't triggered)
+                        onCancel();
+                        closeModal();
+                    });
             }
-    
+
+            if ( sTitle != undefined ) {
+                $(".modal-title", modal).html(sTitle);
+                $(".modal-header", modal).removeClass("d-none hidden");
+            }
+
+            const modalBody = $('.modal-body', modal);
+            modalBody.html(confirm);
+            this.templateBuilder.processNavigationLinks(modalBody);
+
             if (this.bootstrapVersion==5) {
-                const myModal = new bootstrap.Modal(this.select('.katappModalDialog')[0]);
-                myModal.show();
+                modalBS5 = new bootstrap.Modal(modal[0]);
+                modalBS5.show();
             }
             else {
-                this.select('.katappModalDialog').modal({ show: true });
+                modal.modal({ show: true });
             }
         }
 
         get bootstrapVersion(): number {
-            const version = 
+            let version = 
                 this.options.bootstrapVersion ??
-                this.element.attr("rbl-bootstrap") ??
-                this.select("rbl-config").attr("bootstrap") ?? "3";
-            
-            return +version;
+                this.element.attr("rbl-bootstrap");
+                
+            if ( version == undefined ) {
+                const rblConfig = this.select("rbl-config");
+
+                if ( rblConfig.length == 1 ) {
+                    version = rblConfig.attr("bootstrap") ?? "3";
+                }
+            }
+
+            return version != undefined ? +version : NaN;
         }
 
         get defaultCalcEngineKey(): string {
@@ -2394,7 +2721,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                     // onCancel
                     function () {
                         link.data("confirmed", "false");
-                        that.triggerEvent( "onConfirmCancelled", link );
+                        that.application.triggerEvent( "onConfirmCancelled", link );
                     }
                 );
             }
@@ -2885,55 +3212,6 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
             return ( !skipAssignment ? value ?? '' : undefined ) as string;
         }
 
-        pushNotification(from: KatAppPlugIn, name: string, information: {} | undefined): void {
-            const that = this;
-            $("[rbl-application-id]").each(function() {
-                const a = this.KatApp as KatAppPlugIn;
-
-                if ( a != undefined ) {
-                    if ( from.id != a.id ) {
-                        // Only trigger event for *other* KatApps
-                        that.triggerApplicationEvent( a, "onKatAppNotification", name, information, a );
-                    }
-                }
-            });
-        }
-
-        triggerEvent(eventName: string, ...args: ( object | string | undefined | unknown )[]): boolean {
-            const application = this.application;
-            return this.triggerApplicationEvent( application, eventName, ...args );
-        }
-
-        private triggerApplicationEvent(application: KatAppPlugIn, eventName: string, ...args: ( object | string | undefined | unknown )[]): boolean {
-            // If event is cancelled, return false;
-            try {
-                application.trace("Calling " + eventName + " delegate: Starting...", TraceVerbosity.Diagnostic);
-                // Make application.element[0] be 'this' in the event handler
-                if ( !( application.options[ eventName ]?.apply(application.element[0], args ) ?? true ) ) {
-                    return false;
-                }
-                application.trace("Calling " + eventName + " delegate: Complete", TraceVerbosity.Diagnostic);
-            } catch (error) {
-                application.trace("Error calling " + eventName + ": " + error, TraceVerbosity.None);
-            }
-
-            try {
-                application.trace("Triggering " + eventName + ": Starting...", TraceVerbosity.Diagnostic);
-                const event = jQuery.Event( eventName + ".RBLe" );
-                application.element.trigger( event, args);
-                application.trace("Triggering " + eventName + ": Complete", TraceVerbosity.Diagnostic);
-
-                if ( !( ( event as any ).result ?? true ) || event.isDefaultPrevented() ) {
-                    return false;
-                }
-
-            } catch (error) {
-                application.trace("Error triggering " + eventName + ": " + error, TraceVerbosity.None);
-            }
-
-            return true;
-        }
-
         changeRBLe(element: JQuery<HTMLElement>): void {
             const wizardInputSelector = element.data("input");
         
@@ -3274,7 +3552,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                     application.options.registeredToken = currentOptions.registeredToken = payload.registeredToken;
                     application.options.data = currentOptions.data = undefined;
     
-                    that.application.ui.triggerEvent( "onRegistration", currentOptions, application );
+                    that.application.triggerEvent( "onRegistration", currentOptions, application );
                     registerDataHandler();
                 }
                 else {
@@ -3637,59 +3915,66 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                     // rbl-attr="attrName:selector attrName2:selector ..."
                     rblAttributes.forEach( a => {
                         const attrParts = a.split(":");
-                        const attrName = attrParts[ 0 ];
-                        let attrSelector = attrParts[1];
-                        const ceName = attrParts.length >= 3 ? attrParts[ 2 ] : undefined;
-                        const tabName = attrParts.length >= 4 ? attrParts[ 3 ] : undefined;
-                        const tabDef = that.getTabDef( tabName, ceName )
-                        const expressionStart = attrSelector.indexOf("[");
 
-                        if ( expressionStart > -1 ) {
-                            // either [expression] or table[expression]
-                            const expressionKey = 
-                                attrSelector.substring(
-                                    expressionStart + 1,
-                                    attrSelector.lastIndexOf("]")
-                                );
-
-                            attrSelector = attrSelector.replace( expressionKey, rblAttributesWithExpressions.expressions[ expressionKey ] );
-                        }
-
-                        const value = 
-                            that.getRblSelectorValue( tabDef, "rbl-value", attrSelector ) ??
-                            that.getRblSelectorValue( tabDef, "ejs-output", attrSelector );
-            
-                        if ( value != undefined ) {
-                            if ( el.length === 1 ) {
-                                el = application.ui.getAspNetCheckboxLabel( el ) ?? el;
+                        // Bad config or possible a template rbl-attr="{valuesFromCE}" that didn't have any values
+                        if ( attrParts.length > 1 ) {
+                            const attrName = attrParts[0];
+                            let attrSelector = attrParts[1];
+                            const ceName = attrParts.length >= 3 ? attrParts[ 2 ] : undefined;
+                            const tabName = attrParts.length >= 4 ? attrParts[ 3 ] : undefined;
+                            const tabDef = that.getTabDef( tabName, ceName )
+                            const expressionStart = attrSelector.indexOf("[");
+    
+                            if ( expressionStart > -1 ) {
+                                // either [expression] or table[expression]
+                                const expressionKey = 
+                                    attrSelector.substring(
+                                        expressionStart + 1,
+                                        attrSelector.lastIndexOf("]")
+                                    );
+    
+                                attrSelector = attrSelector.replace( expressionKey, rblAttributesWithExpressions.expressions[ expressionKey ] );
                             }
-
-                            // rbl-attr="data-foo:fooValue" data-foo="Terry"
-                            // Calc 1: fooValue = Aney
-                            //  previous = undefined
-                            //  currentValue = "Terry"
-                            //  newValue = "Terry Aney"
-                            // Calc 2: fooValue = Craig
-                            //  previous = "Aney"
-                            //  currentValue = "Terry Aney"
-                            //  newValue = "Terry Craig"
-                            const dataName = "rbl-attr-" + attrName + "-previous";
-                            const previous = el.data(dataName);
-                            const currentValue = el.attr(attrName) || "";
-
-                            const newValue = previous != undefined
-                                ? currentValue.replace(previous, value).trim()
-                                : ( currentValue == "" ? value : currentValue + " " + value ).trim();
-
-                            if ( newValue == "" ) {
-                                el.removeAttr(attrName).removeData(dataName)
+    
+                            const value = 
+                                that.getRblSelectorValue( tabDef, "rbl-value", attrSelector ) ??
+                                that.getRblSelectorValue( tabDef, "ejs-output", attrSelector );
+                
+                            if ( value != undefined ) {
+                                if ( el.length === 1 ) {
+                                    el = application.ui.getAspNetCheckboxLabel( el ) ?? el;
+                                }
+    
+                                // rbl-attr="data-foo:fooValue" data-foo="Terry"
+                                // Calc 1: fooValue = Aney
+                                //  previous = undefined
+                                //  currentValue = "Terry"
+                                //  newValue = "Terry Aney"
+                                // Calc 2: fooValue = Craig
+                                //  previous = "Aney"
+                                //  currentValue = "Terry Aney"
+                                //  newValue = "Terry Craig"
+                                const dataName = "rbl-attr-" + attrName + "-previous";
+                                const previous = el.data(dataName);
+                                const currentValue = el.attr(attrName) || "";
+    
+                                const newValue = previous != undefined
+                                    ? currentValue.replace(previous, value).trim()
+                                    : ( currentValue == "" ? value : currentValue + " " + value ).trim();
+    
+                                if ( newValue == "" ) {
+                                    el.removeAttr(attrName).removeData(dataName)
+                                }
+                                else {
+                                    el.attr(attrName, newValue).data(dataName, value);
+                                }
                             }
                             else {
-                                el.attr(attrName, newValue).data(dataName, value);
+                                application.trace("<b style='color: Red;'>RBL WARNING</b>: no data returned for tab=" + tabDef?._fullName + ", rbl-attr=" + a, TraceVerbosity.Detailed);
                             }
                         }
                         else {
-                            application.trace("<b style='color: Red;'>RBL WARNING</b>: no data returned for tab=" + tabDef?._fullName + ", rbl-attr=" + a, TraceVerbosity.Detailed);
+                            application.trace("<b style='color: Red;'>RBL WARNING</b>: Unable to process rbl-attr=" + a, TraceVerbosity.Detailed);
                         }
                     });
                 });
@@ -5625,7 +5910,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                             application.setNavigationInputs( dataInputs, id, persistInputs, inputSelector );
                         }
 
-                        application.ui.triggerEvent( "onKatAppNavigate", id, this );
+                        application.triggerEvent( "onKatAppNavigate", id, this );
                         return false;
                     }).attr("data-katapp-initialized", "true");
                 });
@@ -5640,48 +5925,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                 .not('[data-katapp-initialized="true"]')
                 .each(function () {
                     const nestedApp = $(this);
-                    const applicationId = nestedApp.attr("rbl-app");
-
-                    if ( applicationId != undefined ) {
-                        let url = "api/rble/verify-katapp-modal?applicationId=" + applicationId;
-                        const serviceUrlParts = application.options.sessionUrl?.split( "?" );
-            
-                        if ( serviceUrlParts != undefined && serviceUrlParts.length === 2 ) {
-                            url += "&" + serviceUrlParts[ 1 ];
-                        }
-                                                
-                        $.ajax( {
-                            method: "GET",
-                            url: url,
-                            dataType: "json"
-                        }).then(
-                            function( result ) {
-                                const successResponse = result as KatAppActionResult;
-                        
-                                const nestedAppOptions = 
-                                    KatApp.extend( {}, 
-                                        application.options, 
-                                        { 
-                                            view: successResponse[ "Path" ], 
-                                            currentPage: applicationId,
-                                            manualInputs: application.dataAttributesToJson( nestedApp, "data-input-" ) 
-                                        }
-                                    );
-
-                                delete nestedAppOptions["calcEngines"]; // So it doesn't use parent CE
-
-                                nestedApp.KatApp( nestedAppOptions );                                    
-                            },
-                            function( xhr ) {
-                                console.log( xhr );
-                                application.trace("Unable to create nested KatApp (" + applicationId + ").", TraceVerbosity.None);
-                            }
-                        ).always(
-                            function() {
-                                nestedApp.attr("data-katapp-initialized", "true");
-                            }
-                        );
-                    }
+                    that.createChildApplication( nestedApp, true );
                 });
         }
         
@@ -5699,214 +5943,101 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                     $(this).on("click.RBLe", function(e) {
                         const actionLink = $(this);
                         e.preventDefault();
-
-                        const applicationId = actionLink.attr("rbl-modal");                        
-
-                        if ( applicationId != undefined ) {
-                            let url = "api/rble/verify-katapp-modal?applicationId=" + applicationId;
-                            const serviceUrlParts = application.options.sessionUrl?.split( "?" );
-                
-                            if ( serviceUrlParts != undefined && serviceUrlParts.length === 2 ) {
-                                url += "&" + serviceUrlParts[ 1 ];
-                            }
-                                                    
-                            $.ajax( {
-                                method: "GET",
-                                url: url,
-                                dataType: "json"
-                            }).then(
-                                function( result ) {
-                                    const successResponse = result as KatAppActionResult;
-                            
-                                    that.createModalApplication(
-                                        applicationId,
-                                        successResponse[ "Path" ],
-                                        actionLink
-                                    );
-                                },
-                                function( xhr ) {
-                                    console.log( xhr );
-                                    application.trace("Unable to launch modal KatApp.", TraceVerbosity.None);
-                                }
-                            );
-                        }
-                                                           
+                        that.createChildApplication( actionLink, false );                                                           
                         return false;
                     }).attr("data-katapp-initialized", "true");
                 });
         }
 
-        createModalApplication( applicationId: string, viewId: string, actionLink: JQuery<HTMLElement> ): void {
-            const hostApplication = this.application;
-            const labelCancel = actionLink.data("label-cancel") ?? "Cancel";
-            const labelContinue = actionLink.data("label-continue") ?? "Continue";
-            const labelTitle = actionLink.data("label-title");
-            const showCancel = actionLink.data("show-cancel") ?? true;
+        createChildApplication(childApplicationElement: JQuery<HTMLElement>, isNested: boolean): void {
+            const that = this;
+            const applicationId = isNested ? childApplicationElement.attr("rbl-app") : childApplicationElement.attr("rbl-modal");
 
-            const isBootstrap5 = this.application.bootstrapVersion == 5;
-            const bsDataAttributePrefix = isBootstrap5 ? "data-bs-" : "data-";
-
-            let modalApp: KatAppPlugIn | undefined = undefined;
-            let modalBS5: any | undefined = undefined;
-
-            // dismiss, but I want to do programattically so removing
-            // " ' + bsDataAttributePrefix + 'dismiss="modal"
-            const modal =      
-                $('<div class="modal fade katappModalAppDialog" tabindex="-1" role="dialog" ' + bsDataAttributePrefix + 'keyboard="false" ' + bsDataAttributePrefix + 'backdrop="static">\
-                    <div class="modal-dialog modal-dialog-centered modal-xl">\
-                        <div class="modal-content">\
-                            <div class="modal-header d-none hidden">\
-                                <h5 class="modal-title">Modal title</h5>\
-                                <button type="button" class="btn-close d-none hidden" aria-label="Close"></button>\
-                            </div>\
-                            <div class="modal-body">\
-                                <div class="katapp-modal-app"></div>\
-                            </div>\
-                            <div class="modal-footer">\
-                                <button class="btn btn-default cancelButton" aria-hidden="true">' + labelCancel + '</button>\
-                                <button type="button" class="btn btn-primary continueButton">' + labelContinue + '</button>\
-                            </div>\
-                        </div>\
-                    </div>\
-                </div>');
-
-            if ( labelTitle != undefined ) {
-                $(".modal-title", modal).html(labelTitle);
-                $(".modal-header", modal).removeClass("d-none hidden");
-            }
-            if ( !showCancel ) {
-                $(".cancelButton, .btn-close", modal).hide();
-            }
-            
-            hostApplication.element.after( modal );
-
-            const showModal = function(childApplication: KatAppPlugIn) {
-                modalApp = childApplication;
-                hostApplication.ui.triggerEvent( "onModalAppInitialized", applicationId, hostApplication, modalApp, actionLink );
-
-                if (hostApplication.bootstrapVersion==5) {
-                    modalBS5 = bootstrap.Modal.getOrCreateInstance(modal[0]);
-                    modalBS5.show();
-                }
-                else {
-                    modal.modal({ show: true });
-                }                               
-            };
-
-            const closeModal = function(message?: string ) {
-                if ( modalApp == undefined ) return;
-
-                if (hostApplication.bootstrapVersion==5) {
-                    modalBS5.hide();
-                }
-                else {
-                    modal.modal('hide');
-                }                                                                    
-                modal.remove();
-
-                const applicationsToRemove: { View: string | undefined, ID: string | undefined }[] = [];
-                // Remove any templates from nested applications, don't use .select()
-                // method because want to get all nested items no matter what
-                $("[rbl-application-id]", modal).each(function() {
-                    applicationsToRemove.push( { View: ( $(this).KatApp() as KatAppPlugInShimInterface ).options.view, ID: $(this).attr("rbl-application-id") } );
-                });
-
-                hostApplication.removeResourceApplications( applicationsToRemove );
-            };
+            if ( applicationId != undefined ) {
+                let url = "api/rble/verify-katapp?applicationId=" + applicationId;
+                const serviceUrlParts = that.application.options.sessionUrl?.split( "?" );
     
-            const reenableModal = function() { $(".modal-footer .btn", modal).prop("disabled", false); };
+                if ( serviceUrlParts != undefined && serviceUrlParts.length === 2 ) {
+                    url += "&" + serviceUrlParts[ 1 ];
+                }
+                                        
+                $.ajax( {
+                    method: "GET",
+                    url: url,
+                    dataType: "json"
+                }).then(
+                    function( result ) {
+                        const successResponse = result as KatAppActionResult;
 
-            $('.continueButton', modal).on("click.ka", function (e) {
-                e.preventDefault();
-                $(this).prop("disabled", true);
+                        const markupInputs = that.application.dataAttributesToJson( childApplicationElement, "data-input-" );
 
-                if ( modalApp != undefined) {
-                    const confirmModal = function(message?: string ) {
-                        closeModal( message );
-                        hostApplication.ui.triggerEvent( "onModalAppConfirmed", applicationId, hostApplication, modalApp, actionLink, message );
-        
-                        if ( actionLink.attr("rbl-action-calculate") == "true" ) {
-                            hostApplication.calculate();
+                        const childOptions: KatAppOptions = 
+                            KatApp.extend( 
+                                {}, 
+                                that.application.options, 
+                                { 
+                                    view: successResponse[ "path" ], 
+                                    currentPage: isNested ? childApplicationElement.attr("rbl-app") : childApplicationElement.attr("rbl-modal"),
+                                    inputSelector: childApplicationElement.attr("rbl-input-selector") ?? "input, textarea, select",
+                                    calcEngines: undefined // So it doesn't use parent CE
+                                },
+                                // If no data-input-* dataAttributesToJson returns undefined and would *complete* replace
+                                // manual inputs...so need to default to {} so I don't erase them
+                                successResponse[ "manualInputs" ], 
+                                {
+                                    manualInputs: markupInputs ?? {}
+                                },
+                                isNested 
+                                    ? { manualInputs: { iNestedApplication: 1 } } 
+                                    : { manualInputs: { iModalApplication: 1 } }
+                            );
+                            
+                        if ( !isNested ) {
+                            childOptions.modalAppOptions = {
+                                labels: {
+                                    cancel: childApplicationElement.attr("rbl-label-cancel") ?? "Cancel",
+                                    continue: childApplicationElement.attr("rbl-label-continue") ?? "Continue",
+                                    title: childApplicationElement.attr("rbl-label-title")
+                                },
+                                applicationId: applicationId,
+                                actionLink: childApplicationElement,
+                                showCancel: ( childApplicationElement.attr("rbl-show-cancel") ?? "true" ) == "true",
+                                size: childApplicationElement.attr("rbl-modal-size") as ModalAppSize ?? "xl",
+                                hostApplication: that.application,
+                                calculateOnConfirm: ( childApplicationElement.attr("rbl-action-calculate") ?? "false" ) == "true",
+                                continueActionLink: childApplicationElement.attr("rbl-action-continue")
+                            };
+
+                            const rblAttrThatDoNotHaveToMove = [ "action-calculate", "input-selector", "label-title", "label-continue", "label-cancel", "show-cancel", "modal-size" ];
+                            const kam = $("<div class='katapp-modal'></div>");
+                            // Move all rbl-* attributes to modal application element so they are processed as needed.
+                            const rblAttributes = that.application.dataAttributesToJson( childApplicationElement, "rbl-" );
+                            if ( rblAttributes != undefined ) {
+                                Object.keys(rblAttributes).forEach( key => {
+                                    if ( rblAttrThatDoNotHaveToMove.indexOf(key) == -1 ) {
+                                        kam.attr("rbl-" + key, rblAttributes[ key ]);
+                                    }
+                                });   
+                            }
+                            that.application.element.after( kam );
+                            kam.KatApp( childOptions );
                         }
-                    };
-
-                    if ( modalApp.options.onModalAppConfirm != undefined ) {
-                        modalApp.options.onModalAppConfirm.apply(this, [ hostApplication, actionLink, confirmModal, reenableModal ] );
+                        else {
+                            childApplicationElement.KatApp( childOptions );
+                        }
+                    },
+                    function( xhr ) {
+                        console.log( xhr );
+                        that.application.trace("Unable to create child KatApp (" + applicationId + ").", TraceVerbosity.None);
                     }
-                    else {
-                        confirmModal();
-                    }
-                }
-            });
-            $('.cancelButton, .btn-close', modal).on("click.ka", function (e) {
-                e.preventDefault();
-                $(this).prop("disabled", true);
-                
-                if ( $(this).attr("data-katapp-error") == "true" ) {
-                    closeModal( undefined );
-                    return;
-                }
-
-                if ( modalApp != undefined) {
-                    const cancelModal = function(message?: string ) {
-                        closeModal( message );
-                        hostApplication.ui.triggerEvent( "onModalAppCancelled", applicationId, hostApplication, modalApp, actionLink, message );
-                    };
-
-                    if ( modalApp.options.onModalAppCancel != undefined ) {
-                        modalApp.options.onModalAppCancel.apply(this, [ hostApplication, actionLink, cancelModal, reenableModal ] );
-                    }
-                    else {
-                        cancelModal();
-                    }
-                }
-            });
-
-            const modalAppOptions = 
-                KatApp.extend( {}, 
-                    hostApplication.options, 
-                    { 
-                        view: viewId, 
-                        currentPage: actionLink.attr("rbl-modal"),
-                        manualInputs: hostApplication.dataAttributesToJson( actionLink, "data-input-" ) 
+                ).always(
+                    function() {
+                        if ( isNested ) {
+                            childApplicationElement.attr("data-katapp-initialized", "true");
+                        }
                     }
                 );
-                
-            delete modalAppOptions["calcEngines"]; // So it doesn't use parent CE
-            
-            $(".katapp-modal-app", modal)
-                .on("onInitialized.RBLe", function (e, application: KatAppPlugIn) {
-                    if ( application.options.calcEngines == undefined || !( application.options.runConfigureUICalculation ?? true )) {
-                        showModal(application as KatAppPlugIn);
-                    }
-                })
-                .on( "onConfigureUICalculation.RBLe", function(e, calculationResults_, calcOptions_, childApplication) { 
-                    showModal(childApplication as KatAppPlugIn);
-                } )
-                .on("onUnexpectedError.RBLe", function(e, ex) {
-                    // KatApp loaded, but error occurred during processing and don't even have results to show/hide things appropriately
-                    console.log("KatApp Modal Exception", ex);
-
-                    // Should probably have a backup in case no validation summary template is provided
-                    var summaryTemplate = hostApplication.ui.getTemplate("validation-summary", {}, false)!.TemplatedContent;
-                    var summary = $(summaryTemplate);
-
-                    $("ul", summary).append("<li>An unexpected error has occurred.  Please try again and if the problem persists, contact technical support.</li>");
-                    $(".modal-body", modal).children().remove();
-                    $(".modal-body", modal).append(summary);
-                    $('.continueButton', modal).remove();
-                    $('.cancelButton, .btn-close', modal)
-                        .show()
-                        .attr("data-katapp-error", "true");
-
-                    summary.show();
-                })
-                .on("onCalculationErrors.RBLe", function (event, key, message, ex, options, application: KatAppPlugIn) {
-                    if (key == "SubmitCalculation.ConfigureUI") {
-                        application.ui.triggerEvent("onUnexpectedError", ex)
-                    }
-                })
-                .KatApp( modalAppOptions );
+            }
         }
 
         processActionLinks( container?: JQuery<HTMLElement> ): void {
@@ -6243,7 +6374,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
 
                         application.rble.initializeValidationSummaries();
                 
-                        application.ui.triggerEvent( "onUploadStart", actionEndpoint, fileUpload, fd, application );
+                        application.triggerEvent( "onUploadStart", actionEndpoint, fileUpload, fd, application );
 
                         let errorResponse: JSON;
             
@@ -6273,7 +6404,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                         })
                         .then( 
                             function( /* payLoad */ ) {
-                                application.ui.triggerEvent( "onUploaded", actionEndpoint, fileUpload, application );
+                                application.triggerEvent( "onUploaded", actionEndpoint, fileUpload, application );
                             },
                             function( _jqXHR  ) {
                                 errorResponse = _jqXHR[ "responseBinary" ];
@@ -6311,10 +6442,10 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                                 application.rble.processValidationRows( errorSummary, errors );
                                 application.rble.finalizeValidationSummaries();
 
-                                application.ui.triggerEvent( "onUploadFailed", actionEndpoint, fileUpload, errorResponse, application );
+                                application.triggerEvent( "onUploadFailed", actionEndpoint, fileUpload, errorResponse, application );
                             }
                             else {
-                                application.ui.triggerEvent( "onUploadComplete", actionEndpoint, fileUpload, application );
+                                application.triggerEvent( "onUploadComplete", actionEndpoint, fileUpload, application );
                             }
 
                             that.application.hideAjaxBlocker();

@@ -94,21 +94,54 @@ interface KatAppOptions
     onCalculationErrors?: (this: HTMLElement, key: string, message: string, exception: Error, calcOptions: KatAppOptions, application: KatAppPlugInInterface)=> void;
     onCalculateEnd?: (this: HTMLElement, application: KatAppPlugInInterface )=> void;
 
-    onActionStart?: (this: HTMLElement, endpoint: string, submitData: JSON, application: KatAppPlugInInterface, currentOptions: KatAppOptions, actionLink: JQuery<HTMLElement>)=> void;
+    onActionStart?: (this: HTMLElement, endpoint: string, submitData: JSON, application: KatAppPlugInInterface, currentOptions: KatAppOptions, actionLink: JQuery<HTMLElement>)=> boolean | undefined;
     onActionResult?: (this: HTMLElement, endpoint: string, result: JSON | undefined, application: KatAppPlugInInterface, currentOptions: KatAppOptions, actionLink: JQuery<HTMLElement>)=> void;
     onActionFailed?: (this: HTMLElement, endpoint: string, exception: JSON, application: KatAppPlugInInterface, currentOptions: KatAppOptions, actionLink: JQuery<HTMLElement>)=> void;
     onActionComplete?: (this: HTMLElement, endpoint: string, application: KatAppPlugInInterface, currentOptions: KatAppOptions, actionLink: JQuery<HTMLElement>)=> void;
 
-    onModalAppConfirm?: (this: HTMLElement, hostApplication: KatAppPlugInInterface, modalLink: JQuery<HTMLElement>, dismiss: ( message: string | undefined )=> void, enable: ()=> void)=> void;
-    onModalAppCancel?: (this: HTMLElement, hostApplication: KatAppPlugInInterface, modalLink: JQuery<HTMLElement>, dismiss: ( message: string | undefined )=> void, enable: ()=> void)=> void;
+    modalAppOptions?: ModalAppOptions,
+    
+    // Modal handlers
+    onConfirm?: (this: HTMLElement, hostApplication: KatAppPlugInInterface, modalLink: JQuery<HTMLElement>, dismiss: (message?: string)=> void, cancel: ()=> void)=> boolean | string | undefined;
+    onCancel?: (this: HTMLElement, hostApplication: KatAppPlugInInterface, modalLink: JQuery<HTMLElement>, dismiss: (message?: string)=> void, cancel: ()=> void)=> boolean | string | undefined;
+
+    // Host handlers only triggered modal applications and only handled by framework
+    onModalAppConfirm?: (this: HTMLElement, message: string | undefined)=> void;
+    onModalAppCancel?: (this: HTMLElement, message: string | undefined)=> void;
+
+    // Host handlers
     onModalAppInitialized?: (this: HTMLElement, applicationId: string, hostApplication: KatAppPlugInInterface, modalApplication: KatAppPlugInInterface, modalLink: JQuery<HTMLElement>)=> void;
-    onModalAppConfirmed?: (this: HTMLElement, applicationId: string, hostApplication: KatAppPlugInInterface, modalApplication: KatAppPlugInInterface, modalLink: JQuery<HTMLElement>, message: string | undefined)=> void;
-    onModalAppCancelled?: (this: HTMLElement, applicationId: string, hostApplication: KatAppPlugInInterface, modalApplication: KatAppPlugInInterface, modalLink: JQuery<HTMLElement>, message: string | undefined)=> void;
+    onModalAppConfirmed?: (this: HTMLElement, applicationId: string, hostApplication: KatAppPlugInInterface, modalApplication: KatAppPlugInInterface, modalLink: JQuery<HTMLElement>, dismiss: ()=> void, message: string | undefined)=> void;
+    onModalAppCancelled?: (this: HTMLElement, applicationId: string, hostApplication: KatAppPlugInInterface, modalApplication: KatAppPlugInInterface, modalLink: JQuery<HTMLElement>, dismiss: ()=> void, message: string | undefined)=> void;
     
     onUploadStart?: (this: HTMLElement, fileUpload: JQuery<HTMLElement>, formData: FormData, application: KatAppPlugInInterface)=> void;
     onUploaded?: (this: HTMLElement, fileUpload: JQuery<HTMLElement>, application: KatAppPlugInInterface)=> void;
     onUploadFailed?: (this: HTMLElement, fileUpload: JQuery<HTMLElement>, exception: JSON, application: KatAppPlugInInterface)=> void;
     onUploadComplete?: (this: HTMLElement, fileUpload: JQuery<HTMLElement>, application: KatAppPlugInInterface)=> void;
+}
+
+type ModalAppSize = "xl" | "lg" | "md" | "sm";
+interface ModalAppOptions {
+    labels: {
+        title: string | undefined
+        cancel: string;
+        continue: string;
+    };
+    applicationId: string;
+    actionLink: JQuery<HTMLElement>;
+    showCancel: boolean;
+    size: ModalAppSize;
+    hostApplication: KatAppPlugInInterface;
+    continueActionLink?: string | undefined;
+    calculateOnConfirm: boolean;
+}
+interface ModalDialogOptions {
+    labels: {
+        title?: string;
+        cancel?: string;
+        continue?: string;
+    } | undefined;
+    confirmation: string
 }
 
 interface KatAppActionOptions extends KatAppOptions {

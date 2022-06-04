@@ -2902,7 +2902,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
             itemsToProcess.each(function () {
                 const item = $(this);                    
                 const templateId = item.attr('rbl-tid')!; // eslint-disable-line @typescript-eslint/no-non-null-assertion
-                that.injectTemplate( item, templateId );
+                that.injectTemplateWithoutSource( item, templateId );
                 item.attr("data-katapp-template-injected", "true");
                 that.injectTemplatesWithoutSource(item, showInspector);
             });
@@ -2919,7 +2919,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
             }
         }
 
-        injectTemplate( target: JQuery<HTMLElement>, templateId: string ): void {
+        injectTemplateWithoutSource( target: JQuery<HTMLElement>, templateId: string ): void {
             try {
                 $.fn.KatApp.currentView = this.application.element;
 
@@ -4257,10 +4257,10 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
             const that: RBLeUtilities = this;
             const application = this.application;
     
-            application.select("[" + attributeName + "]")
+            application.select("[" + attributeName + "], [" + attributeName + "-remove]")
                 .each(function () {
                     const el = $(this);
-                    const attributeValue = el.attr(attributeName);
+                    const attributeValue = el.attr(attributeName) ?? el.attr(attributeName + "-remove");
 
                     // rbl-display/rbl-disable - current support
                     // id - attributeName[@id=id]/value || legacyTable[@id=id]/value returns falsy
@@ -4375,9 +4375,14 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                 "ejs-visibility",
                 ( el, value ) => {
                     if ( value ) {
-                        // couldn't use .hide() because elements with 
-                        // 'flex' display had important on it
-                        el.attr('style','display:none !important');
+                        if ( el.attr("rbl-display-remove") != undefined ) {
+                            el.remove();
+                        }
+                        else {
+                            // couldn't use .hide() because elements with 
+                            // 'flex' display had important on it                        
+                            el.attr('style','display:none !important');
+                        }
                     }
                     else {
                         el.show();

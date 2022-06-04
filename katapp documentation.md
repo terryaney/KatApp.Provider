@@ -19,7 +19,7 @@
         - [Scoping jQuery](#Scoping-jQuery)
     - [rbl-value Attribute Details](#rbl-value-Attribute-Details)
     - [rbl-attr Attribute Details](#rbl-attr-Attribute-Details)
-    - [rbl-display Attribute Details](#rbl-display-Attribute-Details)
+    - [rbl-display and rbl-display-remove Attribute Details](#rbl-display-and-rbl-display-remove-Attribute-Details)
     - [rbl-disabled Attribute Details](#rbl-disabled-Attribute-Details)
     - [rbl-on Event Handlers](#rbl-on-Event-Handlers)
         - [Assigning Event Handlers to Contained Elements](#Assigning-Event-Handlers-to-Contained-Elements)
@@ -385,7 +385,7 @@ Attribute | Description
 rbl-value | Inserts a value from RBLe Service.  See [rbl-value Attribute Details](#rbl-value-Attribute-Details).
 rbl-ce | If multiple CalcEngines are used, can provide a `key` to a CE to indicate which CalcEngine to pull value from.
 rbl-tab | If multiple tabs are returned from a CalcEngine, can provide a name which tab to pull value from.
-rbl-display | Reference to boolean RBLe result data that toggles display style (uses `jQuery.show()` and `jQuery.hide()` ).  See [rbl-display Attribute Details](#rbl-display-Attribute-Details).
+rbl-display | Reference to boolean RBLe result data that toggles display style (uses `jQuery.show()` and `jQuery.hide()` ).  See [rbl-display and rbl-display-remove Attribute Details](#rbl-display-and-rbl-display-remove-Attribute-Details).
 rbl-attr | Update HTML attribute values with combining the syntax of `rbl-value`, `rbl-ce`, and `rbl-tab`.  See [rbl-attr Attribute Details](#rbl-attr-Attribute-Details).
 rbl-tid | Indicates what RBL template to apply to the given source rows.  Results from template and data replace element content.
 rbl-source<br/>rbl&#x2011;source&#x2011;table | Indicates row(s) from an RBLe result table used to process a template.  Pairs with `rbl-tid`<br/>&nbsp;.  See [rbl-source Selectors](#rbl-source-Selectors).
@@ -561,8 +561,10 @@ Selector: Table: rbl-value, ID: election-confirm, Column: value
 <a rbl-attr="data-action:election-action:Shared:RBLRetire data-confirm:election-confirm">Make Election</a>
 ```
 
-## rbl-display Attribute Details
-The `rbl-display` attribute has all the same 'selector' capabilities described in [KatApp Selectors](#KatApp-Selectors).  Once a `value` is selected from a specified selector (or `rbl-display` as default table if only ID is provided), a boolean 'falsey' logic is applied against the value.  An element will be hidden if the value is `0`, `false` or an empty string.
+## rbl-display and rbl-display-remove Attribute Details
+The `rbl-display` and `rbl-display-remove` attributes have all the same 'selector' capabilities described in [KatApp Selectors](#KatApp-Selectors).  Once a `value` is selected from a specified selector (or `rbl-display` as default table if only ID is provided), a boolean 'falsey' logic is applied against the value.  
+
+An element will be hidden if the value is `0`, `false` or an empty string. If the attribute is `rbl-display-remove` instead of being hidden, the element will be removed from the DOM.
 
 ```html
 <!-- Show or hide based on 'value' column from 'rbl-display' table where 'id' is 'show-wealth' -->
@@ -573,6 +575,20 @@ The `rbl-display` attribute has all the same 'selector' capabilities described i
 
 <!-- Show or hide based on 'year' column from 'benefit-savings' table where 'id' is 'ret-age' -->
 <span rbl-display="benefit-savings.ret-age.year"></span>
+
+<!--
+    Sample template using additional features of 'inline templates' and simple and complex
+    expressions to determine rbl-display value, but the example shows rendering two types of
+    links based on RBLe results.  Either a 'real href' anchor to a new browser tab or creating
+    a bootstrap popup dialog.  After the template generates both links the rbl-display-remove
+    will remove the item that is no longer needed.
+-->
+<ul rbl-source="contentContextLinks">
+    <li rbl-tid="inline">
+        <a rbl-display-remove="v:'{selector}'.indexOf('-popup') = -1" href="{link}" target="_blank">{text}</a>
+        <a rbl-display-remove="v:'{selector}'.indexOf('-popup') > -1" href="#" data-bs-toggle='popover' data-bs-trigger='click' data-content-selector='{popupContentSelector}'>{text}</a>
+    </li>
+</ul>
 ```
 
 See [View and Template Expressions](#View-and-Template-Expressions) for information on how to use simple and complex expressions to determine visibility.
@@ -1099,7 +1115,7 @@ The most common use of templates with RBLe results is for repetitive result item
 
 Templates can be provided default values in case a `{value}` is not provided via the caller with `data-value='xyz'` syntax, or not present in the `rbl-source` data used to render the template.
 
-To provide defaults on a template, simply specify values via `default-` prefixed attributes.  For example, to provide a default value for a `{value}` subsitution, specify `default-value='xyz'` on the `<rbl-template>` or `<div rbl-tid="inline">` element.
+To provide defaults on a template, simply specify values via `default-` prefixed attributes.  For example, to provide a default value for a `{value}` subsitution, specify `default-value='xyz'` on the `<rbl-template>` (if the template is used without a source) or the element containing the `rbl-source=""` specification.
 
 When templates are processed, if the data source (`data-` attributes or data row from `rbl-source` driven templates) doesn't have a column requested in the template (i.e. `{missing-column}`), a replace doesn't happen and the templated content returns the static string `{requested-column}` in the markup. Providing defaults allows the Kaml View developers to avoid this situation..
 
@@ -1791,7 +1807,7 @@ The javascript predicate has a signature of: `predicate( row: JSON, index: integ
 
 When using a [KatApp Selector](#KatApp-Selectors) to specify how to pull a value from CalcEngine results, expressions increase the power of selectors by enabling expression coding to extend the base selector capability (via `[]` expression coding).
 
-KatApp Selectors are used for [rbl-value](#rbl-value-Attribute-Details), [rbl-display](#rbl-display-Attribute-Details), and [rbl-attr](#rbl-attr-Attribute-Details) attribute processing.  Expressions extend default behavior by allowing a javascript code to be supplied on top of the default selector to return any value the Kaml View developer sees fit.
+KatApp Selectors are used for [rbl-value](#rbl-value-Attribute-Details), [rbl-display](#rbl-display-and-rbl-display-remove-Attribute-Details), and [rbl-attr](#rbl-attr-Attribute-Details) attribute processing.  Expressions extend default behavior by allowing a javascript code to be supplied on top of the default selector to return any value the Kaml View developer sees fit.
 
 There are a couple differences in the KatApp Selector syntax when they are used in conjuction with expressions.
 

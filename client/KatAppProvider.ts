@@ -3726,15 +3726,21 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                 }
 
                 if ( isExpression && selectorParts.length === 1 ) {
-                    const tableRows = this.getResultTable<JSON>( tabDef, selectorParts[ 0 ] );
+                    if ( selector.indexOf("this.") == -1 && selector.indexOf("this.") == -1 ) {
+                        // Just hard coded expression value...not using actual table/row...
+                        return this.processTableRowExpression( selector, {} as JSON, 0 );
+                    }
+                    else {
+                        const tableRows = this.getResultTable<JSON>( tabDef, selectorParts[ 0 ] );
 
-                    if ( tableRows.length > 0 ) {
-                        for (let index = 0; index < tableRows.length; index++) {
-                            const row = tableRows[index];
-                            const expressionValue = this.processTableRowExpression( selector, row, index );
-                            
-                            if ( expressionValue != undefined ) {
-                                return expressionValue;
+                        if ( tableRows.length > 0 ) {
+                            for (let index = 0; index < tableRows.length; index++) {
+                                const row = tableRows[index];
+                                const expressionValue = this.processTableRowExpression( selector, row, index );
+                                
+                                if ( expressionValue != undefined ) {
+                                    return expressionValue;
+                                }
                             }
                         }
                     }
@@ -3964,9 +3970,19 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
     
                                 if ( newValue == "" ) {
                                     el.removeAttr(attrName).removeData(dataName)
+                                    /*
+                                    if ( attrName.startsWith( "data-" ) ) {
+                                        el.removeData(attrName.substring(5));
+                                    }
+                                    */
                                 }
                                 else {
                                     el.attr(attrName, newValue).data(dataName, value);
+                                    /*
+                                    if ( attrName.startsWith( "data-" ) ) {
+                                        el.data(attrName.substring(5), newValue);
+                                    }
+                                    */
                                 }
                             }
                             else {
@@ -5148,7 +5164,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
             const application = this.application;
 
             if ( results !== undefined ) {
-                const showInspector = application.calculationInputs?.iConfigureUI === 1 && ( calculationOptions.debug?.showInspector ?? false );
+                const showInspector = /* application.calculationInputs?.iConfigureUI === 1 && */ ( calculationOptions.debug?.showInspector ?? false );
                 
                 this.initializeValidationSummaries();
 
@@ -5204,6 +5220,16 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                 this.processRblSources( this.application.element, showInspector );
                 this.processRblValues( showInspector );
                 this.processRblAttributes( showInspector );
+
+                /* Disabled because still had issues for what was attempted in nexgen 'modal-content' template usage...
+                // Run again b/c rbl-attr might have assigned a rbl-tid so you can have a template
+                // *without* a source, but does not get processed until first calculation is done
+                // Can't move RblAttributes before first call of injectTempaltesWithoutSource because
+                // the templates rendered may create rbl-attr elements...so kind of infinite circle
+                // kind of, but I only process templates one more time after attr to handle one level deep
+                this.application.ui.injectTemplatesWithoutSource(this.application.element, showInspector);
+                this.processRblAttributes( showInspector );
+                */
                 this.processTables();
                 this.processCharts();
     

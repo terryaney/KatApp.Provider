@@ -4273,10 +4273,10 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
             const that: RBLeUtilities = this;
             const application = this.application;
     
-            application.select("[" + attributeName + "], [" + attributeName + "-remove]")
+            application.select("[" + attributeName + "]")
                 .each(function () {
                     const el = $(this);
-                    const attributeValue = el.attr(attributeName) ?? el.attr(attributeName + "-remove");
+                    const attributeValue = el.attr(attributeName);
 
                     // rbl-display/rbl-disable - current support
                     // id - attributeName[@id=id]/value || legacyTable[@id=id]/value returns falsy
@@ -4320,10 +4320,11 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
 
                         if ( tabDef != undefined ) {
                             const simpleExpression = that.getSimpleExpression(attributeValue);
+                            const tableName = attributeName == "rbl-if" ? "rbl-display" : attributeName;
 
                             let resultValue = 
                                 simpleExpression?.left ??
-                                that.getRblSelectorValue( tabDef, attributeName, simpleExpression?.selector ?? attributeValue ) ??
+                                that.getRblSelectorValue( tabDef, tableName, simpleExpression?.selector ?? attributeValue ) ??
                                 that.getRblSelectorValue( tabDef, legacyTable, simpleExpression?.selector ?? attributeValue );
                 
                             // Reassign the value you are checking if they are using simple expressions
@@ -4391,14 +4392,9 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                 "ejs-visibility",
                 ( el, value ) => {
                     if ( value ) {
-                        if ( el.attr("rbl-display-remove") != undefined ) {
-                            el.remove();
-                        }
-                        else {
-                            // couldn't use .hide() because elements with 
-                            // 'flex' display had important on it                        
-                            el.attr('style','display:none !important');
-                        }
+                        // couldn't use .hide() because elements with 
+                        // 'flex' display had important on it                        
+                        el.attr('style','display:none !important');
                     }
                     else {
                         el.show();
@@ -4407,6 +4403,19 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
             );
         }
     
+        processRblIfs( showInspector: boolean): void {
+            this.processRblFalseyAttribute(
+                showInspector,
+                "rbl-if",
+                "rbl-display",
+                ( el, value ) => {
+                    if ( value ) {
+                        el.remove();
+                    }
+                }
+            );
+        }
+
         processRBLSkips( tabDef: TabDef ): void {
             // Legacy, might not be needed (what class do you want me to drop in there)
             let skipRows = this.getResultTable<RBLeRowWithId>( tabDef, "rbl-skip" );
@@ -5240,6 +5249,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                 // These all need to be after processUI so if any inputs are built
                 // from results, they are done by the time these run
                 this.processRblDisplays( showInspector );
+                this.processRblIfs( showInspector );
                 this.processRblDisabled( showInspector );
 
                 let sliderConfigIds: ( string | null )[] = [];

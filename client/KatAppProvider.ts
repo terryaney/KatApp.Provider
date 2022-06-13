@@ -3755,11 +3755,11 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                     {
                         row = this.getResultRow<JSON>( tabDef, defaultTableName, selectorParts[0] );
                     }
-                    else if (selectorParts.length === 2) 
+                    else if (selectorParts.length === 2 ) 
                     {
                         row = this.getResultRow<JSON>( tabDef, selectorParts[0], selectorParts[1] );
                     }
-                    else if (selectorParts.length === 3) 
+                    else if (selectorParts.length === 3 ) 
                     {
                         row = isExpression
                             ? this.getResultRow<JSON>( tabDef, selectorParts[0], selectorParts[2], selectorParts[1] )
@@ -4037,30 +4037,26 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                         const sourceTab = el.attr( "rbl-tab" );
                         const tabDef = that.getTabDef( sourceTab, sourceCE )
                         const tabDefName = tabDef?._fullName ?? sourceCE + "." + sourceTab;
+
                         const rblSource = el.attr('rbl-source-table') ?? el.attr('rbl-source') ?? "NOSOURCE";
-                        const isTableExpression = rblSource.indexOf("[") > -1;
-                        
                         if ( el.attr('rbl-source-table') != undefined ) {
                             application.trace("<b style='color: Red;'>RBL WARNING</b>: rbl-source-table in tab " + tabDefName + " no longer supported.", TraceVerbosity.Detailed);
                         }
 
-                        // rbl-source:
-                        // tableName - all rows
-                        // tableName.idValue - row where @id = idValue
-                        // tableName.columnName.columnValue - rows where columnName = columnValue
-                        // tableName[javascript] - rows where javascript expression evaluates to true
-                        const rblSourceParts = 
-                            isTableExpression 
-                                ? [ rblSource ]
-                                : rblSource.split('.');
-    
-                        const tableName = rblSourceParts[0].split("[")[ 0 ];
                         const template = tid != undefined 
                             ? application.ui.getTemplate( tid, elementData, false )
                             : undefined;
                         const templateContent = template != undefined 
                             ? template.TemplatedContent 
                             : undefined;
+    
+                        if ( tid === undefined || template === undefined || templateContent === undefined ) {
+                            // Result tables are processed later
+                            if ( el.attr("rbl-tid") !== "result-table" ) {
+                                application.trace("<b style='color: Red;'>RBL WARNING</b>: Template content could not be found. Tab = " + tabDefName + " [" + ( tid ?? "Missing rbl-tid for " + el.attr('rbl-source') ) + "]", TraceVerbosity.Detailed);
+                            }
+                            return;
+                        }
     
                         if ( showInspector && !el.hasClass("kat-inspector-source") ) {
                             el.addClass("kat-inspector-source");
@@ -4078,137 +4074,144 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                             }
                             el.attr("title", inspectorTitle);
                         }
-            
-                        if ( tid === undefined || template === undefined || templateContent === undefined ) {
-                            // Result tables are processed later
-                            if ( el.attr("rbl-tid") !== "result-table" ) {
-                                application.trace("<b style='color: Red;'>RBL WARNING</b>: Template content could not be found. Tab = " + tabDefName + " [" + ( tid ?? "Missing rbl-tid for " + el.attr('rbl-source') ) + "]", TraceVerbosity.Detailed);
-                            }
-                        }
-                        else if ( rblSourceParts.length > 3 ) {
+
+                        const isTableExpression = rblSource.indexOf("[") > -1;
+
+                        // rbl-source:
+                        // tableName - all rows
+                        // tableName.idValue - row where @id = idValue
+                        // tableName.columnName.columnValue - rows where columnName = columnValue
+                        // tableName[javascript] - rows where javascript expression evaluates to true
+                        const rblSourceParts = 
+                            isTableExpression 
+                                ? [ rblSource ]
+                                : rblSource.split('.');
+    
+                        if ( rblSourceParts.length > 3 ) {
                             application.trace("<b style='color: Red;'>RBL WARNING</b>: Invalid length for rblSourceParts=" + rblSourceParts.join("."), TraceVerbosity.Detailed);
+                            return;
                         }
-                        else {
-                            let showEmptyTemplate = true;
 
-                            // table in array format.  Clear element, apply template to all table rows and .append                            
-                            const tableRows = that.getResultTable<JSON>( tabDef, tableName );
-                            
-                            if ( tableRows.length > 0 ) {
-                                const templateDefaults = application.dataAttributesToJson(el, "default-");
+                        const tableName = rblSourceParts[0].split("[")[ 0 ];
+                        let showEmptyTemplate = true;
 
-                                // tableName.idValue - row where @id = idValue
-                                const rblSourceId = rblSourceParts.length == 2 ? rblSourceParts[1] : undefined;
+                        // table in array format.  Clear element, apply template to all table rows and .append                            
+                        const tableRows = that.getResultTable<JSON>( tabDef, tableName );
+                        
+                        if ( tableRows.length > 0 ) {
+                            const templateDefaults = application.dataAttributesToJson(el, "default-");
 
-                                // Get a 'data' row with all values cleared out so that rows with blanks in CE
-                                // (which aren't exported) are properly handled in templates
-                                const firstRow = KatApp.extend( {}, tableRows[0] );
-                                if (Object.keys(firstRow).length > 0) {
-                                    for (const propertyName in firstRow) {
-                                        firstRow[propertyName] = "";
-                                    }
+                            // tableName.idValue - row where @id = idValue
+                            const rblSourceId = rblSourceParts.length == 2 ? rblSourceParts[1] : undefined;
+
+                            // Get a 'data' row with all values cleared out so that rows with blanks in CE
+                            // (which aren't exported) are properly handled in templates
+                            const firstRow = KatApp.extend( {}, tableRows[0] );
+                            if (Object.keys(firstRow).length > 0) {
+                                for (const propertyName in firstRow) {
+                                    firstRow[propertyName] = "";
                                 }
-                                const firstRowSource = KatApp.extend( {}, firstRow, templateDefaults );
+                            }
+                            const firstRowSource = KatApp.extend( {}, firstRow, templateDefaults );
 
-                                const appendTemplateResult = function( templateData: object, templateContent: string, dest: JQuery<HTMLElement>, prepend: boolean, prependBeforePreserve: boolean ): void {
+                            const appendTemplateResult = function( templateData: object, templateContent: string, dest: JQuery<HTMLElement>, prepend: boolean, prependBeforePreserve: boolean ): void {
+                                try {
                                     try {
-                                        try {
-                                            templateData = KatApp.extend( {}, firstRowSource, templateData )
-                                        } catch {
-                                            // Could throw error if KatApp.js isn't updated and can't handle
-                                            // when column has meta data of @class, @width, etc.
-                                        }
-        
-                                        const formattedContent = templateContent.format( templateData );
-                                        let el = $(formattedContent);
-    
-                                        const hasRoot = el.length == 1;
-    
-                                        // nested template processing will not select elements right if there is no root
-                                        if ( !hasRoot ) {
-                                            el = $("<div>" + formattedContent + "</div>");
-                                        }
-    
-                                        that.application.ui.ensureTemplateScript( template.Template, el );
-    
-                                        // Nested templates
-                                        that.application.ui.injectTemplatesWithoutSource(el, showInspector);
-                                        // Nested rbl-source templates
-                                        that.processRblSources(el, showInspector);
-                                        
-                                        const templateResult = hasRoot ? el : el.children();
-    
-                                        $.fn.KatApp.currentView = application.element;
-                                        
-                                        if ( prepend ) {
-                                            dest.prepend( templateResult );
-                                        }
-                                        else if ( prependBeforePreserve ) {
-                                            templateResult.insertBefore( application.select(".rbl-preserve", dest).first() );
-                                        }
-                                        else {
-                                            dest.append( templateResult );
-                                        }
-                                    } finally {
-                                        $.fn.KatApp.currentView = undefined;
+                                        templateData = KatApp.extend( {}, firstRowSource, templateData )
+                                    } catch {
+                                        // Could throw error if KatApp.js isn't updated and can't handle
+                                        // when column has meta data of @class, @width, etc.
                                     }
-                                };
+    
+                                    const formattedContent = templateContent.format( templateData );
+                                    let el = $(formattedContent);
 
-                                if ( rblSourceId != undefined ) {
-                                    const rowSource = that.getResultRow<JSON>( tabDef, tableName, rblSourceId );
+                                    const hasRoot = el.length == 1;
+
+                                    // nested template processing will not select elements right if there is no root
+                                    if ( !hasRoot ) {
+                                        el = $("<div>" + formattedContent + "</div>");
+                                    }
+
+                                    that.application.ui.ensureTemplateScript( template.Template, el );
+
+                                    // Nested templates
+                                    that.application.ui.injectTemplatesWithoutSource(el, showInspector);
+                                    // Nested rbl-source templates
+                                    that.processRblSources(el, showInspector);
                                     
-                                    if ( rowSource !== undefined ) {
-                                        showEmptyTemplate = false;
+                                    const templateResult = hasRoot ? el : el.children();
 
-                                        el.children()
-                                            .not(".rbl-preserve")
-                                            .remove();
-
-                                        appendTemplateResult(KatApp.extend( {}, rowSource ), templateContent, el, false, false);
+                                    $.fn.KatApp.currentView = application.element;
+                                    
+                                    if ( prepend ) {
+                                        dest.prepend( templateResult );
                                     }
+                                    else if ( prependBeforePreserve ) {
+                                        templateResult.insertBefore( application.select(".rbl-preserve", dest).first() );
+                                    }
+                                    else {
+                                        dest.append( templateResult );
+                                    }
+                                } finally {
+                                    $.fn.KatApp.currentView = undefined;
                                 }
-                                else {
+                            };
+
+                            if ( rblSourceId != undefined ) {
+                                const rowSource = that.getResultRow<JSON>( tabDef, tableName, rblSourceId );
+                                
+                                if ( rowSource !== undefined ) {
+                                    showEmptyTemplate = false;
+
                                     el.children()
                                         .not(".rbl-preserve")
                                         .remove();
 
-                                    const prepend = el.attr('rbl-prepend') === "true";
-                                    const prependBeforePreserve = el.attr('rbl-prepend') === "before-preserve";
-                                    const rblSourceHasColumnCondition = rblSourceParts.length === 3;
-                                    const rblSourceColToCompare = rblSourceHasColumnCondition ? rblSourceParts[ 1 ] : "";
-                                    const rblSourceColValue = rblSourceHasColumnCondition ? rblSourceParts[ 2 ] : undefined;
-
-                                    tableRows.forEach( ( row, index ) => {
-                                        // tableName - process all
-                                        // tableName[expression] - process if expression returns !falsy
-                                        // tableName.columnName.columnValue - rows where columnName = columnValue
-                                        const processTableRow = isTableExpression
-                                            ? !that.isFalsy( that.processTableRowExpression( rblSourceParts[ 0 ], row, index ) )
-                                            : !rblSourceHasColumnCondition || row[ rblSourceColToCompare ] == rblSourceColValue;
-
-                                        if ( processTableRow ) {
-                                            showEmptyTemplate = false;
-
-                                            // Automatically add the _index0 and _index1 for carousel template
-                                            // const templateData = KatApp.extend( {}, row, { _index0: index, _index1: index + 1 } )
-                                            appendTemplateResult(KatApp.extend( {}, row, { _index0: index, _index1: index + 1 } ), templateContent, el, prepend, prependBeforePreserve);
-                                        }
-                                    });
+                                    appendTemplateResult(KatApp.extend( {}, rowSource ), templateContent, el, false, false);
                                 }
                             }
+                            else {
+                                el.children()
+                                    .not(".rbl-preserve")
+                                    .remove();
 
-                            if ( showEmptyTemplate && application.select(".rbl-preserve", el).length == 0 ) {
-                                // If no data source (and no previous preserves there), show/append the 'empty' template
-                                const emptyTemplateId = el.attr("rbl-empty-tid");
-                                const emptyTemplate = emptyTemplateId != undefined
-                                    ? application.ui.getTemplate( emptyTemplateId, {}, false )?.TemplatedContent
-                                    : undefined;
+                                const prepend = el.attr('rbl-prepend') === "true";
+                                const prependBeforePreserve = el.attr('rbl-prepend') === "before-preserve";
+                                const rblSourceHasColumnCondition = rblSourceParts.length === 3;
+                                const rblSourceColToCompare = rblSourceHasColumnCondition ? rblSourceParts[ 1 ] : "";
+                                const rblSourceColValue = rblSourceHasColumnCondition ? rblSourceParts[ 2 ] : undefined;
 
-                                if ( emptyTemplate != undefined ) {
-                                    const et = $(emptyTemplate);
-                                    el.children().remove();
-                                    el.append(et);
-                                }
+                                tableRows.forEach( ( row, index ) => {
+                                    // tableName - process all
+                                    // tableName[expression] - process if expression returns !falsy
+                                    // tableName.columnName.columnValue - rows where columnName = columnValue
+                                    const processTableRow = isTableExpression
+                                        ? !that.isFalsy( that.processTableRowExpression( rblSourceParts[ 0 ], row, index ) )
+                                        : !rblSourceHasColumnCondition || row[ rblSourceColToCompare ] == rblSourceColValue;
+
+                                    if ( processTableRow ) {
+                                        showEmptyTemplate = false;
+
+                                        // Automatically add the _index0 and _index1 for carousel template
+                                        // const templateData = KatApp.extend( {}, row, { _index0: index, _index1: index + 1 } )
+                                        appendTemplateResult(KatApp.extend( {}, row, { _index0: index, _index1: index + 1 } ), templateContent, el, prepend, prependBeforePreserve);
+                                    }
+                                });
+                            }
+                        }
+
+                        if ( showEmptyTemplate && application.select(".rbl-preserve", el).length == 0 ) {
+                            // If no data source (and no previous preserves there), show/append the 'empty' template
+                            const emptyTemplateId = el.attr("rbl-empty-tid");
+                            const emptyTemplate = emptyTemplateId != undefined
+                                ? application.ui.getTemplate( emptyTemplateId, {}, false )?.TemplatedContent
+                                : undefined;
+
+                            if ( emptyTemplate != undefined ) {
+                                const et = $(emptyTemplate);
+                                el.children().remove();
+                                el.append(et);
                             }
                         }
                     }
@@ -4322,20 +4325,58 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                             const simpleExpression = that.getSimpleExpression(attributeValue);
                             const tableName = attributeName == "rbl-if" ? "rbl-display" : attributeName;
 
-                            let resultValue = 
-                                simpleExpression?.left ??
-                                that.getRblSelectorValue( tabDef, tableName, simpleExpression?.selector ?? attributeValue ) ??
-                                that.getRblSelectorValue( tabDef, legacyTable, simpleExpression?.selector ?? attributeValue );
-                
-                            // Reassign the value you are checking if they are using simple expressions
-                            // by passing in the value from getRblSelectorValue to the expression created
-                            // originally by {operator}{value} and it will return 1 or 0.
-                            if ( simpleExpression != undefined ) {
-                                resultValue = simpleExpression.evaluate(resultValue);
-                            }
+                            if ( attributeValue.toLowerCase().startsWith("exists(") ) {
+                                const rblSource = attributeValue.substring( 7, attributeValue.length - 1 );
+                                const isTableExpression = rblSource.indexOf("[") > -1;
+                                const rblSourceParts = 
+                                    isTableExpression 
+                                        ? [ rblSource ]
+                                        : rblSource.split('.');
+                                const tableName = rblSourceParts[0].split("[")[ 0 ];
 
-                            if (resultValue != undefined) {
-                                processFalsey( el, that.isFalsy( resultValue ) );
+                                const tableRows = that.getResultTable<ResultTableRow>( tabDef, tableName );
+
+                                if ( tableRows.length == 0 ) {
+                                    processFalsey( el, true );
+                                    return;
+                                }
+
+                                if ( isTableExpression ) {
+                                    processFalsey( 
+                                        el, 
+                                        tableRows.find( ( row, index ) => !that.isFalsy( that.processTableRowExpression( rblSourceParts[ 0 ], row, index ) ) ) == undefined 
+                                    );
+                                    return;
+                                }
+
+                                if ( rblSourceParts.length === 1 ) 
+                                {
+                                    // We already know rows exist...so can exit now
+                                    processFalsey( el, false );
+                                    return;
+                                }
+
+                                var keyColumn = rblSourceParts.length === 2 ? "@id" : rblSourceParts[1];
+                                var keyValue = rblSourceParts.length === 2 ? rblSourceParts[1] : rblSourceParts[2];
+                                
+                                processFalsey( el, tableRows.find( r => r[ keyColumn ] == keyValue ) == undefined );
+                            }
+                            else {
+                                let resultValue = 
+                                    simpleExpression?.left ??
+                                    that.getRblSelectorValue( tabDef, tableName, simpleExpression?.selector ?? attributeValue ) ??
+                                    that.getRblSelectorValue( tabDef, legacyTable, simpleExpression?.selector ?? attributeValue );
+                    
+                                // Reassign the value you are checking if they are using simple expressions
+                                // by passing in the value from getRblSelectorValue to the expression created
+                                // originally by {operator}{value} and it will return 1 or 0.
+                                if ( simpleExpression != undefined ) {
+                                    resultValue = simpleExpression.evaluate(resultValue);
+                                }
+
+                                if (resultValue != undefined) {
+                                    processFalsey( el, that.isFalsy( resultValue ) );
+                                }
                             }
                         }
                         else {

@@ -722,12 +722,10 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                     // Process data-* attributes and bind events
                     that.templateBuilder.processUI();
 
-                    that.ui.bindCalculationInputs();
-
-                    that.ui.initializeConfirmLinks();
-                    
                     that.ui.handleVoidAnchors();
                     that.ui.bindRblOnHandlers();
+                    that.ui.bindCalculationInputs();
+                    that.ui.initializeConfirmLinks();
 
                     that.triggerEvent( "onInitialized", that );
 
@@ -1029,11 +1027,12 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
             
             var appId = context == undefined
                 ? this.id
-                : container.attr("rbl-application-id") || container.closest("[rbl-application-id]").attr("rbl-application-id");
+                : container.attr("rbl-application-id") || container.parents("[rbl-application-id]").attr("rbl-application-id");
 
             return $(selector, container).filter(
                 function(index) {
-                    return $(this).closest("[rbl-application-id]").attr("rbl-application-id") == appId;
+                    // Sometimes have to select the child app to ask for inputs and selector will have rbl-app= in it, so allow
+                    return $(this).parents("[rbl-application-id]").attr("rbl-application-id") == appId;
                 }
             );
         }
@@ -2146,15 +2145,15 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
         hideAjaxBlocker(): void {
             this.blockerCount--;
 
+            if ( this.blockerCount < 0 ) {
+                this.blockerCount = 0;
+            }
+
             if ( this.blockerCount == 0 ) {
                 const selector = this.options.ajaxLoaderSelector;
                 if ( selector != undefined ) {
                     this.select(selector).fadeOut();
                 }
-            }
-
-            if ( this.blockerCount < 0 ) {
-                this.blockerCount = 0;
             }
         }
 
@@ -2892,7 +2891,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
         
         injectTemplatesWithoutSource(container: JQuery<HTMLElement>, showInspector: boolean): void {
             const that = this;
-
+            const hasResults = this.application.results != undefined;
             const containerIsTemplateNotInjected = container.is("[rbl-tid]:not([rbl-source], [data-katapp-template-injected='true'])");
             const itemsToProcess = 
                 that.application.select("[rbl-tid]", container)
@@ -2900,11 +2899,17 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                     .add(containerIsTemplateNotInjected ? container : [] );
 
             itemsToProcess.each(function () {
-                const item = $(this);                    
-                const templateId = item.attr('rbl-tid')!; // eslint-disable-line @typescript-eslint/no-non-null-assertion
-                that.injectTemplateWithoutSource( item, templateId );
-                item.attr("data-katapp-template-injected", "true");
-                that.injectTemplatesWithoutSource(item, showInspector);
+                const item = $(this);
+                const needsCalculation = item.attr( "rbl-attr" ) != undefined;
+                if ( hasResults || !needsCalculation ) {
+                    if ( needsCalculation ) {
+                        that.application.rble.processRblAttribute( item, showInspector );                    
+                    }
+                    const templateId = item.attr('rbl-tid')!; // eslint-disable-line @typescript-eslint/no-non-null-assertion
+                    that.injectTemplateWithoutSource( item, templateId );
+                    item.attr("data-katapp-template-injected", "true");
+                    that.injectTemplatesWithoutSource(item, showInspector);
+                }
             });
         }
 
@@ -3899,101 +3904,106 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
             application.select("[rbl-attr]")
                 .each(function () {
                     let el = $(this);
-        
-                    if ( showInspector && !el.hasClass("kat-inspector-attr") ) {
-                        el.addClass("kat-inspector-attr");
-                        let inspectorTitle = "[rbl-attr={value}]".format( { "value": el.attr('rbl-attr') } );
-                        const existingTitle = el.attr("title");
-                        
-                        if ( existingTitle != undefined ) {
-                            inspectorTitle += "\nOriginal Title: " + existingTitle;
-                        }
-                        el.attr("title", inspectorTitle);
-                    }
-        
-                    const rblAttributesWithExpressions = that.getRblAttributeValueWithExpressions( el );
+                    that.processRblAttribute( el, showInspector );
+                });
+        }
 
-                    const rblAttributes = rblAttributesWithExpressions.rblAttr.split( " " );
+        processRblAttribute(el: JQuery<HTMLElement>, showInspector: boolean): void {
+            const that: RBLeUtilities = this;
+            const application = this.application;
 
-                    // rbl-attr="attrName:selector"
-                    // rbl-attr="attrName:selector:ce"
-                    // rbl-attr="attrName:selector:ce:tab"
-                    // rbl-attr="attrName:selector attrName2:selector ..."
-                    rblAttributes.forEach( a => {
-                        const attrParts = a.split(":");
-
-                        // Bad config or possible a template rbl-attr="{valuesFromCE}" that didn't have any values
-                        if ( attrParts.length > 1 ) {
-                            const attrName = attrParts[0];
-                            let attrSelector = attrParts[1];
-                            const ceName = attrParts.length >= 3 ? attrParts[ 2 ] : undefined;
-                            const tabName = attrParts.length >= 4 ? attrParts[ 3 ] : undefined;
-                            const tabDef = that.getTabDef( tabName, ceName )
-                            const expressionStart = attrSelector.indexOf("[");
-    
-                            if ( expressionStart > -1 ) {
-                                // either [expression] or table[expression]
-                                const expressionKey = 
-                                    attrSelector.substring(
-                                        expressionStart + 1,
-                                        attrSelector.lastIndexOf("]")
-                                    );
-    
-                                attrSelector = attrSelector.replace( expressionKey, rblAttributesWithExpressions.expressions[ expressionKey ] );
-                            }
-    
-                            const value = 
-                                that.getRblSelectorValue( tabDef, "rbl-value", attrSelector ) ??
-                                that.getRblSelectorValue( tabDef, "ejs-output", attrSelector );
+            if ( showInspector && !el.hasClass("kat-inspector-attr") ) {
+                el.addClass("kat-inspector-attr");
+                let inspectorTitle = "[rbl-attr={value}]".format( { "value": el.attr('rbl-attr') } );
+                const existingTitle = el.attr("title");
                 
-                            if ( value != undefined ) {
-                                if ( el.length === 1 ) {
-                                    el = application.ui.getAspNetCheckboxLabel( el ) ?? el;
-                                }
-    
-                                // rbl-attr="data-foo:fooValue" data-foo="Terry"
-                                // Calc 1: fooValue = Aney
-                                //  previous = undefined
-                                //  currentValue = "Terry"
-                                //  newValue = "Terry Aney"
-                                // Calc 2: fooValue = Craig
-                                //  previous = "Aney"
-                                //  currentValue = "Terry Aney"
-                                //  newValue = "Terry Craig"
-                                const dataName = "rbl-attr-" + attrName + "-previous";
-                                const previous = el.data(dataName);
-                                const currentValue = el.attr(attrName) || "";
-    
-                                const newValue = previous != undefined
-                                    ? currentValue.replace(previous, value).trim()
-                                    : ( currentValue == "" ? value : currentValue + " " + value ).trim();
-    
-                                if ( newValue == "" ) {
-                                    el.removeAttr(attrName).removeData(dataName)
-                                    /*
-                                    if ( attrName.startsWith( "data-" ) ) {
-                                        el.removeData(attrName.substring(5));
-                                    }
-                                    */
-                                }
-                                else {
-                                    el.attr(attrName, newValue).data(dataName, value);
-                                    /*
-                                    if ( attrName.startsWith( "data-" ) ) {
-                                        el.data(attrName.substring(5), newValue);
-                                    }
-                                    */
-                                }
+                if ( existingTitle != undefined ) {
+                    inspectorTitle += "\nOriginal Title: " + existingTitle;
+                }
+                el.attr("title", inspectorTitle);
+            }
+
+            const rblAttributesWithExpressions = that.getRblAttributeValueWithExpressions( el );
+            const rblAttributes = rblAttributesWithExpressions.rblAttr.split( " " );
+
+            // rbl-attr="attrName:selector"
+            // rbl-attr="attrName:selector:ce"
+            // rbl-attr="attrName:selector:ce:tab"
+            // rbl-attr="attrName:selector attrName2:selector ..."
+            rblAttributes.forEach( a => {
+                const attrParts = a.split(":");
+
+                // Bad config or possible a template rbl-attr="{valuesFromCE}" that didn't have any values
+                if ( attrParts.length > 1 ) {
+                    const attrName = attrParts[0];
+                    let attrSelector = attrParts[1];
+                    const ceName = attrParts.length >= 3 ? attrParts[ 2 ] : undefined;
+                    const tabName = attrParts.length >= 4 ? attrParts[ 3 ] : undefined;
+                    const tabDef = that.getTabDef( tabName, ceName )
+                    const expressionStart = attrSelector.indexOf("[");
+
+                    if ( expressionStart > -1 ) {
+                        // either [expression] or table[expression]
+                        const expressionKey = 
+                            attrSelector.substring(
+                                expressionStart + 1,
+                                attrSelector.lastIndexOf("]")
+                            );
+
+                        attrSelector = attrSelector.replace( expressionKey, rblAttributesWithExpressions.expressions[ expressionKey ] );
+                    }
+
+                    const value = 
+                        that.getRblSelectorValue( tabDef, "rbl-value", attrSelector ) ??
+                        that.getRblSelectorValue( tabDef, "ejs-output", attrSelector );
+        
+                    if ( value != undefined ) {
+                        if ( el.length === 1 ) {
+                            el = application.ui.getAspNetCheckboxLabel( el ) ?? el;
+                        }
+
+                        // rbl-attr="data-foo:fooValue" data-foo="Terry"
+                        // Calc 1: fooValue = Aney
+                        //  previous = undefined
+                        //  currentValue = "Terry"
+                        //  newValue = "Terry Aney"
+                        // Calc 2: fooValue = Craig
+                        //  previous = "Aney"
+                        //  currentValue = "Terry Aney"
+                        //  newValue = "Terry Craig"
+                        const dataName = "rbl-attr-" + attrName + "-previous";
+                        const previous = el.data(dataName);
+                        const currentValue = el.attr(attrName) || "";
+
+                        const newValue = previous != undefined
+                            ? currentValue.replace(previous, value).trim()
+                            : ( currentValue == "" ? value : currentValue + " " + value ).trim();
+
+                        if ( newValue == "" ) {
+                            el.removeAttr(attrName).removeData(dataName)
+                            /*
+                            if ( attrName.startsWith( "data-" ) ) {
+                                el.removeData(attrName.substring(5));
                             }
-                            else {
-                                application.trace("<b style='color: Red;'>RBL WARNING</b>: no data returned for tab=" + tabDef?._fullName + ", rbl-attr=" + a, TraceVerbosity.Detailed);
-                            }
+                            */
                         }
                         else {
-                            application.trace("<b style='color: Red;'>RBL WARNING</b>: Unable to process rbl-attr=" + a, TraceVerbosity.Detailed);
+                            el.attr(attrName, newValue).data(dataName, value);
+                            /*
+                            if ( attrName.startsWith( "data-" ) ) {
+                                el.data(attrName.substring(5), newValue);
+                            }
+                            */
                         }
-                    });
-                });
+                    }
+                    else {
+                        application.trace("<b style='color: Red;'>RBL WARNING</b>: no data returned for tab=" + tabDef?._fullName + ", rbl-attr=" + a, TraceVerbosity.Detailed);
+                    }
+                }
+                else {
+                    application.trace("<b style='color: Red;'>RBL WARNING</b>: Unable to process rbl-attr=" + a, TraceVerbosity.Detailed);
+                }
+            });
         }
 
         private isFalsy( value: string | undefined | boolean ): boolean {
@@ -5271,15 +5281,6 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                 this.processRblValues( showInspector );
                 this.processRblAttributes( showInspector );
 
-                /* Disabled because still had issues for what was attempted in nexgen 'modal-content' template usage...
-                // Run again b/c rbl-attr might have assigned a rbl-tid so you can have a template
-                // *without* a source, but does not get processed until first calculation is done
-                // Can't move RblAttributes before first call of injectTempaltesWithoutSource because
-                // the templates rendered may create rbl-attr elements...so kind of infinite circle
-                // kind of, but I only process templates one more time after attr to handle one level deep
-                this.application.ui.injectTemplatesWithoutSource(this.application.element, showInspector);
-                this.processRblAttributes( showInspector );
-                */
                 this.processTables();
                 this.processCharts();
     
@@ -5346,6 +5347,8 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                     
                     this.application.ui.handleVoidAnchors();
                     this.application.ui.bindRblOnHandlers();
+                    this.application.ui.bindCalculationInputs();
+                    this.application.ui.initializeConfirmLinks();
 
                     application.trace( "Finished processing results for " + tabDef._fullName, TraceVerbosity.Normal );
                 });
@@ -6007,6 +6010,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                 .not('[data-katapp-initialized="true"]')
                 .each(function () {
                     const nestedApp = $(this);
+                    nestedApp.attr("data-katapp-initialized", "true");
                     that.createChildApplication( nestedApp, true );
                 });
         }
@@ -6059,7 +6063,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                                 that.application.options, 
                                 { 
                                     view: successResponse[ "path" ], 
-                                    currentPage: isNested ? childApplicationElement.attr("rbl-app") : childApplicationElement.attr("rbl-modal"),
+                                    currentPage: applicationId,
                                     inputSelector: childApplicationElement.attr("rbl-input-selector") ?? "input, textarea, select",
                                     calcEngines: undefined // So it doesn't use parent CE
                                 },
@@ -6111,11 +6115,9 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                     function( xhr ) {
                         console.log( xhr );
                         that.application.trace("Unable to create child KatApp (" + applicationId + ").", TraceVerbosity.None);
-                    }
-                ).always(
-                    function() {
                         if ( isNested ) {
-                            childApplicationElement.attr("data-katapp-initialized", "true");
+                            // Not sure if I should do this or not...
+                            // childApplicationElement.removeAttr("data-katapp-initialized");
                         }
                     }
                 );

@@ -283,23 +283,26 @@ interface KatAppResourceResult extends KatAppResource {
 interface ResourceResults { 
     [ key: string ]: string; 
 }
+
 interface TemplateFile { 
     Name: string;
+    Templates: Record<string, Template>;
+    UsedInApplications: Record<string, string>;
 
     // If multiple applications are rendered on one page, this object stores unique list of templates requested
     // so that if two applications request the same template but one is still waiting for a download, the second
     // application registers a callback and will be notified when the content is ready.
-    Requested: boolean; 
-    Data?: string; 
+    State?: number; // Wanted enum, but didn't know how to make it work with our file/cms structure
+        // 0-None, 1-Requested, 2-Complete
     Callbacks: Array<( errorMessage: string | undefined )=> void>; 
-    
-    Templates: Record<string, Template>;
 }
 interface Template { 
     Name: string;
-    ContainerName?: string;
+    // If template is inline, store application id that would leverage it so when application is removed, I can remove this template
+    InlineApplicationId?: string;
     Content: JQuery;
-    // Only want to inject script from templates one time...so this list keeps track of whether or not it has been added
+    // Only want to inject script from templates one time...so this list keeps 
+    // track of whether or not script has been added once
     ApplicationsInjected: Record<string, string>;
 }
 

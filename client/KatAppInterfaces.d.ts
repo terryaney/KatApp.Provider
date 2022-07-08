@@ -94,6 +94,10 @@ interface KatAppOptions
     onCalculationErrors?: (this: HTMLElement, key: string, message: string, exception: Error, calcOptions: KatAppOptions, application: KatAppPlugInInterface)=> void;
     onCalculateEnd?: (this: HTMLElement, application: KatAppPlugInInterface )=> void;
 
+    onValidationInitialize?: (this: HTMLElement, application: KatAppPlugInInterface, errorSummary: JQuery<HTMLElement>, warningSummary: JQuery<HTMLElement>)=> void;
+    onValidationErrors?: (this: HTMLElement, application: KatAppPlugInInterface, errors: ValidationRow[])=> void;
+    onValidationWarnings?: (this: HTMLElement, application: KatAppPlugInInterface, warnings: ValidationRow[])=> void;
+
     onActionStart?: (this: HTMLElement, endpoint: string, submitData: JSON, application: KatAppPlugInInterface, currentOptions: KatAppOptions, actionLink: JQuery<HTMLElement>)=> boolean | undefined;
     onActionResult?: (this: HTMLElement, endpoint: string, result: JSON | undefined, application: KatAppPlugInInterface, currentOptions: KatAppOptions, actionLink: JQuery<HTMLElement>)=> void;
     onActionFailed?: (this: HTMLElement, endpoint: string, exception: JSON, application: KatAppPlugInInterface, currentOptions: KatAppOptions, actionLink: JQuery<HTMLElement>)=> void;
@@ -114,6 +118,8 @@ interface KatAppOptions
     onModalAppConfirmed?: (this: HTMLElement, applicationId: string, hostApplication: KatAppPlugInInterface, modalApplication: KatAppPlugInInterface, modalLink: JQuery<HTMLElement>, dismiss: ()=> void, message: string | undefined)=> void;
     onModalAppCancelled?: (this: HTMLElement, applicationId: string, hostApplication: KatAppPlugInInterface, modalApplication: KatAppPlugInInterface, modalLink: JQuery<HTMLElement>, dismiss: ()=> void, message: string | undefined)=> void;
     
+    onNestedAppInitialized?: (this: HTMLElement, nestedApplication: KatAppPlugInInterface, hostApplication: KatAppPlugInInterface )=> void;
+
     onUploadStart?: (this: HTMLElement, fileUpload: JQuery<HTMLElement>, formData: FormData, application: KatAppPlugInInterface)=> void;
     onUploaded?: (this: HTMLElement, fileUpload: JQuery<HTMLElement>, application: KatAppPlugInInterface)=> void;
     onUploadFailed?: (this: HTMLElement, fileUpload: JQuery<HTMLElement>, exception: JSON, application: KatAppPlugInInterface)=> void;

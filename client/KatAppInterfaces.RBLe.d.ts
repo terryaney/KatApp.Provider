@@ -4,6 +4,7 @@ interface CalculationInputs
     iConfigureUI?: number;
     iDataBind?: number;
     iInputTrigger?: string;
+    iNestedApplication?: number;
 }
 interface CalculationInputTableRow {
     index: string;

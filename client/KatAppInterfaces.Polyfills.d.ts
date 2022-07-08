@@ -25,6 +25,7 @@ interface JQuery {
 }
 interface JQueryStatic {
     whenAllDone( deferreds: ( Deferred )[] ): Deferred;
+    _data( element: HTMLElement, property: string ): Record<string, { handler: any, kaProxy: boolean | undefined, namespace: string | undefined, guid: number }[] | undefined>;
 }
 
 interface PromiseStatus {

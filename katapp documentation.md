@@ -22,6 +22,7 @@
     - [rbl-display Attribute Details](#rbl-display-Attribute-Details)
     - [rbl-if Attribute Details](#rbl-if-Attribute-Details)
     - [rbl-disabled Attribute Details](#rbl-disabled-Attribute-Details)
+    - [exists and !exists Functions](#exists-and-!exists-Functions)
     - [rbl-on Event Handlers](#rbl-on-Event-Handlers)
         - [Assigning Event Handlers to Contained Elements](#Assigning-Event-Handlers-to-Contained-Elements)
         - [Assigning Multiple Event Handlers](#Assigning-Multiple-Event-Handlers)
@@ -33,14 +34,14 @@
     - [rbl-app Attribute Details](#rbl-app-Attribute-Details)
         - [Controlling the Nested KatApp Options](#Controlling-the-Nested-KatApp-Options)
     - [_Push_ Table Processing](#_Push_-Table-Processing)
-        - [rbl-defaults Table](#**rbl-defaults**)
-        - [rbl-listcontrol Table](#**rbl-listcontrol**)
-            - [rbl-listcontrol data source Tables](#**rbl-listcontrol-data-source**)
-        - [rbl-sliders Table](#**rbl-sliders**)
-        - [rbl-disabled Table](#**rbl-disabled**)
-        - [rbl-skip Table](#**rbl-skip**)
-        - [errors And warnings Tables](#**errors/warnings**)
-        - [rbl-markup Table](#**rbl-markup**)
+        - [rbl-defaults Table](#rbl-defaults)
+        - [rbl-listcontrol Table](#rbl-listcontrol)
+            - [rbl-listcontrol data source Tables](#rbl-listcontrol-data-source)
+        - [rbl-sliders Table](#rbl-sliders)
+        - [rbl-disabled Table](#rbl-disabled)
+        - [rbl-skip Table](#rbl-skip)
+        - [errors And warnings Tables](#errors-warnings)
+        - [rbl-markup Table](#rbl-markup)
 - [Templates](#Templates)
     - [rbl-source Selectors](#rbl-source-Selectors)
     - [Template Default Attributes](#Template-Default-Attributes)
@@ -136,8 +137,13 @@
             - [serverCalculation](#serverCalculation)
             - [setNavigationInputs](#setNavigationInputs)
             - [navigate](#navigate)
+            - [triggerEvent](#triggerEvent)
             - [pushNotification](#pushNotification)
+            - [processApiActionResponses](#processApiActionResponses)
             - [createModalDialog](#createModalDialog)
+            - [renderValidationSummaries](#renderValidationSummaries)
+            - [clearInputValidation](#clearInputValidation)
+            - [getInputName](#getInputName)
         - [KatApp Debugging Methods](#KatApp-Debugging-Methods)
             - [saveCalcEngine](#saveCalcEngine)
             - [refreshCalcEngine](#refreshCalcEngine)
@@ -160,6 +166,10 @@
             - [onCalculationErrors](#onCalculationErrors)
             - [jwt-data Updates](#jwt-data-Updates)
             - [onCalculateEnd](#onCalculateEnd)
+        - [KatApp Validation Events](#KatApp-Validation-Events)
+            - [onValidationInitialize](#onValidationInitialize)
+            - [onValidationErrors](#onValidationErrors)
+            - [onValidationWarnings](#onValidationWarnings)
         - [KatApp Action Lifecycle Events](#KatApp-Action-Lifecycle-Events)
             - [onActionStart](#onActionStart)
             - [onActionResult](#onActionResult)
@@ -170,6 +180,8 @@
             - [onUploaded](#onUploaded)
             - [onUploadFailed](#onUploadFailed)
             - [onUploadComplete](#onUploadComplete)
+        - [KatApp Nested Application Lifecycle Events](#KatApp-Nested-Application-Lifecycle-Events)
+            - [onNestedAppInitialized](#onNestedAppInitialized)
         - [KatApp Modal Application Lifecycle Events](#KatApp-Modal-Application-Lifecycle-Events)
             - [onConfirm](#onConfirm)
             - [onCancel](#onCancel)
@@ -562,11 +574,12 @@ Selector: Table: rbl-value, ID: election-confirm, Column: value
 -->
 <a rbl-attr="data-action:election-action:Shared:RBLRetire data-confirm:election-confirm">Make Election</a>
 ```
-
 ## rbl-display Attribute Details
 The `rbl-display` attribute has all the same 'selector' capabilities described in [KatApp Selectors](#KatApp-Selectors).  Once a `value` is selected from a specified selector (or `rbl-display` as default table if only ID is provided), a boolean 'falsey' logic is applied against the value.  
 
 An element will be hidden if the value is `0`, `false` or an empty string. If the attribute is `rbl-display-remove` instead of being hidden, the element will be removed from the DOM.
+
+Additionally, the `exists()` and `!exists()` functions can be used.  See [exists and !exists Functions](#exists-and-!exists-Functions) for more information.
 
 ```html
 <!-- Show or hide based on 'value' column from 'rbl-display' table where 'id' is 'show-wealth' -->
@@ -586,6 +599,8 @@ The `rbl-if` attribute has all the same 'selector' capabilities described in [Ka
 
 An element will be hidden if the value is `0`, `false` or an empty string. If the attribute is `rbl-display-remove` instead of being hidden, the element will be removed from the DOM.
 
+Additionally, the `exists()` and `!exists()` functions can be used.  See [exists and !exists Functions](#exists-and-!exists-Functions) for more information.
+
 ```html
 <!--
     Sample template using additional features of 'inline templates' and simple and complex
@@ -604,7 +619,31 @@ An element will be hidden if the value is `0`, `false` or an empty string. If th
 
 See [View and Template Expressions](#View-and-Template-Expressions) for information on how to use simple and complex expressions to determine visibility.
 
-Additionally, `rbl-if` can use an `exists()` function.  The selectors that are available inside the `exists()` function are the same selectors uses by [rbl-source Selectors](#rbl-source-Selectors).
+## rbl-disabled Attribute Details
+The `rbl-disabled` attribute has all the same 'selector' capabilities described in [KatApp Selectors](#KatApp-Selectors).  Once a `value` is selected from a specified selector (or `rbl-disabled` as default table if only ID is provided), a boolean 'falsey' logic is applied against the value.  An element will be disabled if the value is `1` or `true`.
+
+Additionally, the `exists()` and `!exists()` functions can be used.  See [exists and !exists Functions](#exists-and-!exists-Functions) for more information.
+
+**Note:** By default, all the template inputs provided by Standard_Templates.kaml have `rbl-disabled` attributes assigned to appropriate items.
+
+```html
+<!-- Disable or enable based on 'value' column from 'rbl-disabled' table where 'id' is 'show-wealth' -->
+<input rbl-disabled="show-wealth" value="10000">
+
+<!-- Disable or enable based on 'value' column from 'benefit-savings' table where 'id' is 'ret-age' -->
+<input rbl-disabled="benefit-savings.ret-age" value="65">
+
+<!-- Disable or enable based on 'year' column from 'benefit-savings' table where 'id' is 'ret-age' -->
+<input rbl-disabled="benefit-savings.ret-age.year" value="2020">
+```
+
+See [View and Template Expressions](#View-and-Template-Expressions) for information on how to use simple and complex expressions to determine disabled state.
+
+**Note:** When working with inputs, check/radio lists, or sliders, the jQuery `.prop("disabled", true)` method is used.  For anything else (i.e. bootstrap buttons or generic divs), the `disabled` class is added/removed as necessary.
+
+## exists and !exists Functions
+
+Inside the any 'falsey' processing attribute (i.e. `rbl-display`, `rbl-if`, `rbl-disabled`), the `exists()` and `!exists()` functions can be used.  The selectors that are available inside these functions are the same selectors uses by [rbl-source Selectors](#rbl-source-Selectors).
 
 Selector | Description
 ---|---
@@ -630,26 +669,6 @@ table.keyColumn.keyValue | Will return true if the row from `table` where the va
     </ul>
 </div>
 ```
-
-## rbl-disabled Attribute Details
-The `rbl-disabled` attribute has all the same 'selector' capabilities described in [KatApp Selectors](#KatApp-Selectors).  Once a `value` is selected from a specified selector (or `rbl-disabled` as default table if only ID is provided), a boolean 'falsey' logic is applied against the value.  An element will be disabled if the value is `1` or `true`.
-
-**Note:** By default, all the template inputs provided by Standard_Templates.kaml have `rbl-disabled` attributes assigned to appropriate items.
-
-```html
-<!-- Disable or enable based on 'value' column from 'rbl-disabled' table where 'id' is 'show-wealth' -->
-<input rbl-disabled="show-wealth" value="10000">
-
-<!-- Disable or enable based on 'value' column from 'benefit-savings' table where 'id' is 'ret-age' -->
-<input rbl-disabled="benefit-savings.ret-age" value="65">
-
-<!-- Disable or enable based on 'year' column from 'benefit-savings' table where 'id' is 'ret-age' -->
-<input rbl-disabled="benefit-savings.ret-age.year" value="2020">
-```
-
-See [View and Template Expressions](#View-and-Template-Expressions) for information on how to use simple and complex expressions to determine disabled state.
-
-**Note:** When working with inputs, check/radio lists, or sliders, the jQuery `.prop("disabled", true)` method is used.  For anything else (i.e. bootstrap buttons or generic divs), the `disabled` class is added/removed as necessary.
 
 ## rbl-on Event Handlers
 
@@ -940,7 +959,7 @@ When a `rbl-app` is launched, it uses the same options of its parent application
 
 Even though it is preferrable to have _pull_ over _push_ for content and visibility, there are still some tables that either require push processing or are much better suited for a _push_ pattern.  In these cases, the source tables in the CalcEngines are usually very focused; only turned on during the initial configuration calculation and/or have a very limited number of rows.  By paying attention to the processing scope of these tables (only returning information when needed and minimizing the rows), you can ensure that Kaml Views remain performant.
 
-### **rbl-defaults**
+### rbl-defaults
 Set input values for any input on Kaml View.
 
 Column | Description
@@ -959,24 +978,24 @@ Text | `value` is simply applied.
 
 <br/>
 
-### **rbl-listcontrol** 
+### rbl-listcontrol
 Find and populate 'list' controls (dropdown, radio button list, or checkbox list) that have a CSS class matching the `id` column.
 
 Column | Description
 ---|---
 id | The name of the input in your Kaml View (i.e. iMaritalStatus). 
 table | The name of the data source table that provides the list items for the control specified by id. 
+rebuild | If `rebuild` is `1` all current list items will be cleared and the control will be rebuilt from `table` specified, otherwise existing items that match the `key` column will update their properties described in the data source table.
 
 <br/>
 
-#### **rbl-listcontrol data source** 
+#### rbl-listcontrol data source
 Typically, `rbl-listcontrol` and its data tables are only returned during a configuration calculation to initialize the user interface.  However, if the list control items are dynamic based on employee data or other inputs, the typical pattern is to return all list items possible for all situations during the configuration calculation, and then use the `visible` column to show and hide which items to show.  During subsequent calculations, when items are simply changing visibility, for performance enhancements, the only rows returned in the data source table should be the rows that have dynamic visiblity.
 
 Column | Description
 ---|---
 key | The data value for current list item (i.e. MN for Minnesota). 
 text<br/>&nbsp; | The display text for the current list item.<br/>For **dropdown** controls, if text is `/data-divider` a bootstrap enabled select input is able to simple render a divider bar.
-rebuild | If `rebuild` is `1` all current list items will be cleared and the control will be rebuilt from provided items.
 visible | If `visible` is `0`, the list item is hidden<sup>1</sup>, otherwise it is shown.
 disabled | If `disabled` is `1`, the list item is disabled<sup>1</sup>, otherwise it is enabled.
 help | For _radio button and checkbox lists_, if `help` is provided, a help icon and popup text will be generated.
@@ -989,7 +1008,7 @@ subtext<sup>2</sup> | Add subtext to an option.
 
 <br/>
 
-### **rbl-sliders** 
+### rbl-sliders
 Find and configure slider inputs that have a CSS class matching the `id` column.
 
 Column | Description
@@ -1015,7 +1034,7 @@ pips&#x2011;density | Pre-scale the number of pips.  The `pips-density` value co
 
 <br/>
 
-### **rbl-disabled**
+### rbl-disabled
 Find and enable or disable inputs that have a CSS class matching the `id` column.
 
 Column | Description
@@ -1025,7 +1044,8 @@ value | Whether or not to enable or disable the input.  If `value` is `1`, the i
 
 <br/>
 
-### **rbl-skip**
+### rbl-skip
+
 Find and prevent inputs in Kaml View from triggering a calculation upon change.  This table is legacy support that is equivalent to `rbl-nocalc` (see [RBLe Service Attributes / Classes](#RBLe-Service-Attributes-/-Classes)) and can only be used to _prevent an input from triggering a calculation_.  You can not use it to turn calculations back on for an input.  This table allows for the business logic of knowing which inputs trigger a calculation and which do not to be left inside the CalcEngine.  Using this table has the same effect as applying attributes manually in the Kaml View.
 
 Column | Description
@@ -1035,7 +1055,7 @@ value | Whether or not to disable the input.  `1` will diable, otherwise enable.
 
 <br/>
 
-### **errors/warnings**
+### errors/warnings
 Errors and warnings are returned from CalcEngine when invalid inputs are sent to the CalcEngine.
 
 Column | Description
@@ -1045,7 +1065,7 @@ text | The error message to display in the validation summary.  If `id` is provi
 
 <br/>
 
-### **rbl-markup**
+### rbl-markup
 This table is an evolution of the `rbl-value` table in the fact that is allows you to inject content into a Kaml View.  It also has ability to manage CSS class state for elements.
 
 Column | Description
@@ -1681,11 +1701,11 @@ data-formcss | A CSS class to use in place of the default `form-group`.
 data-inputcss | A CSS class to apply to the contained `input` element.
 data-labelcss | A CSS class to apply to the contained `label` element.
 data-hidelabel | A `Boolean` value specifying whether the contained `label` element should be remove to correct for UI layout issues when needed (default is `false`).
-data-comand | The KatApp Command Value to submit to the Endpoint API indicating the purpose of this file upload (default is `UploadFile`).
+rbl-action | The endpoint to submit to when uploading the file.
 
 <br/>
 
-See [apiAction](#apiAction) for more information on KatApp Commands.
+See [apiAction](#apiAction) for more information on KatApp API endpoint processing.  See [KatApp Upload Lifecycle Events](#KatApp-Upload-Lifecycle-Events) for more information on upload lifecycle events.
 
 ```html
 <!-- Build a file upload input that has label, name, and KatApp Command provided -->
@@ -3438,9 +3458,19 @@ application.select(".showProvider").on('click', function (e) {
 
 <hr/>
 
+#### triggerEvent
+
+**`.triggerEvent(eventName: string, ...args: ( object | string | undefined | unknown )[]): boolean | string | undefined`**
+
+Typically only a method used internally by the KatApp framework, but also this method is leveraged by modal applications to communicate confirm, cancel, or error status back to the host application.
+
+Take note that this method is intentionally designed to trigger an event on a single element (the application's element).  Therefore, it does not follow standard javascript event bubbling.  Currently, there is no need to call `e.stopPropogation();`, it is built into the framework, and host applications will not receive erroneous events that were intended for the contained `rbl-app` application.
+
+<hr/>
+
 #### pushNotification
 
-**`.pushNotification(name: string, information: {} | undefined)`**
+**`.pushNotification(name: string, information: {} | undefined, targetApplication: KatAppPlugIn, sourceApplication: KatAppPlugIn)`**
 
 If multiple KatApps are on one page, KatApps can broadcast notifications to other KatApps.  Use this functionality when two KatApps are displaying the same data and one of them updates the data and the other KatApp needs to be notified to 'refresh'.
 
@@ -3453,7 +3483,7 @@ application.select(".saveButtonAction").on('click', function (e) {
 });
 
 // In other KatApps that want to handle the message...
-view.on( "onKatAppNotification.RBLe", function( event, name, information, application ) {
+view.on( "onKatAppNotification.RBLe", function( event, name, information, application, fromApplication ) {
     switch( name ) {
         case "SavePensionEstimate":
         {
@@ -3463,6 +3493,34 @@ view.on( "onKatAppNotification.RBLe", function( event, name, information, applic
         }
     }
 });
+```
+
+#### processApiActionResponses
+
+**`.processApiActionResponses(endpoint: string, successResponse: KatAppActionResult | undefined, errorResponse: KatAppActionResult | undefined): ValidationRow[]`**
+
+`processApiActionResponses` is normally for internal use only, but can be useful when dealing with nested [rbl-app](#rbl-app-Attribute-Details) applications.  There are times when a host application will trigger an api call for a nested application and wants to show any validation errors inside its *own* validation summary instead of displayed in nested app.  When this is the case, often times the host application will communicate to the nested application (usually via a `data-input-*` attribute) indicating that the validation summary should be hidden/removed and will be handled in the host application.
+
+```javascript
+// Get a hold of the nested application...
+var qnaApp = application.select("[rbl-app='Common.QnA']").KatApp();
+var endpoint = "qna/commands";
+
+// Call apiAction on the nested application...
+qnaApp.apiAction(
+    endpoint,
+    qnaApp.options,
+    {
+        customInputs: { iAction: "validate-save" }
+    },
+    undefined,
+    function (successResponse, failureReponse) {
+        if (failureReponse != undefined) {
+            // Show validation messages in 'this apps' validation summary
+            application.processApiActionResponses(endpoint, undefined, failureReponse);
+        }
+    }
+);
 ```
 
 #### createModalDialog
@@ -3483,6 +3541,75 @@ view.on("onActionResult.RBLe", function (e, endpoint, _jsonResponse, application
     }
 });
 ```
+
+#### renderValidationSummaries
+
+**`.renderValidationSummaries()`**
+
+renderValidationSummaries shows or hides validation summary based on existing <li> elements and can be used after errors and warnings have been processed (either adding to or removing from validation summaries) to ensure the correct visibility of summaries.
+
+#### clearInputValidation
+
+**`.clearInputValidation( input: JQuery<HTMLElement> )`**
+
+If an application has custom markup it may handle adding and removing custom CSS classes to indicate errors.  Additionally, a KatApp may have put error notifications and messages in the summary for inputs that *do not* trigger calculations.  So it may need to call `clearInputValidation` to remove any error messages from the summary associated with an input.
+
+```javascript
+view.on("onCalculation.RBLe", function (_event, _results, _options, application) {
+    // Hook up events for any inputs rendered after calculation
+    application
+        .select(":input")
+        .off("change.nexgen")
+        .on("change.nexgen", function () {
+            var input = $(this);
+            input.removeClass("is-invalid"); // Remove custom CSS
+            application.clearInputValidation(input); // Remove any summary messages associated with input
+        });
+});
+```
+
+#### getInputName
+
+**`.getInputName( input: JQuery<HTMLElement> )`**
+
+The `getInputName` method is a helper method that returns the appropriate input name that should be passed to RBLe service.  It is able to parse a name from the `name` attribute or the `id` attribute.
+
+```javascript
+view.on("onCalculationOptions.RBLe", function (event, submitOptions, application) {
+    var updateValues = [];
+    
+    // Some code that adds rows to updateValues...via getting inputs that have values selected
+
+    // Loop all radio buttons that have qna in the name and push rows into array 
+    // as long as the name is unique and has not already been added. This should only
+    // add rows for radio buttons that didn't have any selection in them
+
+    application.select(":input[name^=qna][type='radio']")
+        .toArray()
+        .forEach(function (el) {
+            var input = $(el);
+            var inputName = application.getInputName(input);
+            if (updateValues.find(function (row) { return row.quest_input == inputName; }) == undefined) {
+                updateValues.push(
+                    {
+                        "quest_input": inputName,
+                        "quest_seq": input.attr("qna-quest-seq"),
+                        "ans_type": input.attr("qna-ans-type"),
+                        "ans_format": input.attr("qna-ans-format")
+                    }
+                );
+            }
+        });
+
+    submitOptions.InputTables.push(
+        {
+            Name: "updateValues",
+            Rows: updateValues
+        }
+    );
+});
+```
+
 
 #### Controlling the Modal UI Options
 
@@ -3787,7 +3914,7 @@ Triggered from the `updateOptions` method after a KatApp finishes updating optio
 
 #### onKatAppNotification
 
-**`onKatAppNotification(event: Event, notificationName: string, notificationInformation: JSON | undefined, application: KatApp )`**
+**`onKatAppNotification(event: Event, notificationName: string, notificationInformation: JSON | undefined, application: KatApp, fromApplication: KatApp )`**
 
 Triggered from the `pushNotification` method from the calling KatApp.  All other KatApps that are rendered on the page are sent the notification for custom processing.
 
@@ -3798,7 +3925,7 @@ $(".saveButtonAction", application.element).on('click', function (e) {
 });
 
 // Notified KatApp...
-view.on("onKatAppNotification.RBLe", function (event, name, information, application) {
+view.on("onKatAppNotification.RBLe", function (event, name, information, application, fromApplication) {
     switch (name) {
         case "SavePensionEstimate":
             {
@@ -3826,7 +3953,7 @@ $(".katapp").KatApp({
 });
 
 // Or via javascript on() handler inside View script
-view.on("onKatAppNotification.RBLe", function (id, application) {
+view.on("onKatAppNotification.RBLe", function (e, id) {
     $(".nexgenNavigation").val(id);
     $(".lnkNexgenHost")[0].click();
 });
@@ -4008,9 +4135,68 @@ By default, the KatApp framework does the following:
 3. Enables all Kaml View inputs
 
 
+### KatApp Validation Events
+
+KatApp Validations Events are events that occur during the processing of validation errors due to a calculation, an [`apiAction`](#apiAction) method call, or [file upload](#input-fileupload) processing.
+
+<hr/>
+
+#### onValidationInitialize
+
+**`onValidationInitialize( application: KatAppPlugInInterface, errorSummary: JQuery<HTMLElement>, warningSummary: JQuery<HTMLElement> )`**
+
+This event is triggered at the start of calculation result processing, before submitting to an API endpoint, or before attempting to upload a file.  This handler could be used when custom markup has been used instead of the standard input templates.  For example, it could allow for removing a custom class from all inputs that were indicated as error.
+
+```javascript
+view.on("onValidationInitialize.RBLe", function (event, application) {
+    // Remove error css from all inputs
+    application
+        .select(":input.is-invalid")
+        .removeClass("is-invalid");
+});
+```
+
+<hr/>
+
+#### onValidationErrors
+
+**`onValidationErrors( application: KatAppPlugInInterface, errors: ValidationRow[], errorSummary: JQuery<HTMLElement> )`**
+
+This event is triggered if a calculation, an API endpoint, or file upload return errors or throw an exception.  This handler could be used when custom markup has been used instead of the standard input templates.  For example, it could allow for adding a custom class to all inputs that were indicated as error.
+
+```javascript
+view.on("onValidationErrors.RBLe", function (event, application, errors) {
+    // For all errors, highlight input with css class
+    errors.forEach(function (row) {
+        var selector = application.ui.getJQuerySelector(row["@id"]);
+        application.select(selector).addClass("is-invalid");
+    });
+});
+```
+
+<hr/>
+
+#### onValidationWarnings
+
+**`onValidationWarnings( application: KatAppPlugInInterface, warnings: ValidationRow[], warningSummary: JQuery<HTMLElement> )`**
+
+This event is triggered if a calculation, an API endpoint, or file upload return warnings.  This handler could be used when custom markup has been used instead of the standard input templates.  For example, it could allow for adding a custom class to all inputs that were indicated as warning.
+
+```javascript
+view.on("onValidationWarnings.RBLe", function (event, application, warnings) {
+    // For all errors, highlight input with css class
+    warnings.forEach(function (row) {
+        var selector = application.ui.getJQuerySelector(row["@id"]);
+        application.select(selector).addClass("is-warning");
+    });
+});
+```
+
+<hr/>
+
 ### KatApp Action Lifecycle Events
 
-KatApp Action Lifecycle Events are events that occur during the processing of a [`apiAction`](#apiAction) method call.
+KatApp Action Lifecycle Events are events that occur during the processing of an [`apiAction`](#apiAction) method call.
 
 <hr/>
 
@@ -4020,6 +4206,19 @@ KatApp Action Lifecycle Events are events that occur during the processing of a 
 
 This event is triggered immediately before submitting the `submitData` to the API endpoint.  This handler could be used to modify the `submitData` before submission if required.  If the handler returns `false` or calls `e.preventDefault()`, then the endpoint submission is immediately cancelled.
 
+```javascript
+view.on("onActionStart.RBLe", function (e, endPoint, submitData, _application, _currentOptions, actionLink) {
+    switch (endPoint) {
+        case "hw/life-event":
+            // Persist all custom inputs into appState
+            Object.keys(submitData.Configuration.customInputs).forEach((key, index) => {
+                appState.manualInputs[key] = submitData.Configuration.customInputs[key];
+            });
+            break;
+    }
+});
+```
+
 <hr/>
 
 #### onActionResult
@@ -4028,6 +4227,14 @@ This event is triggered immediately before submitting the `submitData` to the AP
 
 This event is triggered upon successful submission and response from the API endpoint.  If the action is a 'file download', `resultData` will be `undefined`, otherwise it will be a JSON payload with properties specific to the `endpoint`.
 
+```javascript
+view.on("onActionResult.RBLe", function (e, endPoint, resultData, application, currentOptions, actionLink) {
+    // Recalculate after data has been updated on server, and show the action button to submit CC payment
+    application.calculate();
+    application.select(".credit-card-action-button").removeClass("d-none");
+});
+```
+
 <hr/>
 
 #### onActionFailed
@@ -4035,6 +4242,14 @@ This event is triggered upon successful submission and response from the API end
 **`onActionFailed(event: Event, endpoint: string, exception: JSON, application: KatAppPlugInInterface, currentOptions: KatAppOptions, actionLink: JQuery<HTMLElement>)`**
 
 This event is triggered when submission to an API endpoint fails.  The `exception` object will have a `Validations` property that can be examined for more details about the cause of the exception.
+
+```javascript
+view.on("onActionFailed.RBLe", function (event, endpoint, _result, application) {
+	if (endpoint == "rble/jwtupdate") {
+		application.select(".saveError").show(500).delay(3000).hide(500);
+	}
+});
+```
 
 <hr/>
 
@@ -4084,6 +4299,38 @@ This event is triggered when upload submission to an API endpoint fails.  The `e
 This event is triggered after the file upload has finished processing and will trigger on both success and failure.  Use this handler to process any UI actions that are required.
 
 <hr/>
+
+### KatApp Nested Application Lifecycle Events
+
+KatApp Nested Application Lifecycle Events are events that occur during the processing of a nested application created via a [rbl-app](#rbl-app-Attribute-Details) element.
+
+All the [normal life cycle events](#KatApp-Lifecycle-Events) occur on the nested application because the `rbl-app` application behaves as its own entity.  But there is one extra event that occurs for nested applications when knowing the nested application *and* the host application at the same time is desired.  This event is the `onNestedAppInitialized`.
+
+#### onNestedAppInitialized
+
+**`onNestedAppInitialized: (nestedApplication: KatAppPlugInInterface, hostApplication: KatAppPlugInInterface )=> void`**
+
+This event is triggered on the *host* application immediately after the *nested* application's [onInitialized](#onInitialized) event is triggered.
+
+```javascript
+$(".katapp")
+    .on("onNestedAppInitialized.RBLe", function (event, nestedApplication, hostApplication) {
+        // Common usage for this event is for logging...since you can hook up events to either nested 
+        // or host application and can be initiated simply from the default parent selector
+        // of '$(".katapp")'.
+        nestedApplication.element
+            .on("onCalculation.RBLe", function (_event, results, options, application) {
+                console.group(nestedApplication.options.currentPage + " KatApp calculation (Nested Application)");
+                console.log(results);
+                console.log(application.calculationInputs);
+                console.groupEnd();
+            });
+    });
+```
+
+
+<hr/>
+
 
 ### KatApp Modal Application Lifecycle Events
 

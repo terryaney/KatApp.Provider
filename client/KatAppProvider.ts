@@ -738,8 +738,8 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                         that.configureUI();
                     }
                     else if ( that.options.manualResults != undefined && ( that.options.calcEngines == null || that.options.calcEngines.length == 0 ) ) {
-                        // If there are calcEngines, but view has configureUI turned off, don't want to process
-                        // this yet.
+                        // If there are calcEngines, but view has configureUI turned off, 
+                        // don't want to process this yet.
                         that.results = that.buildResults( [], that.options );
                         that.processResults( that.options );
                     }
@@ -1691,7 +1691,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
             calculatePipeline( 0 );
         }
 
-        processPipeline( pipeline: Array<()=> void>, pipelineNames: Array<string>, pipelineIndex: number, offset: number, pipelineDone?: ()=> void ): void {
+        private processPipeline( pipeline: Array<()=> void>, pipelineNames: Array<string>, pipelineIndex: number, offset: number, pipelineDone?: ()=> void ): void {
             if ( ( pipelineIndex - offset ) > 1 ) {
                 this.trace( pipelineNames[ ( pipelineIndex - offset ) - 2 ] + ".finish", TraceVerbosity.Detailed );              
             }
@@ -1705,7 +1705,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
             }
         };
 
-        getSubmitCalculationOptions( currentOptions: KatAppOptions, inputs: CalculationInputs, inputTables: CalculationInputTable[], currentCalcEngine: CalcEngine | undefined, endpointOptions: KatAppActionOptions | undefined ): SubmitCalculationOptions {
+        private getSubmitCalculationOptions( currentOptions: KatAppOptions, inputs: CalculationInputs, inputTables: CalculationInputTable[], currentCalcEngine: CalcEngine | undefined, endpointOptions: KatAppActionOptions | undefined ): SubmitCalculationOptions {
             // TODO Should make a helper that gets options (for both submit and register)
             const calcEngine = currentCalcEngine ||
                 ( 
@@ -1764,7 +1764,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
             return calculationOptions;
         }
 
-        submitCalculation( calcEngine: CalcEngine, currentOptions: KatAppOptions, calculationOptions: SubmitCalculationOptions, submitCalculationHandler: SubmitCalculationCallback ): void {
+        private submitCalculation( calcEngine: CalcEngine, currentOptions: KatAppOptions, calculationOptions: SubmitCalculationOptions, submitCalculationHandler: SubmitCalculationCallback ): void {
             const application = this;
 
             const submitDone: RBLeServiceCallback = function( payload ): void {
@@ -1831,7 +1831,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
             submit( application, calculationOptions, submitDone, submitFailed );
         }
     
-        getEndpointSubmitData( options: KatAppOptions, endpointOptions: KatAppActionOptions): KatAppActionSubmitData {
+        /* private */ getEndpointSubmitData( options: KatAppOptions, endpointOptions: KatAppActionOptions): KatAppActionSubmitData {
             const currentOptions = KatApp.extend(
                 {}, // make a clone of the options
                 KatApp.clone( 
@@ -1858,7 +1858,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
             return submitData;
         }
 
-        buildFormData(submitData: KatAppActionSubmitData): FormData {
+        /* private */ buildFormData(submitData: KatAppActionSubmitData): FormData {
             // https://gist.github.com/ghinda/8442a57f22099bdb2e34#gistcomment-3405266
             const buildForm = function (formData: FormData, data: object, parentKey?: string, asDictionary?: boolean): void {
                 if (data && typeof data === 'object' && !(data instanceof Date) && !(data instanceof File) && !(data instanceof Blob)) {
@@ -1979,7 +1979,17 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
         getInputs(): CalculationInputs {
             return this.getOptionInputs( this.options )
         }
+        getInput( id: string ): string | undefined {
+            const selector = this.ui.getJQuerySelector( id )!;
+            let input = this.select(selector).not("div.bootstrap-select");
 
+            if ( input.length == 0 ) {
+                // In case radio options without class container
+                input = this.select("[type=radio][name='" + id + "']");
+            }
+
+            return this.ui.getInputValue(input);
+        }
         setInputs( inputs: JSON | CalculationInputs, calculate = true ): void {
             // When called publicly, want to trigger a calculation, when called from init() we don't
             Object.keys( inputs ).forEach( i => {
@@ -1990,13 +2000,16 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                 this.calculate();
             }
         }
-
         setInput( id: string, value: string | undefined, calculate = false): void {
             this.rble.setInput(id, value);
 
             if ( calculate ) {
                 this.calculate();
             }
+        }
+
+        processHelpTips( selector: string, type: string): void {
+            this.templateBuilder.processHelpTips( undefined, selector, type );
         }
 
         private getOptionInputs( currentOptions: KatAppOptions ): CalculationInputs {
@@ -2205,7 +2218,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
             }
         }
 
-        buildResults( results: TabDef[] | undefined, calculationOptions: KatAppOptions = this.options ): TabDef[] | undefined {
+        private buildResults( results: TabDef[] | undefined, calculationOptions: KatAppOptions = this.options ): TabDef[] | undefined {
             const calcEngines = ( calculationOptions.calcEngines ?? [] ).map( ce => ({ name: ce.name, key: ce.key }) );
             const application = this;
 
@@ -2291,7 +2304,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
             this.applicationIsInvalid = true;
         }
 
-        ensureApplicationValid(): boolean {
+        /* private */ ensureApplicationValid(): boolean {
             if ( this.applicationIsInvalid ) {
                 this.rble.initializeValidationSummaries();
 
@@ -3245,27 +3258,28 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
             return id;
         }
 
-        getInputValue(input: JQuery): string {
-            let value = input.val();
+        getInputValue(input: JQuery): string | undefined {
+            const isRadioList = input.length > 1 && input.is("[type=radio]");
 
+            let value = isRadioList
+                ? input.filter( ( i, o ) => $(o).prop("checked")).val()
+                : input.val();
+                
             if ( Array.isArray( value ) ) {
                 value = ( value as Array<unknown> ).join("^");
             }
 
-            let skipAssignment = false;
+            const skipAssignment = 
+                ( isRadioList && value == undefined ) ||
+                ( input.attr("type") === "radio" && !input.is(':checked') );
 
-            if (input.attr("type") === "radio") {
-
-                if (!input.is(':checked')) {
-                    skipAssignment = true;
-                }
-
-            }
-            else if (input.attr("type") === "checkbox") {
+            if (input.attr("type") === "checkbox") {
                 value = input.prop("checked") ? "1" : "0";
             }
 
-            return ( !skipAssignment ? value ?? '' : undefined ) as string;
+            return !skipAssignment 
+                ? ( value ?? '' ) as string
+                : undefined;
         }
 
         changeRBLe(input: JQuery<HTMLElement>): void {
@@ -4335,7 +4349,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
             application.select("[" + attributeName + "]", container)
                 .each(function () {
                     const el = $(this);
-                    const attributeValue = el.attr(attributeName);
+                    let attributeValue = el.attr(attributeName);
 
                     // rbl-display/rbl-disable - current support
                     // id - attributeName[@id=id]/value || legacyTable[@id=id]/value returns falsy
@@ -4378,11 +4392,19 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                         const tabDef = that.getTabDef( tabName, ceKey )
 
                         if ( tabDef != undefined ) {
-                            const simpleExpression = that.getSimpleExpression(attributeValue);
-                            const tableName = attributeName == "rbl-if" ? "rbl-display" : attributeName;
                             const isExists = attributeValue.toLowerCase().startsWith("exists(");
+                            const isNotExists = attributeValue.toLowerCase().startsWith("!exists(");
+                            const isNotExpression = !isNotExists && attributeValue.startsWith("!");
+                            const simpleExpression = !isExists && !isNotExists && !isNotExists
+                                ? that.getSimpleExpression(attributeValue)
+                                : undefined;
+                            
+                            if ( isNotExpression ) {
+                                attributeValue = attributeValue.substring( 1 );
+                            }
+                            const tableName = attributeName == "rbl-if" ? "rbl-display" : attributeName;
 
-                            if ( isExists || attributeValue.toLowerCase().startsWith("!exists(") ) {
+                            if ( isExists || isNotExists ) {
                                 const rblSource = attributeValue.substring( isExists ? 7 : 8, attributeValue.length - 1 );
                                 const isTableExpression = rblSource.indexOf("[") > -1;
                                 const rblSourceParts = 
@@ -4434,7 +4456,8 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                                 }
 
                                 if (resultValue != undefined) {
-                                    processFalsey( el, that.isFalsy( resultValue ) );
+                                    const falseyValue = that.isFalsy( resultValue );
+                                    processFalsey( el, isNotExpression ? !falseyValue : falseyValue );
                                 }
                             }
                         }
@@ -4548,12 +4571,21 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
             if ( selector !== undefined ) {
                 value = value ?? "";
                 this.application.select(selector + "DisplayOnly").html(value);
-                const input = this.application.select(selector).not("div.bootstrap-select");
+                let input = this.application.select(selector).not("div.bootstrap-select");
                 const listControl = this.application.select(selector + "[data-itemtype]");
                 const isCheckboxList = listControl.data("itemtype") == "checkbox";
                 const isRadioList = listControl.data("itemtype") == "radio";
                 const aspCheckbox = this.application.ui.getAspNetCheckboxInput(input);
-                const radioButtons = isRadioList ? $("input", listControl) : $("input[type='radio']", input);
+                
+                if ( input.length == 0 ) {
+                    // In case they don't have wrapper class on radio list
+                    input = this.application.select("[type=radio][name='" + id + "']");
+                }
+
+                const radioButtons = 
+                    input.is("[type=radio]") ? input : // If selected inputs are already radio (only happens if KatApp is using custom markup instead of standard templates)
+                    isRadioList ? $("input", listControl) : $("input[type='radio']", input);
+
                 const noUiSlider = this.application.ui.findNoUiSlider(id);
     
                 if ( noUiSlider !== undefined ) {
@@ -5846,20 +5878,28 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
             this.processNestedApplications( container );
         }
 
-        processHelpTips( container?: JQuery<HTMLElement> ): void {
+        processHelpTips( container?: JQuery<HTMLElement>, selector?: string, type?: string ): void {
             // Couldn't include the Bootstrap.Tooltips.js file b/c it's selector hits entire page, and we want to be localized to our view.
-            const selector = ".error-msg[data-toggle='tooltip'], .error-msg[data-bs-toggle='tooltip'], [data-toggle='popover'], [data-bs-toggle='popover']";
             const application = this.application;
             const view = container ?? application.element;
             const isBootstrap3 = this.application.bootstrapVersion == 3;
+            const isBootstrap5 = this.application.bootstrapVersion == 5;
 
-            if ( typeof $.fn.popover !== "function" && application.select(selector, view).length > 0 ) {
+            const helpTipsToProcess = 
+                application
+                    .select(selector ?? ".error-msg[data-toggle='tooltip'], .error-msg[data-bs-toggle='tooltip'], [data-toggle='popover'], [data-bs-toggle='popover']", view)
+                    .not('[data-katapp-initialized="true"]');
+
+            const popOverAvailable = 
+                ( !isBootstrap5 && typeof $.fn.popover === "function" ) ||
+                ( isBootstrap5 && typeof bootstrap === "object" );
+
+            if ( !popOverAvailable && helpTipsToProcess.length > 0 ) {
                 this.application.trace("Bootstrap popover/tooltip javascript is not present", TraceVerbosity.None);
                 return;
             }
 
-            application.select(selector, view)
-                .not('.rbl-help, [data-katapp-initialized="true"]')
+            helpTipsToProcess
                 .each( function() {
                     const isErrorValidator = $(this).hasClass('error-msg');
                     let placement = $(this).data('placement') || $(this).data('bs-placement') || "top";
@@ -5947,32 +5987,47 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                         }
                     };   
 
-                    if (isErrorValidator) {
-                        // Hover for this one...
-                        $(this)
-                            .tooltip(options)
-                            .on('inserted.bs.tooltip', function (e) {
-                                const isWarning = $("label.warning", $(e.target)).length == 1;
-                                if (isWarning) {
-                                    const templateId = "#" + $(e.target).attr("aria-describedby");
-                                    $(templateId).removeClass("error").addClass("warning");
-                                }
-                            });
+                    if (isErrorValidator || type == "tooltip") {
+                        const processWarningLabel = function(e: JQuery.TriggeredEvent) {
+                            const isWarning = $("label.warning", $(e.target)).length == 1;
+                            if (isWarning) {
+                                const templateId = "#" + $(e.target).attr("aria-describedby");
+                                $(templateId).removeClass("error").addClass("warning");
+                            }
+                        };
+
+                        if (isBootstrap5) {
+                            const tooltip = new bootstrap.Tooltip(this);
+                            $(this).on('inserted.bs.tooltip', processWarningLabel);
+                        }
+                        else {
+                            $(this)
+                                .tooltip(options)
+                                .on('inserted.bs.tooltip', processWarningLabel);
+                        }
                     }
                     else {
-                        $(this)
-                            .popover(options)
-                            .on('inserted.bs.popover', function (e) {
-                                const templateId = "#" + $(e.target).attr("aria-describedby");
-                                const currentPopover = $(templateId);
-                                currentPopover.attr("data-katapp-popover", "true");
+                        const processPopoverContent = function(e: JQuery.TriggeredEvent) {
+                            const templateId = "#" + $(e.target).attr("aria-describedby");
+                            const currentPopover = $(templateId);
+                            currentPopover.attr("data-katapp-popover", "true");
 
-                                $("[rbl-action-link]", currentPopover).attr("data-katapp-initialized", "false");
-                                $("[rbl-on]", currentPopover).attr("data-rblon-initialized", "false");
+                            $("[rbl-action-link]", currentPopover).attr("data-katapp-initialized", "false");
+                            $("[rbl-on]", currentPopover).attr("data-rblon-initialized", "false");
 
-                                application.templateBuilder.processActionLinks(currentPopover);
-                                application.ui.bindRblOnHandlers(currentPopover);
-                            });
+                            application.templateBuilder.processActionLinks(currentPopover);
+                            application.ui.bindRblOnHandlers(currentPopover);
+                        };
+
+                        if (isBootstrap5) {
+                            $(this).on('inserted.bs.popover', processPopoverContent);
+                            new bootstrap.Popover(this, options);
+                        }
+                        else {
+                            $(this)
+                                .on('inserted.bs.popover', processPopoverContent)
+                                .popover(options);
+                        }
                     }
                                 
                 })
@@ -5985,19 +6040,26 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                 // Going against entire KatApp (all apps) instead of a local variable because I only setup
                 // the HTML click event one time, so the 'that=this' assignment above would be the first application
                 // and might not match up to the 'currently executing' katapp, so had to make this global anyway
-                const visiblePopover = KatApp[ "visiblePopover" ];
+                const visiblePopover = KatApp[ "visiblePopover" ] as HTMLElement;
                 
                 // Just in case the tooltip hasn't been configured
                 if ( visiblePopover === undefined || $(visiblePopover).data("katapp-initialized") != true ) return;
+                
                 // Used to use this logic, but it didn't work with bootstrap 5, I've asked a question here:
                 // https://stackoverflow.com/questions/67301932/cannot-access-bootstrap-5-bs-popover-data-with-jquery
                 // if ( visiblePopover === undefined || $(visiblePopover).data("bs.popover") === undefined ) return;
                 
                 // Call this first b/c popover 'hide' event sets visiblePopover = undefined
-                if ( application.bootstrapVersion == 3 ) {
-                    $(visiblePopover).data("bs.popover").inState.click = false
+                if ( isBootstrap3 ) {
+                    $(visiblePopover).data("bs.popover").inState.click = false;
                 }
-                $(visiblePopover).popover("hide");
+
+                if ( isBootstrap5 ) {
+                    bootstrap.Popover.getInstance(visiblePopover).hide();
+                }
+                else {
+                    $(visiblePopover).popover("hide");
+                }
             };
 
             if ( application.element.attr("data-katapp-initialized-tooltip") != "true" ) {
@@ -6018,6 +6080,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                     })
                     .attr("data-katapp-initialized-tooltip", "true");
             }
+
             if ( $("html").attr("data-katapp-initialized-tooltip") != "true" ) {
                 $("html")
                     .on("click.RBLe", function( e ) {

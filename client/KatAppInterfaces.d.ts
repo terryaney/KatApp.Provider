@@ -244,11 +244,15 @@ interface KatAppPlugInInterface extends KatAppPlugInShimInterface {
     getResultValueByColumn( table: string, keyColumn: string, key: string, column: string, defaultValue?: string, tabDef?: string, calcEngine?: string ): string | undefined;
     
     getInputs: ( currentOptions: KatAppOptions | undefined )=> CalculationInputs;
+	getInput: ( id: string )=> string | undefined;
     setInputs: ( inputs: JSON | CalculationInputs, calculate: boolean )=> void;
     setInput: ( id: string, value: string | undefined, calculate: boolean )=> void;
+    
+    processHelpTips: (selector: string, type: string) => void;
     serverCalculation: ( customInputs: {} | undefined, actionLink?: JQuery<HTMLElement> )=> void;
     
-    apiAction: ( commandName: string, options: KatAppOptions, actionOptions: KatAppActionOptions, actionLink: JQuery<HTMLElement> | undefined, done?: ( successResponse: KatAppActionResult | undefined, failureResponse: {} | undefined )=> void )=> void
+    apiAction: ( commandName: string, options: KatAppOptions, actionOptions: KatAppActionOptions, actionLink: JQuery<HTMLElement> | undefined, done?: ( successResponse: KatAppActionResult | undefined, failureResponse: {} | undefined )=> void )=> void;
+    processApiActionResponses: (endpoint: string, successResponse: KatAppActionResult | undefined, errorResponse: KatAppActionResult | undefined) => ValidationRow[];
     invalidate: ()=> void; // called upon failure from apiAction (jwtUpdates right now)
 
     // If multiple KatApps are on one page, a KatApp can broadcast notifications to other KatApps

@@ -740,8 +740,10 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                     else if ( that.options.manualResults != undefined && ( that.options.calcEngines == null || that.options.calcEngines.length == 0 ) ) {
                         // If there are calcEngines, but view has configureUI turned off, 
                         // don't want to process this yet.
+                        that.clearValidationSummaries();
                         that.results = that.buildResults( [], that.options );
                         that.processResults( that.options );
+                        that.renderValidationSummaries();
                     }
                 }
                 else {
@@ -1251,9 +1253,12 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
             const inputs = this.getOptionInputs( currentOptions ); 
             const inputTables = this.getInputTables( currentOptions ) ?? [];
 
+            this.clearValidationSummaries();
+
             const calcStartResult = this.triggerEvent( "onCalculateStart", this );
             if ( typeof calcStartResult == "boolean" && !calcStartResult ) {
                 this.triggerEvent( "onCalculateEnd", this );
+                this.renderValidationSummaries();
                 return;
             }
 
@@ -1263,6 +1268,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                     this.results = this.buildResults( [], currentOptions );
                     this.processResults( currentOptions );
                     this.triggerEvent( "onCalculateEnd", this );
+                    this.renderValidationSummaries();
                 }
 
                 return;
@@ -1563,9 +1569,6 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                             undefined,
                             function( successResponse, failureResponse ) {
                                 if ( failureResponse != undefined ) {
-                                    // Any errors added, add a temp tempCalculateValidation class so they aren't removed during Calculate workflow
-                                    // (tempCalculateValidation is used for jwt-data updates)
-                                    that.select('.validator-container.error').not(".server").addClass("tempCalculateValidation");
                                     calculatePipeline( 2 );
                                 }
                                 else {
@@ -1652,12 +1655,9 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                 ensureResults();
                 that.inputsHaveBeenCached = false;
 
-                // Remove temp tempCalculateValidation error flag now that processing is finished
-                that.select('.validator-container.error.tempCalculateValidation, .validator-container.warning.tempCalculateValidation')
-                    .removeClass("tempCalculateValidation");
-
                 that.triggerEvent( "onCalculateEnd", that );
-
+                that.renderValidationSummaries();
+    
                 calculatePipeline( 0 );
             };
 
@@ -1946,9 +1946,11 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                 this.ui.bindCalculationInputs();
 
                 if ( options.manualResults != undefined ) {
+                    this.clearValidationSummaries();
                     // Need to process results...
                     this.results = this.buildResults( this.results?.filter( r => r._manualResult == undefined ), this.options );
                     this.processResults( this.options );
+                    this.renderValidationSummaries();
                 }
             }
 
@@ -1956,11 +1958,126 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
         }
 
         clearValidationSummaries(): void {
-            this.rble.initializeValidationSummaries();
+            const errorSummary = this.select("#" + this.id + "_ModelerValidationTable");
+            let warningSummary = this.select("#" + this.id + "_ModelerWarnings");
+    
+            // TODO: See Bootstrap.Validation.js - need to process server side validation errors to highlight the input correctly
+    
+            if (warningSummary.length === 0 && errorSummary.length > 0 ) {
+                // Warning display doesn't exist yet, so add it right before the error display...shouldn't have errors and warnings at same time currently...
+                warningSummary = $("<div id='" + this.id + "_ModelerWarnings' style='display: none;' class='validation-warning-summary alert alert-warning' role='alert'><p><i class='far fa-exclamation-triangle'></i> <span class='sr-only'>Warnings</span> Please review the following warnings: </p><ul></ul></div>");
+                $(warningSummary).insertBefore(errorSummary);
+            }            
+    
+            this.select('.validator-container.error, .validator-container.warning')
+                .not(".server")
+                .removeClass('error warning');
+
+            [ warningSummary, errorSummary ].forEach( summary => {
+                // Remove all RBLe client side created errors since they would be added back
+                $("ul li.rble", summary).remove();
+            });
+
+            this.triggerEvent("onValidationInitialize", this, errorSummary, warningSummary );
+
+            // Re-render with nothing in summary that shouldn't be there
+            this.renderValidationSummaries( /* false */ );
         }
-        renderValidationSummaries(): void {
-            this.rble.renderValidationSummaries();
+        
+        renderValidationSummaries( /* scrollToSummary: boolean = true */ ): void {
+            const errorSummary = this.select("#" + this.id + "_ModelerValidationTable");
+            const warningSummary = this.select("#" + this.id + "_ModelerWarnings");
+    
+            [ warningSummary, errorSummary ].forEach( summary => {
+                if ($("ul li", summary).length === 0) {
+                    summary.hide();
+                    $("div", summary).first().hide();
+                }
+                else {
+                    summary.show();
+                    $("div", summary).first().show();
+                }
+            });
+    
+            /*
+            if ( scrollToSummary && this.calculationInputs?.iConfigureUI === 1 ) {
+                // Scroll target will probably need some work
+                if ($("ul li", warningSummary).length > 0 && warnings.length > 0) {
+                    $('html, body').animate({
+                        scrollTop: warningSummary.offset().top - 30
+                    }, 1000);
+                }
+                else if ($("ul li", errorSummary).length > 0 && errors.length > 0) {
+                    $('html, body').animate({
+                        scrollTop: errorSummary.offset().top - 30
+                    }, 1000);
+                }
+            }
+            */
         }
+
+        /* private */ processValidationRows(errors: ValidationRow[] | undefined, warnings?: ValidationRow[]): void {
+            const that = this;
+            const bootstrapVersion = that.bootstrapVersion;
+
+            const processValidationRow = function (summary: JQuery<HTMLElement>, row: ValidationRow): void {
+                const selector = that.ui.getJQuerySelector(row["@id"]);
+                let input = selector !== undefined
+                    ? that.select(selector)
+                    : undefined;
+
+                if (input != undefined && input.length == 2) {
+                    // bootstrap select
+                    input = input.not("div");
+                }
+                that.addValidationItem(summary, input, row.text, bootstrapVersion);
+            };
+            if (errors != undefined && errors.length > 0) {
+                const errorSummary = that.select("#" + that.id + "_ModelerValidationTable");
+                errors.forEach(r => processValidationRow(errorSummary, r));
+                that.triggerEvent("onValidationErrors", that, errors);
+            }
+
+            if (warnings != undefined && warnings.length > 0) {
+                const warningSummary = that.select("#" + that.id + "_ModelerWarnings");
+                warnings.forEach(r => processValidationRow(warningSummary, r));
+                that.triggerEvent("onValidationWarnings", that, warnings);
+            }
+        }
+
+        private addValidationItem(summary: JQuery<HTMLElement>, input: JQuery<HTMLElement> | undefined, message: string, bootstrapVersion: number): void {
+            let ul = $("ul", summary);
+            if (ul.length === 0) {
+                summary.append("<ul></ul>");
+                ul = $("ul", summary);
+            }
+
+            // Backward compat to remove validation with same id as input, but have changed it to 
+            // id + Error so that $(id) doesn't get confused picking the li item.
+            let inputName = "Input" + $("ul li", summary).length;
+            if (input !== undefined && input.length > 0) {
+                inputName = this.ui.getInputName(input);
+                $("ul li." + inputName + ", ul li." + inputName + "Error", summary).remove();
+            }
+
+            ul.append("<li class=\"rble " + inputName + "Error\">" + message + "</li>");
+
+            if (input !== undefined && input.length > 0) {
+                const isWarning = summary.hasClass("ModelerWarnings");
+                const validationClass = isWarning ? "warning" : "error";
+                const valContainer = input.closest('.validator-container').addClass(validationClass);
+
+                const errorSpan = valContainer.find('.error-msg')
+                    .attr(bootstrapVersion == 5 ? 'data-bs-original-title' : 'data-original-title', message)
+                    .empty();
+
+                $("<label/>").css("display", "inline-block")
+                    .addClass(validationClass)
+                    .text(message)
+                    .appendTo(errorSpan);
+            }
+        };
+
         clearInputValidation( input: JQuery<HTMLElement>): void {
             var inputName = this.getInputName(input);
             this.select(".validation-warning-summary ul li." + inputName + "Error, .validation-summary ul li." + inputName + "Error").remove();
@@ -2306,14 +2423,14 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
 
         /* private */ ensureApplicationValid(): boolean {
             if ( this.applicationIsInvalid ) {
-                this.rble.initializeValidationSummaries();
+                this.clearValidationSummaries();
 
                 const errors: ValidationRow[] = [];
                 console.log( "Application has been invalidated due to data concurrency issues." );
                 errors.push( { "@id": "System", text: "An unexpected error has occurred.  Please try again and if the problem persists, contact technical support." });
 
-                this.rble.processValidationRows( errors );
-                this.rble.renderValidationSummaries();
+                this.processValidationRows( errors );
+                this.renderValidationSummaries();
 
                 return false;
             }
@@ -2321,8 +2438,8 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
             return true;
         }
 
-        processApiActionResponses(endpoint: string, successResponse: KatAppActionResult | undefined, errorResponse: KatAppActionResult | undefined): ValidationRow[] {
-            this.rble.initializeValidationSummaries();
+        processApiActionResponses(successResponse: KatAppActionResult | undefined, errorResponse: KatAppActionResult | undefined): ValidationRow[] {
+            this.clearValidationSummaries();
 
             const errors: ValidationRow[] = [];
             const warnings: ValidationRow[] = [];
@@ -2349,8 +2466,8 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                 });
             }
             
-            this.rble.processValidationRows( errors, warnings );
-            this.rble.renderValidationSummaries();
+            this.processValidationRows( errors, warnings );
+            this.renderValidationSummaries();
 
             return errors;
         }
@@ -2408,7 +2525,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
             const finishApiAction = function(): void {
                 clearServerOnlySaveInstructions();
 
-                const errors = that.processApiActionResponses( endpoint, successResponse, errorResponse );
+                const errors = that.processApiActionResponses( successResponse, errorResponse );
 
                 if ( errors.length > 0 ) {
                     console.group("Unable to process " + endpoint);
@@ -4994,128 +5111,6 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                 });
         }
     
-        private addValidationItem(summary: JQuery<HTMLElement>, input: JQuery<HTMLElement> | undefined, message: string, bootstrapVersion: number): void {
-            let ul = $("ul", summary);
-            if (ul.length === 0) {
-                summary.append("<ul></ul>");
-                ul = $("ul", summary);
-            }
-    
-            // Backward compat to remove validation with same id as input, but have changed it to 
-            // id + Error so that $(id) doesn't get confused picking the li item.
-            let inputName = "Input" + $("ul li", summary).length;
-            if ( input !== undefined && input.length > 0 ) {
-                inputName = this.application.ui.getInputName(input);
-                $("ul li." + inputName + ", ul li." + inputName + "Error", summary).remove();
-            }
-            
-            ul.append("<li class=\"rble " + inputName + "Error\">" + message + "</li>");
-    
-            if ( input !== undefined && input.length > 0 ) {
-                const isWarning = summary.hasClass("ModelerWarnings");
-                const validationClass = isWarning ? "warning" : "error";
-                const valContainer = input.closest('.validator-container').addClass(validationClass);
-    
-                const errorSpan = valContainer.find('.error-msg')
-                    .attr(bootstrapVersion == 5 ? 'data-bs-original-title' : 'data-original-title', message)
-                    .empty();
-    
-                $("<label/>").css("display", "inline-block")
-                    .addClass(validationClass)
-                    .text(message)
-                    .appendTo(errorSpan);
-            }
-        };
-    
-        processValidationRows(errors: ValidationRow[] | undefined, warnings?: ValidationRow[]): void {
-            const application = this.application;
-            const bootstrapVersion = application.bootstrapVersion;
-            const that = this;
-
-            const processValidationRow = function(summary: JQuery<HTMLElement>, row: ValidationRow): void {
-                const selector = application.ui.getJQuerySelector( row["@id"] );
-                let input = selector !== undefined 
-                    ? application.select(selector)
-                    : undefined;
-
-                if ( input != undefined && input.length == 2 ) {
-                    // bootstrap select
-                    input = input.not("div");
-                }
-                that.addValidationItem(summary, input, row.text, bootstrapVersion);
-            };
-            if (errors != undefined && errors.length > 0) {
-                const errorSummary = application.select("#" + application.id + "_ModelerValidationTable");
-                errors.forEach( r => processValidationRow( errorSummary, r ) );
-                application.triggerEvent("onValidationErrors", application, errors, errorSummary);
-            }
-
-            if (warnings != undefined && warnings.length > 0) {
-                const warningSummary = this.application.select("#" + this.application.id + "_ModelerWarnings");
-                warnings.forEach( r => processValidationRow( warningSummary, r ) );
-                application.triggerEvent("onValidationWarnings", application, warningSummary);
-            }
-        }
-    
-        initializeValidationSummaries(): void {
-            const errorSummary = this.application.select("#" + this.application.id + "_ModelerValidationTable");
-            let warningSummary = this.application.select("#" + this.application.id + "_ModelerWarnings");
-    
-            // TODO: See Bootstrap.Validation.js - need to process server side validation errors to highlight the input correctly
-    
-            if (warningSummary.length === 0 && errorSummary.length > 0 ) {
-                // Warning display doesn't exist yet, so add it right before the error display...shouldn't have errors and warnings at same time currently...
-                warningSummary = $("<div id='" + this.application.id + "_ModelerWarnings' style='display: none;' class='validation-warning-summary alert alert-warning' role='alert'><p><i class='far fa-exclamation-triangle'></i> <span class='sr-only'>Warnings</span> Please review the following warnings: </p><ul></ul></div>");
-                $(warningSummary).insertBefore(errorSummary);
-            }            
-    
-            this.application.select('.validator-container.error, .validator-container.warning')
-                .not(".server, .tempCalculateValidation")
-                .removeClass('error warning');
-
-            [ warningSummary, errorSummary ].forEach( summary => {
-                // Remove all RBLe client side created errors since they would be added back
-                $("ul li.rble", summary).remove();
-            });
-
-            this.application.triggerEvent("onValidationInitialize", this.application, errorSummary, warningSummary );
-
-            // Re-render with nothing in summary that shouldn't be there
-            this.renderValidationSummaries( false );
-        }
-        
-        renderValidationSummaries( scrollToSummary = true ): void {
-            const errorSummary = this.application.select("#" + this.application.id + "_ModelerValidationTable");
-            const warningSummary = this.application.select("#" + this.application.id + "_ModelerWarnings");
-    
-            [ warningSummary, errorSummary ].forEach( summary => {
-                if ($("ul li", summary).length === 0) {
-                    summary.hide();
-                    $("div", summary).first().hide();
-                }
-                else {
-                    summary.show();
-                    $("div", summary).first().show();
-                }
-            });
-    
-            if ( scrollToSummary && this.application.calculationInputs?.iConfigureUI === 1 ) {
-            /*
-                // Scroll target will probably need some work
-                if ($("ul li", warningSummary).length > 0 && warnings.length > 0) {
-                    $('html, body').animate({
-                        scrollTop: warningSummary.offset().top - 30
-                    }, 1000);
-                }
-                else if ($("ul li", errorSummary).length > 0 && errors.length > 0) {
-                    $('html, body').animate({
-                        scrollTop: errorSummary.offset().top - 30
-                    }, 1000);
-                }
-            */
-            }
-        }
-    
         processValidations( tabDef: TabDef ): void {
             const warnings = this.getResultTable<ValidationRow>( tabDef, "warnings" );
             const errors = this.getResultTable<ValidationRow>( tabDef, "errors" );
@@ -5124,7 +5119,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                 this.application.trace("<b style='color: Red;'>RBL WARNING</b>: No validation summary is found to process the errors/warnings rows from " + tabDef._fullName, TraceVerbosity.Detailed);
             }
             else {
-                this.processValidationRows(errors, warnings);
+                this.application.processValidationRows(errors, warnings);
             }
         }
     
@@ -5319,12 +5314,6 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
             if ( results !== undefined ) {
                 const showInspector = /* application.calculationInputs?.iConfigureUI === 1 && */ ( calculationOptions.debug?.showInspector ?? false );
                 
-                // TODO: Can this call move to beginning of calculate() so I don't need the 'temp' flag business for
-                // retaining errors that happen before I call process results?  Basically anything that renders error
-                // during calculation can't call initialize again (and see anyone that calls processResults would need
-                // to have called initialize itself as well)
-                this.initializeValidationSummaries();
-
                 results.forEach(tabDef => {
                     application.trace( "Processing results for " + tabDef._fullName + "(" + tabDef["@version"] + ")", TraceVerbosity.Normal );
     
@@ -5463,7 +5452,6 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                         });
                 }                
     
-                this.renderValidationSummaries();
                 return true;
             }
             else {
@@ -6601,7 +6589,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
 
                         const errors: ValidationRow[] = [];
 
-                        application.rble.initializeValidationSummaries();
+                        application.clearValidationSummaries();
                 
                         application.triggerEvent( "onUploadStart", actionEndpoint, fileUpload, fd, application );
 
@@ -6667,8 +6655,8 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                                 console.log( errors );
                                 console.groupEnd();            
 
-                                application.rble.processValidationRows( errors );
-                                application.rble.renderValidationSummaries();
+                                application.processValidationRows( errors );
+                                application.renderValidationSummaries();
 
                                 application.triggerEvent( "onUploadFailed", actionEndpoint, fileUpload, errorResponse, application );
                             }

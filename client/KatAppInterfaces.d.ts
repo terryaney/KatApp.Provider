@@ -252,8 +252,11 @@ interface KatAppPlugInInterface extends KatAppPlugInShimInterface {
     serverCalculation: ( customInputs: {} | undefined, actionLink?: JQuery<HTMLElement> )=> void;
     
     apiAction: ( commandName: string, options: KatAppOptions, actionOptions: KatAppActionOptions, actionLink: JQuery<HTMLElement> | undefined, done?: ( successResponse: KatAppActionResult | undefined, failureResponse: {} | undefined )=> void )=> void;
-    processApiActionResponses: (endpoint: string, successResponse: KatAppActionResult | undefined, errorResponse: KatAppActionResult | undefined) => ValidationRow[];
+    processApiActionResponses: (successResponse: KatAppActionResult | undefined, errorResponse: KatAppActionResult | undefined) => ValidationRow[];
     invalidate: ()=> void; // called upon failure from apiAction (jwtUpdates right now)
+
+    clearValidationSummaries: ()=> void;
+    renderValidationSummaries: ()=> void;
 
     // If multiple KatApps are on one page, a KatApp can broadcast notifications to other KatApps
     pushNotification: (name: string, information: {} | undefined)=> void;

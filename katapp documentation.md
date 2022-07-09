@@ -125,6 +125,8 @@
             - [calculate](#calculate)
             - [configureUI](#configureUI)
             - [getInputs](#getInputs)
+            - [getInput](#getInput)
+            - [getInputName](#getInputName)
             - [setInputs](#setInputs)
             - [setInput](#setInput)
             - [getResultTable](#getResultTable)
@@ -141,9 +143,10 @@
             - [pushNotification](#pushNotification)
             - [processApiActionResponses](#processApiActionResponses)
             - [createModalDialog](#createModalDialog)
+            - [clearValidationSummaries](#clearValidationSummaries)
             - [renderValidationSummaries](#renderValidationSummaries)
             - [clearInputValidation](#clearInputValidation)
-            - [getInputName](#getInputName)
+            - [processHelpTips](#processHelpTips)
         - [KatApp Debugging Methods](#KatApp-Debugging-Methods)
             - [saveCalcEngine](#saveCalcEngine)
             - [refreshCalcEngine](#refreshCalcEngine)
@@ -577,7 +580,7 @@ Selector: Table: rbl-value, ID: election-confirm, Column: value
 ## rbl-display Attribute Details
 The `rbl-display` attribute has all the same 'selector' capabilities described in [KatApp Selectors](#KatApp-Selectors).  Once a `value` is selected from a specified selector (or `rbl-display` as default table if only ID is provided), a boolean 'falsey' logic is applied against the value.  
 
-An element will be hidden if the value is `0`, `false` or an empty string. If the attribute is `rbl-display-remove` instead of being hidden, the element will be removed from the DOM.
+An element will be hidden if the value is `0`, `false` or an empty string.  If using KatApp Selectors, and *not* expressions, a bang (`!`) can precede the selector to reverse the logic.  See [View and Template Expressions](#View-and-Template-Expressions) for information on how to use simple and complex expressions to determine visibility.
 
 Additionally, the `exists()` and `!exists()` functions can be used.  See [exists and !exists Functions](#exists-and-!exists-Functions) for more information.
 
@@ -592,12 +595,10 @@ Additionally, the `exists()` and `!exists()` functions can be used.  See [exists
 <span rbl-display="benefit-savings.ret-age.year"></span>
 ```
 
-See [View and Template Expressions](#View-and-Template-Expressions) for information on how to use simple and complex expressions to determine visibility.
-
 ## rbl-if Attribute Details
 The `rbl-if` attribute has all the same 'selector' capabilities described in [KatApp Selectors](#KatApp-Selectors).  Once a `value` is selected from a specified selector (or `rbl-display` as default table if only ID is provided), a boolean 'falsey' logic is applied against the value.  
 
-An element will be hidden if the value is `0`, `false` or an empty string. If the attribute is `rbl-display-remove` instead of being hidden, the element will be removed from the DOM.
+An element will be removed from the DOM if the value is `0`, `false` or an empty string.  If using KatApp Selectors, and *not* expressions, a bang (`!`) can precede the selector to reverse the logic.  See [View and Template Expressions](#View-and-Template-Expressions) for information on how to use simple and complex expressions to determine `rbl-if` value.
 
 Additionally, the `exists()` and `!exists()` functions can be used.  See [exists and !exists Functions](#exists-and-!exists-Functions) for more information.
 
@@ -617,10 +618,10 @@ Additionally, the `exists()` and `!exists()` functions can be used.  See [exists
 </ul>
 ```
 
-See [View and Template Expressions](#View-and-Template-Expressions) for information on how to use simple and complex expressions to determine visibility.
-
 ## rbl-disabled Attribute Details
-The `rbl-disabled` attribute has all the same 'selector' capabilities described in [KatApp Selectors](#KatApp-Selectors).  Once a `value` is selected from a specified selector (or `rbl-disabled` as default table if only ID is provided), a boolean 'falsey' logic is applied against the value.  An element will be disabled if the value is `1` or `true`.
+The `rbl-disabled` attribute has all the same 'selector' capabilities described in [KatApp Selectors](#KatApp-Selectors).  Once a `value` is selected from a specified selector (or `rbl-disabled` as default table if only ID is provided), a boolean 'falsey' logic is applied against the value.  
+
+An element will be disabled if the value is `1` or `true`.  If using KatApp Selectors, and *not* expressions, a bang (`!`) can precede the selector to reverse the logic.  See [View and Template Expressions](#View-and-Template-Expressions) for information on how to use simple and complex expressions to determine the enabled value.
 
 Additionally, the `exists()` and `!exists()` functions can be used.  See [exists and !exists Functions](#exists-and-!exists-Functions) for more information.
 
@@ -636,8 +637,6 @@ Additionally, the `exists()` and `!exists()` functions can be used.  See [exists
 <!-- Disable or enable based on 'year' column from 'benefit-savings' table where 'id' is 'ret-age' -->
 <input rbl-disabled="benefit-savings.ret-age.year" value="2020">
 ```
-
-See [View and Template Expressions](#View-and-Template-Expressions) for information on how to use simple and complex expressions to determine disabled state.
 
 **Note:** When working with inputs, check/radio lists, or sliders, the jQuery `.prop("disabled", true)` method is used.  For anything else (i.e. bootstrap buttons or generic divs), the `disabled` class is added/removed as necessary.
 
@@ -3104,6 +3103,89 @@ var inputs = application.getInputs();
 
 <hr/>
 
+#### getInput
+
+**`.getInput( id: string ): string | undefined`**
+
+The `getInput` method is a helper method that returns the value for the given `id`.  It will find the input (text, radio, select, etc.) and return the correct value if available, otherwise undefined.
+
+```javascript
+view.on("onCalculationOptions.RBLe", function (event, submitOptions, application) {
+    var updateValues = [];
+    
+    application.select(":input[name^=qna][type='radio']")
+        .toArray()
+        .forEach(function (el) {
+            var input = $(el);
+            var inputName = application.getInputName(input);
+            if (updateValues.find(function (row) { return row.quest_input == inputName; }) == undefined) {
+                updateValues.push(
+                    {
+                        "quest_input": inputName,
+                        "quest_seq": input.attr("qna-quest-seq"),
+                        "ans_type": input.attr("qna-ans-type"),
+                        "ans_format": input.attr("qna-ans-format"),
+                        "ans_format": application.getInput(inputName) // equivalent to input.val() for all inputs except radio buttons where input might be the first *unselected* radio
+                    }
+                );
+            }
+        });
+
+    submitOptions.InputTables.push(
+        {
+            Name: "updateValues",
+            Rows: updateValues
+        }
+    );
+});
+```
+
+<hr/>
+
+#### getInputName
+
+**`.getInputName( input: JQuery<HTMLElement> )`**
+
+The `getInputName` method is a helper method that returns the appropriate input name that should be passed to RBLe service.  It is able to parse a name from the `name` attribute or the `id` attribute.
+
+```javascript
+view.on("onCalculationOptions.RBLe", function (event, submitOptions, application) {
+    var updateValues = [];
+    
+    // Some code that adds rows to updateValues...via getting inputs that have values selected
+
+    // Loop all radio buttons that have qna in the name and push rows into array 
+    // as long as the name is unique and has not already been added. This should only
+    // add rows for radio buttons that didn't have any selection in them
+
+    application.select(":input[name^=qna][type='radio']")
+        .toArray()
+        .forEach(function (el) {
+            var input = $(el);
+            var inputName = application.getInputName(input);
+            if (updateValues.find(function (row) { return row.quest_input == inputName; }) == undefined) {
+                updateValues.push(
+                    {
+                        "quest_input": inputName,
+                        "quest_seq": input.attr("qna-quest-seq"),
+                        "ans_type": input.attr("qna-ans-type"),
+                        "ans_format": input.attr("qna-ans-format")
+                    }
+                );
+            }
+        });
+
+    submitOptions.InputTables.push(
+        {
+            Name: "updateValues",
+            Rows: updateValues
+        }
+    );
+});
+```
+
+<hr/>
+
 #### setInputs
 
 **`setInputs( inputs: OptionInputs, calculate?: boolean )`**
@@ -3542,11 +3624,17 @@ view.on("onActionResult.RBLe", function (e, endpoint, _jsonResponse, application
 });
 ```
 
+#### clearValidationSummaries
+
+**`.clearValidationSummaries()`**
+
+`clearValidationSummaries` clears out all 'client side' validation errors and warnings from the summaries.  Useful if an application has displayed errors on a page, then allows the user to click 'cancel' which doesn't trigger any calculation or api action, but the screen's error summaries need to be cleared.
+
 #### renderValidationSummaries
 
 **`.renderValidationSummaries()`**
 
-renderValidationSummaries shows or hides validation summary based on existing <li> elements and can be used after errors and warnings have been processed (either adding to or removing from validation summaries) to ensure the correct visibility of summaries.
+`renderValidationSummaries` shows or hides validation summary based on existing <li> elements and can be used after errors and warnings have been processed (either adding to or removing from validation summaries) to ensure the correct visibility of summaries.
 
 #### clearInputValidation
 
@@ -3568,48 +3656,19 @@ view.on("onCalculation.RBLe", function (_event, _results, _options, application)
 });
 ```
 
-#### getInputName
+#### processHelpTips
 
-**`.getInputName( input: JQuery<HTMLElement> )`**
+**`.processHelpTips( selector: string, type: string )`**
 
-The `getInputName` method is a helper method that returns the appropriate input name that should be passed to RBLe service.  It is able to parse a name from the `name` attribute or the `id` attribute.
+If an application has custom markup that should be displaying help tips but the attributes do not match the default framework selector (`.error-msg[data-toggle='tooltip'], .error-msg[data-bs-toggle='tooltip'], [data-toggle='popover'], [data-bs-toggle='popover']`), an application can invoke the help tip processing with a custom selector and indicate what type of tip it should be via the `type` param.
+
+`type` is either `tooltip` or `popover`.
 
 ```javascript
-view.on("onCalculationOptions.RBLe", function (event, submitOptions, application) {
-    var updateValues = [];
-    
-    // Some code that adds rows to updateValues...via getting inputs that have values selected
-
-    // Loop all radio buttons that have qna in the name and push rows into array 
-    // as long as the name is unique and has not already been added. This should only
-    // add rows for radio buttons that didn't have any selection in them
-
-    application.select(":input[name^=qna][type='radio']")
-        .toArray()
-        .forEach(function (el) {
-            var input = $(el);
-            var inputName = application.getInputName(input);
-            if (updateValues.find(function (row) { return row.quest_input == inputName; }) == undefined) {
-                updateValues.push(
-                    {
-                        "quest_input": inputName,
-                        "quest_seq": input.attr("qna-quest-seq"),
-                        "ans_type": input.attr("qna-ans-type"),
-                        "ans_format": input.attr("qna-ans-format")
-                    }
-                );
-            }
-        });
-
-    submitOptions.InputTables.push(
-        {
-            Name: "updateValues",
-            Rows: updateValues
-        }
-    );
+view.on("onCalculation.RBLe", function (_event, _results, _options, application) {
+    application.processHelpTips("[data-bs-toggle='tooltip']", "tooltip");
 });
 ```
-
 
 #### Controlling the Modal UI Options
 

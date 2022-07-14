@@ -6933,7 +6933,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                                     dateInput.removeData("datepicker-paste");
                                 });
                         }
-                        else if ( prefix !== undefined ) {
+                        else if ( ( prefix ?? "" ) !== "" ) {
                             validatorContainer.addClass("input-group");
 
                             let addOnContainer = validatorContainer;
@@ -6951,7 +6951,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
 
                             addOnContainer.prepend(prefixElement);
                         }
-                        else if ( suffix !== undefined ) {
+                        else if ( ( suffix ?? "" ) !== "" ) {
                             validatorContainer.addClass("input-group");
                             $(".error-msg", validatorContainer).addClass("addon-suffix"); // css aid
 

@@ -210,6 +210,16 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
             return resource;
         }
 
+        renderResults( results: TabDef[] | undefined ) {
+            this.renderResultsWithOptions( results );
+        }
+
+        private renderResultsWithOptions( results: TabDef[] | undefined, calculationOptions: KatAppOptions = this.options ) {
+            this.results = this.buildResults( results, calculationOptions );
+            this.processResults( calculationOptions );
+            this.renderValidationSummaries();
+        }
+
         private init( options: KatAppOptions ): void {
             // MULTIPLE CE: Need to support nested config element of multiple calc engines I guess
             //              Problem.. if passed in options has calcEngine(s) specified or if there is config
@@ -741,9 +751,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                         // If there are calcEngines, but view has configureUI turned off, 
                         // don't want to process this yet.
                         that.clearValidationSummaries();
-                        that.results = that.buildResults( [], that.options );
-                        that.processResults( that.options );
-                        that.renderValidationSummaries();
+                        that.renderResults( [] );
                     }
                 }
                 else {
@@ -1220,6 +1228,37 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                 : KatApp.extend( {}, oneTimeInputs, persistedInputs );
         }
 
+
+        updateOptions( options: KatAppOptions ): void { 
+            // When calling this method, presummably all the inputs are available
+            // and caller wants the input (html element) to be updated.  When passed
+            // in on a rebuild/init I simply pass them into the calculation and the CE can 
+            // process as needed
+            if ( options.defaultInputs !== undefined ) {
+                this.setInputs( options.defaultInputs );
+                delete options.defaultInputs;
+            }
+
+            this.options = KatApp.extend( {}, this.options, options )
+
+            // If not bound, updateOptions called before onInit is finished, so no need
+            // to bind them here b/c they will be bound later in the workflow
+            const inputsBound = this.element.data("katapp-input-selector") != undefined;
+            
+            if ( inputsBound ) {
+                this.ui.unbindCalculationInputs();
+                this.ui.bindCalculationInputs();
+
+                if ( options.manualResults != undefined ) {
+                    this.clearValidationSummaries();
+                    // Need to process results...
+                    this.renderResults( this.results?.filter( r => r._manualResult == undefined ) );
+                }
+            }
+
+            this.triggerEvent( "onOptionsUpdated", this );
+        }
+
         calculate( customOptions?: KatAppOptions, pipelineDone?: ()=> void ): void {
             if ( !this.ensureApplicationValid() ) {
                 if ( pipelineDone != undefined ) {
@@ -1265,10 +1304,8 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
             if ( currentOptions.calcEngines === undefined ) {
 
                 if ( currentOptions.manualResults != undefined ) {
-                    this.results = this.buildResults( [], currentOptions );
-                    this.processResults( currentOptions );
+                    this.renderResultsWithOptions( [], currentOptions );
                     this.triggerEvent( "onCalculateEnd", this );
-                    this.renderValidationSummaries();
                 }
 
                 return;
@@ -1512,11 +1549,9 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                                 .forEach( p => {
                                     const success = p.value as SubmitCalculationSuccess;
                                     const tabDef = success.result.Profile.Data.TabDef;
-                                    const resultTabs = tabDef != undefined && !Array.isArray( tabDef ) ? [ tabDef ] : tabDef;
-
-                                    resultTabs.forEach( t => {
-                                        t["@calcEngineKey"] = success.calcEngine.key;
-                                    });                
+                                    const resultTabs = tabDef != undefined && !Array.isArray( tabDef ) 
+                                        ? [ tabDef ] 
+                                        : tabDef;
 
                                     tabDefs = tabDefs.concat( resultTabs );
                                 });
@@ -1925,38 +1960,6 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
             this.calculate( KatApp.extend( {}, customOptions, manualInputs ), done );
         }
 
-        updateOptions( options: KatAppOptions ): void { 
-            // When calling this method, presummably all the inputs are available
-            // and caller wants the input (html element) to be updated.  When passed
-            // in on a rebuild/init I simply pass them into the calculation and the CE can 
-            // process as needed
-            if ( options.defaultInputs !== undefined ) {
-                this.setInputs( options.defaultInputs );
-                delete options.defaultInputs;
-            }
-
-            this.options = KatApp.extend( {}, this.options, options )
-
-            // If not bound, updateOptions called before onInit is finished, so no need
-            // to bind them here b/c they will be bound later in the workflow
-            const inputsBound = this.element.data("katapp-input-selector") != undefined;
-            
-            if ( inputsBound ) {
-                this.ui.unbindCalculationInputs();
-                this.ui.bindCalculationInputs();
-
-                if ( options.manualResults != undefined ) {
-                    this.clearValidationSummaries();
-                    // Need to process results...
-                    this.results = this.buildResults( this.results?.filter( r => r._manualResult == undefined ), this.options );
-                    this.processResults( this.options );
-                    this.renderValidationSummaries();
-                }
-            }
-
-            this.triggerEvent( "onOptionsUpdated", this );
-        }
-
         clearValidationSummaries(): void {
             const errorSummary = this.select("#" + this.id + "_ModelerValidationTable");
             let warningSummary = this.select("#" + this.id + "_ModelerWarnings");
@@ -2339,23 +2342,30 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
             const calcEngines = ( calculationOptions.calcEngines ?? [] ).map( ce => ({ name: ce.name, key: ce.key }) );
             const application = this;
 
+            var getCeName = function(name: string) {
+                return name?.split(".")[ 0 ].replace("_Test", "") ?? "";
+            }
+
             if ( calculationOptions.manualResults != undefined ) {
                 if ( results == undefined ) {
                     results = [];
                 }
                 
                 calculationOptions.manualResults.forEach( ( t, i ) => {
-                    if ( t["@calcEngineKey"] == undefined ) {
-                        t["@calcEngineKey"] = "ManualResults";
-                    }
-                    t["@calcEngine"] = t["@calcEngine"] ?? t["@calcEngineKey"];
+                    t["@calcEngine"] = getCeName( t["@calcEngine"] ?? t["@calcEngineKey"] );
                     t["@name"] = t["@name"] ?? "RBLResults" + ( i + 1 );
                     t["_manualResult"] = true;
 
                     results!.push( t ); // eslint-disable-line @typescript-eslint/no-non-null-assertion
 
-                    if ( calcEngines.findIndex( v => v.key == t["@calcEngineKey"] ) == -1 ) {
-                        calcEngines.push( { name: t["@calcEngine"], key: t["@calcEngineKey"] } );
+                    // Add to list if not already there
+                    if ( calcEngines.findIndex( v => v.key == ( t["@calcEngineKey"] ?? "ManualResults" ) ) == -1 ) {
+                        calcEngines.push( 
+                            { 
+                                name: t["@calcEngine"], 
+                                key: t["@calcEngineKey"] ?? "ManualResults"
+                            } 
+                        );
                     }
                 });
             }
@@ -2368,8 +2378,8 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                         Object.keys(t)
                             .filter( k => !k.startsWith( "@" ) && !k.startsWith( "_" ) );
                     
-                    const ceKey = t["@calcEngineKey"];
-                    const ceName = t["@calcEngine"].split(".")[ 0 ].replace("_Test", "");
+                    const ceName = getCeName( t["@calcEngine"] );
+                    const ceKey = t["@calcEngineKey"] = calcEngines.find( c => c.name.toLowerCase() == ceName.toLowerCase() )!.key;
                     
                     // Is this tab part of defaultCalcEngine?
                     t._defaultCalcEngine = ceKey == defaultCEKey;
@@ -3376,10 +3386,11 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
         }
 
         getInputValue(input: JQuery): string | undefined {
-            const isRadioList = input.length > 1 && input.is("[type=radio]");
+            const isRadioListContainer = input.data("itemtype") == "radio";
+            const isRadioList = isRadioListContainer || ( input.length > 1 && input.is("[type=radio]") );
 
             let value = isRadioList
-                ? input.filter( ( i, o ) => $(o).prop("checked")).val()
+                ? ( isRadioListContainer ? $("input", input) : input ).filter( ( i, o ) => $(o).prop("checked")).val()
                 : input.val();
                 
             if ( Array.isArray( value ) ) {

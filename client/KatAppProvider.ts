@@ -89,7 +89,9 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
         exception?: RBLeServiceResults | undefined;
         results?: TabDef[] | undefined;
         calculationInputs?: CalculationInputs | undefined;
-        
+
+        state = {};
+
         constructor(id: string, element: JQuery, options: KatAppOptions) {
             this.id = "ka" + id; // Some BS elements weren't working if ID started with #
             this.element = element;
@@ -487,7 +489,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                             const viewCalcEngines: CalcEngine[] = [];
 
                             if ( rblConfig.length !== 1 ) {
-                                that.trace("View " + viewId + " is missing rbl-config element", TraceVerbosity.Quiet);
+                                that.trace("View " + viewId + " is missing rbl-config element", TraceVerbosity.None);
                             }
                             else {
                                 const attrCalcEngine = rblConfig.attr("calcengine");
@@ -601,7 +603,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                             if ( pipelineError !== undefined ) return;
 
                             if ( errorMessage !== undefined ) {
-                                that.trace("Template " + r + " error: " + errorMessage, TraceVerbosity.Quiet );
+                                that.trace("Template " + r + " error: " + errorMessage, TraceVerbosity.None );
                                 pipelineError = errorMessage;
                                 initPipeline( 1 ); // jump to finish
                                 return;
@@ -744,7 +746,6 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                     }
 
                     if ( that.options.runConfigureUICalculation ) {
-                        that.trace( "Calling configureUI calculation...", TraceVerbosity.Detailed );
                         that.configureUI();
                     }
                     else if ( that.options.manualResults != undefined && ( that.options.calcEngines == null || that.options.calcEngines.length == 0 ) ) {
@@ -755,7 +756,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                     }
                 }
                 else {
-                    that.trace( "Error during Provider.init: " + pipelineError, TraceVerbosity.Quiet );
+                    that.trace( "Error during Provider.init: " + pipelineError, TraceVerbosity.None );
                 }
 
                 that.trace( "Finished init", TraceVerbosity.Detailed );
@@ -805,8 +806,10 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                                 <div class="modal-body">\
                                 </div>\
                                 <div class="modal-footer">\
-                                    <button type="button" class="btn btn-default cancelButton">' + modalAppOptions.labels.cancel + '</button>\
-                                    <button type="button" class="btn btn-primary continueButton">' + modalAppOptions.labels.continue + '</button>\
+                                    <div class="modal-footer-buttons d-none">\
+                                        <button type="button" class="btn btn-default cancelButton">' + modalAppOptions.labels.cancel + '</button>\
+                                        <button type="button" class="btn btn-primary continueButton">' + modalAppOptions.labels.continue + '</button>\
+                                    </div>\
                                 </div>\
                             </div>\
                         </div>\
@@ -824,7 +827,13 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                     modal.attr(bsDataAttributePrefix + "keyboard","false");
                 }
 
+                let modalShown = false;
                 const showModal = function() {
+                    if ( modalShown ) {
+                        return;
+                    }
+                    modalShown = true;
+
                     if (isBootstrap5) {
                         modalBS5 = bootstrap.Modal.getOrCreateInstance(modal[0]);
                         modalBS5.show();
@@ -836,6 +845,8 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                     modalAppOptions.actionLink.prop("disabled", false).removeClass("disabled");
                     $("body").css("cursor", "default");
                     // hostApplication.triggerEvent( "onModalAppShown", modalAppOptions.applicationId, hostApplication, modalApp, modalAppOptions.actionLink );
+
+                    $(".modal-footer-buttons", modal).removeClass("d-none");
                 };
 
                 const closeModal = function() {
@@ -844,6 +855,8 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                     }
                     else {
                         modal.modal('hide');
+                        $('body').removeClass('modal-open');
+                        $('.modal-backdrop').remove();    
                     }
             
                     const applicationsToRemove = [
@@ -893,6 +906,9 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                             message 
                         );
                     })
+                    .off("onModalAppShow.RBLe").on("onModalAppShow.RBLe", function() {
+                        showModal();
+                    })
                     .off("onModalAppConfirmed.RBLe onModalAppCancelled.RBLe").on("onModalAppConfirmed.RBLe onModalAppCancelled.RBLe", function( e, applicationId, hostApplication, modalApplication, actionLink, dismiss) { 
                         dismiss(); 
                     });
@@ -904,11 +920,6 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                 modalApp.triggerEvent( "onInitializing", modalApp, modalApp.options );            
                     
                 modalApp.element
-                    .on("onInitialized.RBLe", function () {
-                        if ( modalApp.options.calcEngines == undefined || !( modalApp.options.runConfigureUICalculation ?? true )) {
-                            showModal();
-                        }
-                    })
                     .on( "onConfigureUICalculation.RBLe", function() { 
                         showModal();
                     } )
@@ -980,6 +991,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                     // Triggered when ESC is clicked (when programmatically close, this isn't triggered)
                     cancelModal( undefined );
                 });
+
                 $('.cancelButton, .btn-close', modal).on("click.ka", function (e) {
                     e.preventDefault();
                     const trigger = $(this);
@@ -1362,7 +1374,6 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                                 calculatePipeline( 1 ); 
                             }
                             else {
-                                that.trace("Data retrieval failed in other application", TraceVerbosity.Detailed);
                                 throw new Error(errorMessage);
                             }                  
                         });
@@ -1424,7 +1435,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                                     }                                        
                                 },
                                 ( _jqXHR, textStatus ) => {
-                                    that.trace("getData AJAX Error Status: " + textStatus, TraceVerbosity.Quiet);
+                                    that.trace("getData AJAX Error Status: " + textStatus, TraceVerbosity.None);
                                     throw new Error("getData AJAX Error Status: " + textStatus);
                                 } 
                             );  
@@ -1838,13 +1849,13 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                 }
                 else {
                     application.exception = payload;
-                    application.trace( "RBLe Service Result Exception: " + payload.Exception.Message, TraceVerbosity.Quiet )
+                    application.trace( "RBLe Service Result Exception: " + payload.Exception.Message, TraceVerbosity.None )
                     submitCalculationHandler( "RBLe Service Result Exception: " + payload.Exception.Message );
                 }
             };
     
             const submitFailed: JQueryFailCallback = function( _jqXHR, textStatus ): void {
-                application.trace("submitCalculation AJAX Error Status: " + textStatus, TraceVerbosity.Quiet);
+                application.trace("submitCalculation AJAX Error Status: " + textStatus, TraceVerbosity.None);
                 submitCalculationHandler( "submitCalculation AJAX Error Status: " + textStatus );
             };
     
@@ -2726,6 +2737,8 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                 }
                 else {
                     modal.modal('hide');
+                    $('body').removeClass('modal-open');
+                    $('.modal-backdrop').remove();
                 }                                                                    
                 modal.remove();
             }
@@ -3094,7 +3107,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                 const needsCalculation = item.attr( "rbl-attr" ) != undefined;
                 if ( hasResults || !needsCalculation ) {
                     if ( needsCalculation ) {
-                        that.application.rble.processRblAttribute( item, showInspector );                    
+                        that.application.rble.processRblAttribute( item, showInspector, undefined );                    
                     }
                     const templateId = item.attr('rbl-tid')!; // eslint-disable-line @typescript-eslint/no-non-null-assertion
                     that.injectTemplateWithoutSource( item, templateId );
@@ -3177,7 +3190,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
             }
 
             if ( template == undefined ) {
-                application.trace( "Invalid template id: " + templateId, TraceVerbosity.Quiet);
+                application.trace( "Invalid template id: " + templateId, TraceVerbosity.None);
                 return undefined;
             }
             else {
@@ -3747,7 +3760,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                 }
                 else {
                     application.exception = payload;
-                    application.trace("registerData Error Status: " + payload.Exception.Message, TraceVerbosity.Quiet);
+                    application.trace("registerData Error Status: " + payload.Exception.Message, TraceVerbosity.None);
                     registerDataHandler( "RBLe Register Data Error: " + payload.Exception.Message );
                 }
             }
@@ -3884,25 +3897,36 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
             return tabDef[tableKey] as Array<T> ?? [];
         }
     
-        getRblSelectorValue( tabDef: TabDef | undefined, defaultTableName: string, selector: string ): string | undefined {
+        getRblSelectorValue( tabDef: TabDef | undefined, defaultTableName: string, selector: string, templateRow?: JSON ): string | undefined {
             if ( tabDef != undefined ) {
                 const isExpression = selector.endsWith( "]" );
+                const expressionStart = selector.indexOf( "[" );
+                const isTemplateRowExpression = expressionStart == 0
+
                 let selectorParts: string[];
 
                 if ( isExpression ) {
-                    const expressionStart = selector.indexOf( "[" );
-
-                    const expressionPrefix = expressionStart == 0
+                    const expressionPrefix = isTemplateRowExpression
                         ? defaultTableName
                         : selector.substring( 0, expressionStart );
                     
+                    // [expression] - run on current template row
                     // table[expression] - all rows until !undefined
                     // table.id[expression] - process single row by id
                     // table.searchCol.key[expression] - process single row by searchCol=key
                     selectorParts = expressionPrefix.split( "." );
 
+                    if ( isTemplateRowExpression && templateRow == undefined ) {
+                        this.application.trace( "Invalid expression [" + tabDef._fullName + ":" + selector + "], must be inside template processing when no 'selectors' are provided.", TraceVerbosity.None );
+                        return "false";
+                        // if I return undefined, it will not be processed, and falsy attribute processing would show
+                        // but I'd rather 'remove' by default if invalid setup.  If Template Row Expression used for 'attributes' or
+                        // rbl-values, then 'false' is going to be returned, which might lead to harder debugging for a bit, but console
+                        // would show error.
+                    }
+
                     if ( selectorParts.length > 3 ) {
-                        this.application.trace( "Invalid selector length for [" + tabDef._fullName + ":" + selector + "]", TraceVerbosity.Quiet );
+                        this.application.trace( "Invalid selector length for [" + tabDef._fullName + ":" + selector + "]", TraceVerbosity.None );
                         return undefined;
                     }
                 }
@@ -3910,20 +3934,20 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                     selectorParts = selector.split('.');
 
                     if ( selectorParts.length > 4 ) {
-                        this.application.trace( "Invalid selector length for [" + tabDef._fullName + ":" + selector + "]", TraceVerbosity.Quiet );
+                        this.application.trace( "Invalid selector length for [" + tabDef._fullName + ":" + selector + "]", TraceVerbosity.None );
                         return undefined;
                     }
                 }
 
-                if ( isExpression && selectorParts.length === 1 ) {
-                    if ( selector.indexOf("this.") == -1 && selector.indexOf("this.") == -1 ) {
-                        // Just hard coded expression value...not using actual table/row...
-                        return this.processTableRowExpression( selector, {} as JSON, 0 );
-                    }
-                    else {
-                        const tableRows = this.getResultTable<JSON>( tabDef, selectorParts[ 0 ] );
+                if ( !isTemplateRowExpression && isExpression && selectorParts.length === 1 ) {
+                    const tableRows = this.getResultTable<JSON>( tabDef, selectorParts[ 0 ] );
 
-                        if ( tableRows.length > 0 ) {
+                    if ( tableRows.length > 0 ) {
+                        if ( selector.indexOf("this.") == -1 && selector.indexOf("row.") == -1 ) {
+                            // Just hard coded expression value...not using actual table/row...
+                            return this.processTableRowExpression( selector, {} as JSON, 0 );
+                        }
+                        else {
                             for (let index = 0; index < tableRows.length; index++) {
                                 const row = tableRows[index];
                                 const expressionValue = this.processTableRowExpression( selector, row, index );
@@ -3937,11 +3961,15 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                 }
                 else {
                     let row: JSON | undefined = undefined;
+
                     const returnColumn = 
                         selectorParts.length == 3 ? selectorParts[2] :
                         selectorParts.length == 4 ? selectorParts[3] : "value";
 
-                    if ( selectorParts.length === 1 ) 
+                    if ( isTemplateRowExpression ) {
+                        row = templateRow;
+                    }
+                    else if ( selectorParts.length === 1 ) 
                     {
                         row = this.getResultRow<JSON>( tabDef, defaultTableName, selectorParts[0] );
                     }
@@ -3959,6 +3987,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                     {
                         row = this.getResultRow<JSON>( tabDef, selectorParts[0], selectorParts[2], selectorParts[1] );
                     }
+
                     return row !== undefined 
                         ? isExpression
                             ? this.processTableRowExpression( selector, row, 0 )
@@ -3970,11 +3999,38 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
             return undefined;
         }
         
-        processRblValues(showInspector: boolean): void {
+        processRblValues(container: JQuery<HTMLElement> | undefined, showInspector: boolean, templateRow?: JSON): void {
             const that: RBLeUtilities = this;
             const application = this.application;
     
-            application.select("[rbl-value]")
+            const itemsToProcess = container != undefined && templateRow != undefined
+                ? container.find("[rbl-value]")
+                // should already be processed to support 'template row' expressions
+                : application.select("[rbl-value]", container).filter(function() { return application.closest($(this),"[rbl-source]").length == 0; });
+                // Couldn't do this b/c application.select correctly filtered within application, but then the '.not()' look outside of application scope
+                // : application.select("[rbl-value]", container).not("[rbl-source] *");
+                // Couldn't do this b/c I think there is bug in jquery where the 'not' is processed outside of container/context as well
+                // : application.select("[rbl-value]:not([rbl-source] *)", container).not("[rbl-source] *");
+
+                /*
+                    <div rbl-source="parent-source">
+                        <div rbl-value="0"></div>
+                        <div id="app">
+                            <div rbl-source="test" id="hello">
+                                <li rbl-value="1"></li>
+                            </div>
+                            <div id="hello2">
+                                <li rbl-value="1"></li>
+                            </div>
+                        </div>
+                    </div>
+
+                    $("[rbl-value]", container).length = 3
+                    $("[rbl-value]", container).length = 2
+                    $("[rbl-value]:not([rbl-source] *)", container).length = 0 (should be 2)
+                */
+
+            itemsToProcess
                 .each(function () {
                     let el = $(this);
         
@@ -3993,8 +4049,8 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                     const tabName = el.attr('rbl-tab');
                     const tabDef = that.getTabDef( tabName, ceKey )
                     const value = 
-                        that.getRblSelectorValue( tabDef, "rbl-value", el.attr('rbl-value')! ) ?? // eslint-disable-line @typescript-eslint/no-non-null-assertion
-                        that.getRblSelectorValue( tabDef, "ejs-output", el.attr('rbl-value')! ); // eslint-disable-line @typescript-eslint/no-non-null-assertion
+                        that.getRblSelectorValue( tabDef, "rbl-value", el.attr('rbl-value')!, templateRow ) ?? // eslint-disable-line @typescript-eslint/no-non-null-assertion
+                        that.getRblSelectorValue( tabDef, "ejs-output", el.attr('rbl-value')!, templateRow ); // eslint-disable-line @typescript-eslint/no-non-null-assertion
         
                     if ( value != undefined ) {
                         if ( el.length === 1 ) {
@@ -4081,19 +4137,24 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                 rblAttr: rblAttrValue
             }
         }
-        
-        processRblAttributes(showInspector: boolean): void {
+
+        processRblAttributes( container: JQuery<HTMLElement> | undefined, showInspector: boolean, templateRow?: JSON): void {        
             const that: RBLeUtilities = this;
             const application = this.application;
     
-            application.select("[rbl-attr]")
+            const itemsToProcess = container != undefined && templateRow != undefined
+                ? container.find("[rbl-attr]")
+                // should already be processed to support 'template row' expressions
+                : application.select("[rbl-attr]", container).filter(function() { return application.closest($(this),"[rbl-source]").length == 0; });
+
+            itemsToProcess
                 .each(function () {
                     let el = $(this);
-                    that.processRblAttribute( el, showInspector );
+                    that.processRblAttribute( el, showInspector, templateRow );
                 });
         }
 
-        processRblAttribute(el: JQuery<HTMLElement>, showInspector: boolean): void {
+        processRblAttribute(el: JQuery<HTMLElement>, showInspector: boolean, templateRow: JSON | undefined): void {
             const that: RBLeUtilities = this;
             const application = this.application;
 
@@ -4139,8 +4200,8 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                     }
 
                     const value = 
-                        that.getRblSelectorValue( tabDef, "rbl-value", attrSelector ) ??
-                        that.getRblSelectorValue( tabDef, "ejs-output", attrSelector );
+                        that.getRblSelectorValue( tabDef, "rbl-value", attrSelector, templateRow ) ??
+                        that.getRblSelectorValue( tabDef, "ejs-output", attrSelector, templateRow );
         
                     if ( value != undefined ) {
                         if ( el.length === 1 ) {
@@ -4186,7 +4247,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                     }
                 }
                 else {
-                    application.trace("<b style='color: Red;'>RBL WARNING</b>: Unable to process rbl-attr=" + a, TraceVerbosity.Detailed);
+                    application.trace("<b style='color: Red;'>RBL WARNING</b>: Unable to process rbl-attr=" + a + ", needs to be name:rblselector[:jqueryselector]", TraceVerbosity.None);
                 }
             });
         }
@@ -4235,7 +4296,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
 
                         const rblSource = el.attr('rbl-source-table') ?? el.attr('rbl-source') ?? "NOSOURCE";
                         if ( el.attr('rbl-source-table') != undefined ) {
-                            application.trace("<b style='color: Red;'>RBL WARNING</b>: rbl-source-table in tab " + tabDefName + " no longer supported.", TraceVerbosity.Detailed);
+                            application.trace("<b style='color: Red;'>RBL WARNING</b>: rbl-source-table in tab " + tabDefName + " no longer supported.", TraceVerbosity.None);
                         }
 
                         const template = tid != undefined 
@@ -4248,7 +4309,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                         if ( tid === undefined || template === undefined || templateContent === undefined ) {
                             // Result tables are processed later
                             if ( el.attr("rbl-tid") !== "result-table" ) {
-                                application.trace("<b style='color: Red;'>RBL WARNING</b>: Template content could not be found. Tab = " + tabDefName + " [" + ( tid ?? "Missing rbl-tid for " + el.attr('rbl-source') ) + "]", TraceVerbosity.Detailed);
+                                application.trace("<b style='color: Red;'>RBL WARNING</b>: Template content could not be found. Tab = " + tabDefName + " [" + ( tid ?? "Missing rbl-tid for " + el.attr('rbl-source') ) + "]", TraceVerbosity.None);
                             }
                             return;
                         }
@@ -4283,7 +4344,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                                 : rblSource.split('.');
     
                         if ( rblSourceParts.length > 3 ) {
-                            application.trace("<b style='color: Red;'>RBL WARNING</b>: Invalid length for rblSourceParts=" + rblSourceParts.join("."), TraceVerbosity.Detailed);
+                            application.trace("<b style='color: Red;'>RBL WARNING</b>: Invalid length for rblSourceParts=" + rblSourceParts.join("."), TraceVerbosity.None);
                             return;
                         }
 
@@ -4312,7 +4373,17 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                             const appendTemplateResult = function( templateData: object, templateContent: string, dest: JQuery<HTMLElement>, prepend: boolean, prependBeforePreserve: boolean ): void {
                                 try {
                                     try {
-                                        templateData = KatApp.extend( {}, firstRowSource, templateData )
+                                        templateData = KatApp.extend( 
+                                            {}, 
+                                            firstRowSource, 
+                                            templateData,
+                                            { 
+                                                "@template": tid.startsWith("_t_") ? "inline" : tid,
+                                                "@table": tableName, 
+                                                "@tab": tabDef![ "@name" ], 
+                                                "@calcEngine": tabDef![ "@calcEngine" ] 
+                                            }
+                                        );
                                     } catch {
                                         // Could throw error if KatApp.js isn't updated and can't handle
                                         // when column has meta data of @class, @width, etc.
@@ -4333,23 +4404,33 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                                     // Nested templates
                                     that.application.ui.injectTemplatesWithoutSource(el, showInspector);
 
-                                    that.application.rble.processRblIfs( el, showInspector );
+                                    const templateRow = templateData as JSON;
 
+                                    that.application.rble.processRblIfs( el, showInspector, templateRow );
+                                    that.application.rble.processRblValues( el, showInspector, templateRow );
+                                    that.application.rble.processRblAttributes( el, showInspector, templateRow );
+                                    that.application.rble.processRblDisplays( el, showInspector, templateRow );
+                                    that.application.rble.processRblDisabled( el, showInspector, templateRow );
+                                                        
                                     // Nested rbl-source templates
                                     that.processRblSources(el, showInspector);
                                     
-                                    const templateResult = hasRoot ? el : el.children();
+                                    const processTemplate = that.application.triggerEvent("onTemplateRowProcessed", el, templateData, that.application) || true;
 
-                                    $.fn.KatApp.currentView = application.element;
-                                    
-                                    if ( prepend ) {
-                                        dest.prepend( templateResult );
-                                    }
-                                    else if ( prependBeforePreserve ) {
-                                        templateResult.insertBefore( application.select(".rbl-preserve", dest).first() );
-                                    }
-                                    else {
-                                        dest.append( templateResult );
+                                    if ( processTemplate ) {
+                                        const templateResult = hasRoot ? el : el.children();
+
+                                        $.fn.KatApp.currentView = application.element;
+
+                                        if ( prepend ) {
+                                            dest.prepend( templateResult );
+                                        }
+                                        else if ( prependBeforePreserve ) {
+                                            templateResult.insertBefore( application.select(".rbl-preserve", dest).first() );
+                                        }
+                                        else {
+                                            dest.append( templateResult );
+                                        }
                                     }
                                 } finally {
                                     $.fn.KatApp.currentView = undefined;
@@ -4470,16 +4551,21 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
             return undefined;
         };
 
-        private processRblFalseyAttribute( container: JQuery<HTMLElement> | undefined, showInspector: boolean, attributeName: string, legacyTable: string, processFalsey: ( el: JQuery<HTMLElement>, isFalsy: boolean )=> void ): void {
+        private processRblFalseyAttribute( container: JQuery<HTMLElement> | undefined, showInspector: boolean, attributeName: string, legacyTable: string, processFalsey: ( el: JQuery<HTMLElement>, isFalsy: boolean )=> void, templateRow: JSON | undefined ): void {
             const that: RBLeUtilities = this;
             const application = this.application;
     
-            application.select("[" + attributeName + "]", container)
+            const itemsToProcess = container != undefined && templateRow != undefined
+                ? container.find("[" + attributeName + "]")
+                // should already be processed to support 'template row' expressions
+                : application.select("[" + attributeName + "]", container).filter(function() { return application.closest($(this),"[rbl-source]").length == 0; });
+            
+            itemsToProcess
                 .each(function () {
                     const el = $(this);
                     let attributeValue = el.attr(attributeName);
 
-                    // rbl-display/rbl-disable - current support
+                    // rbl-display/rbl-disable/rbl-if - current support
                     // id - attributeName[@id=id]/value || legacyTable[@id=id]/value returns falsy
                     // table.idValue - table[@id=idValue]/value returns falsy
                     // table.idValue.column - table[@id=idValue]/column returns falsy
@@ -4530,51 +4616,61 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                             if ( isNotExpression ) {
                                 attributeValue = attributeValue.substring( 1 );
                             }
-                            const tableName = attributeName == "rbl-if" ? "rbl-display" : attributeName;
+                            let tableName = attributeName == "rbl-if" ? "rbl-display" : attributeName;
 
+                            // Exists/Not Exists can't be ran against 'current template row', needs to have selector
+                            // with at least a table specified.
                             if ( isExists || isNotExists ) {
                                 const rblSource = attributeValue.substring( isExists ? 7 : 8, attributeValue.length - 1 );
-                                const isTableExpression = rblSource.indexOf("[") > -1;
+                                const expressionStart = rblSource.indexOf( "[" );
+                                const isTableExpression = expressionStart > -1;
+
+                                if ( expressionStart == 0 ) {
+                                    that.application.trace( "Invalid expression [" + tabDef._fullName + ":" + attributeValue + "], must include table name when using exists() function.", TraceVerbosity.None );
+                                    processFalsey( el, true );
+                                    return;
+                                }
+
                                 const rblSourceParts = 
                                     isTableExpression 
-                                        ? [ rblSource ]
+                                        ? rblSource.substring( 0, expressionStart ).split( '.' )
                                         : rblSource.split('.');
-                                const tableName = rblSourceParts[0].split("[")[ 0 ];
 
-                                const tableRows = that.getResultTable<ResultTableRow>( tabDef, tableName );
+                                tableName = rblSourceParts[0];
+
+                                const tableRows = (
+                                    rblSourceParts.length === 2 ? [ that.getResultRow<JSON>( tabDef, rblSourceParts[0], rblSourceParts[1] ) ] :
+                                    rblSourceParts.length === 3 ? [ that.getResultRow<JSON>( tabDef, rblSourceParts[0], rblSourceParts[2], rblSourceParts[1] ) ] :
+                                    that.getResultTable<ResultTableRow>( tabDef, rblSourceParts[0] )
+                                ).filter( r => r != undefined );
 
                                 if ( tableRows.length == 0 ) {
                                     processFalsey( el, isExists );
                                     return;
                                 }
+                                else if ( isTableExpression ) {
+                                    const targetExpressionRow = 
+                                        tableRows.find( ( row, index ) => 
+                                            !that.isFalsy( that.processTableRowExpression( rblSource, row!, index ) ) 
+                                        );
 
-                                if ( isTableExpression ) {
-                                    const targetExpressionRow = tableRows.find( ( row, index ) => !that.isFalsy( that.processTableRowExpression( rblSourceParts[ 0 ], row, index ) ) );
                                     processFalsey( 
                                         el, 
                                         isExists ? targetExpressionRow == undefined : targetExpressionRow != undefined
                                     );
                                     return;
                                 }
-
-                                if ( rblSourceParts.length === 1 ) 
-                                {
-                                    // We already know rows exist...so can exit now
-                                    processFalsey( el, !isExists );
+                                else {
+                                    const falseyValue = isExists ? tableRows.length == 0 : tableRows.length != 0;
+                                    processFalsey( el, falseyValue );
                                     return;
                                 }
-
-                                const keyColumn = rblSourceParts.length === 2 ? "@id" : rblSourceParts[1];
-                                const keyValue = rblSourceParts.length === 2 ? rblSourceParts[1] : rblSourceParts[2];
-                                
-                                const targetRow = tableRows.find( r => r[ keyColumn ] == keyValue );
-                                processFalsey( el, isExists ? targetRow == undefined : targetRow != undefined );
                             }
                             else {
                                 let resultValue = 
                                     simpleExpression?.left ??
-                                    that.getRblSelectorValue( tabDef, tableName, simpleExpression?.selector ?? attributeValue ) ??
-                                    that.getRblSelectorValue( tabDef, legacyTable, simpleExpression?.selector ?? attributeValue );
+                                    that.getRblSelectorValue( tabDef, tableName, simpleExpression?.selector ?? attributeValue, templateRow ) ??
+                                    that.getRblSelectorValue( tabDef, legacyTable, simpleExpression?.selector ?? attributeValue, templateRow );
                     
                                 // Reassign the value you are checking if they are using simple expressions
                                 // by passing in the value from getRblSelectorValue to the expression created
@@ -4591,15 +4687,15 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                         }
                         else {
                             const tabDefName = ( ceKey ?? application.defaultCalcEngineKey ) + "." + ( tabName ?? "default" );
-                            application.trace("<b style='color: Red;'>RBL WARNING</b>: no tab found for " + tabDefName + ", " + attributeName + "=" + attributeValue, TraceVerbosity.Detailed);
+                            application.trace("<b style='color: Red;'>RBL WARNING</b>: no tab found for " + tabDefName + ", " + attributeName + "=" + attributeValue, TraceVerbosity.None);
                         }
                     }
                 });
         }
 
-        processRblDisabled( showInspector: boolean): void {
+        processRblDisabled( container: JQuery<HTMLElement> | undefined, showInspector: boolean, templateRow?: JSON): void {
             this.processRblFalseyAttribute(
-                undefined,
+                container,
                 showInspector,
                 "rbl-disabled",
                 "ejs-disabled",
@@ -4633,13 +4729,14 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                     if (target.attr("data-kat-bootstrap-select-initialized") !== undefined) {
                         target.selectpicker('refresh');
                     }
-                }
+                },
+                templateRow
             );
         }
 
-        processRblDisplays( showInspector: boolean): void {
+        processRblDisplays( container: JQuery<HTMLElement> | undefined, showInspector: boolean, templateRow?: JSON): void {
             this.processRblFalseyAttribute(
-                undefined,
+                container,
                 showInspector,
                 "rbl-display",
                 "ejs-visibility",
@@ -4652,11 +4749,12 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                     else {
                         el.show();
                     }
-                }
+                },
+                templateRow
             );
         }
     
-        processRblIfs( container: JQuery<HTMLElement> | undefined, showInspector: boolean): void {
+        processRblIfs( container: JQuery<HTMLElement> | undefined, showInspector: boolean, templateRow?: JSON): void {
             this.processRblFalseyAttribute(
                 container,
                 showInspector,
@@ -4666,7 +4764,8 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                     if ( isFalsy ) {
                         el.remove();
                     }
-                }
+                },
+                templateRow
             );
         }
 
@@ -5127,7 +5226,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
             const errors = this.getResultTable<ValidationRow>( tabDef, "errors" );
 
             if ( errors.length + warnings.length > 0 && this.application.select("#" + this.application.id + "_ModelerValidationTable").length == 0 ) {
-                this.application.trace("<b style='color: Red;'>RBL WARNING</b>: No validation summary is found to process the errors/warnings rows from " + tabDef._fullName, TraceVerbosity.Detailed);
+                this.application.trace("<b style='color: Red;'>RBL WARNING</b>: No validation summary is found to process the errors/warnings rows from " + tabDef._fullName, TraceVerbosity.None);
             }
             else {
                 this.application.processValidationRows(errors, warnings);
@@ -5153,7 +5252,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                 const sliderJQuery = application.select(".slider-" + id);
     
                 if ( sliderJQuery.length !== 1 ) {
-                    application.trace("<b style='color: Red;'>RBL WARNING</b>: No slider div can be found for " + id, TraceVerbosity.Detailed);
+                    application.trace("<b style='color: Red;'>RBL WARNING</b>: No slider div can be found for " + id, TraceVerbosity.None);
                 }
                 else {
                     const minValue = Number( config.min );
@@ -5314,7 +5413,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                     );
                 }
                 else {
-                    application.trace("<b style='color: Red;'>RBL WARNING</b>: No rbl-listcontrol can be found for " + controlName, TraceVerbosity.Detailed);
+                    application.trace("<b style='color: Red;'>RBL WARNING</b>: No rbl-listcontrol can be found for " + controlName, TraceVerbosity.None);
                 }
             });
         }
@@ -5376,10 +5475,11 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                 // TODO: All these methods that pass 'root' as app.element would be better written
                 // to accept undefined... application.select performs slightly better when no context is provided
                 this.application.ui.injectTemplatesWithoutSource(this.application.element, showInspector);
+
                 this.processRblIfs( undefined, showInspector );
                 this.processRblSources( this.application.element, showInspector );
-                this.processRblValues( showInspector );
-                this.processRblAttributes( showInspector );
+                this.processRblValues( this.application.element, showInspector );
+                this.processRblAttributes( this.application.element, showInspector );
 
                 this.processTables();
                 this.processCharts();
@@ -5390,8 +5490,8 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
     
                 // These all need to be after processUI so if any inputs are built
                 // from results, they are done by the time these run
-                this.processRblDisplays( showInspector );
-                this.processRblDisabled( showInspector );
+                this.processRblDisplays( this.application.element, showInspector );
+                this.processRblDisabled( this.application.element, showInspector );
 
                 let sliderConfigIds: ( string | null )[] = [];
     
@@ -5459,14 +5559,14 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                             return sliderConfigIds.indexOf( r ) < 0;
                         })
                         .each( ( i, r ) => {
-                            application.trace("<b style='color: Red;'>RBL WARNING</b>: No slider configuration can be found for " + r + ".", TraceVerbosity.Detailed);
+                            application.trace("<b style='color: Red;'>RBL WARNING</b>: No slider configuration can be found for " + r + ".", TraceVerbosity.None);
                         });
                 }                
     
                 return true;
             }
             else {
-                application.trace( "Results not available", TraceVerbosity.Quiet );
+                application.trace( "Results not available", TraceVerbosity.None );
                 return false;
             }
         }

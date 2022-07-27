@@ -78,21 +78,23 @@ interface KatAppOptions
     onInitialized?: (this: HTMLElement, application: KatAppPlugInInterface )=> void;
     onDestroyed?: (this: HTMLElement, application: KatAppPlugInInterface )=> void;
     onOptionsUpdated?: (this: HTMLElement, application: KatAppPlugInInterface )=> void;
+
     // If multiple KatApps are on one page, you can catch notifications from other KatApps that called pushNotification()
     onKatAppNotification?: (this: HTMLElement, notificationName: string, notificationInformation: {}, application: KatAppPlugInInterface )=> void;
     onKatAppNavigation?: (this: HTMLElement, id: string, application: KatAppPlugInInterface )=> void;
     
-    onCalculateStart?: (this: HTMLElement, application: KatAppPlugInInterface )=> void;
+    onCalculateStart?: (this: HTMLElement, application: KatAppPlugInInterface )=> boolean | undefined;
     onRegistration?: (this: HTMLElement, calcOptions: KatAppOptions, application: KatAppPlugInInterface )=> void;
     onCalculationOptions?: (this: HTMLElement, submitOptions: SubmitCalculationOptions, application: KatAppPlugInInterface )=> void;
     onInputsCache?: (this: HTMLElement, inputsCache: CalculationInputs, application: KatAppPlugInInterface )=> void;
-    
     // Can use onResultsProcessing if you want to do something before generic result processing happens (i.e. clear/destroy table/chart so only displays if results in current calculation)
     onResultsProcessing?: (this: HTMLElement, calculationResults: JSON, calcOptions: KatAppOptions, application: KatAppPlugInInterface )=> void;
     onConfigureUICalculation?: (this: HTMLElement, calculationResults: JSON, calcOptions: KatAppOptions, application: KatAppPlugInInterface )=> void;
     onCalculation?: (this: HTMLElement, calculationResults: JSON, calcOptions: KatAppOptions, application: KatAppPlugInInterface )=> void;
     onCalculationErrors?: (this: HTMLElement, key: string, message: string, exception: Error, calcOptions: KatAppOptions, application: KatAppPlugInInterface)=> void;
     onCalculateEnd?: (this: HTMLElement, application: KatAppPlugInInterface )=> void;
+
+    onTemplateRowProcessed?:( this: HTMLElement, content: JQuery<HTMLElement>, sourceRow: {}, application: KatAppPlugInInterface )=> boolean | undefined;
 
     onValidationInitialize?: (this: HTMLElement, application: KatAppPlugInInterface, errorSummary: JQuery<HTMLElement>, warningSummary: JQuery<HTMLElement>)=> void;
     onValidationErrors?: (this: HTMLElement, application: KatAppPlugInInterface, errors: ValidationRow[])=> void;
@@ -112,6 +114,7 @@ interface KatAppOptions
     // Host handlers only triggered modal applications and only handled by framework
     onModalAppConfirm?: (this: HTMLElement, message: string | undefined)=> void;
     onModalAppCancel?: (this: HTMLElement, message: string | undefined)=> void;
+    onModalAppShow?: (this: HTMLElement)=> void;
 
     // Host handlers
     onModalAppInitialized?: (this: HTMLElement, applicationId: string, hostApplication: KatAppPlugInInterface, modalApplication: KatAppPlugInInterface, modalLink: JQuery<HTMLElement>)=> void;
@@ -223,6 +226,8 @@ interface KatAppPlugInShimInterface {
 // for clients to be able to reference.
 interface KatAppPlugInInterface extends KatAppPlugInShimInterface {
     templateBuilder: StandardTemplateBuilderInterface;
+
+    state: {};
 
     results?: TabDef[];
     calculationInputs?: CalculationInputs;

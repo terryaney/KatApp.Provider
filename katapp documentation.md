@@ -164,6 +164,7 @@
             - [onRegistration](#onRegistration)
             - [onCalculationOptions](#onCalculationOptions)
             - [onResultsProcessing](#onResultsProcessing)
+            - [onTemplateRowProcessed](#onTemplateRowProcessed)
             - [onConfigureUICalculation](#onConfigureUICalculation)
             - [onCalculation](#onCalculation)
             - [onCalculationErrors](#onCalculationErrors)
@@ -193,8 +194,10 @@
             - [onModalAppCancelled](#onModalAppCancelled)
             - [onModalAppConfirm](#onModalAppConfirm)
             - [onModalAppCancel](#onModalAppCancel)
+            - [onModalAppShow](#onModalAppShow)
             - [Standard KatApp Modal Sample](#Standard-KatApp-Modal-Sample)
             - [Advanced KatApp Modal Sample](#Advanced-KatApp-Modal-Sample)
+            - [KatApp Modal Sample Without Configure UI Calculation](#KatApp-Modal-Sample-Without-Configure-UI-Calculation)
         - [Template Event Handlers](#Template-Event-Handlers)
     - [Global Methods](#Global-Methods)
         - [static setNavigationInputs](#static-setNavigationInputs)
@@ -884,8 +887,10 @@ By default, the following markup will be injected into the DOM to host the KatAp
                     {View Contents Hosted Here}
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-default cancelButton" aria-hidden="true">{Cancel Label}</button>
-                    <button type="button" class="btn btn-primary continueButton">{Continue Label}</button>
+                    <div class="modal-footer-buttons">
+                        <button type="button" class="btn btn-default cancelButton" aria-hidden="true">{Cancel Label}</button>
+                        <button type="button" class="btn btn-primary continueButton">{Continue Label}</button>
+                    </div>
                 </div>
             </div>
         </div>
@@ -1875,7 +1880,7 @@ Must have at least one segment. | Can supply *only* an expression *without* any 
 
 Expression&nbsp;Selector | Description
 ---|---
-[expression] | Run the `expression` on each row from the 'default' table until the expression returns value not equal to `undefined`.
+[expression] | Run the `expression` on the currently processing `rbl-source` 'template row'.  **This is only supported inside templates rendering via `rbl-source`.**
 table[expression] | Run the `expression` on each row from the `table` table until the expression returns value not equal to `undefined`.
 table.idValue[expression] | Run the `expression` on the row from `table` where `@id=idValue`.
 table.keyColumn.keyValue[expression] | Run the `expression` on the row from `table` where `keyColumn=keyValue`.
@@ -1889,10 +1894,21 @@ The javascript expression has a signature of: `expression( row: JSON, index: int
     If the CalcEngine results has rbl-value row with id='pageHeader' and value='TOTAL REWARDS`, then
     all samples below should output: Hi TOTAL BENEFITS.
 -->
-<div rbl-value="[row['@id'] == 'pageHeader' ? 'Hi ' + row.value.replace('REWARDS', 'BENEFITS') : undefined]"></div>
 <div rbl-value="rbl-value[row['@id'] == 'pageHeader' ? 'Hi ' + row.value.replace('REWARDS', 'BENEFITS') : undefined]"></div>
 <div rbl-value="rbl-value.pageHeader[row.value.indexOf('TOTAL')>-1 ? 'Hi ' + row.value.replace('REWARDS', 'BENEFITS') : undefined]"></div>
 <div rbl-value="rbl-value.@id.pageHeader[row.value.indexOf('TOTAL')>-1 ? 'Hi ' + row.value.replace('REWARDS', 'BENEFITS') : undefined]"></div>
+
+<div class="row" rbl-ce="BRD" rbl-source="contentTemplates.selector.home-main">
+    <div rbl-tid="inline">
+        <div>{templateName}, {@id}</div>
+        <!-- Process on currently processing template row -->
+        <div rbl-if="[row['@id']> 2]">[row['@id']> 2] WORKS</div>
+        <!-- Even though inside a contentTemplates row, run this expression against row with id=3, this one shouldn't work -->
+        <div rbl-ce="BRD" rbl-if="contentTemplates.3[row['@id']==2]">contentTemplates.3[row['@id']==2] WORKS</div>
+        <!-- Even though inside a contentTemplates row, run this expression against row with id=3, this one should work -->
+        <div rbl-ce="BRD" rbl-if="contentTemplates.3[row['@id']==3]">contentTemplates.3[row['@id']==3] WORKS</div>
+    </div>
+</div>
 ```
 
 # RBLe Service
@@ -2571,11 +2587,10 @@ By decorating elements with specific CSS class names<sup>1</sup>, RBLe Service f
 
 Class | Purpose
 ---|---
-rbl&#x2011;nocalc<br/>skipRBLe<sup>2</sup> | By default, changing any `<input>` value in the view will sumbit a calc to the RBLe service.  Use this class to supress submitting a calc.  Note this input will still be included in calcuations, but that changing it does not initate a calc.
-rbl&#x2011;exclude<br/>notRBLe<sup>2</sup> | By default, all inputs in the view are sent to RBLe calculation.  Use this class to exclude an input from the calc.  This will also prevent this input from initating a calc on change.
-rbl&#x2011;preserve | Use this class in child elements beneath `[rbl-source]` so that when the element is cleared on each calculation, an element with class 'rbl-preserve' will not be deleted.
+rbl&#x2011;nocalc<br/>skipRBLe<sup>2</sup> | By default, changing any `<input>` value in the view will sumbit a calc to the RBLe service.  Use `rbl-nocalc` class to supress submitting a calc.  Note this input will still be included in calcuations, but that changing it does not initate a calc.
+rbl&#x2011;exclude<br/>notRBLe<sup>2</sup> | By default, all inputs in the view are sent to RBLe calculation.  Use `rbl-exclude` class to exclude an input from the calc.  This will also prevent this input from initating a calc on change.
+rbl&#x2011;preserve | Use `rbl-preserve` class in child elements beneath `[rbl-source]` so that when the element is cleared on each calculation, an element with class 'rbl-preserve' will not be deleted.
  
-\
 <sup>1</sup> Future versions of KatApp's may move these classes to attributes.  
 <sup>2</sup> Legacy class name.  Prefer using the current class name when possible.  
 
@@ -4102,6 +4117,34 @@ view.on( "onResultsProcessing.RBLe", function( event, calculationResults, calcul
 
 <hr/>
 
+
+#### onTemplateRowProcessed
+
+**`onTemplateRowProcessed(event: Event, content: JQuery<HTMLElement>, sourceRow: {}, application: KatAppPlugInInterface ): boolean | undefined`**
+
+This event is triggered during `calculate` _while processing_ [rbl-source](#rbl-source-Selectors) attributed items.  Use this handler when custom javascript is needed to finalize processing of a rendered template row.  This could be custom visiblity or adding/removing DOM elements before the template result is injected into the markup.
+
+The `content` parameter will have the template markup content to be injected into the KatApp.  The `sourceRow` is the result row being processed specified by the `rbl-source` attribute.  In addition to the properties returned from the CalcEngine, there will be `@template`, `@table`, `@calcEngine`, and `@tab` properties available that can help distinguish which template or result rows are being processed.
+
+If the event returns `false`, the content will *not* be injected into the KatApp.
+
+```javascript
+view.on( "onTemplateRowProcessed.RBLe", function( event, content, sourceRow, application ) {
+    // If some condition specified that anchors should be removed, could remove all
+    // anchors from the content before it is injected.
+    if ( !application.state.showLinks ) {
+        $("a", content).remove();
+    }
+
+    // If some condition wanted to prevent rendering this template, return false.
+    if ( application.state.disableUserRows && sourceRow[ "@table" ] == "user" ) {
+        return false;
+    }
+})
+```
+
+<hr/>
+
 #### onConfigureUICalculation
 
 **`onConfigureUICalculation(event: Event, calculationResults: TabDef[], calculationOptions: KatAppOptions, application: KatApp )`**
@@ -4517,6 +4560,18 @@ See [Advanced KatApp Modal Sample](#Advanced-KatApp-Modal-Sample) for an example
 
 <hr/>
 
+#### onModalAppShow
+
+**`onModalAppShow(event: Event)`**
+
+This event can be triggered by the modal application to indicate to the host application that the dialog should be shown.  This is only necessary if there is **no** Configure UI Calculation called for the hosted app.  When needed, you'd traditionally trigger this event in the `onInitialized`.
+
+**KatApp Kaml files will never handle this event, only the KatApp framework should handle this event.**
+
+See [KatApp Modal Sample Without Configure UI Calculation](#KatApp-Modal-Sample-Without-Configure-UI-Calculation) for an example.
+
+<hr/>
+
 #### Standard KatApp Modal Sample
 
 Below is the markup and script needed when using `rbl-modal` functionality and using the standard functionality of the KatApp modal framework.
@@ -4640,7 +4695,7 @@ application.updateOptions(
 view
     // Create custom buttons for our dialog
     .on("onInitializing.RBLe", function () {
-        if (modalAppOptions != undefined) { // We knew we are in modal application
+        if (modalAppOptions != undefined) { // We know we are in modal application
             
             // Remove default cancel/continue
             application.select(".modal-footer").children().remove();
@@ -4687,6 +4742,47 @@ view
                     application.triggerEvent("onUnexpectedError", e);
                 }
                 break;
+        }
+    });
+```
+
+#### KatApp Modal Sample Without Configure UI Calculation
+
+Below is the markup and script needed when using `rbl-modal` functionality where the hosted application does not run a Configure UI Calculation.
+
+**Host Application Markup**
+
+```html
+<a rbl-action-calculate="true" 
+    rbl-label-title="Device Verification" 
+    rbl-modal="Common.TextValidate">Enable SMS messages</a>
+```
+
+1. rbl-label-title - sets title
+1. rbl-action-calculate - host application will calculate if modal is confirmed
+
+See [rbl-modal Attribute Details](#rbl-modal-Attribute-Details) for more information on attributes available on `rbl-modal` elements.
+
+**Modal Application Script**
+```javascript
+var view = $("{thisView}");
+var application = view.KatApp();
+var modalAppOptions = application.options.modalAppOptions;
+var hostApplication = modalAppOptions != undefined
+    ? modalAppOptions.hostApplication // If defined, you know you are contained inside a modal dialog
+    : undefined;
+
+application.updateOptions(
+    {
+        runConfigureUICalculation: false
+    }
+);
+
+view
+    // Create custom buttons for our dialog
+    .on("onInitialized.RBLe", function () {
+        if (modalAppOptions != undefined) { // We know we are in modal application
+            hostApplication.triggerEvent("onModalAppShow");
         }
     });
 ```

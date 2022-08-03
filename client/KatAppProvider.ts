@@ -1271,10 +1271,10 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
             this.triggerEvent( "onOptionsUpdated", this );
         }
 
-        calculate( customOptions?: KatAppOptions, pipelineDone?: ()=> void ): void {
+        calculate( customOptions?: KatAppOptions, calculationDone?: ( results: TabDef[] | undefined )=> void, processCalculationResults: boolean = true ): void {
             if ( !this.ensureApplicationValid() ) {
-                if ( pipelineDone != undefined ) {
-                    pipelineDone();
+                if ( calculationDone != undefined ) {
+                    calculationDone( undefined );
                 }
                 return;
             }
@@ -1304,22 +1304,29 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
             const inputs = this.getOptionInputs( currentOptions ); 
             const inputTables = this.getInputTables( currentOptions ) ?? [];
 
-            this.clearValidationSummaries();
+            if ( processCalculationResults ) {
+                this.clearValidationSummaries();
+            }
 
             const calcStartResult = this.triggerEvent( "onCalculateStart", this );
             if ( typeof calcStartResult == "boolean" && !calcStartResult ) {
                 this.triggerEvent( "onCalculateEnd", this );
                 this.renderValidationSummaries();
+                if ( calculationDone != undefined ) {
+                    calculationDone( this.results );
+                }    
                 return;
             }
 
-            if ( currentOptions.calcEngines === undefined ) {
-
-                if ( currentOptions.manualResults != undefined ) {
+            if ( currentOptions.calcEngines === undefined ) {    
+                if ( processCalculationResults && currentOptions.manualResults != undefined ) {
                     this.renderResultsWithOptions( [], currentOptions );
-                    this.triggerEvent( "onCalculateEnd", this );
                 }
 
+                this.triggerEvent( "onCalculateEnd", this );
+                if ( calculationDone != undefined ) {
+                    calculationDone( this.results );
+                }    
                 return;
             }
 
@@ -1330,7 +1337,17 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
             let pipelineIndex = 0;
 
             const calculatePipeline = function( offset: number ): void {
-                that.processPipeline( pipeline, pipelineNames, pipelineIndex += ( offset + 1 ), offset, pipelineDone );
+                that.processPipeline( 
+                    pipeline, 
+                    pipelineNames, 
+                    pipelineIndex += ( offset + 1 ), 
+                    offset, 
+                    function() {
+                        if ( calculationDone != undefined ) {
+                            calculationDone( that.results );
+                        }    
+                    }
+                );
             };
 
             const callSharedCallbacks = function( error: string | undefined | unknown ): void {
@@ -1508,26 +1525,29 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                 const calculations = currentOptions.calcEngines != undefined && currentOptions.calcEngines.length > 0
                     ? currentOptions.calcEngines.map( c => {
                         const d = $.Deferred();
+                        let ceName = c.name
 
                         try {
                             const submitCalculationOptions = that.getSubmitCalculationOptions( currentOptions, inputs, inputTables, c, undefined );
+                            ceName = submitCalculationOptions.Configuration.CalcEngine;
+                            
                             currentCalculationInputs = KatApp.extend( {}, submitCalculationOptions.Inputs as object, { Tables: submitCalculationOptions.InputTables } );
 
                             that.submitCalculation( 
-                                c,
+                                ceName,
                                 currentOptions,
                                 submitCalculationOptions,
                                 ( errorMessage, result ) => { 
                                     if ( errorMessage != undefined ) {
-                                        d.reject( { "calcEngine": c, "errorMessage": errorMessage } );
+                                        d.reject( { "calcEngine": ceName, "errorMessage": errorMessage } );
                                     }
                                     else {
-                                        d.resolve( { "calcEngine": c, "result": result } );
+                                        d.resolve( { "calcEngine": ceName, "result": result } );
                                     }
                                 } 
                             );
                         } catch (error) {
-                            d.reject( { "calcEngine": c, "errorMessage": "ReSubmit.Pipeline exception: " + error } );
+                            d.reject( { "calcEngine": ceName, "errorMessage": "ReSubmit.Pipeline exception: " + error } );
                         }
 
                         return d;
@@ -1548,7 +1568,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                         if ( failures.length > 0 ) {
                             failures.forEach( p => {
                                 const failure = p.reason as SubmitCalculationFailure;
-                                that.trace( "Error during calculation for " + failure.calcEngine.name + ": " + failure.errorMessage, TraceVerbosity.None );
+                                that.trace( "Error during calculation for " + failure.calcEngine + ": " + failure.errorMessage, TraceVerbosity.None );
                             });
 
                             pipelineError = failures[ 0 ].reason.errorMessage; 
@@ -1597,13 +1617,14 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
 
                 try {
                     ensureResults();
+
                     const jwtToken = {
                         Tokens: that.getResultTable<JSON>( "jwt-data")
                             .map( r => ({ Name: r[ "@id"], Token: r[ "value" ] }) )
                             .filter( t => t.Name == "data-updates" )
                     };
     
-					if (jwtToken.Tokens.length > 0 ) {
+                    if (processCalculationResults && jwtToken.Tokens.length > 0 ) {
                         that.trace("Posting jwt update data from results", TraceVerbosity.Detailed);
                         
                         that.apiAction( 
@@ -1639,8 +1660,10 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
             const processDocGens = function(): void {
                 try {
                     ensureResults();
+                    
                     const docGenApiRow = that.getResultRow<JSON>( "api-actions", "DocGen", "action" );
-                    if ( docGenApiRow != undefined ) {
+                    
+                    if ( processCalculationResults && docGenApiRow != undefined ) {
                         if ( docGenApiRow[ "exception" ] != undefined ) {
                             // Show some sort of error...for now just logging diagnostics
                             debugger;
@@ -1693,17 +1716,23 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
             // Always go to calculateEnd
             const processResults = function(): void {
                 ensureResults();
-                that.processResults( currentOptions );
+
+                if ( processCalculationResults ) {
+                    that.processResults( currentOptions );
+                }
+
                 calculatePipeline( 0 );
             };
 
             const calculateEnd = function(): void {
                 ensureResults();
-                that.inputsHaveBeenCached = false;
 
-                that.triggerEvent( "onCalculateEnd", that );
-                that.renderValidationSummaries();
+                if ( processCalculationResults ) {
+                    that.inputsHaveBeenCached = false;
+                    that.renderValidationSummaries();
+                }
     
+                that.triggerEvent( "onCalculateEnd", that );
                 calculatePipeline( 0 );
             };
 
@@ -1810,7 +1839,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
             return calculationOptions;
         }
 
-        private submitCalculation( calcEngine: CalcEngine, currentOptions: KatAppOptions, calculationOptions: SubmitCalculationOptions, submitCalculationHandler: SubmitCalculationCallback ): void {
+        private submitCalculation( calcEngineName: string, currentOptions: KatAppOptions, calculationOptions: SubmitCalculationOptions, submitCalculationHandler: SubmitCalculationCallback ): void {
             const application = this;
 
             const submitDone: RBLeServiceCallback = function( payload ): void {
@@ -1821,7 +1850,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                 const traceCalcEngine = application.options.nextCalculation?.trace ?? false;
                     
                 if ( traceCalcEngine && payload.Diagnostics != null ) {
-                    console.group(calcEngine.name + " " + payload.Diagnostics.CalcEngineVersion + " Diagnostics");
+                    console.group(calcEngineName + " " + payload.Diagnostics.CalcEngineVersion + " Diagnostics");
 
                     const timings: string[] = [];
                     if ( payload.Diagnostics.Timings != null ) {
@@ -1899,7 +1928,22 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
             const submitData: KatAppActionSubmitData = {
                 Inputs: calculationOptions.Inputs,
                 InputTables: calculationOptions.InputTables,
-                Configuration: currentOptions
+                Configuration: KatApp.extend( 
+                    {}, 
+                    currentOptions, 
+                    // Endpoints only ever use first calc engine...so reset calcEngines property in case kaml 
+                    // changed calcEngine in the onCalculationOptions.
+                    { 
+                        calcEngines: [
+                            {
+                                name: calculationOptions.Configuration.CalcEngine,
+                                inputTab: calculationOptions.Configuration.InputTab,
+                                resultTabs: calculationOptions.Configuration.ResultTabs,
+                                preCalcs: calculationOptions.Configuration.PreCalcs
+                            }
+                        ]
+                    }
+                )
             };
             return submitData;
         }
@@ -2390,7 +2434,18 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                             .filter( k => !k.startsWith( "@" ) && !k.startsWith( "_" ) );
                     
                     const ceName = getCeName( t["@calcEngine"] );
-                    const ceKey = t["@calcEngineKey"] = calcEngines.find( c => c.name.toLowerCase() == ceName.toLowerCase() )!.key;
+                    
+                    /*
+                    // If they run a different CE than is configured via this event handler
+                    // the CalcEngine will not be in calcEngine options, so find will be 
+                    // undefined, just treat results as 'primary' CE
+                    .on("onCalculationOptions.RBLe", function (event, submitOptions, application) {
+                        submitOptions.Configuration.CalcEngine = "Conduent_Nexgen_Profile_SE";
+                    })
+                    */                    
+                    const ceKey = t["@calcEngineKey"] = 
+                        calcEngines.find( c => c.name.toLowerCase() == ceName.toLowerCase() )?.key
+                            ?? calcEngines[ 0 ].key;
                     
                     // Is this tab part of defaultCalcEngine?
                     t._defaultCalcEngine = ceKey == defaultCEKey;
@@ -3917,12 +3972,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                     selectorParts = expressionPrefix.split( "." );
 
                     if ( isTemplateRowExpression && templateRow == undefined ) {
-                        this.application.trace( "Invalid expression [" + tabDef._fullName + ":" + selector + "], must be inside template processing when no 'selectors' are provided.", TraceVerbosity.None );
-                        return "false";
-                        // if I return undefined, it will not be processed, and falsy attribute processing would show
-                        // but I'd rather 'remove' by default if invalid setup.  If Template Row Expression used for 'attributes' or
-                        // rbl-values, then 'false' is going to be returned, which might lead to harder debugging for a bit, but console
-                        // would show error.
+                        return undefined;
                     }
 
                     if ( selectorParts.length > 3 ) {
@@ -4005,30 +4055,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
     
             const itemsToProcess = container != undefined && templateRow != undefined
                 ? container.find("[rbl-value]")
-                // should already be processed to support 'template row' expressions
-                : application.select("[rbl-value]", container).filter(function() { return application.closest($(this),"[rbl-source]").length == 0; });
-                // Couldn't do this b/c application.select correctly filtered within application, but then the '.not()' look outside of application scope
-                // : application.select("[rbl-value]", container).not("[rbl-source] *");
-                // Couldn't do this b/c I think there is bug in jquery where the 'not' is processed outside of container/context as well
-                // : application.select("[rbl-value]:not([rbl-source] *)", container).not("[rbl-source] *");
-
-                /*
-                    <div rbl-source="parent-source">
-                        <div rbl-value="0"></div>
-                        <div id="app">
-                            <div rbl-source="test" id="hello">
-                                <li rbl-value="1"></li>
-                            </div>
-                            <div id="hello2">
-                                <li rbl-value="1"></li>
-                            </div>
-                        </div>
-                    </div>
-
-                    $("[rbl-value]", container).length = 3
-                    $("[rbl-value]", container).length = 2
-                    $("[rbl-value]:not([rbl-source] *)", container).length = 0 (should be 2)
-                */
+                : application.select("[rbl-value]", container);
 
             itemsToProcess
                 .each(function () {
@@ -4047,25 +4074,30 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
         
                     const ceKey = el.attr('rbl-ce');
                     const tabName = el.attr('rbl-tab');
+                    const selector = el.attr('rbl-value')!; // eslint-disable-line @typescript-eslint/no-non-null-assertion
                     const tabDef = that.getTabDef( tabName, ceKey )
-                    const value = 
-                        that.getRblSelectorValue( tabDef, "rbl-value", el.attr('rbl-value')!, templateRow ) ?? // eslint-disable-line @typescript-eslint/no-non-null-assertion
-                        that.getRblSelectorValue( tabDef, "ejs-output", el.attr('rbl-value')!, templateRow ); // eslint-disable-line @typescript-eslint/no-non-null-assertion
-        
-                    if ( value != undefined ) {
-                        if ( el.length === 1 ) {
-                            el = application.ui.getAspNetCheckboxLabel( el ) ?? el;
-                        }
-        
-                        el.html( value );
 
-                        if ( value.indexOf( "rbl-tid" ) > -1 ) {
-                            // In case the markup from CE has a template specified...
-                            that.processRblSources(el, showInspector);                        
+                    const skipTemplateExpression = selector.endsWith( "]" ) && selector.indexOf( "[" ) == 0 && templateRow == undefined;
+                    if ( !skipTemplateExpression ) {
+                        const value = 
+                            that.getRblSelectorValue( tabDef, "rbl-value", selector, templateRow ) ??
+                            that.getRblSelectorValue( tabDef, "ejs-output", selector, templateRow );
+        
+                        if ( value != undefined ) {
+                            if ( el.length === 1 ) {
+                                el = application.ui.getAspNetCheckboxLabel( el ) ?? el;
+                            }
+
+                            el.html( value );
+
+                            if ( value.indexOf( "rbl-tid" ) > -1 ) {
+                                // In case the markup from CE has a template specified...
+                                that.processRblSources(el, showInspector);                        
+                            }
                         }
-                    }
-                    else {
-                        application.trace("<b style='color: Red;'>RBL WARNING</b>: no data returned for tab=" + tabDef?._fullName + ", rbl-value=" + el.attr('rbl-value'), TraceVerbosity.Detailed);
+                        else {
+                            application.trace("<b style='color: Red;'>RBL WARNING</b>: no data returned for tab=" + tabDef?._fullName + ", rbl-value=" + el.attr('rbl-value'), TraceVerbosity.Detailed);
+                        }
                     }
                 });
         }
@@ -4144,8 +4176,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
     
             const itemsToProcess = container != undefined && templateRow != undefined
                 ? container.find("[rbl-attr]")
-                // should already be processed to support 'template row' expressions
-                : application.select("[rbl-attr]", container).filter(function() { return application.closest($(this),"[rbl-source]").length == 0; });
+                : application.select("[rbl-attr]", container);
 
             itemsToProcess
                 .each(function () {
@@ -4199,51 +4230,54 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                         attrSelector = attrSelector.replace( expressionKey, rblAttributesWithExpressions.expressions[ expressionKey ] );
                     }
 
-                    const value = 
-                        that.getRblSelectorValue( tabDef, "rbl-value", attrSelector, templateRow ) ??
-                        that.getRblSelectorValue( tabDef, "ejs-output", attrSelector, templateRow );
-        
-                    if ( value != undefined ) {
-                        if ( el.length === 1 ) {
-                            el = application.ui.getAspNetCheckboxLabel( el ) ?? el;
-                        }
+                    const skipTemplateExpression = attrSelector.endsWith( "]" ) && attrSelector.indexOf( "[" ) == 0 && templateRow == undefined;
+                    if ( !skipTemplateExpression ) {
+                        const value = 
+                            that.getRblSelectorValue( tabDef, "rbl-value", attrSelector, templateRow ) ??
+                            that.getRblSelectorValue( tabDef, "ejs-output", attrSelector, templateRow );
 
-                        // rbl-attr="data-foo:fooValue" data-foo="Terry"
-                        // Calc 1: fooValue = Aney
-                        //  previous = undefined
-                        //  currentValue = "Terry"
-                        //  newValue = "Terry Aney"
-                        // Calc 2: fooValue = Craig
-                        //  previous = "Aney"
-                        //  currentValue = "Terry Aney"
-                        //  newValue = "Terry Craig"
-                        const dataName = "rbl-attr-" + attrName + "-previous";
-                        const previous = el.data(dataName);
-                        const currentValue = el.attr(attrName) || "";
-
-                        const newValue = previous != undefined
-                            ? currentValue.replace(previous, value).trim()
-                            : ( currentValue == "" ? value : currentValue + " " + value ).trim();
-
-                        if ( newValue == "" ) {
-                            el.removeAttr(attrName).removeData(dataName)
-                            /*
-                            if ( attrName.startsWith( "data-" ) ) {
-                                el.removeData(attrName.substring(5));
+                        if ( value != undefined ) {
+                            if ( el.length === 1 ) {
+                                el = application.ui.getAspNetCheckboxLabel( el ) ?? el;
                             }
-                            */
+
+                            // rbl-attr="data-foo:fooValue" data-foo="Terry"
+                            // Calc 1: fooValue = Aney
+                            //  previous = undefined
+                            //  currentValue = "Terry"
+                            //  newValue = "Terry Aney"
+                            // Calc 2: fooValue = Craig
+                            //  previous = "Aney"
+                            //  currentValue = "Terry Aney"
+                            //  newValue = "Terry Craig"
+                            const dataName = "rbl-attr-" + attrName + "-previous";
+                            const previous = el.data(dataName);
+                            const currentValue = el.attr(attrName) || "";
+
+                            const newValue = previous != undefined
+                                ? currentValue.replace(previous, value).trim()
+                                : ( currentValue == "" ? value : currentValue + " " + value ).trim();
+
+                            if ( newValue == "" ) {
+                                el.removeAttr(attrName).removeData(dataName)
+                                /*
+                                if ( attrName.startsWith( "data-" ) ) {
+                                    el.removeData(attrName.substring(5));
+                                }
+                                */
+                            }
+                            else {
+                                el.attr(attrName, newValue).data(dataName, value);
+                                /*
+                                if ( attrName.startsWith( "data-" ) ) {
+                                    el.data(attrName.substring(5), newValue);
+                                }
+                                */
+                            }
                         }
                         else {
-                            el.attr(attrName, newValue).data(dataName, value);
-                            /*
-                            if ( attrName.startsWith( "data-" ) ) {
-                                el.data(attrName.substring(5), newValue);
-                            }
-                            */
+                            application.trace("<b style='color: Red;'>RBL WARNING</b>: no data returned for tab=" + tabDef?._fullName + ", rbl-attr=" + a, TraceVerbosity.Detailed);
                         }
-                    }
-                    else {
-                        application.trace("<b style='color: Red;'>RBL WARNING</b>: no data returned for tab=" + tabDef?._fullName + ", rbl-attr=" + a, TraceVerbosity.Detailed);
                     }
                 }
                 else {
@@ -4557,8 +4591,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
     
             const itemsToProcess = container != undefined && templateRow != undefined
                 ? container.find("[" + attributeName + "]")
-                // should already be processed to support 'template row' expressions
-                : application.select("[" + attributeName + "]", container).filter(function() { return application.closest($(this),"[rbl-source]").length == 0; });
+                : application.select("[" + attributeName + "]", container);
             
             itemsToProcess
                 .each(function () {
@@ -4639,8 +4672,8 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                                 tableName = rblSourceParts[0];
 
                                 const tableRows = (
-                                    rblSourceParts.length === 2 ? [ that.getResultRow<JSON>( tabDef, rblSourceParts[0], rblSourceParts[1] ) ] :
-                                    rblSourceParts.length === 3 ? [ that.getResultRow<JSON>( tabDef, rblSourceParts[0], rblSourceParts[2], rblSourceParts[1] ) ] :
+                                    rblSourceParts.length === 2 ? [ that.getResultRow<ResultTableRow>( tabDef, rblSourceParts[0], rblSourceParts[1] ) ] :
+                                    rblSourceParts.length === 3 ? [ that.getResultRow<ResultTableRow>( tabDef, rblSourceParts[0], rblSourceParts[2], rblSourceParts[1] ) ] :
                                     that.getResultTable<ResultTableRow>( tabDef, rblSourceParts[0] )
                                 ).filter( r => r != undefined );
 
@@ -4667,21 +4700,26 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                                 }
                             }
                             else {
-                                let resultValue = 
-                                    simpleExpression?.left ??
-                                    that.getRblSelectorValue( tabDef, tableName, simpleExpression?.selector ?? attributeValue, templateRow ) ??
-                                    that.getRblSelectorValue( tabDef, legacyTable, simpleExpression?.selector ?? attributeValue, templateRow );
-                    
-                                // Reassign the value you are checking if they are using simple expressions
-                                // by passing in the value from getRblSelectorValue to the expression created
-                                // originally by {operator}{value} and it will return 1 or 0.
-                                if ( simpleExpression != undefined ) {
-                                    resultValue = simpleExpression.evaluate(resultValue);
-                                }
+                                const selector = simpleExpression?.selector ?? attributeValue;
+                                const skipTemplateExpression = selector.endsWith( "]" ) && selector.indexOf( "[" ) == 0 && templateRow == undefined;
 
-                                if (resultValue != undefined) {
-                                    const falseyValue = that.isFalsy( resultValue );
-                                    processFalsey( el, isNotExpression ? !falseyValue : falseyValue );
+                                if ( !skipTemplateExpression ) {
+                                    let resultValue = 
+                                        simpleExpression?.left ??
+                                        that.getRblSelectorValue( tabDef, tableName, selector, templateRow ) ??
+                                        that.getRblSelectorValue( tabDef, legacyTable, selector, templateRow );
+
+                                    // Reassign the value you are checking if they are using simple expressions
+                                    // by passing in the value from getRblSelectorValue to the expression created
+                                    // originally by {operator}{value} and it will return 1 or 0.
+                                    if ( simpleExpression != undefined ) {
+                                        resultValue = simpleExpression.evaluate(resultValue);
+                                    }
+
+                                    if (resultValue != undefined) {
+                                        const falseyValue = that.isFalsy( resultValue );
+                                        processFalsey( el, isNotExpression ? !falseyValue : falseyValue );
+                                    }
                                 }
                             }
                         }

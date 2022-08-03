@@ -49,7 +49,7 @@ interface KatAppOptions
     // they can be assigned here.  The most common use of this is iConfigureUI/iDataBind/iInputTrigger
     manualInputs?: CalculationInputs;
     manualResults?: TabDef[] | undefined
-    
+
     // Used during updateOptions and init to set default inputs. After inputs are set, defaultInputs
     // property on the options object is set to undefined so they are only applied one time.
     defaultInputs?: CalculationInputs;
@@ -204,7 +204,7 @@ interface KatAppPlugInShimInterface {
     // NOTE: updateOptions (along with init()) *will* apply options.defaultInputs every time it is called
     //      as if setInputs() was called.
     updateOptions: ( options: KatAppOptions )=> void;
-    calculate: ( customOptions?: KatAppOptions )=> void;
+    calculate: ( customOptions?: KatAppOptions, calculationDone?: ( results: TabDef[] | undefined )=> void, processCalculationResults?: boolean )=> void;
     trace: ( message: string, verbosity?: TraceVerbosity )=> void;
 }
 

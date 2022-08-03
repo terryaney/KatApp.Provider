@@ -123,6 +123,7 @@
             - [closest](#closest)
         - [KatApp Calculation Methods](#KatApp-Calculation-Methods)
             - [calculate](#calculate)
+                - [calculate With Different CalcEngine](#calculate-With-Different-CalcEngine)
             - [configureUI](#configureUI)
             - [getInputs](#getInputs)
             - [getInput](#getInput)
@@ -374,6 +375,7 @@ $("#KatApp-wealth").KatApp({
     ]
 });
 ```
+See [calculate With Different CalcEngine](#calculate-With-Different-CalcEngine) for information about running secondary calculations via javascript and without requiring configuration up front.
 
 ## Configuration Precedence
 
@@ -3069,11 +3071,13 @@ The following methods allow developers to trigger calculations, get and set inpu
 
 #### calculate
 
-**`.calculate( calculationOptions?: KatAppOptions )`**
+**`.calculate( calculationOptions?: KatAppOptions, calculationDone?: ( results: TabDef[] | undefined )=> void, processCalculationResults?: boolean ): void`**
 
 Manually invoke a calculation with the optional [KatAppOptions](#KatAppOptions-Object) `calculationOptions` parameter merged with the existing KatApp options for a one time use.
 
 Note: The `calculationOptions` is _only_ used for this single calculation.
+
+When the calculation is finished, an optional `calculationDone` delegate can be provided and it will be called with the current calculation results.
 
 ```javascript
 $(".katapp").KatApp("calculate", calculationOptions);
@@ -3085,6 +3089,66 @@ application.calculate();
 ```
 
 <hr/>
+
+##### calculate With Different CalcEngine
+
+KatApps support multiple CalcEngines to be configured via the applications options.  See [Multiple CalcEngines and Result Tabs](#Multiple-CalcEngines-and-Result-Tabs) for more information.  However, when configured this way, every CalcEngine provided will be processed when _any_ calculation happens.  There are times when you only need to run a secondary CalcEngine one time or in special situations.  To accomplish this you can modify the 'calculation options' before a calculation occurs.  There are two ways to accomplish this.
+
+###### Scenario 1: Changing CalcEngine with `onCalculationOptions`
+
+The first method available to change the CalcEngine that processes is to use the `onCalculationOptions` event handler to change calculation options during normal calculation life cycle events.
+
+1. All calculation life cycle events will be triggered normally.
+1. The results *will be* processed (i.e. rbl-value, rbl-display, etc.).
+1. The results will be treated as if *they are* the primary/default configured CalcEngine results (no need to worry about changing rbl-ce attributes anywhere).
+1. Note the case of the submitOptions property names.  In this scenario, they are ProperCase.
+1. If multiple CalcEngines are configured to process in the KatApp, an `onCalculationOptions` event will trigger for each CalcEngine.
+
+```javascript
+view
+    .on("onCalculationOptions.RBLe", function (event, submitOptions, application) {
+        submitOptions.Configuration.CalcEngine = "Conduent_Nexgen_Profile_SE";
+    });
+```
+
+###### Scenario 2: Changing CalcEngine with Custom Options
+
+The second method available to change the CalcEngine is using the `application.calculate()` method with custom options.  When calling `calculate()` with custom options, you must provide a `calcEngines` array property specifying the [CalcEngine(s)](#CalcEngine-Object) you want to run.  
+
+1. The `processCalculationResults` parameter (default is `true`) can be used to indicate whether results should go through the normal calculation life cycle and have results processed. Note, even when value is `false`, the `onCalculateStart` and `onCalculateEnd` events will still occur.  All other events and processing are skipped.
+1. If `processCalculationResults` is `true`, then the `key` property provided on each CalcEngine must match the `key` property provided in the original [rbl-config element](#Using-Kaml-View's-<rbl-config>-for-Configuration) configuration to ensure proper result processing.  If no key was originally configured, use `default` as the value.
+1. If `processCalculationResults` is `false`, then the `key` property does not need to match and a `calculationDone` delegate should be provided to process results when they are complete.
+
+```html
+<p><a rbl-on="click:runDiffCalcEngine" data-process-results="true">Run Diff CalcEngine</a></p>
+<p><a rbl-on="click:runDiffCalcEngine">Run Diff CalcEngine (Don't process results)</a></p>
+```
+
+```javascript
+application.updateOptions(
+    {
+        handlers: {
+            runDiffCalcEngine: function (e) {
+                application.calculate(
+                    {
+                        calcEngines: [
+                            {
+                                key: "Pension",
+                                name: "Conduent_Nexgen_Profile_SE"
+                            }
+                        ]
+                    },
+                    function (results) {
+                        // Ability to process results if you want
+                    },
+                    $(this).data("process-results") != undefined
+                );
+            }
+        }
+    }
+);
+
+```
 
 #### configureUI
 

@@ -5444,7 +5444,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                         listRows.map( r => ({ Value: r.key, Text: r.text, Help: r.help, Selected: false, Visible: r.visible != "0", Disabled: r.disabled == "1" }))
                     );
                 }
-                else if ( dropdown.length === 1 ) {
+                else if ( dropdown.length === 1 && dropdown[0].tagName == "SELECT" ) {
                     ui.processDropdownItems(
                         dropdown, 
                         row.rebuild == "1",

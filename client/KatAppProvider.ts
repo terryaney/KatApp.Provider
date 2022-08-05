@@ -2313,16 +2313,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                 .each(function() {
                     const cbl = $(this);
                     const name = cbl.data("inputname");
-                    // cbl is already constrained to current app, so
-                    // don't need to use application.select() for value
-                    const value = 
-                        $("input:checked", cbl)
-                            .not("[kat-visible='0']")    
-                            .toArray()
-                            .map( chk => $(chk).data("value"))
-                            .join(",");
-
-                    inputs[name] = value;
+                    inputs[name] = ui.getInputValue(cbl);
                 });
 
             return inputs;
@@ -3455,23 +3446,33 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
 
         getInputValue(input: JQuery): string | undefined {
             const isRadioListContainer = input.data("itemtype") == "radio";
-            const isRadioList = isRadioListContainer || ( input.length > 1 && input.is("[type=radio]") );
+            const isCheckboxListContainer = input.data("itemtype") == "checkbox";
 
-            let value = isRadioList
-                ? ( isRadioListContainer ? $("input", input) : input ).filter( ( i, o ) => $(o).prop("checked")).val()
-                : input.val();
+            const isRadioList = isRadioListContainer || ( input.length > 1 && input.is("[type=radio]") );
+            const radioButtons = isRadioList
+                ? ( isRadioListContainer ? $("input", input) : input )
+                : undefined;
+
+            // if provider .getInput() is called and ID is dotnet checkbox, it'll come through here as span
+            input = input.hasClass("checkbox") && input[0].tagName == "SPAN"
+                ? input.find("input[type='checkbox']")
+                : input;
+
+            let value = 
+                radioButtons != undefined ? radioButtons.filter( ( i, o ) => $(o).prop("checked")).val() :
+                // checkbox list is already constrained to current app, so don't need to use application.select() for value
+                isCheckboxListContainer ? $("input:checked", input).not("[kat-visible='0']").toArray().map( chk => $(chk).data("value")).join(",") : 
+                input.attr("type") === "checkbox" ? ( input.prop("checked") ? "1" : "0" ) :
+                input.val();
                 
             if ( Array.isArray( value ) ) {
+                // bootstrap select returns array if it is multiselect and more than one is selected
                 value = ( value as Array<unknown> ).join("^");
             }
 
             const skipAssignment = 
                 ( isRadioList && value == undefined ) ||
                 ( input.attr("type") === "radio" && !input.is(':checked') );
-
-            if (input.attr("type") === "checkbox") {
-                value = input.prop("checked") ? "1" : "0";
-            }
 
             return !skipAssignment 
                 ? ( value ?? '' ) as string

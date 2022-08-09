@@ -2978,7 +2978,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
             return false;
         }
 
-        processDropdownItems(dropdown: JQuery<HTMLElement>, rebuild: boolean, dropdownItems: { Value: string | null; Text: string | null; Class: string | undefined; Subtext: string | undefined; Html: string | undefined; Selected: boolean; Visible: boolean }[]): void {
+        processDropdownItems(dropdown: JQuery<HTMLElement>, rebuild: boolean, dropdownItems: { Value: string | null; Text: string | null; Class: string | undefined; Subtext: string | undefined; Html: string | undefined; Selected: boolean; Visible: boolean; Disabled: boolean }[]): void {
             if ( dropdown.length === 0 ) return;
 
             const controlName = this.getInputName(dropdown);
@@ -3054,7 +3054,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                     }
                 }
                 else {
-                    currentItem.show().prop("disabled", false);
+                    currentItem.show().prop("disabled", ls.Disabled);
                 }
             });
 
@@ -3513,6 +3513,9 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                 application.select("[rbl-tid][rbl-on]", container)
                     .each(function() {
                         const template = $(this);
+                        // Never want a template to process events (only its children)...so just flag it as initialized and it'll be ignored below
+                        template.attr("data-rblon-initialized", "true");
+
                         const handlers = template.attr("rbl-on")!.split("|"); // eslint-disable-line @typescript-eslint/no-non-null-assertion
                         
                         const tid = template.attr("rbl-tid");
@@ -5448,7 +5451,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                     ui.processDropdownItems(
                         dropdown, 
                         row.rebuild == "1",
-                        listRows.map( r => ({ Value: r.key, Text: r.text, Class: r.class, Subtext: r.subtext, Html: r.html, Selected: false, Visible: r.visible != "0" }))
+                        listRows.map( r => ({ Value: r.key, Text: r.text, Class: r.class, Subtext: r.subtext, Html: r.html, Selected: false, Visible: r.visible != "0", Disabled: r.disabled == "1" }))
                     );
                 }
                 else {
@@ -7247,7 +7250,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                         const lookups = that.application.getResourceTemplateItem( that.application.options.view!, "lookup-tables" )?.Content ?? $();
                         const options =
                             $("DataTable[id_='" + lookuptable + "'] TableItem", lookups)
-                                .map( ( index, r ) => ({ Value:  r.getAttribute("key"), Text: r.getAttribute( "name"), Class: undefined, Subtext: undefined, Html: undefined, Selected: index === 0, Visible: true }))
+                                .map( ( index, r ) => ({ Value:  r.getAttribute("key"), Text: r.getAttribute( "name"), Class: undefined, Subtext: undefined, Html: undefined, Selected: index === 0, Visible: true, Disabled: false }))
                                 .toArray();
 
                         that.application.ui.processDropdownItems( input, false, options );

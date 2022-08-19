@@ -1078,10 +1078,10 @@ Column | Description
 ---|---
 selector | Any valid jQuery selector to use to find element(s).
 html | The html to inject.  If `html` starts with `&` it is appended to existing html of the matched element, otherwise the element's content is replaced with html.<br/><br/>Additionally, `html` can be in the form of `<div rbl-tid="templateId" data-value1="templatevalue1"></div>` (See [Templates](#Templates) for more detail).  If it is a template, it will be 'templated' before injecting into the html.
-addClass<sup>1</sup> | A `space` delimitted list of CSS class names to add to the matched element.
-removeClass<sup>1</sup> | A `space` delimitted list of CSS clsas names to remove from the matched element.
+addclass<sup>1</sup> | A `space` delimitted list of CSS class names to add to the matched element.
+removeclass<sup>1</sup> | A `space` delimitted list of CSS clsas names to remove from the matched element.
 
-<sup>1</sup> `addClass` and `removeClass` are processed after all html content creation is finished so that selectors can be apply to the dynamically created html.
+<sup>1</sup> `addclass` and `removeclass` are processed after all html content creation is finished so that selectors can be apply to the dynamically created html.
 
 # Templates
 
@@ -3501,6 +3501,8 @@ rbl-action-calculate | (boolean) Determines if an `application.calculate()` shou
 data-param-* | Used as the `customParameters` property of the `customOptions` parameter and is used by server side API endpints.  (i.e. to pass `PlanId=value` parameter to server, use `data-param-plan-id="value"`, the parameter name will be created automatically to match server API endpoint parameter name pattern)
 data-input-* | Used as the `customInputs` property of the `customOptions` parameter and passed to RBLe CalcEngine on server side calculation.  (i.e. to pass `iDownloadForms=1` parameter to server, use `data-input-download-forms="1"`, the 'input name' will be created automatically to match RBLe CalcEngine input name pattern)
 rbl-action-confirm-selector | If the link should prompt before calling the endpoint, this attribute provides a jQuery selector to element containing the markup to display in a modal confirm dialog.
+rbl-action-confirm-labels-continue | If a prompt will be displayed, you can control the 'continue button' label.  Default is Continue.
+rbl-action-confirm-labels-cancel | If a prompt will be displayed, you can control the 'cancel button' label.  Default is Cancel.
 
 <br/>
 

@@ -360,7 +360,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                         inlineTemplate.attr(templateIdAttribute, "inline-no-rbl-source");
                         that.trace( templateType + " template's parent does not have rbl-source. " + inlineTemplate[0].outerHTML.substr(0, 75).replace( /</g, "&lt;").replace( />/g, "&gt;"), TraceVerbosity.None);
                     }
-                    else if ( inlineParent.attr("rbl-tid") != undefined ) {
+                    else if ( templateType == "inline" && inlineParent.attr("rbl-tid") != undefined ) {
                         inlineTemplate.attr(templateIdAttribute, "inline-parent-has-template-already");
                         that.trace( templateType + " template is present, but parent has rbl-tid of " + inlineParent.attr("rbl-tid"), TraceVerbosity.None);
                     }
@@ -2964,8 +2964,15 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                 onConfirm(); // If no confirm on link (called from validation modules), just call onConfirm
             }
             else {
+                const options = {
+                    confirmation: modalText,
+                    labels: {
+                        cancel: link.attr("rbl-action-confirm-labels-cancel") ?? "Cancel",
+                        continue: link.attr("rbl-action-confirm-labels-continue") ?? "Continue",
+                    }
+                };
                 this.application.createModalDialog(
-                    modalText,
+                    options,
                     onConfirm,                
                     // onCancel
                     function () {
@@ -3513,9 +3520,6 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                 application.select("[rbl-tid][rbl-on]", container)
                     .each(function() {
                         const template = $(this);
-                        // Never want a template to process events (only its children)...so just flag it as initialized and it'll be ignored below
-                        template.attr("data-rblon-initialized", "true");
-
                         const handlers = template.attr("rbl-on")!.split("|"); // eslint-disable-line @typescript-eslint/no-non-null-assertion
                         
                         const tid = template.attr("rbl-tid");
@@ -3547,6 +3551,9 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                                 }
 
                                 if ( input != undefined ) {
+                                    // Never want a template to process events (only its children)...so just flag it as initialized and it'll be ignored below
+                                    template.attr("data-rblon-initialized", "true");
+
                                     input
                                         .not("[data-rblon-initialized='true']")
                                         .each( function() {
@@ -4391,10 +4398,9 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
 
                         // table in array format.  Clear element, apply template to all table rows and .append                            
                         const tableRows = that.getResultTable<JSON>( tabDef, tableName );
+                        const templateDefaults = application.dataAttributesToJson(el, "default-");
                         
                         if ( tableRows.length > 0 ) {
-                            const templateDefaults = application.dataAttributesToJson(el, "default-");
-
                             // tableName.idValue - row where @id = idValue
                             const rblSourceId = rblSourceParts.length == 2 ? rblSourceParts[1] : undefined;
 
@@ -4522,7 +4528,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                             // If no data source (and no previous preserves there), show/append the 'empty' template
                             const emptyTemplateId = el.attr("rbl-empty-tid");
                             const emptyTemplate = emptyTemplateId != undefined
-                                ? application.ui.getTemplate( emptyTemplateId, {}, false )?.TemplatedContent
+                                ? application.ui.getTemplate( emptyTemplateId, templateDefaults, false )?.TemplatedContent
                                 : undefined;
 
                             if ( emptyTemplate != undefined ) {

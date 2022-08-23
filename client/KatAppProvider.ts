@@ -2967,18 +2967,23 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                 const options = {
                     confirmation: modalText,
                     labels: {
-                        cancel: link.attr("rbl-action-confirm-labels-cancel") ?? "Cancel",
-                        continue: link.attr("rbl-action-confirm-labels-continue") ?? "Continue",
-                    }
+                        cancel: link.attr("rbl-action-confirm-label-cancel") ?? "Cancel",
+                        continue: link.attr("rbl-action-confirm-label-continue") ?? "Continue",
+                        title: link.attr("rbl-action-confirm-label-title")
+                    }                    
                 };
+
+                const showCancel = ( link.attr("rbl-action-confirm-show-cancel") ?? "true" ) == "true";
+
                 this.application.createModalDialog(
                     options,
                     onConfirm,                
-                    // onCancel
-                    function () {
-                        link.data("confirmed", "false");
-                        that.application.triggerEvent( "onConfirmCancelled", link );
-                    }
+                    showCancel 
+                        ? function () {
+                            link.data("confirmed", "false");
+                            that.application.triggerEvent( "onConfirmCancelled", link );
+                        }
+                        : undefined
                 );
             }
 
@@ -3638,14 +3643,15 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                                             const confirmSelector = el.attr("rbl-action-confirm-selector");
                                 
                                             if ( eventName == "click" && confirmSelector != undefined ) {
-                                                const confirm = $(confirmSelector, application.element).html() || "";
+                                                const confirmText = $(confirmSelector, application.element).html() || "";
                                                 el.on( eventName + ".ka",  function() {
                                                     const eventArgs = arguments;
                                                     const that = this;
                                                     return application.ui.onConfirmLinkClick(
                                                         $(this), 
-                                                        confirm, 
+                                                        confirmText, 
                                                         function() {
+                                                            // Confirmed...
                                                             if ( application.options.handlers != undefined ) {
                                                                 application.options.handlers[ functionName ].apply( that, eventArgs );
                                                             }

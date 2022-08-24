@@ -1148,8 +1148,13 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                         e.kaProxy = true;
                         const origHandler = e.handler;
                         e.handler = function() {
-                            arguments[0].stopPropagation();
-                            return origHandler.apply(this, arguments );
+                            // console.time("KatApp.triggerEvent." + eventName + " for " + application.options.view);
+                            try {
+                                arguments[0].stopPropagation();
+                                return origHandler.apply(this, arguments );
+                            } finally {
+                                // console.timeEnd("KatApp.triggerEvent." + eventName + " for " + application.options.view);
+                            }
                         }
                     });
                     application.element.trigger( event, args);
@@ -2684,6 +2689,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
             const start = new Date();
 
             try {
+                // console.time("KatAppPlugIn.processResults for " + this.options.view);
                 const calculationResults = this.results;
                 this.options.nextCalculation = undefined;
                 this.options.defaultInputs = undefined;
@@ -2703,6 +2709,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
             }
             finally {
                 this.trace("Processing results took " + ( Date.now() - start.getTime() ) + "ms", TraceVerbosity.Detailed);
+                // console.timeEnd("KatAppPlugIn.processResults for " + this.options.view);
             }
         }
 
@@ -5475,153 +5482,158 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
         processResults( results: TabDef[] | undefined, calculationOptions: KatAppOptions ): boolean {
             const application = this.application;
 
-            if ( results !== undefined ) {
-                const showInspector = /* application.calculationInputs?.iConfigureUI === 1 && */ ( calculationOptions.debug?.showInspector ?? false );
-                
-                results.forEach(tabDef => {
-                    application.trace( "Processing results for " + tabDef._fullName + "(" + tabDef["@version"] + ")", TraceVerbosity.Normal );
+            // console.time("RBLe.processResults for " + application.options.view);
+            try {
+                if ( results !== undefined ) {
+                    const showInspector = /* application.calculationInputs?.iConfigureUI === 1 && */ ( calculationOptions.debug?.showInspector ?? false );
+
+                    results.forEach(tabDef => {
+                        application.trace( "Processing results for " + tabDef._fullName + "(" + tabDef["@version"] + ")", TraceVerbosity.Normal );
+
+                        // Need two passes to support "rbl-markup" because the markup might render something that 
+                        // is then processed by subsequent flow controls (ouput, sources, or values)
+                        let markUpRows = this.getResultTable<HtmlContentRow>( tabDef, "ejs-markup" )
     
-                    // Need two passes to support "rbl-markup" because the markup might render something that 
-                    // is then processed by subsequent flow controls (ouput, sources, or values)
-                    let markUpRows = this.getResultTable<HtmlContentRow>( tabDef, "ejs-markup" )
+                        if ( markUpRows.length == 0 ) {
+                            markUpRows = this.getResultTable<HtmlContentRow>( tabDef, "rbl-markup" )
+                        }
+    
+                        markUpRows.forEach( resultRow => { 
+                            const processBlank = false;
+                            let content = resultRow.content ?? resultRow.html ?? resultRow.value ?? "";
+                            const selector = 
+                                this.application.ui.getJQuerySelector( resultRow.selector ) ?? 
+                                this.application.ui.getJQuerySelector( resultRow["@id"] ) ?? "";
 
-                    if ( markUpRows.length == 0 ) {
-                        markUpRows = this.getResultTable<HtmlContentRow>( tabDef, "rbl-markup" )
-                    }
+                            if (( processBlank || content.length > 0 ) && selector.length > 0) {
 
-                    markUpRows.forEach( resultRow => { 
-                        const processBlank = false;
-                        let content = resultRow.content ?? resultRow.html ?? resultRow.value ?? "";
-                        const selector = 
-                            this.application.ui.getJQuerySelector( resultRow.selector ) ?? 
-                            this.application.ui.getJQuerySelector( resultRow["@id"] ) ?? "";
-                
-                        if (( processBlank || content.length > 0 ) && selector.length > 0) {
-                
-                            let target = this.application.select(selector);
-                
-                            if ( target.length > 0 ) {
-                
-                                if ( target.length === 1 ) {
-                                    target = this.application.ui.getAspNetCheckboxLabel( target ) ?? target;
-                                }
-                
-                                if ( content.startsWith("&") ) {
-                                    content = content.substr(1);
-                                }
-                                else {
-                                    target.empty();
-                                }
-                
-                                if ( content.length > 0 ) {
-                                    target.append(content);
+                                let target = this.application.select(selector);
+
+                                if ( target.length > 0 ) {
+
+                                    if ( target.length === 1 ) {
+                                        target = this.application.ui.getAspNetCheckboxLabel( target ) ?? target;
+                                    }
+
+                                    if ( content.startsWith("&") ) {
+                                        content = content.substr(1);
+                                    }
+                                    else {
+                                        target.empty();
+                                    }
+
+                                    if ( content.length > 0 ) {
+                                        target.append(content);
+                                    }
                                 }
                             }
-                        }
-                    });
-                });
-    
-                // Run all *pull* logic outside of tabdef loop, this has to be after all markup
-                // rows have been processed and all rbl-markup in case they injected 'rbl-' items
-                // in markup that has to be processed
-                application.trace( "Processing all results 'pull' logic", TraceVerbosity.Normal );
-
-                // TODO: All these methods that pass 'root' as app.element would be better written
-                // to accept undefined... application.select performs slightly better when no context is provided
-                this.application.ui.injectTemplatesWithoutSource(this.application.element, showInspector);
-
-                this.processRblIfs( undefined, showInspector );
-                this.processRblSources( this.application.element, showInspector );
-                this.processRblValues( this.application.element, showInspector );
-                this.processRblAttributes( this.application.element, showInspector );
-
-                this.processTables();
-                this.processCharts();
-    
-                // Need to re-run processUI here in case any 'templates/inputs' were injected from 
-                // results and need their initial data-* attributes/events processed.
-                this.application.templateBuilder.processUI();
-    
-                // These all need to be after processUI so if any inputs are built
-                // from results, they are done by the time these run
-                this.processRblDisplays( this.application.element, showInspector );
-                this.processRblDisabled( this.application.element, showInspector );
-
-                let sliderConfigIds: ( string | null )[] = [];
-    
-                // Now loop again to run rest of 'push' items from each tab.  This has to
-                // be after all html updates from prior loop and from any possible template 
-                // processing that happens in rbl-source processing
-                results.forEach(tabDef => {
-                    let markUpRows = this.getResultTable<HtmlContentRow>( tabDef, "rbl-markup" )
-                    if ( markUpRows.length == 0 ) {
-                        markUpRows = this.getResultTable<HtmlContentRow>( tabDef, "ejs-markup" );
-                    }
-
-                    // Apply dynamic classes after all html updates 
-                    markUpRows.forEach( r => {
-                        if ( r.selector !== undefined ) {
-                            if ( r.addclass !== undefined && r.addclass.length > 0 ) {
-                                const el = application.select(r.selector);
-                                const classValue = r.addclass.replace("skipRBLe", "rbl-nocalc");
-                                el.addClass(classValue);
-    
-                                if ( classValue.indexOf("rbl-nocalc") > -1 ) {
-                                    el.off(".RBLe");
-                                    $(":input", el).off(".RBLe");
-                                    this.application.ui.getNoUiSlider( $("div[data-slider-type='nouislider']", el.parent()) )?.off('.RBLe');
-                                }
-                            }
-        
-                            if ( r.removeclass !== undefined && r.removeclass.length > 0 ) {
-                                application.select(r.selector).removeClass(r.removeclass);
-                            }
-                        }
-                    });
-
-                    // Debug info - just getting all sliderConfigIds
-                    if ( application.calculationInputs?.iConfigureUI === 1 ) {
-                        let sliderRows = this.getResultTable<SliderConfigurationRow>( tabDef, "rbl-sliders" );
-                        if ( sliderRows.length == 0 ) {
-                            sliderRows = this.getResultTable<SliderConfigurationRow>( tabDef, "ejs-sliders" );
-                        }
-                        sliderConfigIds = sliderConfigIds.concat( sliderRows.map( r => r["@id"]) );
-                    }                
-        
-                    // Should removed after rbl-display attribute is on all items
-                    this.processVisibilities( tabDef );
-                    this.processSliders( tabDef )
-                    this.processRBLSkips( tabDef );
-                    this.processListControls( tabDef );
-                    this.processDefaults( tabDef );
-                    // Should removed after rbl-disable attribute is on all items
-                    this.processDisabled( tabDef );
-                    this.processValidations( tabDef );
-                    
-                    this.application.ui.handleVoidAnchors();
-                    this.application.ui.bindRblOnHandlers();
-                    this.application.ui.bindCalculationInputs();
-                    this.application.ui.initializeConfirmLinks();
-
-                    application.trace( "Finished processing results for " + tabDef._fullName, TraceVerbosity.Normal );
-                });
-    
-                if ( application.calculationInputs?.iConfigureUI === 1 ) {
-                    application.select('div[data-slider-type="nouislider"]')
-                        .map( ( i, r ) => $("input", $(r).parent()).attr("name") || "missing" )
-                        .filter( ( i, r ) => {
-                            return sliderConfigIds.indexOf( r ) < 0;
-                        })
-                        .each( ( i, r ) => {
-                            application.trace("<b style='color: Red;'>RBL WARNING</b>: No slider configuration can be found for " + r + ".", TraceVerbosity.None);
                         });
-                }                
+                    });
+
+                    // Run all *pull* logic outside of tabdef loop, this has to be after all markup
+                    // rows have been processed and all rbl-markup in case they injected 'rbl-' items
+                    // in markup that has to be processed
+                    application.trace( "Processing all results 'pull' logic", TraceVerbosity.Normal );
     
-                return true;
-            }
-            else {
-                application.trace( "Results not available", TraceVerbosity.None );
-                return false;
+                    // TODO: All these methods that pass 'root' as app.element would be better written
+                    // to accept undefined... application.select performs slightly better when no context is provided
+                    this.application.ui.injectTemplatesWithoutSource(this.application.element, showInspector);
+    
+                    this.processRblIfs( undefined, showInspector );
+                    this.processRblSources( this.application.element, showInspector );
+                    this.processRblValues( this.application.element, showInspector );
+                    this.processRblAttributes( this.application.element, showInspector );
+    
+                    this.processTables();
+                    this.processCharts();
+
+                    // Need to re-run processUI here in case any 'templates/inputs' were injected from 
+                    // results and need their initial data-* attributes/events processed.
+                    this.application.templateBuilder.processUI();
+
+                    // These all need to be after processUI so if any inputs are built
+                    // from results, they are done by the time these run
+                    this.processRblDisplays( this.application.element, showInspector );
+                    this.processRblDisabled( this.application.element, showInspector );
+    
+                    let sliderConfigIds: ( string | null )[] = [];
+
+                    // Now loop again to run rest of 'push' items from each tab.  This has to
+                    // be after all html updates from prior loop and from any possible template 
+                    // processing that happens in rbl-source processing
+                    results.forEach(tabDef => {
+                        let markUpRows = this.getResultTable<HtmlContentRow>( tabDef, "rbl-markup" )
+                        if ( markUpRows.length == 0 ) {
+                            markUpRows = this.getResultTable<HtmlContentRow>( tabDef, "ejs-markup" );
+                        }
+    
+                        // Apply dynamic classes after all html updates 
+                        markUpRows.forEach( r => {
+                            if ( r.selector !== undefined ) {
+                                if ( r.addclass !== undefined && r.addclass.length > 0 ) {
+                                    const el = application.select(r.selector);
+                                    const classValue = r.addclass.replace("skipRBLe", "rbl-nocalc");
+                                    el.addClass(classValue);
+
+                                    if ( classValue.indexOf("rbl-nocalc") > -1 ) {
+                                        el.off(".RBLe");
+                                        $(":input", el).off(".RBLe");
+                                        this.application.ui.getNoUiSlider( $("div[data-slider-type='nouislider']", el.parent()) )?.off('.RBLe');
+                                    }
+                                }
+
+                                if ( r.removeclass !== undefined && r.removeclass.length > 0 ) {
+                                    application.select(r.selector).removeClass(r.removeclass);
+                                }
+                            }
+                        });
+    
+                        // Debug info - just getting all sliderConfigIds
+                        if ( application.calculationInputs?.iConfigureUI === 1 ) {
+                            let sliderRows = this.getResultTable<SliderConfigurationRow>( tabDef, "rbl-sliders" );
+                            if ( sliderRows.length == 0 ) {
+                                sliderRows = this.getResultTable<SliderConfigurationRow>( tabDef, "ejs-sliders" );
+                            }
+                            sliderConfigIds = sliderConfigIds.concat( sliderRows.map( r => r["@id"]) );
+                        }                
+
+                        // Should removed after rbl-display attribute is on all items
+                        this.processVisibilities( tabDef );
+                        this.processSliders( tabDef )
+                        this.processRBLSkips( tabDef );
+                        this.processListControls( tabDef );
+                        this.processDefaults( tabDef );
+                        // Should removed after rbl-disable attribute is on all items
+                        this.processDisabled( tabDef );
+                        this.processValidations( tabDef );
+
+                        this.application.ui.handleVoidAnchors();
+                        this.application.ui.bindRblOnHandlers();
+                        this.application.ui.bindCalculationInputs();
+                        this.application.ui.initializeConfirmLinks();
+    
+                        application.trace( "Finished processing results for " + tabDef._fullName, TraceVerbosity.Normal );
+                    });
+
+                    if ( application.calculationInputs?.iConfigureUI === 1 ) {
+                        application.select('div[data-slider-type="nouislider"]')
+                            .map( ( i, r ) => $("input", $(r).parent()).attr("name") || "missing" )
+                            .filter( ( i, r ) => {
+                                return sliderConfigIds.indexOf( r ) < 0;
+                            })
+                            .each( ( i, r ) => {
+                                application.trace("<b style='color: Red;'>RBL WARNING</b>: No slider configuration can be found for " + r + ".", TraceVerbosity.None);
+                            });
+                    }                
+
+                    return true;
+                }
+                else {
+                    application.trace( "Results not available", TraceVerbosity.None );
+                    return false;
+                }
+            } finally {
+                // console.timeEnd("RBLe.processResults for " + application.options.view);
             }
         }
     }

@@ -92,6 +92,14 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
 
         state = {};
 
+        /*
+        observer = new MutationObserver(function(mutations_list) {
+            mutations_list.forEach(function(mutation) {
+                // console.log(mutation);
+            });
+        });
+        */
+
         constructor(id: string, element: JQuery, options: KatAppOptions) {
             this.id = "ka" + id; // Some BS elements weren't working if ID started with #
             this.element = element;
@@ -101,6 +109,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
             this.ui = new UIUtilities( this );
             this.rble = new RBLeUtilities( this );
             this.templateBuilder = new StandardTemplateBuilder( this );
+            // this.observer.observe(element[0], { subtree: true, childList: true });
 
             this.init( options );
         }
@@ -2691,6 +2700,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
             }
             this.buildResults(results, this.options, false);
             this.rble.processResults( results, this.options );
+            this.triggerEvent( "onCalculation", results, this.options, this );
         }
 
         private processCurrentResults( calculationOptions: KatAppOptions ): void {

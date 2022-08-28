@@ -164,317 +164,243 @@ class KatApp
 
         sessionStorage.setItem(navigationCachingKey, JSON.stringify(currentInputs) );
     }
-
-    // ping and getResources duplicated in KatAppProvider now.  This allows for Views of L@W 
-    // (or other clients that have own copy of KatApp.js but are unable to update it) to be served
-    // from local server if enabled.
-    static ping( localWebServer: string, callback: ( responded: boolean, error?: string | Event )=> void ): void {
-        const url = "https://" + localWebServer + "/js/ping.js";
-        $.ajax({
-            converters: {
-                'text script': function (text: string): string {
-                    return text;
-                }
-            },
-            url: url.substring( 0, 4 ) + url.substring( 5 ),
-            timeout: 1000,
-            success: function( /* result */ ): void {
-                callback(true);
-            },     
-            error: function( /* result */ ): void {
-                callback( false );
-            }
-         });
-    }
-
-    static getResource( url: string, tryLocalWebServer: boolean, isInManagementSite: boolean, folder: string, name: string, version: string ): GetResourceXHR {
-        // https://stackoverflow.com/a/66187724/166231
-        // This link showed me how to get custom parameter sent back in call back
-        
-        const resource: KatAppResource = { Resource: name, Folder: folder, Version: version };
-        const command = { 
-            "Command": "KatAppResource", 
-            "Resources": [ resource ] 
-        };
-
-        const ajaxUrl = !tryLocalWebServer && isInManagementSite
-            ? url + "?" + JSON.stringify( command )
-            : url; // If just file served up by local web server or hosting site web server, don't pass params
-        
-        const resourceResult: KatAppResourceResult = { Resource: name, Folder: folder, Version: version, Url: ajaxUrl };
-
-        const requestConfig = {
-            converters: {
-                'text script': function (text: string): string {
-                    return text;
-                }
-            },
-            url: ajaxUrl,
-            cache: !tryLocalWebServer
-        };
-
-        if ( !tryLocalWebServer ) {
-            // https://stackoverflow.com/a/38690731/166231
-            // requestConfig[ "ifModified" ] = true; // !tryLocalWebServer;
-            requestConfig[ "headers" ] = { 'Cache-Control': 'max-age=0' };
-        }
-
-        const p = $.ajax(requestConfig);
-        
-        const result: GetResourceXHR = {
-            ...p,
-            done( s: ajaxGetResourceSuccessCallbackSpread ) {
-                p.done(function (...args) {
-                    // s.call(p, ...args, resourceResult);
-                    s.call(p, args[ 0 ], args[ 1 ], args[ 2 ], resourceResult);
-                });
-                return result;
-            },
-            fail( f: ajaxGetResourceFailCallbackSpread ) {
-                p.fail(function (...args) {
-                    // f.call(p, ...args, resourceResult);
-                    f.call(p, args[ 0 ], args[ 1 ], args[ 2 ], resourceResult);
-                });
-                return result;
-            }
-        };
-        
-        return result;
-    };
     
-    static getResources( application: KatAppPlugInShimInterface, resources: string, useTestVersion: boolean, isScript: boolean, debugResourcesDomain: string | undefined, getResourcesCallback: GetResourcesCallback ): void {
+    static async getResources( application: KatAppPlugInShimInterface, resources: string, useTestVersion: boolean, isScript: boolean, debugResourcesDomain: string | undefined, getResourcesCallback: GetResourcesCallback ): Promise<void> {
         const currentOptions = application.options;
         const managementUrl = currentOptions.functionUrl ?? KatApp.defaultOptions.functionUrl ?? KatApp.functionUrl;
         const resourceArray = resources.split(",");
         
-        let localWebServer: string | undefined = debugResourcesDomain;
-        let useLocalWebServer = localWebServer !== undefined; // global value for all requested resources
-        // viewParts[ 0 ], viewParts[ 1 ]
-        // folder: string, resource: string, optional Version
+        const checkLocalServerAsync = async function(): Promise<boolean> {
+            const url = "https://" + debugResourcesDomain + "/js/ping.js";
+            try {
+                await $.ajax({
+                    converters: {
+                        'text script': function (text: string): string {
+                            return text;
+                        }
+                    },
+                    url: url.substring( 0, 4 ) + url.substring( 5 ),
+                    timeout: 1000,
+                 });
 
-        const checkLocalServer = function(): Deferred {
-            const d = $.Deferred();
-
-            if ( localWebServer === undefined || application.element.data("kat-local-domain-reachable") !== undefined ) {
-                if ( !application.element.data("kat-local-domain-reachable") ) {
-                    localWebServer = undefined;
-                    useLocalWebServer = false;
-                }
-                d.resolve();
+                 return true;
+            } catch ( error ) {
+                return false;
             }
-            else {
-                KatApp.ping(localWebServer, function( responded: boolean ) { 
-                    if ( !responded ) {
-                        localWebServer = undefined;
-                        useLocalWebServer = false;
-                        application.element.data("kat-local-domain-reachable", false);
-                    }
-                    else {
-                        application.element.data("kat-local-domain-reachable", true);
-                    }
-                    d.resolve();
-                } );
-            }
-
-            return d;
         };
-
-        checkLocalServer()
-            .then( function() {
-                // Declared outside of submit function so that
-                // the failure handler can log it.
-                let resourceUrl = "";
-                
-                const resourcePromises = resourceArray.map( resourceKey => {
-                    const d = $.Deferred();
-
-                    let tryLocalWebServer = useLocalWebServer; // value for current requested resource
-
-                    try {
-                        const relativeTemplatePath = currentOptions.relativePathTemplates?.[ resourceKey ];
-                        const resourceParts = relativeTemplatePath != undefined ? relativeTemplatePath.split(":") : resourceKey.split(":");
-                        let resourceName = resourceParts[ 1 ];
-                        const managementFolders = resourceParts[ 0 ];
-                        let localWebServerFolderPosition = 0;
-                        const currentLocalWebServerFolders = managementFolders.split("|");
-                        const version = resourceParts.length > 2 ? resourceParts[ 2 ] : ( useTestVersion ? "Test" : "Live" ); // can provide a version as third part of name if you want
         
-                        if ( !isScript ) {
-                            const resourceNameParts = resourceName.split( "?" );
-                            const resourceNameBase = resourceNameParts[ 0 ];
-
-                            // Template names often don't use .kaml syntax
-                            if ( !resourceNameBase.endsWith( ".kaml" ) ) {
-                                resourceName = resourceNameBase + ".kaml";
-
-                                if ( resourceNameParts.length == 2 ) {
-                                    // cache buster
-                                    resourceName += "?" + resourceNameParts[ 1 ];
-                                }
-                            }
-                        }
-        
-                        let localWebServerFolder = currentLocalWebServerFolders[ localWebServerFolderPosition ] + "/";
-                        let localWebServerResource = resourceName;
-                        const isResourceInManagementSite = KatApp.stringCompare( localWebServerFolder, "Rel/", true ) != 0;
-                        
-                        // If relative path used, I still need to look at local server and the path
-                        // is usually Rel:Client/kaml or Rel:Container/Client/kaml.  So always just
-                        // get the containing folder of the kaml to be used as the 'folder name'
-                        // and the last part is simply the kaml file
-                        const relativeResourceConfig = resourceName.split( '/' ).slice(-2);
-
-                        if ( !isResourceInManagementSite )
-                        {
-                            localWebServerFolder = relativeResourceConfig[ 0 ] + "/";
-                            localWebServerResource = relativeResourceConfig[ 1 ];
-                        }
-
-                        const managementUrlOptions: GetResourceOptions = {
-                            Command: 'KatAppResource',
-                            Resources: [
-                                {
-                                    Resource: resourceName,
-                                    Folder: managementFolders,
-                                    Version: version
-                                }
-                            ]
-                        };
-
-                        const submit: SubmitCalculationDelegate = function( app, options, done, fail ): void {
-                            if (!tryLocalWebServer && currentOptions.submitCalculation != undefined ) {
-                                currentOptions.submitCalculation( app, options, done, fail );
-                            }
-                            else {
-                                const localServerUrl = "https://" + localWebServer + "/KatApp/" + localWebServerFolder + localWebServerResource;
-
-                                resourceUrl = tryLocalWebServer 
-                                    ? localServerUrl.substring( 0, 4 ) + localServerUrl.substring( 5 )
-                                    : !isResourceInManagementSite
-                                        ? resourceName
-                                        : managementUrl;
-
-                                KatApp.trace(application, "Downloading " + resourceName + " from " + resourceUrl, TraceVerbosity.Diagnostic );
-
-                                KatApp.getResource(
-                                    resourceUrl,
-                                    tryLocalWebServer,
-                                    isResourceInManagementSite,
-                                    managementFolders,
-                                    resourceName,
-                                    version )
-                                .then( done, fail );
-                            }
-                        };
-                        
-                        const submitDone: ajaxGetResourceSuccessCallback = function( data, statusText, jqXHR, resource ): void {
-                            if ( statusText == "notmodified" ) {
-                                console.log(statusText);
-                            }
-
-                            if ( data == null ) {
-                                d.reject( { "resource": resource.Folder + ":" + resource.Resource, "errorMessage": "getResources failed requesting from L@W." } );
-                            }
-                            else {
-                                if ( data.payload !== undefined ) {
-                                    data = JSON.parse(data.payload);
-                                }
-                                
-                                // data.Content when request from service, just data when local files
-                                d.resolve( { "key": resourceKey, "isLocalServer": tryLocalWebServer, "content": data.Resources?.[ 0 ].Content ?? data as string, "isScript": isScript } );
-                            }
-                        };
-
-                        const submitFailed: ajaxGetResourceFailCallback = function( _jqXHR, textStatus, _errorThrown, resource ): void {
-                            // If local resources, syntax like LAW.CLIENT|LAW:sharkfin needs to try client first, 
-                            // then if not found, try generic.
-                            if ( tryLocalWebServer && localWebServerFolderPosition < currentLocalWebServerFolders.length - 1 ) {
-                                localWebServerFolderPosition++;
-                                localWebServerFolder = !isScript ? currentLocalWebServerFolders[ localWebServerFolderPosition ] + "/" : "";
-                                submit( application as KatAppPlugInInterface, managementUrlOptions, submitDone, submitFailed );
-                            }
-                            else if ( tryLocalWebServer ) {
-                                tryLocalWebServer = false; // If I had tryLocalWebServer but it couldn't find it, try real site
-                                submit( application as KatAppPlugInInterface, managementUrlOptions, submitDone, submitFailed );
-                            }
-                            else {
-                                console.log( _errorThrown );
-                                d.reject( { "resource": resource.Folder + ":" + resource.Resource, "errorMessage": "getResources failed requesting from " + resource.Url + ":" + textStatus } );
-                            }
-                        };
-
-                        // Make original submit to attempt to get the kat app resource
-                        submit( application as KatAppPlugInInterface, managementUrlOptions, submitDone, submitFailed );
-
-                    } catch (error) {
-                        d.reject( { "resource": resourceKey, "errorMessage": "getResources failed:" + error } );
-                    }
-
-                    return d;
-                });
-
-                $.whenAllDone( resourcePromises ).then(
-                    function( ... resourceResults: PromiseStatus[] ) {
-                        const failures = resourceResults.filter( p => p.status == "rejected" );
-                    
-                        if ( failures.length > 0 ) {
-                            failures.forEach( p => {
-                                const failure = p.reason as GetResourceFailure;
-                                application.trace( "Error during calculation for " + failure.resource + ": " + failure.errorMessage, TraceVerbosity.None );
+        const getLifeAtWorkResourceAsync = async function (resourceKey: string, resourceOptions: GetResourceOptions): Promise<{ resource: string, errorMessage?: string, content?: string}> {
+            return new Promise(( resolve, reject ) => {
+                currentOptions.submitCalculation!( 
+                    application as KatAppPlugInInterface, 
+                    resourceOptions, 
+                    function( data, _statusText, _jqXHR, resource ): void {
+                        if ( data == null ) {
+                            reject( { 
+                                resource: resource.Folder + ":" + resource.Resource, 
+                                errorMessage: "getResources failed requesting from L@W." 
                             });
-                    
-                            getResourcesCallback( failures[ 0 ].reason.errorMessage );
                         }
                         else {
-                            resourceResults
-                                .filter( r => ( r.value as GetResourceSuccess ).isScript )
-                                .forEach( r => {
-                                    const success = r.value as GetResourceSuccess;
-                                    let scriptContent = success.content;
-
-                                    // If local script location is provided, doing the $.ajax code automatically 
-                                    // injects/executes the javascript, no need to do it again
-                                    const body = document.querySelector('body');
-
-                                    // Still trying to figure out how to best determine if I inject or not, might have to make a variable
-                                    // at top of code in KatAppProvider, but if it 'ran', then $.fn.KatApp.plugInShims should be undefined.
-                                    // Originally, I just looked to see if debugResourcesDomain was undefined...but if that is set and the domain
-                                    // does NOT match domain of site running (i.e. debugging site in asp.net that uses KatApps and I want it to
-                                    // hit development KatApp resources) then it doesn't inject it.  So can't just check undefined or not.
-                                    if ( body !== undefined && body !== null && $.fn.KatApp.plugInShims !== undefined && scriptContent !== undefined ) {
-                                        // Just keeping the markup a bit cleaner by only having one copy of the code
-                                        $("script[rbl-script='true']").remove()
-
-                                        // https://stackoverflow.com/a/56509649/166231
-                                        const script = document.createElement('script');
-                                        script.setAttribute("rbl-script", "true");
-
-                                        const scriptLines = scriptContent.split('\n');
-                                        if ( !success.isLocalServer && scriptLines[ scriptLines.length - 1 ] == "//# sourceMappingURL=KatAppProvider.js.map" ) {
-                                            scriptLines.pop();
-                                            scriptContent = scriptLines.join("\n");
-                                        }
-                                        script.innerHTML = scriptContent;
-                                        body.appendChild(script);
-                                    }
-
-                                });
-
-                            const callbackResults: ResourceResults = {};
-
-                            resourceResults
-                                .map( r => r.value as GetResourceSuccess )
-                                .filter( r => !r.isScript )
-                                .forEach( r => {
-                                    callbackResults[ r.key ] = r.content!; // eslint-disable-line @typescript-eslint/no-non-null-assertion
-                                });
-
-                            
-                            getResourcesCallback( undefined, callbackResults );
+                            resolve({
+                                resource: resourceKey, 
+                                content: JSON.parse(data.payload).Resources[ 0 ].Content
+                            });
                         }
-                    }
+                    }, 
+                    function( _jqXHR, textStatus, _errorThrown, resource ): void {
+                        reject( { 
+                            resource: resource.Folder + ":" + resource.Resource, 
+                            errorMessage: "getResources failed requesting from L@W. " + textStatus 
+                        });
+                    } 
                 );
             });
+        };
+
+        const downloadResourceAsync = async function( url: string, tryLocalWebServer: boolean ): Promise<{ data?: string, errorMessage?: string }> {
+            const requestConfig = {
+                converters: {
+                    'text script': function (text: string): string {
+                        return text;
+                    }
+                },
+                url: url,
+                cache: !tryLocalWebServer
+            };
+    
+            if ( !tryLocalWebServer ) {
+                // https://stackoverflow.com/a/38690731/166231
+                // requestConfig[ "ifModified" ] = true; // !tryLocalWebServer;
+                requestConfig[ "headers" ] = { 'Cache-Control': 'max-age=0' };
+            }
+            
+            try {
+                const result = await $.ajax(requestConfig);
+                const isRelativePath = KatApp.stringCompare( url.substring( 0, 4 ), "http", true ) != 0;
+                // If querying service and get a 'string' back...then I know error happened
+                // data.Content when request from service, just data when local files
+                return isRelativePath || tryLocalWebServer || typeof result == "object"
+                    ? { data: isRelativePath || tryLocalWebServer ? result : ( result as any ).Resources[ 0 ].Content }
+                    : { errorMessage: result };
+            } catch (error) {
+                return { errorMessage: ( error as XMLHttpRequest ).statusText };
+            }
+        };
+
+        const getResourceAsync = async function(resourceKey: string, tryLocalWebServer: boolean): Promise<{ resource: string, errorMessage?: string, content?: string}> {
+            const relativeTemplatePath = currentOptions.relativePathTemplates?.[ resourceKey ];
+            const resourceParts = relativeTemplatePath != undefined ? relativeTemplatePath.split(":") : resourceKey.split(":");
+
+            let resourceName = resourceParts[ 1 ];
+            const resourceFolders = resourceParts[ 0 ].split( "|" );
+            const version = resourceParts.length > 2 ? resourceParts[ 2 ] : ( useTestVersion ? "Test" : "Live" ); // can provide a version as third part of name if you want
+
+            if ( !isScript ) {
+                const resourceNameParts = resourceName.split( "?" );
+                const resourceNameBase = resourceNameParts[ 0 ];
+
+                // Template names often don't use .kaml syntax
+                if ( !resourceNameBase.endsWith( ".kaml" ) ) {
+                    resourceName = resourceNameBase + ".kaml";
+
+                    if ( resourceNameParts.length == 2 ) {
+                        // cache buster
+                        resourceName += "?" + resourceNameParts[ 1 ];
+                    }
+                }
+            }
+
+            let localWebServerResource = resourceName;
+            let resourceUrl = "unavailable";
+            let lastResult: { data?: string, errorMessage?: string } = { errorMessage: "unavailable" };
+
+            // Walk each folder and return first successful result...
+            for (let i = 0; i < resourceFolders.length; i++) {
+                let localWebServerFolder = resourceFolders[i];
+                
+                const isResourceInManagementSite = KatApp.stringCompare( localWebServerFolder, "Rel", true ) != 0;
+
+                if ( !isResourceInManagementSite ) {
+                    // If relative path used, I still need to look at local server and the path
+                    // is usually Rel:Client/kaml or Rel:Container/Client/kaml.  So always just
+                    // get the containing folder of the kaml to be used as the 'folder name'
+                    // and the last part is simply the kaml file.
+                    const relativeResourceConfig = resourceName.split( '/' ).slice(-2);
+
+                    localWebServerFolder = relativeResourceConfig[ 0 ];
+                    localWebServerResource = relativeResourceConfig[ 1 ];
+                }
+
+                if (!tryLocalWebServer && currentOptions.submitCalculation != undefined ) {
+                    const managementUrlOptions: GetResourceOptions = {
+                        Command: 'KatAppResource',
+                        Resources: [
+                            {
+                                Resource: resourceName,
+                                Folder: resourceParts[ 0 ],
+                                Version: version
+                            }
+                        ]
+                    };
+                    return await getLifeAtWorkResourceAsync( resourceKey, managementUrlOptions );
+                }
+                else {
+                    const localServerUrl = "https://" + debugResourcesDomain + "/KatApp/" + localWebServerFolder + "/" + localWebServerResource;
+                    resourceUrl = tryLocalWebServer 
+                        ? localServerUrl.substring( 0, 4 ) + localServerUrl.substring( 5 )
+                        : !isResourceInManagementSite
+                            ? resourceName
+                            : managementUrl;
+
+                    KatApp.trace(application, "Downloading " + resourceName + " from " + resourceUrl, TraceVerbosity.Diagnostic );
+                    
+                    if ( !tryLocalWebServer && isResourceInManagementSite ) {
+                        resourceUrl = resourceUrl + "?" + JSON.stringify( { "Command": "KatAppResource", "Resources": [ { Resource: resourceName, Folder: resourceParts[ 0 ], Version: version } ] } );
+                    }
+
+                    lastResult = await downloadResourceAsync( resourceUrl, tryLocalWebServer );
+
+                    if ( lastResult.data != undefined ) {
+                        let content = lastResult.data;
+
+                        if ( !tryLocalWebServer && isScript ) {
+                            const scriptLines = lastResult.data.split('\n');
+                            if ( scriptLines[ scriptLines.length - 1 ] == "//# sourceMappingURL=KatAppProvider.js.map" ) {
+                                scriptLines.pop();
+                                content = scriptLines.join("\n");
+                            }
+                        }                        
+                        
+                        return {   
+                            resource: resourceKey, 
+                            content: content
+                        };
+                    }                    
+                }
+            }
+
+            return tryLocalWebServer
+                ? await getResourceAsync(resourceKey, false)
+                : {
+                    resource: resourceName,
+                    errorMessage: "getResourceAsync failed requesting from " + resourceUrl + ": " + lastResult.errorMessage
+                };
+        };
+        
+        const useLocalWebServer = debugResourcesDomain != undefined &&
+            ( application.element["ka-local"] ?? 
+            ( application.element["ka-local"] = await checkLocalServerAsync() ) );
+
+        var resourceResults = await Promise.all(
+            resourceArray.map( async resourceKey => {
+                return getResourceAsync(resourceKey, useLocalWebServer);
+            })
+        );
+
+        const failures = resourceResults.filter( p => p.errorMessage != undefined );
+                    
+        if ( failures.length > 0 ) {
+            failures.forEach( p => {
+                application.trace( "Error during resource download for " + p.resource + ": " + p.errorMessage, TraceVerbosity.None );
+            });
+    
+            getResourcesCallback( failures[ 0 ].errorMessage );
+        }
+        else if ( isScript ) {
+            resourceResults
+            .forEach( r => {
+                // If local script location is provided, doing the $.ajax code automatically 
+                // injects/executes the javascript, no need to do it again
+                const body = document.querySelector('body');
+
+                // Still trying to figure out how to best determine if I inject or not, might have to make a variable
+                // at top of code in KatAppProvider, but if it 'ran', then $.fn.KatApp.plugInShims should be undefined.
+                // Originally, I just looked to see if debugResourcesDomain was undefined...but if that is set and the domain
+                // does NOT match domain of site running (i.e. debugging site in asp.net that uses KatApps and I want it to
+                // hit development KatApp resources) then it doesn't inject it.  So can't just check undefined or not.
+                if ( body !== undefined && body !== null && $.fn.KatApp.plugInShims !== undefined && r.content !== undefined ) {
+                    // Just keeping the markup a bit cleaner by only having one copy of the code
+                    $("script[rbl-script='true']").remove()
+
+                    // https://stackoverflow.com/a/56509649/166231
+                    const script = document.createElement('script');
+                    script.setAttribute("rbl-script", "true");
+                    script.innerHTML = r.content;
+                    body.appendChild(script);
+                }
+            });
+        }
+        else {
+            const callbackResults: ResourceResults = {};
+
+            resourceResults
+                .forEach( r => {
+                    callbackResults[ r.resource ] = r.content!; // eslint-disable-line @typescript-eslint/no-non-null-assertion
+                });
+            
+            getResourcesCallback( undefined, callbackResults );
+        }
     }
 }
 

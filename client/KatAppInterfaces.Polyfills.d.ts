@@ -40,9 +40,6 @@ interface Function {
     // Debugging...let's me restore the original shim factory if I'm going to rebuild UI or script locations
     debugApplicationFactory( id: string, element: JQuery, options: KatAppOptions): KatAppPlugInShimInterface;    
     templateOn( events: string, fn: TemplateOnDelegate ): void;
-    getResources( application: KatAppPlugInShimInterface, resources: string, useTestVersion: boolean, isScript: boolean, debugResourcesDomain: string | undefined, getResourcesHandler: GetResourcesCallback ): void;
-    getResource( url: string, tryLocalServer: boolean, isInManagementSite: boolean, folder: string, name: string, version: string ): GetResourceXHR;
-    ping( url: string, callback: ( responded: boolean, error?: string | Event )=> void ): void;
 
     resourceTemplates: Record<string, TemplateFile>;
 

@@ -218,7 +218,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
 
         private renderResultsWithOptions( results: TabDef[] | undefined, calculationOptions: KatAppOptions = this.options ) {
             this.results = this.buildResults( results, calculationOptions );
-            this.processResults( calculationOptions );
+            this.processCurrentResults( calculationOptions );
             this.renderValidationSummaries();
         }
 
@@ -721,6 +721,8 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                             that.element.append( viewElement );
                             that.triggerEvent( "onInitializing", that, that.options );
                         }
+
+                        // that.rble.walkChildren(viewElement[0]);
                     }
 
                     // Update options.viewTemplates just in case someone is looking at them
@@ -1723,7 +1725,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                 ensureResults();
 
                 if ( processCalculationResults ) {
-                    that.processResults( currentOptions );
+                    that.processCurrentResults( currentOptions );
                 }
 
                 calculatePipeline( 0 );
@@ -2389,7 +2391,11 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
             }
         }
 
-        private buildResults( results: TabDef[] | undefined, calculationOptions: KatAppOptions = this.options ): TabDef[] | undefined {
+        private buildResults( results: TabDef[] | undefined, calculationOptions: KatAppOptions = this.options, includeManualResults: boolean = true ): TabDef[] | undefined {
+            if ( results == undefined ) {
+                results = [];
+            }
+
             const calcEngines = ( calculationOptions.calcEngines ?? [] ).map( ce => ({ name: ce.name, key: ce.key }) );
             const application = this;
 
@@ -2397,11 +2403,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                 return name?.split(".")[ 0 ].replace("_Test", "") ?? "";
             }
 
-            if ( calculationOptions.manualResults != undefined ) {
-                if ( results == undefined ) {
-                    results = [];
-                }
-                
+            if ( includeManualResults && calculationOptions.manualResults != undefined ) {
                 calculationOptions.manualResults.forEach( ( t, i ) => {
                     t["@calcEngine"] = getCeName( t["@calcEngine"] ?? t["@calcEngineKey"] );
                     t["@name"] = t["@name"] ?? "RBLResults" + ( i + 1 );
@@ -2429,7 +2431,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                         Object.keys(t)
                             .filter( k => !k.startsWith( "@" ) && !k.startsWith( "_" ) );
                     
-                    const ceName = getCeName( t["@calcEngine"] );
+                    const ceName = getCeName( t["@calcEngine"] ?? calcEngines[ 0 ].name );
                     
                     /*
                     // If they run a different CE than is configured via this event handler
@@ -2440,13 +2442,12 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                     })
                     */                    
                     const ceKey = t["@calcEngineKey"] = 
-                        calcEngines.find( c => c.name.toLowerCase() == ceName.toLowerCase() )?.key
-                            ?? calcEngines[ 0 ].key;
+                        calcEngines.find( c => c.name.toLowerCase() == ceName.toLowerCase() )?.key ?? defaultCEKey;
                     
                     // Is this tab part of defaultCalcEngine?
                     t._defaultCalcEngine = ceKey == defaultCEKey;
                     t[ "_" +  ceKey ] = true;
-                    t._name = t["@name"];
+                    t._name = t["@name"] ?? "RBLResult";
                     t._fullName = ceKey + "." + ceName + "." + t._name;
 
                     // Ensure that all tables are an array
@@ -2684,7 +2685,15 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
             );
         }
         
-        private processResults( calculationOptions: KatAppOptions ): void {
+        processResults( results: TabDef | TabDef[] ): void {
+            if ( !(results instanceof Array) ) {
+                results = [ results ];
+            }
+            this.buildResults(results, this.options, false);
+            this.rble.processResults( results, this.options );
+        }
+
+        private processCurrentResults( calculationOptions: KatAppOptions ): void {
             this.trace("Processing results from calculation", TraceVerbosity.Detailed);
             const start = new Date();
 
@@ -3786,7 +3795,8 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
     }
     class RBLeUtilities /* implements RBLeUtilitiesInterface */ {
         private application: KatAppPlugIn;
-    
+        private attrDirectives: AttributeDirective[] = [];
+
         constructor( application: KatAppPlugIn ) {
             this.application = application;  
         }
@@ -3953,10 +3963,10 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                 const result: T[] = [];
     
                 tabDef._resultKeys.forEach(key => {
-                    let table = tabDef[key];
+                    const table = tabDef[key];
     
                     if (table instanceof Array) {
-                        table = $.merge(result, table);
+                        $.merge(result, table);
                     }
                 });
     
@@ -3994,10 +4004,6 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                     // table.id[expression] - process single row by id
                     // table.searchCol.key[expression] - process single row by searchCol=key
                     selectorParts = expressionPrefix.split( "." );
-
-                    if ( isTemplateRowExpression && templateRow == undefined ) {
-                        return undefined;
-                    }
 
                     if ( selectorParts.length > 3 ) {
                         this.application.trace( "Invalid selector length for [" + tabDef._fullName + ":" + selector + "]", TraceVerbosity.None );
@@ -4062,11 +4068,9 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                         row = this.getResultRow<JSON>( tabDef, selectorParts[0], selectorParts[2], selectorParts[1] );
                     }
 
-                    return row !== undefined 
-                        ? isExpression
-                            ? this.processTableRowExpression( selector, row, 0 )
-                            : row[ returnColumn ] // ?? "" // Should this return blank if the 'row' is found b/c column isn't returned?
-                        : undefined;
+                    return isExpression
+                        ? this.processTableRowExpression( selector, row, 0 )
+                        : row?.[ returnColumn ];
                 }
             }
     
@@ -4101,27 +4105,24 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                     const selector = el.attr('rbl-value')!; // eslint-disable-line @typescript-eslint/no-non-null-assertion
                     const tabDef = that.getTabDef( tabName, ceKey )
 
-                    const skipTemplateExpression = selector.endsWith( "]" ) && selector.indexOf( "[" ) == 0 && templateRow == undefined;
-                    if ( !skipTemplateExpression ) {
-                        const value = 
-                            that.getRblSelectorValue( tabDef, "rbl-value", selector, templateRow ) ??
-                            that.getRblSelectorValue( tabDef, "ejs-output", selector, templateRow );
-        
-                        if ( value != undefined ) {
-                            if ( el.length === 1 ) {
-                                el = application.ui.getAspNetCheckboxLabel( el ) ?? el;
-                            }
+                    const value = 
+                    that.getRblSelectorValue( tabDef, "rbl-value", selector, templateRow ) ??
+                    that.getRblSelectorValue( tabDef, "ejs-output", selector, templateRow );
 
-                            el.html( value );
+                    if ( value != undefined ) {
+                        if ( el.length === 1 ) {
+                            el = application.ui.getAspNetCheckboxLabel( el ) ?? el;
+                        }
 
-                            if ( value.indexOf( "rbl-tid" ) > -1 ) {
-                                // In case the markup from CE has a template specified...
-                                that.processRblSources(el, showInspector);                        
-                            }
+                        el.html( value );
+
+                        if ( value.indexOf( "rbl-tid" ) > -1 ) {
+                            // In case the markup from CE has a template specified...
+                            that.processRblSources(el, showInspector);                        
                         }
-                        else {
-                            application.trace("<b style='color: Red;'>RBL WARNING</b>: no data returned for tab=" + tabDef?._fullName + ", rbl-value=" + el.attr('rbl-value'), TraceVerbosity.Detailed);
-                        }
+                    }
+                    else {
+                        application.trace("<b style='color: Red;'>RBL WARNING</b>: no data returned for tab=" + tabDef?._fullName + ", rbl-value=" + el.attr('rbl-value'), TraceVerbosity.Detailed);
                     }
                 });
         }
@@ -4194,7 +4195,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
             }
         }
 
-        processRblAttributes( container: JQuery<HTMLElement> | undefined, showInspector: boolean, templateRow?: JSON): void {        
+        processRblAttributes( container: JQuery<HTMLElement>, showInspector: boolean, templateRow?: JSON): void {
             const that: RBLeUtilities = this;
             const application = this.application;
     
@@ -4207,6 +4208,17 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                     let el = $(this);
                     that.processRblAttribute( el, showInspector, templateRow );
                 });
+
+            /*
+            this.attrDirectives
+                .filter( ad => ad.containers[ ad.containers.length - 1].isEqualNode( container[ 0 ] ) )
+                .forEach( ad => {
+                    ad.directives.forEach( d => { 
+                        console.log(d);
+                        // that.processRblAttribute( $(d.el), showInspector, templateRow );
+                    });
+                });
+            */
         }
 
         processRblAttribute(el: JQuery<HTMLElement>, showInspector: boolean, templateRow: JSON | undefined): void {
@@ -4254,55 +4266,53 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                         attrSelector = attrSelector.replace( expressionKey, rblAttributesWithExpressions.expressions[ expressionKey ] );
                     }
 
-                    const skipTemplateExpression = attrSelector.endsWith( "]" ) && attrSelector.indexOf( "[" ) == 0 && templateRow == undefined;
-                    if ( !skipTemplateExpression ) {
-                        const value = 
-                            that.getRblSelectorValue( tabDef, "rbl-value", attrSelector, templateRow ) ??
-                            that.getRblSelectorValue( tabDef, "ejs-output", attrSelector, templateRow );
+                    const value = 
+                        that.getRblSelectorValue( tabDef, "rbl-value", attrSelector, templateRow ) ??
+                        that.getRblSelectorValue( tabDef, "ejs-output", attrSelector, templateRow );
 
-                        if ( value != undefined ) {
-                            if ( el.length === 1 ) {
-                                el = application.ui.getAspNetCheckboxLabel( el ) ?? el;
+                    if ( value != undefined ) {
+                        if ( el.length === 1 ) {
+                            el = application.ui.getAspNetCheckboxLabel( el ) ?? el;
+                        }
+
+                        // rbl-attr="data-foo:fooValue" data-foo="Terry"
+                        // Calc 1: fooValue = Aney
+                        //  previous = undefined
+                        //  currentValue = "Terry"
+                        //  newValue = "Terry Aney"
+                        // Calc 2: fooValue = Craig
+                        //  previous = "Aney"
+                        //  currentValue = "Terry Aney"
+                        //  newValue = "Terry Craig"
+                        const dataName = "rbl-attr-" + attrName + "-previous";
+                        const previous = el.data(dataName);
+                        const currentValue = el.attr(attrName) || "";
+
+                        const newValue = previous != undefined
+                            ? currentValue.replace(previous, value).trim()
+                            : ( currentValue == "" ? value : currentValue + " " + value ).trim();
+
+                        if ( newValue == "" ) {
+                            el.removeAttr(attrName).removeData(dataName)
+                            /*
+                            if ( attrName.startsWith( "data-" ) ) {
+                                el.removeData(attrName.substring(5));
                             }
-
-                            // rbl-attr="data-foo:fooValue" data-foo="Terry"
-                            // Calc 1: fooValue = Aney
-                            //  previous = undefined
-                            //  currentValue = "Terry"
-                            //  newValue = "Terry Aney"
-                            // Calc 2: fooValue = Craig
-                            //  previous = "Aney"
-                            //  currentValue = "Terry Aney"
-                            //  newValue = "Terry Craig"
-                            const dataName = "rbl-attr-" + attrName + "-previous";
-                            const previous = el.data(dataName);
-                            const currentValue = el.attr(attrName) || "";
-
-                            const newValue = previous != undefined
-                                ? currentValue.replace(previous, value).trim()
-                                : ( currentValue == "" ? value : currentValue + " " + value ).trim();
-
-                            if ( newValue == "" ) {
-                                el.removeAttr(attrName).removeData(dataName)
-                                /*
-                                if ( attrName.startsWith( "data-" ) ) {
-                                    el.removeData(attrName.substring(5));
-                                }
-                                */
-                            }
-                            else {
-                                el.attr(attrName, newValue).data(dataName, value);
-                                /*
-                                if ( attrName.startsWith( "data-" ) ) {
-                                    el.data(attrName.substring(5), newValue);
-                                }
-                                */
-                            }
+                            */
                         }
                         else {
-                            application.trace("<b style='color: Red;'>RBL WARNING</b>: no data returned for tab=" + tabDef?._fullName + ", rbl-attr=" + a, TraceVerbosity.Detailed);
+                            el.attr(attrName, newValue).data(dataName, value);
+                            /*
+                            if ( attrName.startsWith( "data-" ) ) {
+                                el.data(attrName.substring(5), newValue);
+                            }
+                            */
                         }
                     }
+                    else {
+                        application.trace("<b style='color: Red;'>RBL WARNING</b>: no data returned for tab=" + tabDef?._fullName + ", rbl-attr=" + a, TraceVerbosity.Detailed);
+                    }
+
                 }
                 else {
                     application.trace("<b style='color: Red;'>RBL WARNING</b>: Unable to process rbl-attr=" + a + ", needs to be name:rblselector[:jqueryselector]", TraceVerbosity.None);
@@ -4315,17 +4325,78 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                 ( value === "0" || ( typeof( value ) == "string" && value.toLowerCase() === "false" ) || !value );
         }
 
-        private processTableRowExpression( expression: string, row: JSON, index: number ): any { // eslint-disable-line @typescript-eslint/no-explicit-any
+        private processTableRowExpression( expression: string, row: JSON | undefined, index: number ): any { // eslint-disable-line @typescript-eslint/no-explicit-any
             let tableExpressionScript = expression.substring( expression.indexOf("[") + 1, expression.lastIndexOf("]") );
 
             if ( !tableExpressionScript.endsWith(";" ) ) {
                 tableExpressionScript += ";";
             }
-            const tableExpression =  function ( row: JSON, index: number, application: KatAppPlugIn ): any { // eslint-disable-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unused-vars
+            const tableExpression =  function ( row: JSON | undefined, index: number, application: KatAppPlugIn ): any { // eslint-disable-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unused-vars
                 return eval(tableExpressionScript); 
             };
             return tableExpression.call(row, row, index, this.application);
         }
+
+        private walk(node: ChildNode, root: HTMLElement): HTMLElement | undefined {
+            const that = this;
+
+            if ( node.nodeType == 1 ) {
+                // element
+                const el = node as HTMLElement;
+
+                let attributeDirective: AttributeDirective | undefined;
+
+                for (let index = 0; index < el.attributes.length; index++) {
+                    const attr = el.attributes[index];
+
+                    // make this ka:
+                    if ( attr.nodeName.startsWith( ":" ) ) {
+                        attributeDirective = 
+                            attributeDirective ?? 
+                            this.attrDirectives.find(d => d.containers[ d.containers.length - 1 ].isEqualNode(el)) ??
+                            function(): AttributeDirective { 
+                                const containers = [ root ];
+                                let container: HTMLElement | null = !el.hasAttribute("rbl-application-id") 
+                                    ? el.parentElement
+                                    : null;
+                                while( container != null && !container.isEqualNode( root ) ) {
+                                    const isApp: boolean = container.hasAttribute("rbl-application-id");
+                                    if ( container.hasAttribute("rbl-source") || isApp ) {
+                                        containers.unshift(container);
+                                    }
+                                    container = isApp ? null : container.parentElement;
+                                }
+
+                                const ad: AttributeDirective = {
+                                    containers: containers,
+                                    directives: [ ]
+                                };
+                                that.attrDirectives.push( ad );
+                                return ad;
+                            }();
+
+                        attributeDirective.directives.push(
+                            {
+                                el: el,
+                                name: attr.nodeName.substring(1),
+                                value: attr.nodeValue
+                            }
+                        );
+                    }
+                }
+
+                this.walkChildren(el);
+            }
+            return undefined;
+        };
+
+        walkChildren(node:HTMLElement, root?: HTMLElement): void {
+            let child = node.firstElementChild;
+            
+            while (child) {
+              child = this.walk(child, root ?? node) || child.nextElementSibling
+            }                            
+        };
 
         processRblSources(root: JQuery<HTMLElement>, showInspector: boolean): void {
             const that: RBLeUtilities = this;
@@ -4461,6 +4532,8 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                                     // Nested templates
                                     that.application.ui.injectTemplatesWithoutSource(el, showInspector);
 
+                                    // that.walkChildren(dest[0]);
+
                                     const templateRow = templateData as JSON;
 
                                     that.application.rble.processRblIfs( el, showInspector, templateRow );
@@ -4468,10 +4541,10 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                                     that.application.rble.processRblAttributes( el, showInspector, templateRow );
                                     that.application.rble.processRblDisplays( el, showInspector, templateRow );
                                     that.application.rble.processRblDisabled( el, showInspector, templateRow );
-                                                        
+                                    
                                     // Nested rbl-source templates
                                     that.processRblSources(el, showInspector);
-                                    
+
                                     const processTemplate = that.application.triggerEvent("onTemplateRowProcessed", el, templateData, that.application) || true;
 
                                     if ( processTemplate ) {
@@ -4612,7 +4685,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
             const that: RBLeUtilities = this;
             const application = this.application;
     
-            const itemsToProcess = container != undefined && templateRow != undefined
+            const itemsToProcess = container != undefined
                 ? container.find("[" + attributeName + "]")
                 : application.select("[" + attributeName + "]", container);
             
@@ -4724,25 +4797,22 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                             }
                             else {
                                 const selector = simpleExpression?.selector ?? attributeValue;
-                                const skipTemplateExpression = selector.endsWith( "]" ) && selector.indexOf( "[" ) == 0 && templateRow == undefined;
 
-                                if ( !skipTemplateExpression ) {
-                                    let resultValue = 
-                                        simpleExpression?.left ??
-                                        that.getRblSelectorValue( tabDef, tableName, selector, templateRow ) ??
-                                        that.getRblSelectorValue( tabDef, legacyTable, selector, templateRow );
+                                let resultValue = 
+                                    simpleExpression?.left ??
+                                    that.getRblSelectorValue( tabDef, tableName, selector, templateRow ) ??
+                                    that.getRblSelectorValue( tabDef, legacyTable, selector, templateRow );
 
-                                    // Reassign the value you are checking if they are using simple expressions
-                                    // by passing in the value from getRblSelectorValue to the expression created
-                                    // originally by {operator}{value} and it will return 1 or 0.
-                                    if ( simpleExpression != undefined ) {
-                                        resultValue = simpleExpression.evaluate(resultValue);
-                                    }
+                                // Reassign the value you are checking if they are using simple expressions
+                                // by passing in the value from getRblSelectorValue to the expression created
+                                // originally by {operator}{value} and it will return 1 or 0.
+                                if ( simpleExpression != undefined ) {
+                                    resultValue = simpleExpression.evaluate(resultValue);
+                                }
 
-                                    if (resultValue != undefined) {
-                                        const falseyValue = that.isFalsy( resultValue );
-                                        processFalsey( el, isNotExpression ? !falseyValue : falseyValue );
-                                    }
+                                if (resultValue != undefined) {
+                                    const falseyValue = that.isFalsy( resultValue );
+                                    processFalsey( el, isNotExpression ? !falseyValue : falseyValue );
                                 }
                             }
                         }

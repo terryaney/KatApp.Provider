@@ -176,6 +176,15 @@ interface KatAppActionResult {
     InvalidateKatApp?: boolean
 }
 
+interface AttributeDirective { 
+    containers: HTMLElement[], 
+    directives: { 
+        el: HTMLElement, 
+        name: string, 
+        value: string | null 
+    }[] 
+}
+
 // These are the only methods available to call on .KatApp() until onInitialized is triggered (meaning
 // that the provider object has been loaded and replaced the Shim and all methods of the KatAppPlugInInterface 
 // are now implemented)
@@ -242,7 +251,8 @@ interface KatAppPlugInInterface extends KatAppPlugInShimInterface {
     // you want to explicitly save a CalcEngine from a ConfigureUI calculation, so you set
     // the save location and call this.
     configureUI: ( customOptions?: KatAppOptions )=> void;
-
+    processResults: ( results: TabDef | TabDef[] )=> void;
+    
     getResultTable<T>( tableName: string, tabDef?: string, calcEngine?: string): Array<T>;
     getResultRow<T>( table: string, id: string, columnToSearch?: string, tabDef?: string, calcEngine?: string ): T | undefined;
     getResultValue( table: string, id: string, column: string, defaultValue?: string, tabDef?: string, calcEngine?: string ): string | undefined;

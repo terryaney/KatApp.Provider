@@ -165,7 +165,7 @@ class KatApp
         sessionStorage.setItem(navigationCachingKey, JSON.stringify(currentInputs) );
     }
     
-    static async getResources( application: KatAppPlugInShimInterface, resources: string, useTestVersion: boolean, isScript: boolean, debugResourcesDomain: string | undefined, getResourcesCallback: GetResourcesCallback ): Promise<void> {
+    static async getResources( application: KatAppPlugInShimInterface, resources: string, useTestVersion: boolean, isScript: boolean, debugResourcesDomain: string | undefined, getResourcesCallback: GetResourcesCallback ) {
         const currentOptions = application.options;
         const managementUrl = currentOptions.functionUrl ?? KatApp.defaultOptions.functionUrl ?? KatApp.functionUrl;
         const resourceArray = resources.split(",");
@@ -390,6 +390,7 @@ class KatApp
                     body.appendChild(script);
                 }
             });
+            getResourcesCallback( undefined, {} );
         }
         else {
             const callbackResults: ResourceResults = {};

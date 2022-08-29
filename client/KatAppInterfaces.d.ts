@@ -405,6 +405,14 @@ interface SubmitCalculationCallback {
 interface JQueryFailCallback {
     ( jqXHR: JQuery.jqXHR, textStatus: string, errorThrown: string ): void;
 }
+// Because ajaxGetResourceSuccessCallback/ajaxGetResourceFailCallback use spread operator, all params
+// have to be optional... https://stackoverflow.com/a/46228488/166231
+interface ajaxGetResourceSuccessCallbackSpread {
+    ( data?: any, textStatus?: string, jqXHR?: JQuery.jqXHR, resource?: KatAppResourceResult ): void;
+}
+interface ajaxGetResourceFailCallbackSpread {
+    ( jqXHR?: JQuery.jqXHR, textStatus?: string, errorThrown?: string, resource?: KatAppResourceResult ): void;
+}
 // And here is implementation so I don't have to check undefined or not
 interface ajaxGetResourceSuccessCallback {
     ( data: any, textStatus: string, jqXHR: JQuery.jqXHR, resource: KatAppResourceResult ): void;
@@ -413,6 +421,18 @@ interface ajaxGetResourceFailCallback {
     ( jqXHR: JQuery.jqXHR, textStatus: string, errorThrown: string, resource: KatAppResourceResult ): void;
 }
 
+interface GetResourceFailure
+{ 
+    resource: string;
+    errorMessage: string;
+}
+interface GetResourceSuccess
+{ 
+    key: string;
+    isScript: boolean;
+    isLocalServer: boolean;
+    content: string | undefined;
+}
 interface SubmitCalculationSuccess
 { 
     calcEngine: CalcEngine;

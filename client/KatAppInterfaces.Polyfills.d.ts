@@ -41,6 +41,10 @@ interface Function {
     debugApplicationFactory( id: string, element: JQuery, options: KatAppOptions): KatAppPlugInShimInterface;    
     templateOn( events: string, fn: TemplateOnDelegate ): void;
 
+    getResources( application: KatAppPlugInShimInterface, resources: string, useTestVersion: boolean, isScript: boolean, debugResourcesDomain: string | undefined, getResourcesHandler: GetResourcesCallback ): void;
+    getResource( url: string, tryLocalServer: boolean, isInManagementSite: boolean, folder: string, name: string, version: string ): GetResourceXHR;
+    ping( url: string, callback: ( responded: boolean, error?: string | Event )=> void ): void;
+
     resourceTemplates: Record<string, TemplateFile>;
 
     // When template content is being injected inside a view, if calls are made to templateOn, this variable

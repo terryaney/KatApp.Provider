@@ -3717,7 +3717,7 @@ view.on("onActionResult.RBLe", function (e, endpoint, _jsonResponse, application
 
 **`.renderValidationSummaries()`**
 
-`renderValidationSummaries` shows or hides validation summary based on existing <li> elements and can be used after errors and warnings have been processed (either adding to or removing from validation summaries) to ensure the correct visibility of summaries.
+`renderValidationSummaries` shows or hides validation summary based on existing `<li>` elements and can be used after errors and warnings have been processed (either adding to or removing from validation summaries) to ensure the correct visibility of summaries.
 
 #### clearInputValidation
 

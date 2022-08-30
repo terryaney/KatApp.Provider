@@ -1858,13 +1858,13 @@ Similar to a [`rbl-source` selector](#rbl-source-Selectors) that only specifies 
 
 Expression&nbsp;Selector | Description
 ---|---
-table[predicate] | `predicate` is a javascript expression that should return `true` or `false`.  In the expression, the `this` reference will be current row being processed.  Each row evaluated will only be applied to the template specified if the predicate returns `true`.
+table[predicate] | `predicate` is a javascript expression that should return `true` or `false`.  In the expression, the `this` reference will be element that had the `rbl-source` attribute.  Each row evaluated will only be applied to the template specified if the predicate returns `true`.
 
 The javascript predicate has a signature of: `predicate( row: JSON, index: integer, application: KatAppPlugInInterface)`.  Therefore, within the predicate expression, you can use these parameters if needed.
 
 ```html
 <!-- Call the name-item template with each row in foundingfathers table where the last column contains 'Mad'. -->
-<div rbl-tid="name-item" rbl-source="foundingfathers[this.last.indexOf('Mad')>-1]"></div>
+<div rbl-tid="name-item" rbl-source="foundingfathers[row.last.indexOf('Mad')>-1]"></div>
 ```
 
 ## Complex KatApp Selector Expressions
@@ -1889,7 +1889,7 @@ table.keyColumn.keyValue[expression] | Run the `expression` on the row from `tab
 
 Once the value is returned, which could be `undefined` when processing all table rows based on expression, normal work flow for the currently processing attribute (`rbl-value`, `rbl-display`, or `rbl-attr`) with proceed in the same manner as if a value has been returned from a standard KatApp Selector.
 
-The javascript expression has a signature of: `expression( row: JSON, index: integer, application: KatAppPlugInInterface)`.  Therefore, within the expression, you can use these parameters if needed (`index` will always be `0` if more than one segment is provided in the KatApp Selector to indicate row filtering *before* the expression is executed).
+The javascript expression has a signature of: `expression( row: JSON, index: integer, application: KatAppPlugInInterface, inputs: JSON)`.  Therefore, within the expression, you can use these parameters if needed (`index` will always be `0` if more than one segment is provided in the KatApp Selector to indicate row filtering *before* the expression is executed).
 
 ```html
 <!--

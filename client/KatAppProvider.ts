@@ -4347,6 +4347,14 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
             return tableExpression.call(row, row, index, this.application);
         }
 
+        walkChildren(node:HTMLElement, root?: HTMLElement): void {
+            let child = node.firstElementChild;
+            
+            while (child) {
+              child = this.walk(child, root ?? node) || child.nextElementSibling
+            }                            
+        };
+
         private walk(node: ChildNode, root: HTMLElement): HTMLElement | undefined {
             const that = this;
 
@@ -4398,14 +4406,6 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                 this.walkChildren(el);
             }
             return undefined;
-        };
-
-        walkChildren(node:HTMLElement, root?: HTMLElement): void {
-            let child = node.firstElementChild;
-            
-            while (child) {
-              child = this.walk(child, root ?? node) || child.nextElementSibling
-            }                            
         };
 
         processRblSources(root: JQuery<HTMLElement>, showInspector: boolean): void {
@@ -6832,7 +6832,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                                 that.application.getEndpointSubmitData(
                                     application.options, 
                                     { 
-                                        customParameters: parametersJson, 
+                                        customParameters: parametersJson
                                         // customInputs: inputsJson 
                                     }
                                 ) 

@@ -1882,7 +1882,7 @@ Must have at least one segment. | Can supply *only* an expression *without* any 
 
 Expression&nbsp;Selector | Description
 ---|---
-[expression] | Run the `expression` on the currently processing `rbl-source` 'template row'.  **This is only supported inside templates rendering via `rbl-source`.**
+[expression] | Run the `expression` provided.  If the element with the expression being rendered is within the context of template rendering, the `row` context will be defined, otherwise it will be `undefined`.
 table[expression] | Run the `expression` on each row from the `table` table until the expression returns value not equal to `undefined`.
 table.idValue[expression] | Run the `expression` on the row from `table` where `@id=idValue`.
 table.keyColumn.keyValue[expression] | Run the `expression` on the row from `table` where `keyColumn=keyValue`.
@@ -1911,6 +1911,26 @@ The javascript expression has a signature of: `expression( row: JSON, index: int
         <div rbl-ce="BRD" rbl-if="contentTemplates.3[row['@id']==3]">contentTemplates.3[row['@id']==3] WORKS</div>
     </div>
 </div>
+
+<!-- Render a previously stored fullName property on state object !-->
+<div rbl-value="[application.state.fullName]"></div>
+
+<!-- Create a helper function in application.state that can be used inside expressions -->
+<script>
+    application.state.getCustomValue = function(id) {
+        switch ( id ) {
+            case "1": return "Scenario 1";
+            case "2": return "Scenario 2";
+            case "3": return "Scenario 3";
+            default: return "Invalid";
+        }
+    };
+</script>
+<div class="row" rbl-ce="BRD" rbl-source="contentTemplates.selector.home-main">
+    <div rbl-value="[application.state.getCustomValue(row['@id'])]"></div>
+</div>
+
+<div rbl-display="[application.select('.iFirstName').val()!='KAT']">Only show me if iFirstName != 'KAT'</div>
 ```
 
 # RBLe Service
@@ -4588,7 +4608,7 @@ This event is triggered after a modal application has been initialized.  Allows 
 
 This event is triggered after a modal application has been successfully confirmed and dismissed.  If the modal application returned a `message`, it can be displayed in some form (alert, modal).  Other actions can be performed as well (i.e. calculations, navigations, etc.) by the hosting application as needed.
 
-By default, if `rbl-action-calculate="true"` is set, the host application will execute an `application.calculate()` after dismissing the dialog.
+By default, if `rbl-modal-calculate="true"` is set, the host application will execute an `application.calculate()` after dismissing the dialog.
 
 **Within the event handler, `dismiss()` must be called to dismiss the dialog.**
 
@@ -4649,14 +4669,14 @@ Below is the markup and script needed when using `rbl-modal` functionality and u
 ```html
 Click <a rbl-modal="Verify.Mobile" 
         rbl-label-title="Verify Mobile Telephone" 
-        rbl-action-calculate="true" 
         rbl-input-selector=".main input" 
+        rbl-modal-calculate="true" 
         rbl-action-continue="common/mobile-verification"
         data-input-action="verify">here</a> to verify your mobile phone.
 ```
 
 1. rbl-label-title - sets title
-1. rbl-action-calculate - host application will calculate if modal is confirmed
+1. rbl-modal-calculate - host application will calculate if modal is confirmed
 1. rbl-input-selector - only inputs within the element with class 'main' will be processed
 1. rbl-action-continue - the endpoint api to call when continue is clicked.
 1. data-input-action - create an input named iAction='verify' to pass into the modal application's CalcEngine
@@ -4725,13 +4745,13 @@ The additional functionality that occurs is:
 **Host Application Markup**
 
 ```html
-<a rbl-action-calculate="true" 
+<a rbl-modal-calculate="true" 
     rbl-label-title="Device Verification" 
     rbl-modal="Common.TextValidate">Enable SMS messages</a>
 ```
 
 1. rbl-label-title - sets title
-1. rbl-action-calculate - host application will calculate if modal is confirmed
+1. rbl-modal-calculate - host application will calculate if modal is confirmed
 
 See [rbl-modal Attribute Details](#rbl-modal-Attribute-Details) for more information on attributes available on `rbl-modal` elements.
 
@@ -4821,13 +4841,13 @@ Below is the markup and script needed when using `rbl-modal` functionality where
 **Host Application Markup**
 
 ```html
-<a rbl-action-calculate="true" 
+<a rbl-modal-calculate="true" 
     rbl-label-title="Device Verification" 
     rbl-modal="Common.TextValidate">Enable SMS messages</a>
 ```
 
 1. rbl-label-title - sets title
-1. rbl-action-calculate - host application will calculate if modal is confirmed
+1. rbl-modal-calculate - host application will calculate if modal is confirmed
 
 See [rbl-modal Attribute Details](#rbl-modal-Attribute-Details) for more information on attributes available on `rbl-modal` elements.
 

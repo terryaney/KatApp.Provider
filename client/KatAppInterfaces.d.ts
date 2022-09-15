@@ -136,6 +136,10 @@ interface ModalAppOptions {
         cancel: string;
         continue: string;
     };
+    css: {
+        cancel: string;
+        continue: string;
+    };
     applicationId: string;
     actionLink: JQuery<HTMLElement>;
     showCancel: boolean;
@@ -145,11 +149,15 @@ interface ModalAppOptions {
     calculateOnConfirm: boolean;
 }
 interface ModalDialogOptions {
-    labels: {
+    labels?: {
         title?: string;
         cancel?: string;
         continue?: string;
-    } | undefined;
+    };
+    css?: {
+        cancel?: string;
+        continue?: string;
+    };
     confirmation: string
 }
 

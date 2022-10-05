@@ -4095,7 +4095,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                     }
 
                     return isExpression
-                        ? this.processTableRowExpression( selector, row, 0 )
+                        ? isTemplateRowExpression || row != undefined ? this.processTableRowExpression( selector, row, 0 ) : undefined
                         : row?.[ returnColumn ];
                 }
             }
@@ -6209,15 +6209,15 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                         sanitize: false,
                         trigger: trigger,
                         container: container,
-                        template: 
-                            isErrorValidator && isBootstrap3 
-                                ? '<div class="tooltip error katapp-css" role="tooltip"><div class="tooltip-arrow"></div><div class="tooltip-inner"></div></div>' :
-                            isBootstrap3 
-                                ? '<div class="popover katapp-css" role="tooltip"><div class="arrow"></div><h3 class="popover-title"></h3><div class="popover-content"></div></div>' :
-                            isErrorValidator // popover-arrow is for bootstrap 5
-                                ? '<div class="tooltip error katapp-css" role="tooltip"><div class="tooltip-arrow arrow"></div><div class="tooltip-inner"></div></div>'
+
+                        template: isTooltip
+                                ? isBootstrap3
+                                    ? '<div class="tooltip ' + ( isErrorValidator ? 'error ' : '') + 'katapp-css" role="tooltip"><div class="tooltip-arrow"></div><div class="tooltip-inner"></div></div>'
+                                    : '<div class="tooltip ' + ( isErrorValidator ? 'error ' : '') + 'katapp-css" role="tooltip"><div class="tooltip-arrow arrow"></div><div class="tooltip-inner"></div></div>'
+                                : isBootstrap3
+                                ? '<div class="popover katapp-css" role="tooltip"><div class="arrow"></div><h3 class="popover-title"></h3><div class="popover-content"></div></div>'
                                 : '<div class="popover katapp-css" role="tooltip"><div class="popover-arrow arrow"></div><h3 class="popover-header"></h3><div class="popover-body"></div></div>',
-                
+
                         placement: function (tooltip, trigger) {
                             // Add a class to the .popover element
             
@@ -6262,13 +6262,11 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                         };
 
                         if (isBootstrap5) {
-                            const tooltip = new bootstrap.Tooltip(this, options);
                             $(this).on('inserted.bs.tooltip', processWarningLabel);
+                            const tooltip = new bootstrap.Tooltip(this, options);
                         }
                         else {
-                            $(this)
-                                .tooltip(options)
-                                .on('inserted.bs.tooltip', processWarningLabel);
+                            $(this).on('inserted.bs.tooltip', processWarningLabel).tooltip(options);
                         }
                     }
                     else {
@@ -6406,7 +6404,8 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                 .each(function () {
                     const nestedApp = $(this);
                     nestedApp.attr("data-katapp-initialized", "true");
-                    that.createChildApplication( nestedApp, undefined );
+                    const applicationId = nestedApp.attr("rbl-app")!;
+                    that.createChildApplication( nestedApp, applicationId, application.dataAttributesToJson( nestedApp, "data-input-" ) );
                 });
         }
         
@@ -6430,19 +6429,40 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                             const actionLink = $(this);
                             actionLink.prop("disabled", true).addClass("disabled");
                             $("body").css("cursor", "progress");
-                            that.createChildApplication( actionLink, actionLink );
+
+                            const applicationId = actionLink.attr("rbl-modal")!;
+                            that.createChildApplication( 
+                                actionLink,
+                                applicationId, 
+                                application.dataAttributesToJson( actionLink, "data-input-" ),
+                                {
+                                    labels: {
+                                        cancel: actionLink.attr("rbl-label-cancel") ?? "Cancel",
+                                        continue: actionLink.attr("rbl-label-continue") ?? "Continue",
+                                        title: actionLink.attr("rbl-label-title")
+                                    },
+                                    css: {
+                                        cancel: actionLink.attr("rbl-css-cancel") ?? "btn btn-outline-primary",
+                                        continue: actionLink.attr("rbl-css-continue") ?? "btn btn-primary"
+                                    },
+                                    applicationId: applicationId,
+                                    actionLink: actionLink,
+                                    showCancel: ( actionLink.attr("rbl-show-cancel") ?? "true" ) == "true",
+                                    size: actionLink.attr("rbl-modal-size") as ModalAppSize ?? "xl",
+                                    calculateOnConfirm: ( actionLink.attr("rbl-modal-calculate") ?? "false" ) == "true",
+                                    continueActionLink: actionLink.attr("rbl-action-continue")
+                                }
+                            );
 
                             return false;
                         });
                 });
         }
 
-        createChildApplication(childApplicationElement: JQuery<HTMLElement>, modalActionLink: JQuery<HTMLElement> | undefined ): void {
+        createChildApplication(childApplicationElement: JQuery, applicationId: string, inputs?: object, modalAppOptions?: object ): void {
             const that = this;
-            const applicationId = modalActionLink == undefined ? childApplicationElement.attr("rbl-app") : childApplicationElement.attr("rbl-modal");
-
             if ( applicationId != undefined ) {
-                let url = "api/rble/verify-katapp?applicationId=" + applicationId;
+                let url = "api/rble/verify-katapp?applicationId=" + applicationId + "&currentId=" + that.application.options.currentPage;
                 const serviceUrlParts = that.application.options.sessionUrl?.split( "?" );
     
                 if ( serviceUrlParts != undefined && serviceUrlParts.length === 2 ) {
@@ -6457,8 +6477,6 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                     function( result ) {
                         const successResponse = result as KatAppActionResult;
 
-                        const markupInputs = that.application.dataAttributesToJson( childApplicationElement, "data-input-" );
-
                         const childOptions: KatAppOptions = 
                             KatApp.extend( 
                                 {}, 
@@ -6466,45 +6484,47 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                                 { 
                                     view: successResponse[ "path" ], 
                                     currentPage: applicationId,
-                                    inputSelector: childApplicationElement.attr("rbl-input-selector") ?? "input, textarea, select",
+                                    inputSelector: childApplicationElement.attr("rbl-input-selector") ?? KatApp.defaultOptions.inputSelector,
                                     calcEngines: undefined, // So it doesn't use parent CE
                                     handlers: undefined,
-                                    modalAppOptions: undefined
+                                    modalAppOptions: undefined,
                                 },
-                                // If no data-input-* dataAttributesToJson returns undefined and would *complete* replace
-                                // manual inputs...so need to default to {} so I don't erase them
-                                successResponse[ "manualInputs" ], 
                                 {
-                                    manualInputs: markupInputs ?? {}
+                                    manualInputs: KatApp.extend({}, inputs, successResponse[ "manualInputs" ])
                                 }
                             );
                         
                         if ( childOptions.manualInputs != undefined ) {
                             delete childOptions.manualInputs[ "iNestedApplication" ];
                             delete childOptions.manualInputs[ "iModalApplication" ];
-                            childOptions.manualInputs[ modalActionLink == undefined ? "iNestedApplication" : "iModalApplication" ] = 1;
+                            childOptions.manualInputs[ modalAppOptions == undefined ? "iNestedApplication" : "iModalApplication" ] = 1;
                         }
 
-                        if ( modalActionLink != undefined ) {
-                            childOptions.modalAppOptions = {
-                                labels: {
-                                    cancel: childApplicationElement.attr("rbl-label-cancel") ?? "Cancel",
-                                    continue: childApplicationElement.attr("rbl-label-continue") ?? "Continue",
-                                    title: childApplicationElement.attr("rbl-label-title")
-                                },
-                                css: {
-                                    cancel: childApplicationElement.attr("rbl-css-cancel") ?? "btn btn-outline-primary",
-                                    continue: childApplicationElement.attr("rbl-css-continue") ?? "btn btn-primary"
-                                },
-                                applicationId: applicationId,
-                                actionLink: childApplicationElement,
-                                showCancel: ( childApplicationElement.attr("rbl-show-cancel") ?? "true" ) == "true",
-                                size: childApplicationElement.attr("rbl-modal-size") as ModalAppSize ?? "xl",
-                                hostApplication: that.application,
-                                calculateOnConfirm: ( childApplicationElement.attr("rbl-modal-calculate") ?? "false" ) == "true",
-                                continueActionLink: childApplicationElement.attr("rbl-action-continue")
-                            };
-
+                        if ( modalAppOptions != undefined ) {
+                            KatApp.extend( 
+                                childOptions,
+                                // Default modal options in case they don't all properties pass them in
+                                {
+                                    modalAppOptions: KatApp.extend(
+                                        {
+                                            labels: {
+                                                cancel: "Cancel",
+                                                continue: "Continue"
+                                            },
+                                            css: {
+                                                cancel: "btn btn-outline-primary",
+                                                continue: "btn btn-primary"
+                                            },
+                                            showCancel: true,
+                                            size: "xl",
+                                            hostApplication: that.application,
+                                            actionLink: childApplicationElement,
+                                            calculateOnConfirm: false
+                                        },
+                                        modalAppOptions
+                                    )
+                                }
+                            );
                             const rblAttrThatDoNotHaveToMove = [ "modal-calculate", "input-selector", "label-title", "label-continue", "label-cancel", "show-cancel", "modal-size" ];
                             const kam = $("<div class='katapp-modal'></div>");
 
@@ -6529,7 +6549,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                     function( xhr ) {
                         console.log( xhr );
                         that.application.trace("Unable to create child KatApp (" + applicationId + ").", TraceVerbosity.None);
-                        if ( modalActionLink == undefined ) {
+                        if ( modalAppOptions == undefined ) {
                             // Not sure if I should do this or not...
                             // childApplicationElement.removeAttr("data-katapp-initialized");
                         }
@@ -6847,17 +6867,15 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                         const fileUpload = $(".file-upload .file-data", el);
 
                         const parametersJson = application.dataAttributesToJson( el, "data-param-");
-                        
-                        // Don't think needed
-                        // const inputsJson = application.dataAttributesToJson( el, "data-input-" );
+                        const inputsJson = application.dataAttributesToJson( el, "data-input-" );
 
                         const fd = 
                             application.buildFormData( 
                                 that.application.getEndpointSubmitData(
                                     application.options, 
                                     { 
-                                        customParameters: parametersJson
-                                        // customInputs: inputsJson 
+                                        customParameters: parametersJson,
+                                        customInputs: inputsJson 
                                     }
                                 ) 
                             );

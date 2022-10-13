@@ -4012,16 +4012,70 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
             return tabDef[tableKey] as Array<T> ?? [];
         }
     
-        getRblSelectorValue( tabDef: TabDef | undefined, defaultTableName: string, selector: string, templateRow?: JSON ): string | undefined {
+        getSimpleExpression(simpleExpression: string): { selector: string; operator: string; left: string | undefined; right: string; isNumber: boolean; evaluate: ( value: string | undefined )=> string | undefined } | undefined {
+            const simpleExpressionParts = simpleExpression.split(".");
+            const expression = simpleExpressionParts[ simpleExpressionParts.length - 1]            
+
+            // Check to see if there's an "=" for a simple equality expression
+            // If rblDisplay = table.id.col=value, rblDisplayParts is: table, id, col=value
+            // so split the last item and if expression is present, change the last part of 
+            // expression from col=value to just col so getRblSelectorValue returns correct
+            // value, and can be passed to generated expression
+            const isInequality = expression.indexOf("!=") > -1;
+            const isLTE = expression.indexOf("<=") > -1;
+            const isLT = !isLTE && expression.indexOf("<") > -1;
+            const isGTE = expression.indexOf(">=") > -1;
+            const isGT = !isGTE && expression.indexOf(">") > -1;
+
+            const splitOperator =
+                isInequality ? '!=' : 
+                isLTE ? '<=' :
+                isLT ? '<' :
+                isGTE ? '>=' :
+                isGT ? '>' : '=';
+
+            const expressionParts = expression.split(splitOperator);
+
+            // If complex expression, return undefined
+            if ( !simpleExpression.startsWith( "v:" ) && simpleExpression.indexOf("[") > -1 && expressionParts[ expressionParts.length - 1 ].indexOf("[") == -1 ) return undefined;
+            
+            if ( expressionParts.length == 2 ) {
+                // Remove the 'expression' from the parts and change it
+                // to just have the 'field' (removing 'operator value')
+                simpleExpressionParts.pop();
+                simpleExpressionParts.push(expressionParts[ 0 ]);
+
+                return {
+                    selector: simpleExpressionParts.join("."),
+                    operator: splitOperator == "=" ? "==" : splitOperator,
+                    left: simpleExpression.startsWith( "v:" ) ? simpleExpression.substring( 2, simpleExpression.lastIndexOf( splitOperator ) ) : undefined,
+                    right: expressionParts[ 1 ],
+                    isNumber: isLTE || isLT || isGTE || isGT,
+                    evaluate: function( value ): string | undefined {
+                        if ( value == undefined ) return undefined;
+
+                        const expression = this.isNumber || value.startsWith("'")
+                            ? "{v1} {op} {v2}".format( { v1: value, op: this.operator, v2: this.right } )
+                            : "\"{v1}\" {op} \"{v2}\"".format( { v1: value, op: this.operator, v2: this.right } );
+
+                        return eval(expression) as boolean ? "1" : "0";
+                    }
+                };
+            }
+
+            return undefined;
+        };
+
+        getRblSelectorValue( tabDef: TabDef | undefined, defaultTableName: string, context: JQuery, selector: string, templateRow?: JSON ): string | undefined {
             if ( tabDef != undefined ) {
                 const isExpression = selector.endsWith( "]" );
                 const expressionStart = selector.indexOf( "[" );
-                const isTemplateRowExpression = expressionStart == 0
+                const isRawExpression = expressionStart == 0
 
                 let selectorParts: string[];
 
                 if ( isExpression ) {
-                    const expressionPrefix = isTemplateRowExpression
+                    const expressionPrefix = isRawExpression
                         ? defaultTableName
                         : selector.substring( 0, expressionStart );
                     
@@ -4045,22 +4099,16 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                     }
                 }
 
-                if ( !isTemplateRowExpression && isExpression && selectorParts.length === 1 ) {
+                if ( !isRawExpression && isExpression && selectorParts.length === 1 ) {
                     const tableRows = this.getResultTable<JSON>( tabDef, selectorParts[ 0 ] );
 
                     if ( tableRows.length > 0 ) {
-                        if ( selector.indexOf("this.") == -1 && selector.indexOf("row.") == -1 ) {
-                            // Just hard coded expression value...not using actual table/row...
-                            return this.processTableRowExpression( selector, {} as JSON, 0 );
-                        }
-                        else {
-                            for (let index = 0; index < tableRows.length; index++) {
-                                const row = tableRows[index];
-                                const expressionValue = this.processTableRowExpression( selector, row, index );
-                                
-                                if ( expressionValue != undefined ) {
-                                    return expressionValue;
-                                }
+                        for (let index = 0; index < tableRows.length; index++) {
+                            const row = tableRows[index];
+                            const expressionValue = this.processExpression( context, selector, row, index );
+                            
+                            if ( expressionValue != undefined ) {
+                                return expressionValue;
                             }
                         }
                     }
@@ -4072,7 +4120,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                         selectorParts.length == 3 ? selectorParts[2] :
                         selectorParts.length == 4 ? selectorParts[3] : "value";
 
-                    if ( isTemplateRowExpression ) {
+                    if ( isRawExpression ) {
                         row = templateRow;
                     }
                     else if ( selectorParts.length === 1 ) 
@@ -4095,7 +4143,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                     }
 
                     return isExpression
-                        ? isTemplateRowExpression || row != undefined ? this.processTableRowExpression( selector, row, 0 ) : undefined
+                        ? this.processExpression( context, selector, row, 0 )
                         : row?.[ returnColumn ];
                 }
             }
@@ -4103,6 +4151,24 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
             return undefined;
         }
         
+        private processExpression( el: JQuery, expression: string, row: JSON | undefined, index: number ): any { // eslint-disable-line @typescript-eslint/no-explicit-any
+            let expressionScript = expression.substring( expression.indexOf("[") + 1, expression.lastIndexOf("]") );
+
+            if ( !expressionScript.endsWith(";" ) ) {
+                expressionScript += ";";
+            }
+            
+            if ( expressionScript.indexOf( "return ") > -1 ) {
+                expressionScript = "(function() { " + expressionScript + " } )();";
+            }
+
+            const tableExpression =  function ( row: JSON | undefined, index: number, application: KatAppPlugIn, inputs: CalculationInputs | undefined ): any { // eslint-disable-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unused-vars
+                return eval(expressionScript); 
+            };
+            
+            return tableExpression.call(el[0], row, index, this.application, this.application.calculationInputs);
+        }
+
         processRblValues(container: JQuery<HTMLElement> | undefined, showInspector: boolean, templateRow?: JSON): void {
             const that: RBLeUtilities = this;
             const application = this.application;
@@ -4132,8 +4198,8 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                     const tabDef = that.getTabDef( tabName, ceKey )
 
                     const value = 
-                    that.getRblSelectorValue( tabDef, "rbl-value", selector, templateRow ) ??
-                    that.getRblSelectorValue( tabDef, "ejs-output", selector, templateRow );
+                        that.getRblSelectorValue( tabDef, "rbl-value", el, selector, templateRow ) ??
+                        that.getRblSelectorValue( tabDef, "ejs-output", el, selector, templateRow );
 
                     if ( value != undefined ) {
                         if ( el.length === 1 ) {
@@ -4293,8 +4359,8 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                     }
 
                     const value = 
-                        that.getRblSelectorValue( tabDef, "rbl-value", attrSelector, templateRow ) ??
-                        that.getRblSelectorValue( tabDef, "ejs-output", attrSelector, templateRow );
+                        that.getRblSelectorValue( tabDef, "rbl-value", el, attrSelector, templateRow ) ??
+                        that.getRblSelectorValue( tabDef, "ejs-output", el, attrSelector, templateRow );
 
                     if ( value != undefined ) {
                         if ( el.length === 1 ) {
@@ -4350,79 +4416,6 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
             return value != undefined &&
                 ( value === "0" || ( typeof( value ) == "string" && value.toLowerCase() === "false" ) || !value );
         }
-
-        private processTableRowExpression( expression: string, row: JSON | undefined, index: number ): any { // eslint-disable-line @typescript-eslint/no-explicit-any
-            let tableExpressionScript = expression.substring( expression.indexOf("[") + 1, expression.lastIndexOf("]") );
-
-            if ( !tableExpressionScript.endsWith(";" ) ) {
-                tableExpressionScript += ";";
-            }
-            const tableExpression =  function ( row: JSON | undefined, index: number, application: KatAppPlugIn ): any { // eslint-disable-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unused-vars
-                return eval(tableExpressionScript); 
-            };
-            return tableExpression.call(row, row, index, this.application);
-        }
-
-        walkChildren(node:HTMLElement, root?: HTMLElement): void {
-            let child = node.firstElementChild;
-            
-            while (child) {
-              child = this.walk(child, root ?? node) || child.nextElementSibling
-            }                            
-        };
-
-        private walk(node: ChildNode, root: HTMLElement): HTMLElement | undefined {
-            const that = this;
-
-            if ( node.nodeType == 1 ) {
-                // element
-                const el = node as HTMLElement;
-
-                let attributeDirective: AttributeDirective | undefined;
-
-                for (let index = 0; index < el.attributes.length; index++) {
-                    const attr = el.attributes[index];
-
-                    // make this ka:
-                    if ( attr.nodeName.startsWith( ":" ) ) {
-                        attributeDirective = 
-                            attributeDirective ?? 
-                            this.attrDirectives.find(d => d.containers[ d.containers.length - 1 ].isEqualNode(el)) ??
-                            function(): AttributeDirective { 
-                                const containers = [ root ];
-                                let container: HTMLElement | null = !el.hasAttribute("rbl-application-id") 
-                                    ? el.parentElement
-                                    : null;
-                                while( container != null && !container.isEqualNode( root ) ) {
-                                    const isApp: boolean = container.hasAttribute("rbl-application-id");
-                                    if ( container.hasAttribute("rbl-source") || isApp ) {
-                                        containers.unshift(container);
-                                    }
-                                    container = isApp ? null : container.parentElement;
-                                }
-
-                                const ad: AttributeDirective = {
-                                    containers: containers,
-                                    directives: [ ]
-                                };
-                                that.attrDirectives.push( ad );
-                                return ad;
-                            }();
-
-                        attributeDirective.directives.push(
-                            {
-                                el: el,
-                                name: attr.nodeName.substring(1),
-                                value: attr.nodeValue
-                            }
-                        );
-                    }
-                }
-
-                this.walkChildren(el);
-            }
-            return undefined;
-        };
 
         processRblSources(root: JQuery<HTMLElement>, showInspector: boolean): void {
             const that: RBLeUtilities = this;
@@ -4622,7 +4615,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                                     // tableName[expression] - process if expression returns !falsy
                                     // tableName.columnName.columnValue - rows where columnName = columnValue
                                     const processTableRow = isTableExpression
-                                        ? !that.isFalsy( that.processTableRowExpression( rblSourceParts[ 0 ], row, index ) )
+                                        ? !that.isFalsy( that.processExpression( el, rblSourceParts[ 0 ], row, index ) )
                                         : !rblSourceHasColumnCondition || row[ rblSourceColToCompare ] == rblSourceColValue;
 
                                     if ( processTableRow ) {
@@ -4653,60 +4646,6 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                 });
         }
     
-        getSimpleExpression(simpleExpression: string): { selector: string; operator: string; left: string | undefined; right: string; isNumber: boolean; evaluate: ( value: string | undefined )=> string | undefined } | undefined {
-            const simpleExpressionParts = simpleExpression.split(".");
-            const expression = simpleExpressionParts[ simpleExpressionParts.length - 1]            
-
-            // Check to see if there's an "=" for a simple equality expression
-            // If rblDisplay = table.id.col=value, rblDisplayParts is: table, id, col=value
-            // so split the last item and if expression is present, change the last part of 
-            // expression from col=value to just col so getRblSelectorValue returns correct
-            // value, and can be passed to generated expression
-            const isInequality = expression.indexOf("!=") > -1;
-            const isLTE = expression.indexOf("<=") > -1;
-            const isLT = !isLTE && expression.indexOf("<") > -1;
-            const isGTE = expression.indexOf(">=") > -1;
-            const isGT = !isGTE && expression.indexOf(">") > -1;
-
-            const splitOperator =
-                isInequality ? '!=' : 
-                isLTE ? '<=' :
-                isLT ? '<' :
-                isGTE ? '>=' :
-                isGT ? '>' : '=';
-
-            const expressionParts = expression.split(splitOperator);
-
-            // If complex expression, return undefined
-            if ( !simpleExpression.startsWith( "v:" ) && simpleExpression.indexOf("[") > -1 && expressionParts[ expressionParts.length - 1 ].indexOf("[") == -1 ) return undefined;
-            
-            if ( expressionParts.length == 2 ) {
-                // Remove the 'expression' from the parts and change it
-                // to just have the 'field' (removing 'operator value')
-                simpleExpressionParts.pop();
-                simpleExpressionParts.push(expressionParts[ 0 ]);
-
-                return {
-                    selector: simpleExpressionParts.join("."),
-                    operator: splitOperator == "=" ? "==" : splitOperator,
-                    left: simpleExpression.startsWith( "v:" ) ? simpleExpression.substring( 2, simpleExpression.lastIndexOf( splitOperator ) ) : undefined,
-                    right: expressionParts[ 1 ],
-                    isNumber: isLTE || isLT || isGTE || isGT,
-                    evaluate: function( value ): string | undefined {
-                        if ( value == undefined ) return undefined;
-
-                        const expression = this.isNumber || value.startsWith("'")
-                            ? "{v1} {op} {v2}".format( { v1: value, op: this.operator, v2: this.right } )
-                            : "\"{v1}\" {op} \"{v2}\"".format( { v1: value, op: this.operator, v2: this.right } );
-
-                        return eval(expression) as boolean ? "1" : "0";
-                    }
-                };
-            }
-
-            return undefined;
-        };
-
         private processRblFalseyAttribute( container: JQuery<HTMLElement> | undefined, showInspector: boolean, attributeName: string, legacyTable: string, processFalsey: ( el: JQuery<HTMLElement>, isFalsy: boolean )=> void, templateRow: JSON | undefined ): void {
             const that: RBLeUtilities = this;
             const application = this.application;
@@ -4806,7 +4745,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                                 else if ( isTableExpression ) {
                                     const targetExpressionRow = 
                                         tableRows.find( ( row, index ) => 
-                                            !that.isFalsy( that.processTableRowExpression( rblSource, row!, index ) ) 
+                                            !that.isFalsy( that.processExpression( el, rblSource, row!, index ) ) 
                                         );
 
                                     processFalsey( 
@@ -4826,8 +4765,8 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
 
                                 let resultValue = 
                                     simpleExpression?.left ??
-                                    that.getRblSelectorValue( tabDef, tableName, selector, templateRow ) ??
-                                    that.getRblSelectorValue( tabDef, legacyTable, selector, templateRow );
+                                    that.getRblSelectorValue( tabDef, tableName, el, selector, templateRow ) ??
+                                    that.getRblSelectorValue( tabDef, legacyTable, el, selector, templateRow );
 
                                 // Reassign the value you are checking if they are using simple expressions
                                 // by passing in the value from getRblSelectorValue to the expression created

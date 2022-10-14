@@ -4142,7 +4142,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                         row = this.getResultRow<JSON>( tabDef, selectorParts[0], selectorParts[2], selectorParts[1] );
                     }
 
-                    return isExpression
+                    return isExpression && row != undefined
                         ? this.processExpression( context, selector, row, 0 )
                         : row?.[ returnColumn ];
                 }

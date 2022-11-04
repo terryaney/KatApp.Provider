@@ -832,7 +832,7 @@ Click <a rbl-modal="Channel.Home">here</a> to see your dashboard.
 
 See [KatApp Modal Application Lifecycle Events](#KatApp-Modal-Application-Lifecycle-Events) to see how to handle confirmation or cancellation of modal KatApps and how to handle unexpected exceptions.
 
-The application 'ID' specified in this attribute will always be verified via an endpoint in the hosting application: `api/rble/verify-katapp?applicationId=`.  This endpoint should return a payload of:
+The application 'ID' specified in this attribute will always be verified via an endpoint in the hosting application: `api/katapp/verify-katapp?applicationId=`.  This endpoint should return a payload of:
 
 ```javascript
 {
@@ -924,7 +924,7 @@ The `rbl-app` attribute can be used to nest an independent KatApp application in
 <div rbl-app="Channel.Home"></div>
 ```
 
-The application 'ID' specified in this attribute will always be verified via an endpoint in the hosting application: `api/rble/verify-katapp?applicationId=`.  This endpoint should return a payload of:
+The application 'ID' specified in this attribute will always be verified via an endpoint in the hosting application: `api/katapp/verify-katapp?applicationId=`.  This endpoint should return a payload of:
 
 ```javascript
 {

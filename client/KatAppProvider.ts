@@ -6081,13 +6081,23 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
         processHelpTips( container?: JQuery<HTMLElement>, selector?: string, type?: string ): void {
             // Couldn't include the Bootstrap.Tooltips.js file b/c it's selector hits entire page, and we want to be localized to our view.
             const application = this.application;
-            const view = container ?? application.element;
             const isBootstrap3 = this.application.bootstrapVersion == 3;
             const isBootstrap5 = this.application.bootstrapVersion == 5;
+            const that = this;
+
+            // Wanted to enable helptip rendering/processing *outside* of a KatApp, so if container does not have a parent
+            // katapp, just let the selection be regular jquery.  Should probably restrict this from going INSIDE a katapp
+            const select = ( search: string ): JQuery => {
+                if (container != undefined && container.closest("[rbl-application-id]").length == 0) {
+                    return container.find(search);
+                }
+                else {
+                    return application.select(search, container);
+                }
+            };
 
             const helpTipsToProcess = 
-                application
-                    .select(selector ?? ".error-msg[data-toggle='tooltip'], .error-msg[data-bs-toggle='tooltip'], [data-toggle='popover'], [data-bs-toggle='popover']", view)
+                select(selector ?? ".error-msg[data-toggle='tooltip'], .error-msg[data-bs-toggle='tooltip'], [data-toggle='popover'], [data-bs-toggle='popover']")
                     .not('[data-katapp-initialized="true"]');
 
             const popOverAvailable = 
@@ -6095,14 +6105,14 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                 ( isBootstrap5 && typeof bootstrap === "object" );
 
             if ( !popOverAvailable && helpTipsToProcess.length > 0 ) {
-                this.application.trace("Bootstrap popover/tooltip javascript is not present", TraceVerbosity.None);
+                application.trace("Bootstrap popover/tooltip javascript is not present", TraceVerbosity.None);
                 return;
             }
 
             const getTipTitle = function( h: JQuery<Element>) {
-                const titleSelector = h.data('content-selector');
+                const titleSelector = h.data('content-selector') ?? h.data('bs-content-selector');
                 if (titleSelector != undefined) {
-                    const title = application.select(titleSelector + "Title").html();
+                    const title = select(titleSelector + "Title").html();
                     if (( title ?? "" ) != "" ) {
                         return title;
                     }
@@ -6113,16 +6123,16 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
             const getTipContent = function (h: JQuery<Element>) {
                 // See if they specified data-content directly on trigger element.                
                 const dataContent = h.data('content') ?? h.data('bs-content');
-                const dataContentSelector = h.data('content-selector');
+                const dataContentSelector = h.data('content-selector') ?? h.data('bs-content-selector');
                 let content = dataContent == undefined
-                    ? dataContentSelector == undefined ? h.next().html() : application.select(dataContentSelector, view).html()
+                    ? dataContentSelector == undefined ? h.next().html() : select(dataContentSelector).html()
                     : dataContent as string;
 
                 // Replace {Label} in content with the trigger provided...used in Error Messages
                 const labelFix = h.data("label-fix");
 
                 if (labelFix != undefined) {
-                    content = content.replace(/\{Label}/g, application.select("." + labelFix, view).html());
+                    content = content.replace(/\{Label}/g, select("." + labelFix).html());
                 }
 
                 return content;
@@ -6217,7 +6227,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                             $("[rbl-action-link]", currentPopover).attr("data-katapp-initialized", "false");
                             $("[rbl-on]", currentPopover).attr("data-rblon-initialized", "false");
 
-                            application.templateBuilder.processActionLinks(currentPopover);
+                            that.processActionLinks(currentPopover);
                             application.ui.bindRblOnHandlers(currentPopover);
                         };
 
@@ -6264,11 +6274,19 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                 }
             };
 
-            if ( application.element.attr("data-katapp-initialized-tooltip") != "true" ) {
-                application.element
+            if ( $("html").attr("data-katapp-initialized-tooltip") != "true" ) {
+                $("html")
+                    .on("click.RBLe", function( e ) {
+                        if ($(e.target).is(".popover-title, .popover-content")) return; // BS3
+                        if ($(e.target).is(".popover-header, .popover-body")) return; // BS4/BS5                    
+                        hideVisiblePopover();
+                    })
                     .on("show.bs.popover.RBLe", function() { hideVisiblePopover(); })
                     .on("shown.bs.popover.RBLe", function( e ) { 
                         KatApp[ "visiblePopover"] = e.target; 
+                        const tipId = "#" + $(e.target).attr("aria-describedby");
+                        const tip = $(tipId);
+                        $("a[href='#']", tip).on("click", e => e.preventDefault() );
                     })
                     .on("hide.bs.popover.RBLe", function() { 
                         KatApp[ "visiblePopover"] = undefined; 
@@ -6283,19 +6301,9 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                     .attr("data-katapp-initialized-tooltip", "true");
             }
 
-            if ( $("html").attr("data-katapp-initialized-tooltip") != "true" ) {
-                $("html")
-                    .on("click.RBLe", function( e ) {
-                        if ($(e.target).is(".popover-title, .popover-content")) return; // BS3
-                        if ($(e.target).is(".popover-header, .popover-body")) return; // BS4/BS5                    
-                        hideVisiblePopover();
-                    })
-                    .attr("data-katapp-initialized-tooltip", "true");
-            }
-
             // When helptip <a/> for checkboxes were  moved inside <label/>, attempting to click the help icon simply toggled
             // the radio/check.  This stops that toggle and lets the help icon simply trigger it's own click to show or hide the help.
-            application.select('.checkbox label a[data-toggle], .checkbox label a[data-bs-toggle], .abc-checkbox label a[data-toggle], .abc-checkbox label a[data-bs-toggle]', view)
+            select('.checkbox label a[data-toggle], .checkbox label a[data-bs-toggle], .abc-checkbox label a[data-toggle], .abc-checkbox label a[data-bs-toggle]')
                 .not("[data-katapp-checkbox-tips-initialized='true']")
                 .on('click', function (e) {
                     e.stopPropagation();
@@ -6401,7 +6409,7 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
         createChildApplication(childApplicationElement: JQuery, applicationId: string, inputs?: object, modalAppOptions?: object ): void {
             const that = this;
             if ( applicationId != undefined ) {
-                let url = "api/rble/verify-katapp?applicationId=" + applicationId + "&currentId=" + that.application.options.currentPage;
+                let url = "api/katapp/verify-katapp?applicationId=" + applicationId + "&currentId=" + that.application.options.currentPage;
                 const serviceUrlParts = that.application.options.sessionUrl?.split( "?" );
     
                 if ( serviceUrlParts != undefined && serviceUrlParts.length === 2 ) {

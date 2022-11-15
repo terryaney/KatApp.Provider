@@ -1,0 +1,321 @@
+<rbl-config calcengine="Conduent_Nexgen_Sharkfin_SE" result-tabs="RBLResultFWO" bootstrap="3" templates="Standard_Templates"></rbl-config>
+
+<style>
+	.thisClass .rbl-contents-budget-summary tbody tr td:first-child {
+		padding-left: 15px;
+	}
+	.thisClass .rbl-contents-budget-summary tbody tr.header td {
+		border-top-width: 0;
+	}
+	.thisClass .rbl-contents-budget-summary tbody tr.header:not(:first-child) td {
+		padding-top: 15px;
+	}
+	.thisClass .rbl-contents-budget-summary tbody tr.header td:first-child {
+		padding-left: 0;
+		font-weight: bold;
+	}
+	.thisClass .rbl-contents-budget-summary tbody tr.negative td:last-child {
+		color: red;
+	}
+</style>
+
+<script>
+	(function () {
+		var view = $("thisClass");
+		var application = view.KatApp();
+		var appState = {
+			manualInputs: {},
+			model: {}
+		};
+
+		if (view.data("debugger") === true) {
+			debugger;
+		}
+
+		application.updateOptions({
+			handlers: {
+				docGenDownload: function () {
+					application.calculate({ manualInputs: { iDocGen: 1 } });
+				},
+				navigate: function (e) {
+					appState.manualInputs.iTemplate = $(this).data("input-template");
+					appState.manualInputs.iCurrentTemplate = $(this).data("input-current-template");
+					if (appState.manualInputs.iCurrentTemplate != "step4") {
+						appState.manualInputs[appState.manualInputs.iCurrentTemplate] = application.getInputs();
+					}
+					// console.log(application.getInput("iHasOtherHSA"));
+					application.calculate({ manualInputs: { iNavigate: 1 } });
+					return false;
+				},				
+				inputChange: function(e) {
+					var v = +e.currentTarget.value;
+					if (isNaN(v)) {
+						v = 0;
+					}
+					e.currentTarget.value = v;
+					appState.model[e.currentTarget.getAttribute("name")] = v;
+					application.options.handlers.calculateSummary();
+				},
+				calculateSummary: function() {
+
+					var dataRows = [
+						{ label: "Monthly Income", isHeader: true, amount: 10142 },
+						{ label: "Net Monthly Income", amount: appState.model.iSalary },
+						{ label: "401(k) contributions", amount: 625 },
+						{ label: "HSA Contributions", amount: 517 },
+						{ label: "Monthly Expenses", isHeader: true, amount: -6375 },
+						{ label: "Housing", amount: -6000 },
+						{ label: "Transportation", amount: -375 }
+					];
+
+					$(".rbl-contents-budget-summary tbody tr").remove();
+
+					dataRows.forEach(function(r) {
+						var row = $('<tr><td class="text"></td><td class="value text-end"></td></tr>');
+						$(".text", row).html(r.label);
+						$(".value", row).html(String.localeFormat("{0:c0}", r.amount));
+						if ( r.isHeader ) {
+							row.addClass("header");
+						}
+						if ( r.amount < 0 ) {
+							row.addClass("negative");
+						}
+						$(".rbl-contents-budget-summary tbody").append(row);
+					});
+				}
+			}
+		});
+
+		view
+			.on("onCalculationOptions.RBLe", function (event, submitOptions, application) {
+				Object.keys(appState.manualInputs).forEach((key, index) => {
+					if (appState.manualInputs[key] != undefined) {
+						if (key.startsWith("step")) {
+							// Only populate inputs if object is from diff page, otherwise submitOptions
+							// will already have all the 'current' inputs from the screen
+							if (key != appState.manualInputs.iCurrentTemplate) {
+								var inputGroup = appState.manualInputs[key];
+								Object.keys(inputGroup).forEach((gKey, gIndex) => {
+									if (inputGroup[gKey] != undefined) {
+										submitOptions.Inputs[gKey] = inputGroup[gKey];
+									}
+								});
+							}
+						}
+						else {
+							submitOptions.Inputs[key] = appState.manualInputs[key];
+						}
+					}
+				});
+				// console.log(submitOptions.Inputs);
+			})
+			.on("onCalculation.RBLe", function (_event, results, options, application) {
+				//send current template as input
+				if (results[0]["showTemplates"] != undefined) {
+					appState.manualInputs.iCurrentTemplate = results[0]["showTemplates"][0].name;
+				}
+				console.group(options.view + " KatApp calculation");
+				if (results != undefined) {
+					console.log(results[0]);
+				}
+				else {
+					console.log("No Results Available");
+				}
+				console.log(application.calculationInputs);
+				console.groupEnd();
+			})
+			.on("onConfigureUICalculation.RBLe", function() {
+				var inputNames = $(".all-inputs input").each(function(i, el) {
+					var name = el.getAttribute("name");
+					var v = el.value == "" ? 0 : +el.value;
+					if (isNaN(v)) {
+						v = 0;
+						el.value = 0;
+					}
+					appState.model[name] = v;
+				});
+				application.options.handlers.calculateSummary();
+			});
+
+		application.select('a[href="#"]').on("click", function (e) { e.preventDefault(); });
+	})();
+  //# sourceURL=Optimizer.kaml
+</script>
+
+<div class="kat-app-css">
+	<div class="ajaxContent">
+		<div class="ajaxloader"></div>
+		<div class="row mt-4">
+			<div class="container-fluid p-0 m-0">
+				<div class="activityContent">
+					<div class="container">
+
+						<div class="row">
+							<nav aria-label="Page navigation">
+								<ul class="pagination">
+									<li class="disabled"><a href="#" aria-label="Previous"><span aria-hidden="true">&laquo;</span></a></li>
+									<li class="active"><a href="#">1</a></li>
+									<li class="disabled"><a href="#">2</a></li>
+									<li class="disabled"><a href="#">3</a></li>
+									<li class="disabled"><a href="#">4</a></li>
+									<li class="disabled"><a href="#">5</a></li>
+									<li class="disabled"><a href="#">6</a></li>
+									<li><a href="#" aria-label="Next"><span aria-hidden="true">&raquo;</span></a></li>
+								</ul>
+							</nav>
+						</div>
+						
+						<div class="row">
+							<div class="col">
+								<h2 class="mt-12">Financial Wellbeing Budget</h2>
+							</div>
+						</div>
+						<div class="row">
+							<div class="col" style="padding-bottom:10px;">
+								<span>Choose the right payment plan for you, there are options ranging from contributory, non contributory and cash balance plans.</span>
+							</div>
+							<div class="col custom-blockquote primary default" style="padding-bottom:15px;">
+								<span>This budgeting tool is meant to calculate an estimate of your <span class="bold">'Available Income'</span>; income that will be allocated to your retirement and HSA plans, emergency fund, etc. To properly estimate your available income, complete this budgeting tool as best you can. The more complete, the better the Optimizer tool will work for you.</span>
+							</div>
+						</div>
+
+						<div class="row">
+							<div class="col-12 col-lg-8 rbl-nocalc all-inputs">
+								<!--step 1-->
+								<div class="row">
+									<div class="col-12">
+										<div class="panel panel-default">
+											<div class="panel-heading"><h3 class="panel-title">Income</h3></div>
+											<div class="panel-body">
+												<div class="row">
+													<div class="col-md-6" rbl-on="change:inputChange" rbl-tid="input-textbox" data-prefix="$" data-inputname="iSalary"></div>
+													<div class="col-md-6" rbl-on="change:inputChange" rbl-tid="input-textbox" data-prefix="$" data-inputname="iOtherIncome"></div>
+												</div>
+											</div>
+										</div>
+									</div>
+								</div>
+
+								<!--step 2-->
+								<div class="row">
+									<div class="col-12">
+										<div class="panel panel-default">
+											<div class="panel-heading"><h3 class="panel-title">Housing</h3></div>
+											<div class="panel-body">
+												<div class="row" style="padding-bottom: 15px;">
+													<div class="col-md-6" rbl-on="change:inputChange" rbl-tid="input-textbox" data-prefix="$" data-inputname="iExpMortgage"></div>
+													<div class="col-md-6" rbl-on="change:inputChange" rbl-tid="input-textbox" data-prefix="$" data-inputname="iExpHoaFees"></div>
+													<div class="col-md-6" rbl-on="change:inputChange" rbl-tid="input-textbox" data-prefix="$" data-inputname="iExpRent"></div>
+													<div class="col-md-6" rbl-on="change:inputChange" rbl-tid="input-textbox" data-prefix="$" data-inputname="iExpHomeIns"></div>
+													<div class="col-md-6" rbl-on="change:inputChange" rbl-tid="input-textbox" data-prefix="$" data-inputname="iExpHomeMaint"></div>
+													<div class="col-md-6" rbl-on="change:inputChange" rbl-tid="input-textbox" data-prefix="$" data-inputname="iExpUtilities"></div>
+													<div class="col-md-6" rbl-on="change:inputChange" rbl-tid="input-textbox" data-prefix="$" data-inputname="iExpTvInternet"></div>
+													<div class="col-md-6" rbl-on="change:inputChange" rbl-tid="input-textbox" data-prefix="$" data-inputname="iExpPhone"></div>
+												</div>
+											</div>
+										</div>
+									</div>
+								</div>
+
+								<!--step 3-->
+								<div class="row">
+									<div class="col-12">
+										<div class="panel panel-default">
+											<div class="panel-heading"><h3 class="panel-title">Transportation</h3></div>			
+											<div class="panel-body">
+												<div class="row" style="padding-bottom: 15px;">
+													<div class="col-md-6" rbl-on="change:inputChange" rbl-tid="input-textbox" data-prefix="$" data-inputname="iExpCarPmt"></div>
+													<div class="col-md-6" rbl-on="change:inputChange" rbl-tid="input-textbox" data-prefix="$" data-inputname="iExpCarIns"></div>
+													<div class="col-md-6" rbl-on="change:inputChange" rbl-tid="input-textbox" data-prefix="$" data-inputname="iExpFuel"></div>
+													<div class="col-md-6" rbl-on="change:inputChange" rbl-tid="input-textbox" data-prefix="$" data-inputname="iExpCarMaint"></div>
+												</div>
+											</div>
+										</div>
+			
+									</div>			
+								</div>
+
+								<!--step 4-->
+								<div class="row">
+									<div class="col-12">
+										<div class="panel panel-default">
+											<div class="panel-heading"><h3 class="panel-title">Education</h3></div>
+											<div class="panel-body">
+												<div class="row" style="padding-bottom: 15px;">
+													<div class="col-md-6" rbl-on="change:inputChange" rbl-tid="input-textbox" data-prefix="$" data-inputname="iExpSchoolSupplies"></div>
+													<div class="col-md-6" rbl-on="change:inputChange" rbl-tid="input-textbox" data-prefix="$" data-inputname="iExpStudentLoanPmt"></div>
+													<div class="col-md-6" rbl-on="change:inputChange" rbl-tid="input-textbox" data-prefix="$" data-inputname="iExpTuition"></div>
+												</div>
+											</div>
+										</div>			
+									</div>			
+								</div>
+
+								<!--step 5-->
+								<div class="row">
+									<div class="col-12">
+										<div class="panel panel-default">
+											<div class="panel-heading"><h3 class="panel-title">Personal</h3></div>
+											<div class="panel-body">
+												<div class="row" style="padding-bottom: 15px;">
+													<div class="col-md-6" rbl-on="change:inputChange" rbl-tid="input-textbox" data-prefix="$" data-inputname="iExpGroceries"></div>
+													<div class="col-md-6" rbl-on="change:inputChange" rbl-tid="input-textbox" data-prefix="$" data-inputname="iExpClothing"></div>
+													<div class="col-md-6" rbl-on="change:inputChange" rbl-tid="input-textbox" data-prefix="$" data-inputname="iExpEntertainment"></div>
+													<div class="col-md-6" rbl-on="change:inputChange" rbl-tid="input-textbox" data-prefix="$" data-inputname="iExpMedical"></div>
+													<div class="col-md-6" rbl-on="change:inputChange" rbl-tid="input-textbox" data-prefix="$" data-inputname="iExpPet"></div>
+													<div class="col-md-6" rbl-on="change:inputChange" rbl-tid="input-textbox" data-prefix="$" data-inputname="iExpOther"></div>
+												</div>
+											</div>
+										</div>			
+									</div>			
+								</div>
+
+								<!--step 6-->
+								<div class="row">
+									<div class="col-12">
+										<div class="panel panel-default">
+											<div class="panel-heading"><h3 class="panel-title">Savings</h3></div>			
+											<div class="panel-body">
+												<div class="row">
+													<div class="col-md-6" rbl-on="change:inputChange" rbl-tid="input-textbox" data-prefix="$" data-inputname="iExpEmergencyFund"></div>
+													<div class="col-md-6" rbl-on="change:inputChange" rbl-tid="input-textbox" data-prefix="$" data-inputname="iExpPersonalSavings"></div>
+													<div class="col-md-6" rbl-on="change:inputChange" rbl-tid="input-textbox" data-prefix="$" data-inputname="iExpRetirementSavings"></div>
+												</div>
+											</div>
+										</div>			
+									</div>			
+								</div>
+							</div>
+
+							<div class="col-12 col-lg-4">
+								<div class="panel panel-default netIncomeDisplay" style="position: sticky; top: 1px;">
+									<div class="panel-heading"><h3 class="panel-title">Net Income</h3></div>
+									<div class="panel-body panel-default">
+										<div class="table-responsive">
+											<table class="rbl rbl-contents-budget-summary table table-condensed table-hover">
+												<colgroup>
+													<col class="budget-summary-text1">
+													<col class="budget-summary-value1">
+												</colgroup>
+												<tbody></tbody>
+											</table>
+										</div>
+									</div>
+								</div>
+
+							</div>
+						</div>
+						<nav aria-label="...">
+							<ul class="pager">
+								<li><a href="#"><i class="fa-light fa-chevron-left"></i> Previous</a></li>
+								<li><a href="optimizer_1.html">Cancel</a></li>
+								<li><a href="optimizer_2.html">Next <i class="fa-light fa-chevron-right"></i></a>
+								</li>
+							</ul>
+						</nav>
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
+</div>

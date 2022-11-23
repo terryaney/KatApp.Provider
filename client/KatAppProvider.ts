@@ -4965,7 +4965,8 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
 
             defaultRows.forEach( row => {
                 const id = row["@id"];
-                this.setInput(id, row.value);
+                const value = typeof row.value == "object" ? row.value["#text"] : row.value;
+                this.setInput(id, value);
             });
         }
     
@@ -5696,7 +5697,8 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
 				.replace(/&amp;nbsp;/g, "&nbsp;");
 		}
 
-		getValue(value: string): string | boolean | number | (()=> void) | undefined {
+		getValue(rbleValue: string | object): string | boolean | number | (()=> void) | undefined {
+            const value = typeof rbleValue == "object" ? rbleValue["#text"] : rbleValue;
 			const d = Number(value);
 
 			if (value === undefined || KatApp.stringCompare(value, "null", true) === 0) return undefined;

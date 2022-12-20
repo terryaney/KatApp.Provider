@@ -1682,7 +1682,8 @@ KatApp.trace(undefined, "KatAppProvider library code injecting...", TraceVerbosi
                     if ( processCalculationResults && docGenApiRow != undefined ) {
                         if ( docGenApiRow[ "exception" ] != undefined ) {
                             // Show some sort of error...for now just logging diagnostics
-                            debugger;
+                            console.log("Unable to generate DocGen Results");
+                            console.log(docGenApiRow);
                         }
                         else {
                             const base64toBlob = function(base64Data: string, contentType = 'application/octet-stream', sliceSize = 1024): Blob {
